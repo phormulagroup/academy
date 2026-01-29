@@ -15,12 +15,9 @@ const authRouter = require("./routes/auth");
 const dashboardRouter = require("./routes/dashboard");
 const logsRouter = require("./routes/logs");
 const userRouter = require("./routes/user");
-const clientRouter = require("./routes/course");
-const departmentRouter = require("./routes/department");
-const projectRouter = require("./routes/project");
-const accountRouter = require("./routes/account");
+const courseRouter = require("./routes/course");
 const importRouter = require("./routes/import");
-const roleRouter = require("./routes/role");
+const languageRouter = require("./routes/language");
 
 require("dotenv").config();
 
@@ -72,11 +69,8 @@ app.use("/auth", authRouter);
 app.use("/dashboard", middleware, dashboardRouter);
 app.use("/logs", middleware, logsRouter);
 app.use("/user", middleware, userRouter);
-app.use("/course", middleware, clientRouter);
-app.use("/department", middleware, departmentRouter);
-app.use("/project", middleware, projectRouter);
-app.use("/account", middleware, accountRouter);
+app.use("/course", middleware, courseRouter);
+app.use("/language", middleware, languageRouter);
 app.use("/import", middleware, importRouter);
-app.use("/role", middleware, roleRouter);
 
 module.exports = app;

@@ -23,9 +23,7 @@ router.get("/read", async (req, res) => {
   console.log("//// READ USER ////");
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query(
-      "SELECT user.*, role.name AS role_name, department.name as department_name FROM user LEFT JOIN role ON user.id_role = role.id LEFT JOIN department ON department.id = user.id_department"
-    );
+    const rows = await query("SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id");
     res.send(rows);
   } catch (e) {
     throw e;
@@ -37,10 +35,8 @@ router.get("/readByEmail", async (req, res) => {
   try {
     const query = util.promisify(db.query).bind(db);
     const rows = await query(
-      "SELECT user.*, role.name AS role_name, department.name as department_name FROM user " +
-        "LEFT JOIN role ON user.id_role = role.id " +
-        "LEFT JOIN department ON department.id = user.id_department WHERE email = ?",
-      req.query.email
+      "SELECT user.*, role.name AS role_name, department.name as department_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE email = ?",
+      req.query.email,
     );
     res.send(rows);
   } catch (e) {

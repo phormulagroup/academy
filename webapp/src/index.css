@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 :root {
-  --ant-primary-color: #2ac9cd;
+  --ant-primary-color: #163986;
   --text-xs--line-height: 1.25rem;
 }
 
@@ -21,19 +21,33 @@
 }
 
 .principal-menu {
-  background-color: #2b5067 !important;
+  background-color: #163986 !important;
 }
 
 .principal-menu .ant-menu-item {
   margin: 0 !important;
   width: 100% !important;
-  height: 45px !important;
+  height: 35px !important;
   color: #fff !important;
 }
 
+.ant-menu-item-group {
+  margin-top: 10px !important;
+}
+
+.ant-menu-item-group-title {
+  color: #b1bdd7 !important;
+  font-size: 13px !important;
+}
+
+.ant-menu .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item {
+  padding-inline: 16px !important;
+  font-size: 13px !important;
+}
+
 .principal-menu .ant-menu-item-selected {
-  background-color: #aab9c2 !important;
-  color: #fff !important;
+  background-color: #fff !important;
+  color: #163986 !important;
 }
 
 .principal-menu .ant-menu-item-selected .icon {

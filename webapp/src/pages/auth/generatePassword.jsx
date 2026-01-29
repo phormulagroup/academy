@@ -13,7 +13,7 @@ import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
 export default function GeneratePassword() {
-  const { isLoggedIn, login, messageApi, microsoftLogin } = useContext(Context);
+  const { isLoggedIn, login, messageApi } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

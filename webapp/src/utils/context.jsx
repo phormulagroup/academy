@@ -190,7 +190,6 @@ const ContextProvider = ({ children }) => {
         isLoading,
         setIsLoading,
         messageApi,
-        microsoftLogin,
         createLog,
         update,
         create,

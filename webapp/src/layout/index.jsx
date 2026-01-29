@@ -27,17 +27,79 @@ const Main = () => {
     height: window.innerHeight,
   });
 
-  const [items, setItems] = useState([getItem("Dashboard", "/app"), getItem("Clientes", "/app/course")]);
+  const [items, setItems] = useState([
+    {
+      key: "grp-web",
+      label: "Website",
+      type: "group",
+      children: [
+        { key: "/admin/pages", label: "Páginas" },
+        { key: "/admin/articles", label: "Artigos" },
+        { key: "/admin/menus", label: "Menus" },
+        { key: "/admin/media", label: "Multimédia" },
+        { key: "/admin/personalization", label: "Personalização" },
+        { key: "/admin/languages", label: "Traduções" },
+        { key: "/admin/settings", label: "Definições" },
+      ],
+    },
+    {
+      key: "grp-learning",
+      label: "e-Learning",
+      type: "group",
+      children: [
+        { key: "/admin/courses", label: "Cursos" },
+        { key: "/admin/quizzes", label: "Testes" },
+        { key: "/admin/certificates", label: "Certificados" },
+        { key: "/admin/reports", label: "Relatórios" },
+        { key: "/admin/orders", label: "Encomendas" },
+      ],
+    },
+    {
+      key: "grp-manage",
+      label: "Gestão",
+      type: "group",
+      children: [
+        { key: "/admin/users", label: "Utilizadores" },
+        { key: "/admin/permissions", label: "Permissões" },
+        { key: "/admin/account", label: "A minha conta" },
+      ],
+    },
+    {
+      key: "grp-forms",
+      label: "Gestão",
+      type: "group",
+      children: [
+        { key: "/admin/forms", label: "Formulários" },
+        { key: "/admin/answers", label: "Respostas" },
+      ],
+    },
+    {
+      key: "grp-email",
+      label: "E-mail",
+      type: "group",
+      children: [
+        { key: "/admin/templates", label: "Templates" },
+        { key: "/admin/smtp", label: "SMTP" },
+      ],
+    },
+    {
+      key: "grp-option",
+      label: "Opções",
+      type: "group",
+      children: [{ key: "/admin/apis", label: "APIS" }],
+    },
+  ]);
 
   const navigate = useNavigate();
 
-  function getItem(label, key, icon, children, extra) {
+  function getItem(label, key, type, icon, children, extra) {
     return {
       key,
       icon,
       children,
       label,
       extra,
+      type,
     };
   }
 
@@ -70,19 +132,6 @@ const Main = () => {
     };
   }, [windowDimension]);
 
-  useEffect(() => {
-    let auxNewItems = items;
-    if ((user.id_role === 1 || user.id_role === 2) && items.findIndex((item) => item.label === "Utilizadores") === -1) {
-      auxNewItems = [...auxNewItems, getItem("Contas", "/app/contas"), getItem("Utilizadores", "/app/utilizadores")];
-    }
-
-    if (user.id_role === 1 || (user.id_role === 4 && user.id_department === 7 && items.findIndex((item) => item.label === "Financeiro") === -1)) {
-      auxNewItems = [...auxNewItems, getItem("Financeiro", "/app/financeiro")];
-    }
-
-    setItems(auxNewItems);
-  }, [user]);
-
   function handleClickMenu(e) {
     if (e.key === "logout") {
       logout();
@@ -97,18 +146,13 @@ const Main = () => {
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Layout>
         {windowDimension.width > 1080 ? (
-          <Sider width={250} className="bg-[#2B5067]!">
+          <Sider width={250} className="bg-[#163986]! overflow-auto">
             <div className="flex flex-col justify-between h-full p-4">
               <div className="flex flex-col items-center w-full">
-                <img src={logoPhormula} alt="PhormulaShare Logo" className="w-45 mb-6" style={{ filter: "brightness(0) invert(1)" }} />
+                <img src={logoPhormula} alt="PhormulaShare Logo" className="w-45 mb-2" style={{ filter: "brightness(0) invert(1)" }} />
                 <div className="mt-2.5 w-full">
                   <Menu data-tour-id="menu" className="principal-menu" selectedKeys={[current]} mode="inline" items={items} onClick={handleClickMenu} />
                 </div>
-              </div>
-              <div data-tour-id="logout" className="h-11.25 flex items-center">
-                <a className="dropdown-item flex items-center pl-4 pr-4 text-white!" onClick={() => setIsOpenLogout(true)}>
-                  <LoginOutlined className="mr-2" /> Logout
-                </a>
               </div>
             </div>
           </Sider>

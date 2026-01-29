@@ -31,6 +31,12 @@ const endpoints = {
     create: "/course/create",
     delete: "/course/delete",
   },
+  language: {
+    read: "/language/read",
+    update: "/language/update",
+    create: "/language/create",
+    delete: "/language/delete",
+  },
 };
 
 export default endpoints;

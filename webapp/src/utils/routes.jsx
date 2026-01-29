@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import { Context } from "./context";
 import { useContext } from "react";
-import { MsalProvider } from "@azure/msal-react";
 
 import Loading from "../layout/loading";
 import Login from "../pages/auth/login";
@@ -11,6 +10,7 @@ import MainLayout from "../layout/index";
 import Course from "../pages/main/course";
 import User from "../pages/main/user";
 import GeneratePassword from "../pages/auth/generatePassword";
+import Language from "../pages/main/language";
 
 export default function AppRoutes() {
   const { isLoggedIn, isLoading, user } = useContext(Context);
@@ -31,12 +31,13 @@ export default function AppRoutes() {
           {isLoggedIn && user ? (
             <>
               <Route element={<MainLayout />}>
-                <Route exact path="/" element={<Navigate to={`/app/`} replace />} />
-                <Route exact path="/login" element={<Navigate to={`/app/`} replace />} />
-                <Route exact path="/login" element={<Navigate to={`/app/`} replace />} />
-                <Route exact path="/app/" element={<Main />} />
-                <Route exact path="/app/projetos" element={<Course />} />
-                <Route exact path="/app/utilizadores" element={<User />} />
+                <Route exact path="/" element={<Navigate to={`/admin/`} replace />} />
+                <Route exact path="/login" element={<Navigate to={`/admin/`} replace />} />
+                <Route exact path="/login" element={<Navigate to={`/admin/`} replace />} />
+                <Route exact path="/admin/" element={<Main />} />
+                <Route exact path="/admin/courses" element={<Course />} />
+                <Route exact path="/admin/languages" element={<Language />} />
+                <Route exact path="/admin/users" element={<User />} />
               </Route>
             </>
           ) : (
