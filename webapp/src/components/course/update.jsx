@@ -24,7 +24,7 @@ export default function Update({ data, open, close, submit }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await update({ data: values, table: "client" }, { old: data, new: values });
+      await update({ data: values, table: "course" }, { old: data, new: values });
       setIsButtonLoading(false);
       close(true);
     } catch (err) {

@@ -7,7 +7,7 @@ import { Context } from "../utils/context";
 export default function Delete({ open, close, data, table }) {
   const { messageApi, createLog } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [tablesName] = useState({ account: "Conta", client: "Cliente", project: "Project" });
+  const [tablesName] = useState({ account: "Conta", course: "Cliente", project: "Project" });
 
   function onClose() {
     close();

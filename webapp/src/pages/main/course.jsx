@@ -34,10 +34,10 @@ export default function Course() {
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.client.read)
+      .get(endpoints.course.read)
       .then((res) => {
-        setData(user.id_role === 1 || user.id_role === 2 ? res.data : res.data.filter((item) => item.is_deleted === 0));
-        prepareData(user.id_role === 1 || user.id_role === 2 ? res.data : res.data.filter((item) => item.is_deleted === 0));
+        setData(res.data);
+        prepareData(res.data);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -130,8 +130,8 @@ export default function Course() {
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
-      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="client" />
-      <Logs table={"client"} id_client={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
+      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="course" />
+      <Logs table={"course"} id_client={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">Clientes</p>

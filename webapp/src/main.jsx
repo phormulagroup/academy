@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { createRoot } from "react-dom/course";
 import AppRoutes from "./utils/routes.jsx";
 import ContextProvider from "./utils/context.jsx";
 import { BrowserRouter, Route, Router, RouterProvider, Routes } from "react-router-dom";
@@ -19,5 +19,5 @@ createRoot(document.getElementById("root")).render(
         <AppRoutes />
       </ContextProvider>
     </MsalProvider>
-  </BrowserRouter>
+  </BrowserRouter>,
 );

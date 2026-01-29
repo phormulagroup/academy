@@ -19,7 +19,7 @@ export default function Create({ open, close, submit }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await create({ data: values, table: "client" });
+      await create({ data: values, table: "course" });
       setIsButtonLoading(false);
       close(true);
     } catch (err) {
