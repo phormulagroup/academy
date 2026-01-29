@@ -132,12 +132,12 @@ const ContextProvider = ({ children }) => {
       console.log(obj);
       try {
         const res = await axios.post(endpoints[obj.table].create, { data: obj.data });
-        createLog({
+        /*createLog({
           action: "create",
           changed: null,
           type: obj.table,
           [`id_${obj.table}`]: res.insertId,
-        });
+        });*/
         messageApi.open({
           type: "success",
           content: `${obj.table.charAt(0).toUpperCase() + obj.table.slice(1)} criado com sucesso!`,

@@ -7,6 +7,12 @@ import { Context } from "../../utils/context";
 export default function Create({ open, close, submit }) {
   const { create } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [languageOptions, setLanguageOptions] = useState([
+    { flag: "https://flagcdn.com/es.svg", name: "Español" },
+    { flag: "https://flagcdn.com/pt.svg", name: "Português" },
+    { flag: "https://flagcdn.com/fr.svg", name: "Français" },
+    { flag: "https://flagcdn.com/gb.svg", name: "English" },
+  ]);
 
   const [form] = Form.useForm();
 
@@ -21,6 +27,7 @@ export default function Create({ open, close, submit }) {
       await create({ data: values, table: "language" });
       setIsButtonLoading(false);
       close(true);
+      form.resetFields();
     } catch (err) {
       console.log(err);
       setIsButtonLoading(false);
@@ -48,20 +55,39 @@ export default function Create({ open, close, submit }) {
           required: "Este campo é obrigatório!",
         }}
       >
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-          <Input size="large" />
+        <Form.Item name="flag" hidden>
+          <Input />
         </Form.Item>
-        <Form.Item name="country" label="Países" rules={[{ required: true }]}>
+        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
           <Select
-            key="language"
             size="large"
             className="w-full"
-            placeholder="Please select"
-            onChange={(e) => console.log(e)}
+            placeholder="Selecione..."
+            onChange={(e) => form.setFieldValue("flag", languageOptions.filter((i) => i.name === e)[0].flag)}
             showSearch={{
               optionFilterProp: ["label"],
             }}
-            options={countries.map((o) => ({ label: o, values: o }))}
+            options={languageOptions.map((o) => ({
+              label: (
+                <div className="flex justify-start items-center">
+                  <img src={o.flag} className="max-w-5 mr-2" />
+                  <p>{o.name}</p>
+                </div>
+              ),
+              value: o.name,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item name="country" label="Países" rules={[{ required: true }]}>
+          <Select
+            mode="multiple"
+            size="large"
+            className="w-full"
+            placeholder="Selecione..."
+            showSearch={{
+              optionFilterProp: ["label"],
+            }}
+            options={countries.map((o) => ({ label: o, value: o }))}
           />
         </Form.Item>
       </Form>

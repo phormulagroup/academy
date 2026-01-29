@@ -28,6 +28,8 @@ router.post("/create", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
+    data.country = data.country ? JSON.stringify(data.country) : null;
+    console.log(data);
     const insertedRow = await query("INSERT INTO language SET ?", data);
     res.send(insertedRow);
   } catch (err) {
