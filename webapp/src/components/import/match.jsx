@@ -56,14 +56,14 @@ function MatchColumns({ step, next, prev, tableColumns, dbColumns, tableData }) 
           {(fields) => (
             <div>
               {fields.map((field) => (
-                <Row gutter={[24]}>
-                  <Col span={12}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     {field.name === 0 ? <p>Colunas da importação</p> : null}
                     <Form.Item name={[field.name, "column"]}>
                       <Input readOnly size="large" />
                     </Form.Item>
-                  </Col>
-                  <Col span={12}>
+                  </div>
+                  <div>
                     {field.name === 0 ? <p>Colunas da base de dados</p> : null}
                     <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.columns !== currentValues.columns}>
                       {({ getFieldValue }) => {
@@ -90,8 +90,8 @@ function MatchColumns({ step, next, prev, tableColumns, dbColumns, tableData }) 
                         );
                       }}
                     </Form.Item>
-                  </Col>
-                </Row>
+                  </div>
+                </div>
               ))}
             </div>
           )}

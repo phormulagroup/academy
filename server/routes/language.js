@@ -42,6 +42,7 @@ router.post("/update", async (req, res, next) => {
   try {
     let data = req.body.data;
     let whereId = data.id;
+    data.country = data.country ? JSON.stringify(data.country) : null;
     delete data.id;
 
     const columns = Object.keys(data);
@@ -62,6 +63,17 @@ router.post("/delete", async (req, res, next) => {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE language SET is_deleted = 1 WHERE id = " + req.body.data.id);
     res.send(deletedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/default", async (req, res, next) => {
+  console.log("//// DEFAULT LANGUAGE ////");
+  try {
+    const query = util.promisify(db.query).bind(db);
+    const updatedRow = await query("UPDATE language SET is_default = 1 WHERE id = ?; UPDATE language SET is_default = 0 WHERE id != ?", [req.body.data.id, req.body.data.id]);
+    res.send(updatedRow);
   } catch (err) {
     throw err;
   }

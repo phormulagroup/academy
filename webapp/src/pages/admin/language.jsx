@@ -6,17 +6,21 @@ import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/table";
-import Create from "../../components/course/create";
-import Update from "../../components/course/update";
+import Create from "../../components/language/create";
+import Update from "../../components/language/update";
 import Delete from "../../components/delete";
 import Logs from "../../components/logs";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
+import { AiOutlinePlus } from "react-icons/ai";
+import Translations from "../../components/language/translations";
+import { useTranslation } from "react-i18next";
 
-export default function Course() {
+export default function Language() {
   const { user } = useContext(Context);
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -25,7 +29,7 @@ export default function Course() {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenLogs, setIsOpenLogs] = useState(false);
+  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
 
   useEffect(() => {
     getData();
@@ -34,7 +38,7 @@ export default function Course() {
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.course.read)
+      .get(endpoints.language.read)
       .then((res) => {
         setData(res.data);
         prepareData(res.data);
@@ -52,6 +56,11 @@ export default function Course() {
       aux.push({
         ...array[i],
         key: i + 1,
+        flag: (
+          <div className="flex justify-start items-center">
+            <img src={array[i].flag} className="max-w-[20px]" />
+          </div>
+        ),
         is_deleted: array[i].is_deleted ? (
           <Tag variant="outlined" color={"red"}>
             Inativo
@@ -70,19 +79,19 @@ export default function Course() {
               menu={{
                 items: [
                   {
-                    label: "Editar",
+                    label: "Update",
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  (user.id_role === 1 || user.id_role === 2) && {
-                    label: "Histórico de alterações",
-                    key: `${array[i].id}-logs`,
+                  array[i].is_default !== 1 && {
+                    label: "Translations",
+                    key: `${array[i].id}-translations`,
                     icon: <FaRegFile />,
-                    onClick: () => openLogs(array[i]),
+                    onClick: () => openTranslations(array[i]),
                   },
-                  (user.id_role === 1 || user.id_role === 2) && {
-                    label: "Apagar",
+                  {
+                    label: "Delete",
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -107,9 +116,9 @@ export default function Course() {
     setIsOpenUpdate(true);
   }
 
-  function openLogs(obj) {
+  function openTranslations(obj) {
     setSelectedData(obj);
-    setIsOpenLogs(true);
+    setIsOpenTranslations(true);
   }
 
   function openDelete(obj) {
@@ -118,6 +127,7 @@ export default function Course() {
   }
 
   function closeAction(c) {
+    console.log(c);
     if (c) {
       getData();
     }
@@ -130,15 +140,15 @@ export default function Course() {
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
-      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="course" />
-      <Logs table={"course"} id_client={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
+      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
+      <Translations data={selectedData} defaultLanguage={data.filter((item) => item.is_default === 1)[0]} open={isOpenTranslations} close={() => setIsOpenTranslations(false)} />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">Clientes</p>
+          <p className="text-xl font-bold">{t("Translations")}</p>
         </div>
         <div>
-          <Button size="large" onClick={() => setIsOpenCreate(true)}>
-            Adicionar
+          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
+            {t("Add Language")}
           </Button>
         </div>
       </div>
@@ -146,6 +156,12 @@ export default function Course() {
         dataSource={tableData}
         loading={isLoading}
         columns={[
+          {
+            title: "",
+            dataIndex: "flag",
+            key: "flag",
+            width: "40px",
+          },
           {
             title: "Nome",
             dataIndex: "name",
@@ -155,19 +171,11 @@ export default function Course() {
             search: "name",
             width: "80%",
           },
-          (user.id_role === 1 || user.id_role === 2) && {
-            title: "Estado",
-            dataIndex: "is_deleted",
-            key: "is_deleted",
-            filters: [
-              { text: "Ativo", value: 0 },
-              { text: "Inativo", value: 1 },
-            ],
-          },
           {
             title: "",
             dataIndex: "actions",
             key: "actions",
+            width: "80px",
           },
         ]}
       />

@@ -6,9 +6,8 @@ import { useNavigate } from "react-router-dom";
 import endpoints from "./endpoints";
 import api from "./api";
 import { message, Tour } from "antd";
-
-// MSAL imports
-import { useRef } from "react";
+import i18n from "./i18n";
+import { useTranslation } from "react-i18next";
 
 export const Context = createContext();
 
@@ -17,8 +16,11 @@ api.init();
 const ContextProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingLanguage, setIsLoadingLanguage] = useState(false);
   const [user, setUser] = useState({});
   const [courses, setCourses] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const { t } = useTranslation();
 
   const [tablesName] = useState({ user: "Utilizador", course: "Curso" });
 
@@ -28,33 +30,53 @@ const ContextProvider = ({ children }) => {
 
   useEffect(() => {
     getData();
+    getLanguages();
   }, []);
 
-  function getData() {
+  async function getLanguages() {
+    try {
+      const res = await axios.get(endpoints.language.read);
+      setLanguages(res.data);
+
+      const auxLanguages = res.data;
+      for (let i = 0; i < auxLanguages.length; i++) {
+        console.log(auxLanguages[i].code);
+        if (auxLanguages[i].translation) {
+          const translation = JSON.parse(auxLanguages[i].translation).reduce((acc, item) => {
+            acc[item.key] = item.value;
+            return acc;
+          }, {});
+
+          i18n.addResources(auxLanguages[i].code, "translation", translation);
+        }
+      }
+    } catch (err) {
+      console.log(err);
+      setIsLoggedIn(false);
+      navigate("/login");
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
+    }
+  }
+
+  async function getData() {
     let token = localStorage.getItem("token");
     if (token) {
-      axios
-        .post(endpoints.auth.verifyToken, {
-          data: token,
-        })
-        .then((res) => {
-          console.log(res);
-          if (res.data.token_valid) {
-            login({ user: res.data.user, token: token });
-          } else {
-            setIsLoggedIn(false);
-            navigate("/login");
-          }
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 1500);
-        })
-        .catch((err) => {
-          console.log(err);
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 1500);
-        });
+      try {
+        const res = await axios.post(endpoints.auth.verifyToken, { data: token });
+        login({ user: res.data.user, token: token });
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+      } catch (err) {
+        console.log(err);
+        setIsLoggedIn(false);
+        navigate("/login");
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+      }
     } else {
       setTimeout(() => {
         setIsLoading(false);
@@ -90,7 +112,7 @@ const ContextProvider = ({ children }) => {
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
-    if (window.location.href.includes("login")) navigate("/app");
+    if (window.location.href.includes("login")) navigate("/admin");
     else navigate(window.location.href);
   }
 
@@ -157,12 +179,12 @@ const ContextProvider = ({ children }) => {
     return new Promise(async (resolve, reject) => {
       try {
         const res = await axios.post(endpoints[obj.table].update, { data: obj.data });
-        createLog({
+        /*createLog({
           action: "update",
           changed: changed,
           type: obj.table,
           [`id_${obj.table}`]: obj.data.id,
-        });
+        });*/
         messageApi.open({
           type: "success",
           content: `${tablesName[obj.table]} foi editado com sucesso.`,
@@ -195,6 +217,10 @@ const ContextProvider = ({ children }) => {
         create,
         courses,
         setCourses,
+        languages,
+        isLoadingLanguage,
+        setIsLoadingLanguage,
+        t,
       }}
     >
       {contextHolder}

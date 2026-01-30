@@ -27,6 +27,7 @@ const endpoints = {
   },
   course: {
     read: "/course/read",
+    readById: "/course/readById",
     update: "/course/update",
     create: "/course/create",
     delete: "/course/delete",
@@ -36,6 +37,14 @@ const endpoints = {
     update: "/language/update",
     create: "/language/create",
     delete: "/language/delete",
+    default: "/language/default",
+  },
+  media: {
+    read: "/media/read",
+    upload: "/media/upload",
+    singleUpload: "/media/singleUpload",
+    update: "/media/update",
+    delete: "/media/delete",
   },
 };
 

@@ -4,16 +4,19 @@ import { Context } from "./context";
 import { useContext } from "react";
 
 import Loading from "../layout/loading";
+import LoadingLanguage from "../layout/loadingLanguage";
 import Login from "../pages/auth/login";
-import Main from "../pages/main/main";
+import Main from "../pages/admin/main";
 import MainLayout from "../layout/index";
-import Course from "../pages/main/course";
-import User from "../pages/main/user";
+import Course from "../pages/admin/course";
+import User from "../pages/admin/user";
 import GeneratePassword from "../pages/auth/generatePassword";
-import Language from "../pages/main/language";
+import Language from "../pages/admin/language";
+import Media from "../pages/admin/media";
+import CourseDetails from "../pages/admin/course/details";
 
 export default function AppRoutes() {
-  const { isLoggedIn, isLoading, user } = useContext(Context);
+  const { isLoggedIn, isLoading, isLoadingLanguage, user } = useContext(Context);
 
   return (
     <ConfigProvider
@@ -26,6 +29,8 @@ export default function AppRoutes() {
     >
       {isLoading ? (
         <Loading />
+      ) : isLoadingLanguage ? (
+        <LoadingLanguage />
       ) : (
         <Routes>
           {isLoggedIn && user ? (
@@ -36,8 +41,10 @@ export default function AppRoutes() {
                 <Route exact path="/login" element={<Navigate to={`/admin/`} replace />} />
                 <Route exact path="/admin/" element={<Main />} />
                 <Route exact path="/admin/courses" element={<Course />} />
+                <Route exact path="/admin/courses/:id" element={<CourseDetails />} />
                 <Route exact path="/admin/languages" element={<Language />} />
                 <Route exact path="/admin/users" element={<User />} />
+                <Route exact path="/admin/media" element={<Media />} />
               </Route>
             </>
           ) : (

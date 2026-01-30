@@ -20,6 +20,7 @@ router.use((req, res, next) => {
 router.post("/verifyToken", async (req, res, next) => {
   try {
     let token = req.body.data;
+    console.log(token);
     const result = await verifyToken(token);
     if (result.token_valid) {
       const query = util.promisify(db.query).bind(db);
@@ -30,10 +31,10 @@ router.post("/verifyToken", async (req, res, next) => {
           res.send({ token_valid: true, user: user[0] });
         } else {
           console.log("///// TOKEN IS NOT VALID");
-          res.send({ token_valid: false });
+          res.status(401).send("Invalid Token");
         }
       } else {
-        res.send({ token_valid: false });
+        res.status(401).send("Invalid Token");
       }
     } else {
       return res.status(401).send("Invalid Token");

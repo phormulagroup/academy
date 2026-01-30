@@ -17,7 +17,7 @@
     "dayjs": "^1.11.13",
     "dotenv": "^17.2.3",
     "express": "^4.18.1",
-    "express-fileupload": "^1.4.0",
+    "express-fileupload": "^1.5.2",
     "express-rate-limit": "^7.4.1",
     "fs": "^0.0.1-security",
     "helmet": "^8.0.0",

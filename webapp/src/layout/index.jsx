@@ -12,15 +12,19 @@ import { Context } from "../utils/context";
 
 import Logout from "../components/logout";
 import { FaRegUser } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
+import { TbWorld } from "react-icons/tb";
 
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, allowTour, setAllowTour, isOpenTour, setIsOpenTour } = useContext(Context);
-  const location = useLocation();
-  const [current, setCurrent] = useState("/app/");
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage } = useContext(Context);
+  const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
+
+  const location = useLocation();
+  const { t, i18n } = useTranslation();
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -33,13 +37,13 @@ const Main = () => {
       label: "Website",
       type: "group",
       children: [
-        { key: "/admin/pages", label: "Páginas" },
-        { key: "/admin/articles", label: "Artigos" },
+        { key: "/admin/pages", label: "Pages" },
+        { key: "/admin/articles", label: "Articles" },
         { key: "/admin/menus", label: "Menus" },
-        { key: "/admin/media", label: "Multimédia" },
-        { key: "/admin/personalization", label: "Personalização" },
-        { key: "/admin/languages", label: "Traduções" },
-        { key: "/admin/settings", label: "Definições" },
+        { key: "/admin/media", label: "Multimedia" },
+        { key: "/admin/personalization", label: "Personalization" },
+        { key: "/admin/languages", label: t("Languages") },
+        { key: "/admin/settings", label: "Settings" },
       ],
     },
     {
@@ -47,11 +51,11 @@ const Main = () => {
       label: "e-Learning",
       type: "group",
       children: [
-        { key: "/admin/courses", label: "Cursos" },
-        { key: "/admin/quizzes", label: "Testes" },
-        { key: "/admin/certificates", label: "Certificados" },
-        { key: "/admin/reports", label: "Relatórios" },
-        { key: "/admin/orders", label: "Encomendas" },
+        { key: "/admin/courses", label: "Courses" },
+        { key: "/admin/quizzes", label: "Quizzes" },
+        { key: "/admin/certificates", label: "Certificates" },
+        { key: "/admin/reports", label: "Reports" },
+        { key: "/admin/orders", label: "Orders" },
       ],
     },
     {
@@ -59,9 +63,9 @@ const Main = () => {
       label: "Gestão",
       type: "group",
       children: [
-        { key: "/admin/users", label: "Utilizadores" },
-        { key: "/admin/permissions", label: "Permissões" },
-        { key: "/admin/account", label: "A minha conta" },
+        { key: "/admin/users", label: "Users" },
+        { key: "/admin/permissions", label: "Permissions" },
+        { key: "/admin/account", label: "My Account" },
       ],
     },
     {
@@ -69,8 +73,8 @@ const Main = () => {
       label: "Gestão",
       type: "group",
       children: [
-        { key: "/admin/forms", label: "Formulários" },
-        { key: "/admin/answers", label: "Respostas" },
+        { key: "/admin/forms", label: "Forms" },
+        { key: "/admin/answers", label: "Answers" },
       ],
     },
     {
@@ -90,18 +94,15 @@ const Main = () => {
     },
   ]);
 
-  const navigate = useNavigate();
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+    setIsLoadingLanguage(true);
+    setTimeout(() => {
+      setIsLoadingLanguage(false);
+    }, 1500);
+  };
 
-  function getItem(label, key, type, icon, children, extra) {
-    return {
-      key,
-      icon,
-      children,
-      label,
-      extra,
-      type,
-    };
-  }
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -161,7 +162,7 @@ const Main = () => {
             <Button type="text" className="absolute right-5 top-5 font-bold" onClick={() => setIsOpenDrawerMenu(false)}>
               <CloseOutlined className="text-[#0c3c61]" />
             </Button>
-            <div className="flex p-[60px_20px_20px_20px] cursor-pointer" onClick={() => handleClickMenu({ key: "/app/perfil" })}>
+            <div className="flex p-[60px_20px_20px_20px] cursor-pointer" onClick={() => handleClickMenu({ key: "/admin/perfil" })}>
               <Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
               <div className="flex flex-col">
                 <p className="text-[#0c3c61]">Olá,</p>
@@ -183,13 +184,25 @@ const Main = () => {
             <div className="flex justify-end items-center">
               {windowDimension.width > 1080 ? (
                 <div className="flex justify-center items-center">
-                  {allowTour && (
-                    <div>
-                      <Button className="mr-2" onClick={() => setIsOpenTour(true)}>
-                        Começar tour
-                      </Button>
+                  <Dropdown
+                    menu={{
+                      items: languages.map((item) => ({
+                        key: item.code,
+                        label: (
+                          <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                            <img src={item.flag} className="max-w-[20px] mr-2" alt={item.name} />
+                            <p>{item.name}</p>
+                          </div>
+                        ),
+                      })),
+                    }}
+                    trigger={["click"]}
+                    placement="bottomRight"
+                  >
+                    <div className="flex justify-center items-center cursor-pointer">
+                      <TbWorld className="w-[20px] h-[20px] mr-4" />
                     </div>
-                  )}
+                  </Dropdown>
                   <Avatar icon={<FaRegUser />} />
                   <p className="text-[12px] ml-2">{user.name}</p>
                 </div>

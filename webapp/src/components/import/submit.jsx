@@ -119,20 +119,20 @@ function Submit({ step, prev, dataToImport, table }) {
         <div className="flex flex-col justify-center items-center w-full">
           <p className="text-[26px] font-bold text-center mb-0">Sucesso!</p>
           <p className="text-center mt-2">Os dados foram importados com sucesso</p>
-          <Row gutter={[24]} style={{ maxWidth: 400 }} className="flex justify-center items-center mt-6">
-            <Col span={12} className="flex flex-col justify-center items-center">
+          <div className="grid grid-cols-2 w-full max-w-[400px]">
+            <div className="flex flex-col justify-center items-center">
               <p className="m-0 text-[12px] text-center">Atualizados</p>
               <div className="import-data updated">
                 <p className="text-[40px] font-bold m-0 text-center orange">{dataToImport.length - results.insertedData?.inserted?.length}</p>
               </div>
-            </Col>
-            <Col span={12} className="flex flex-col justify-center items-center">
+            </div>
+            <div className="flex flex-col justify-center items-center">
               <p className="m-0 text-[12px] text-center">Novos</p>
               <div className="import-data inserted">
                 <p className="text-[40px] font-bold m-0 text-center green">{results.insertedData?.inserted?.length}</p>
               </div>
-            </Col>
-          </Row>
+            </div>
+          </div>
 
           <Table
             className="import-table w-full"

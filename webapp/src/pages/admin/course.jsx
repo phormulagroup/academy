@@ -6,17 +6,18 @@ import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/table";
-import Create from "../../components/language/create";
-import Update from "../../components/language/update";
+import Create from "../../components/course/create";
+import Update from "../../components/course/update";
 import Delete from "../../components/delete";
 import Logs from "../../components/logs";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
-export default function Language() {
+export default function Course() {
   const { user } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -28,6 +29,10 @@ export default function Language() {
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenLogs, setIsOpenLogs] = useState(false);
 
+  const { t } = useTranslation();
+
+  const navigate = useNavigate();
+
   useEffect(() => {
     getData();
   }, []);
@@ -35,7 +40,7 @@ export default function Language() {
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.language.read)
+      .get(endpoints.course.read)
       .then((res) => {
         setData(res.data);
         prepareData(res.data);
@@ -71,19 +76,19 @@ export default function Language() {
               menu={{
                 items: [
                   {
-                    label: "Editar",
+                    label: t("Details"),
+                    key: `${array[i].id}-details`,
+                    icon: <FaRegEdit />,
+                    onClick: () => navigate(`/admin/courses/${array[i].id}`),
+                  },
+                  {
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  (user.id_role === 1 || user.id_role === 2) && {
-                    label: "Histórico de alterações",
-                    key: `${array[i].id}-logs`,
-                    icon: <FaRegFile />,
-                    onClick: () => openLogs(array[i]),
-                  },
-                  (user.id_role === 1 || user.id_role === 2) && {
-                    label: "Apagar",
+                  {
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -135,10 +140,10 @@ export default function Language() {
       <Logs table={"course"} id_client={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">Traduções</p>
+          <p className="text-xl font-bold">{t("Courses")}</p>
         </div>
         <div>
-          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
+          <Button size="large" onClick={() => setIsOpenCreate(true)}>
             Adicionar
           </Button>
         </div>

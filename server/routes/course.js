@@ -23,6 +23,21 @@ router.get("/read", async (req, res) => {
   }
 });
 
+router.get("/readById", async (req, res) => {
+  console.log("//// READ COURSE BY ID ////");
+  const query = util.promisify(db.query).bind(db);
+  try {
+    const rows = await query(
+      "SELECT * FROM course WHERE id = ?; SELECT * FROM course_module WHERE id_course = ?; " +
+        "SELECT * FROM course_topic LEFT JOIN course_module ON course_topic.id_module = course_module.id WHERE course_module.id_course = ?",
+      [req.query.id, req.query.id, req.query.id],
+    );
+    res.send({ course: rows[0], modules: rows[1], topics: rows[2] });
+  } catch (e) {
+    throw e;
+  }
+});
+
 router.post("/create", async (req, res, next) => {
   console.log("//// CREATE COURSE ////");
   try {
