@@ -29,6 +29,7 @@ const endpoints = {
     read: "/course/read",
     readById: "/course/readById",
     update: "/course/update",
+    module: "/course/module",
     create: "/course/create",
     delete: "/course/delete",
   },

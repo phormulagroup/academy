@@ -54,16 +54,37 @@ router.post("/update", async (req, res, next) => {
   console.log("//// UPDATE COURSE ////");
   try {
     let data = req.body.data;
-    let whereId = data.id;
-    delete data.id;
+    console.log(req.body);
 
-    const columns = Object.keys(data);
-    const values = Object.values(data);
+    res.send(data);
+  } catch (err) {
+    throw err;
+  }
+});
 
+router.post("/module", async (req, res, next) => {
+  console.log("//// UPDATE COURSE MODULE ////");
+  try {
+    let data = req.body.data;
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE course SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    for (let i = 0; i < data.length; i++) {
+      const aux = data[i];
+      console.log(aux);
+      // New module
+      const insertedModule = await query(
+        "INSERT INTO course_module SET ? ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), position = VALUES(position)",
+        {
+          id: aux.id.split("-")[0] === "newmod" ? null : aux.id,
+          id_course: aux.id_course,
+          title: aux.title,
+          description: aux.description,
+          position: i,
+        },
+      );
+      aux.id = insertedModule.insertId;
+    }
 
-    res.send(updatedRow);
+    res.send(data);
   } catch (err) {
     throw err;
   }

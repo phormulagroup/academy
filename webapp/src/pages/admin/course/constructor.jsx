@@ -18,10 +18,9 @@ const { Text } = Typography;
 const makeId = (p = "") => p + Math.random().toString(36).slice(2, 8);
 const isModuleId = (id) => typeof id === "string" && id.startsWith("mod-");
 const isTopicId = (id) => typeof id === "string" && id.startsWith("it-");
-const STORAGE_KEY = "board_modulos_v1";
 
 /* -------------------- Grip (drag handle) -------------------- */
-function Grip({ attributes, listeners, title = "Arrastar" }) {
+function Grip({ attributes, listeners, title }) {
   return (
     <div {...attributes} {...listeners} title={title} className="cursor-grab px-1 select-none text-gray-500">
       ⋮⋮
@@ -237,58 +236,58 @@ function SortableModule({
   );
 }
 
-/* -------------------- APP -------------------- */
 export default function Constructor({ course }) {
-  const [modules, setModules] = useState([
-    {
-      id: "mod-1",
-      title: "Módulo 1",
-      items: [
-        { id: "it-a", label: "Introdução", type: "tópico" },
-        { id: "it-b", label: "Questionário inicial", type: "teste" },
-      ],
-    },
-    {
-      id: "mod-2",
-      title: "Módulo 2",
-      items: [{ id: "it-c", label: "Conceitos avançados", type: "tópico" }],
-    },
-    {
-      id: "mod-3",
-      title: "Módulo 3",
-      items: [{ id: "it-d", label: "Exame final", type: "teste" }],
-    },
-  ]);
+  const [isUnsaved, setIsUnsaved] = useState(true);
+  const [original, setOriginal] = useState([]);
+  const [modules, setModules] = useState([]);
+
+  /* ---------- Undo/Redo ---------- */
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+
+  /* ---------- Eliminar com animação ---------- */
+  const [deletingItems, setDeletingItems] = useState(new Set());
+  const [deletingModules, setDeletingModules] = useState(new Set());
+  const timersRef = useRef({ items: new Map(), mods: new Map() });
+  const ANIM_MS = 200;
 
   const navigate = useNavigate();
 
   /* ---------- Load do localStorage no arranque ---------- */
   useEffect(() => {
     if (course) getData();
-  }, []);
+  }, [course]);
 
-  /* ---------- Undo/Redo ---------- */
-  const [history, setHistory] = useState([]);
-  const [future, setFuture] = useState([]);
+  useEffect(() => {
+    const current = JSON.stringify(modules);
+    const saved = JSON.stringify(original);
+    setIsUnsaved(current !== saved);
+  }, [modules]);
 
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.readById, { params: { id: course.id } });
+      console.log(res);
       if (res.data.course.length > 0) {
+        console.log(res.data.modules);
         const modulesData = res.data.modules.map((mod) => ({
           id: `mod-${mod.id}`,
-          label: mod.title,
-          items: res.data.topics
-            .filter((t) => t.module_id === mod.id)
-            .map((top) => ({
-              id: `it-${top.id}`,
-              label: top.title,
-              type: top.type,
-            })),
+          title: mod.title,
+          items: mod.items
+            ? mod.items
+                .filter((t) => t.module_id === mod.id)
+                .map((top) => ({
+                  id: `it-${top.id}`,
+                  title: top.title,
+                  type: top.type,
+                }))
+            : [],
         }));
+
+        console.log(modulesData);
         setModules(modulesData);
+        setOriginal(Object.assign([], modulesData));
       }
-      console.log(res);
     } catch (err) {
       console.log(err);
     }
@@ -318,21 +317,23 @@ export default function Constructor({ course }) {
   };
 
   /* ---------- Guardar (persistir) ---------- */
-  const save = () => {
+  async function save() {
     try {
       console.log(modules);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(modules));
+      const insert = await axios.post(endpoints.course.module, {
+        data: modules.map((m) => ({
+          ...m,
+          id_course: course.id,
+          items: m.items.map((i) => ({ ...i, module_id: m.id })),
+        })),
+      });
+      console.log(insert);
+      setOriginal(Object.assign([], modules));
       message.success("Estado guardado!");
-    } catch {
+    } catch (err) {
       message.error("Falha ao guardar.");
     }
-  };
-
-  /* ---------- Eliminar com animação ---------- */
-  const [deletingItems, setDeletingItems] = useState(new Set());
-  const [deletingModules, setDeletingModules] = useState(new Set());
-  const timersRef = useRef({ items: new Map(), mods: new Map() });
-  const ANIM_MS = 200;
+  }
 
   function cancelPendingDeletes() {
     timersRef.current.items.forEach((t) => clearTimeout(t));
@@ -387,6 +388,7 @@ export default function Constructor({ course }) {
       ),
     );
   }
+
   function addTest(moduleId) {
     pushHistory(modules);
     setModules((prev) =>
@@ -404,6 +406,7 @@ export default function Constructor({ course }) {
     pushHistory(modules);
     setModules((prev) => prev.map((m) => (m.id === moduleId ? { ...m, title } : m)));
   }
+
   function commitTopicLabel(moduleId, itemId, value) {
     pushHistory(modules);
     setModules((prev) =>
@@ -584,14 +587,14 @@ export default function Constructor({ course }) {
   return (
     <div>
       <Space wrap>
-        <Button onClick={() => setModules((p) => [...p, { id: makeId("mod-"), title: "Novo módulo", items: [] }])}>+ Novo módulo</Button>
+        <Button onClick={() => setModules((p) => [...p, { id: makeId("newmod-"), title: "Novo módulo", items: [] }])}>+ Novo módulo</Button>
         <Button onClick={undo} disabled={!history.length}>
           Undo
         </Button>
         <Button onClick={redo} disabled={!future.length}>
           Redo
         </Button>
-        <Button type="primary" onClick={save}>
+        <Button type="primary" onClick={save} disabled={!isUnsaved}>
           Guardar
         </Button>
       </Space>
