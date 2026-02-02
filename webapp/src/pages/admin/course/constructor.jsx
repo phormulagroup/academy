@@ -60,18 +60,18 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(item.label);
+  const [value, setValue] = useState(item.title);
 
   useEffect(() => {
-    setValue(item.label);
-  }, [item.label]);
+    setValue(item.title);
+  }, [item.title]);
 
   const commit = () => {
-    if (value !== item.label) onCommitLabel(item.moduleId, item.id, value);
+    if (value !== item.title) onCommitLabel(item.moduleId, item.id, value);
     setEditing(false);
   };
   const cancel = () => {
-    setValue(item.label);
+    setValue(item.title);
     setEditing(false);
   };
 
@@ -79,7 +79,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
     <RemoveAnim isRemoving={isDeleting}>
       <Card
         ref={setNodeRef}
-        className="border mb-2 mb-2!"
+        className="border mb-2!"
         style={{
           transform: CSS.Transform.toString(transform),
           transition,
@@ -111,7 +111,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
           ) : (
             <>
               <Tag color={item.type === "teste" ? "geekblue" : "green"}>{item.type}</Tag>
-              <Text className="flex-1">{item.label}</Text>
+              <Text className="flex-1">{item.title}</Text>
 
               {/* Setas ↑ ↓ para mover uma posição */}
               <Space size={4}>
@@ -120,7 +120,10 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
               </Space>
 
               <Space>
-                <Button onClick={() => navigate(`/admin/course/${course.id}/topic/${item.id}`)} icon={<AiOutlineEdit />} />
+                <Button
+                  onClick={() => navigate(`/admin/course/${course.id}/${item.type === "tópico" ? "topic" : "test"}/${parseInt(item.id.split("-")[1])}`)}
+                  icon={<AiOutlineEdit />}
+                />
                 <Button onClick={() => setEditing(true)} icon={<LuLetterText />} />
                 <Button danger onClick={() => onDelete(item.moduleId, item.id)} icon={<AiOutlineDelete />} />
               </Space>
@@ -140,7 +143,7 @@ function TopicOverlay({ item }) {
       <div className="flex items-center gap-2 opacity-80">
         <span>⋮⋮</span>
         <Tag color={item.type === "teste" ? "geekblue" : "green"}>{item.type}</Tag>
-        <Text>{item.label}</Text>
+        <Text>{item.title}</Text>
       </div>
     </Card>
   );
@@ -274,13 +277,24 @@ export default function Constructor({ course }) {
           id: `mod-${mod.id}`,
           title: mod.title,
           items: mod.items
-            ? mod.items
-                .filter((t) => t.module_id === mod.id)
-                .map((top) => ({
-                  id: `it-${top.id}`,
-                  title: top.title,
-                  type: top.type,
-                }))
+            ? JSON.parse(mod.items).map((i) => {
+                if (i.type === "teste") {
+                  if (res.data.tests.filter((t) => i.id === t.id).length > 0)
+                    return {
+                      id: `it-${res.data.tests.filter((t) => i.id === t.id)[0].id}`,
+                      title: res.data.tests.filter((t) => i.id === t.id)[0].title,
+                      type: i.type,
+                    };
+                }
+                if (i.type === "tópico") {
+                  if (res.data.topics.filter((t) => i.id === t.id).length > 0)
+                    return {
+                      id: `it-${res.data.topics.filter((t) => i.id === t.id)[0].id}`,
+                      title: res.data.topics.filter((t) => i.id === t.id)[0].title,
+                      type: i.type,
+                    };
+                }
+              })
             : [],
         }));
 
@@ -324,8 +338,9 @@ export default function Constructor({ course }) {
         data: modules.map((m) => ({
           ...m,
           id_course: course.id,
-          items: m.items.map((i) => ({ ...i, module_id: m.id })),
+          items: m.items.map((i) => ({ ...i, id_module: m.id })),
         })),
+        deleted: deletingItems,
       });
       console.log(insert);
       setOriginal(Object.assign([], modules));
@@ -382,7 +397,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("it-"), label: "Novo tópico", type: "tópico" }],
+              items: [...m.items, { id: makeId("newit-"), title: "Novo tópico", type: "tópico" }],
             }
           : m,
       ),
@@ -396,7 +411,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("it-"), label: "Novo teste", type: "teste" }],
+              items: [...m.items, { id: makeId("newit-"), title: "Novo teste", type: "teste" }],
             }
           : m,
       ),
@@ -415,7 +430,7 @@ export default function Constructor({ course }) {
           ? m
           : {
               ...m,
-              items: m.items.map((i) => (i.id === itemId ? { ...i, label: value } : i)),
+              items: m.items.map((i) => (i.id === itemId ? { ...i, title: value } : i)),
             },
       ),
     );

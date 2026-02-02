@@ -28,6 +28,8 @@ const endpoints = {
   course: {
     read: "/course/read",
     readById: "/course/readById",
+    readByTopicId: "/course/readByTopicId",
+    readByTestId: "/course/readByTestId",
     update: "/course/update",
     module: "/course/module",
     create: "/course/create",

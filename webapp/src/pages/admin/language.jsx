@@ -58,7 +58,7 @@ export default function Language() {
         key: i + 1,
         flag: (
           <div className="flex justify-start items-center">
-            <img src={array[i].flag} className="max-w-[20px]" />
+            <img src={array[i].flag} className="max-w-5" />
           </div>
         ),
         is_deleted: array[i].is_deleted ? (

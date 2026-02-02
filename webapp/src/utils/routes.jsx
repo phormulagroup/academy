@@ -14,6 +14,7 @@ import GeneratePassword from "../pages/auth/generatePassword";
 import Language from "../pages/admin/language";
 import Media from "../pages/admin/media";
 import CourseDetails from "../pages/admin/course/details";
+import Topic from "../pages/admin/course/topic";
 
 export default function AppRoutes() {
   const { isLoggedIn, isLoading, isLoadingLanguage, user } = useContext(Context);
@@ -46,6 +47,7 @@ export default function AppRoutes() {
                 <Route exact path="/admin/users" element={<User />} />
                 <Route exact path="/admin/media" element={<Media />} />
               </Route>
+              <Route exact path="/admin/course/:id/topic/:idTopic" element={<Topic />} />
             </>
           ) : (
             <Route>

@@ -112,8 +112,9 @@ const ContextProvider = ({ children }) => {
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
+    console.log(window.location);
     if (window.location.href.includes("login")) navigate("/admin");
-    else navigate(window.location.href);
+    else navigate(window.location.pathname);
   }
 
   async function createLog(obj) {
