@@ -1,0 +1,384 @@
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- BLANK -------------- */
+/* -------------------------------------- */
+
+.Blank {
+  background: hotpink;
+  padding: 16px;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- CARD -------------- */
+/* -------------------------------------- */
+
+.Card {
+  height: 100%;
+}
+
+.Card--card {
+  background: white;
+  box-shadow: rgba(140, 152, 164, 0.25) 0px 3px 6px 0px;
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+.Card-inner {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  flex-direction: column;
+}
+
+.Card--card .Card-inner {
+  align-items: flex-start;
+  padding: 24px;
+}
+
+.Card-icon {
+  border-radius: 256px;
+  background: var(--puck-color-azure-09);
+  color: var(--puck-color-azure-06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+}
+
+.Card-title {
+  font-size: 22px;
+  text-align: center;
+}
+
+.Card--card .Card-title {
+  text-align: left;
+}
+
+.Card-description {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--puck-color-grey-05);
+  text-align: center;
+  font-weight: 300;
+}
+
+.Card--card .Card-description {
+  text-align: left;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- GRID -------------- */
+/* -------------------------------------- */
+
+.Grid {
+  display: flex;
+  flex-direction: column;
+  width: auto;
+}
+
+@media (min-width: 768px) {
+  .Grid {
+    display: grid;
+  }
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- HEADING -------------- */
+/* -------------------------------------- */
+
+.Heading {
+  display: block;
+  color: var(--puck-color-black);
+  font-weight: 700;
+  margin: 0;
+}
+
+.Heading b {
+  font-weight: 700;
+}
+
+.Heading--xxxxl {
+  font-size: var(--puck-font-size-xxxxl);
+  letter-spacing: 0.08ch;
+  font-weight: 800;
+}
+
+.Heading--xxxl {
+  font-size: var(--puck-font-size-xxxl);
+}
+
+.Heading--xxl {
+  font-size: var(--puck-font-size-xxl);
+}
+
+.Heading--xl {
+  font-size: var(--puck-font-size-xl);
+}
+
+.Heading--l {
+  font-size: var(--puck-font-size-l);
+}
+
+.Heading--m {
+  font-size: var(--puck-font-size-m);
+}
+
+.Heading--s {
+  font-size: var(--puck-font-size-s);
+}
+
+.Heading--xs {
+  font-size: var(--puck-font-size-xs);
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- HERO -------------- */
+/* -------------------------------------- */
+
+.Hero {
+  background-image: linear-gradient(rgba(255, 255, 255, 0), rgb(247, 250, 255) 100%);
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.Hero-inner {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 48px;
+  flex-wrap: wrap;
+  z-index: 1;
+}
+
+@media (min-width: 1024px) {
+  .Hero-inner {
+    flex-wrap: nowrap;
+  }
+}
+
+.Hero h1 {
+  line-height: 1.1;
+  font-size: 48px;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .Hero h1 {
+    font-size: 64px;
+  }
+}
+
+.Hero-subtitle {
+  color: var(--puck-color-grey-05);
+  font-size: var(--puck-font-size-m);
+  line-height: 1.5;
+  margin: 0;
+  margin-bottom: 8px;
+  font-weight: 300;
+}
+
+.Hero-subtitle strong {
+  font-weight: 500;
+}
+
+.Hero--hasImageBackground .Hero-subtitle {
+  color: var(--puck-color-grey-03);
+}
+
+.Hero-image {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.Hero-imageOverlay {
+  background-image: linear-gradient(-90deg, rgb(247, 250, 255, 0.7) 0%, rgb(247, 250, 255, 0.7) 80%);
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+@media (min-width: 768px) {
+  .Hero--left .Hero-imageOverlay {
+    background-image: linear-gradient(-90deg, rgba(255, 255, 255, 0) 0%, rgb(247, 250, 255) 70%);
+  }
+}
+
+.Hero-bg img {
+  height: 100%;
+}
+
+.Hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .Hero--hasImageBackground .Hero-content {
+    max-width: 50%;
+  }
+}
+
+.Hero--center .Hero-inner {
+  justify-content: center;
+  text-align: center;
+}
+
+.Hero--center .Hero-content {
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.Hero-actions {
+  display: flex;
+  gap: 16px;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- LOGOS -------------- */
+/* -------------------------------------- */
+
+.Logos {
+  background-color: var(--puck-color-grey-02);
+}
+
+.Logos-items {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 64px;
+  padding-top: 64px;
+  gap: 24px;
+  filter: grayscale(1) brightness(100);
+  opacity: 0.8;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- SPACE -------------- */
+/* -------------------------------------- */
+
+.Space {
+  display: block;
+  height: var(--size);
+  width: var(--size);
+}
+
+.Space--vertical {
+  width: 100%;
+}
+
+.Space--horizontal {
+  width: var(--size);
+  height: 100%;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- STATS -------------- */
+/* -------------------------------------- */
+
+.Stats-items {
+  background-image: linear-gradient(120deg, var(--puck-color-azure-03) 0%, var(--puck-color-azure-05) 100%);
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 72px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 768px;
+  padding: 64px 16px;
+}
+
+@media (min-width: 768px) {
+  .Stats-items {
+    padding: 64px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .Stats-items {
+    grid-template-columns: 1fr 1fr;
+    padding: 128px 24px;
+    max-width: 100%;
+  }
+}
+
+.Stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+.Stats-icon {
+  border-radius: 256px;
+  background: var(--puck-color-azure-09);
+  color: var(--puck-color-azure-06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+}
+
+.Stats-label {
+  font-size: 22px;
+  text-align: center;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.Stats-value {
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------------------------------- */
+/* -------------- TEXT -------------- */
+/* -------------------------------------- */
+
+.Text {
+  line-height: 1.5;
+  padding: 0px;
+}

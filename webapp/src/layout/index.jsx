@@ -190,7 +190,7 @@ const Main = () => {
                         key: item.code,
                         label: (
                           <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
-                            <img src={item.flag} className="max-w-[20px] mr-2" alt={item.name} />
+                            <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                             <p>{item.name}</p>
                           </div>
                         ),
@@ -200,7 +200,7 @@ const Main = () => {
                     placement="bottomRight"
                   >
                     <div className="flex justify-center items-center cursor-pointer">
-                      <TbWorld className="w-[20px] h-[20px] mr-4" />
+                      <TbWorld className="w-5 h-5 mr-4" />
                     </div>
                   </Dropdown>
                   <Avatar icon={<FaRegUser />} />
