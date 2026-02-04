@@ -62,6 +62,8 @@ db.getConnection((error, conn) => {
   }
 });
 
+app.use("/media", express.static("media"));
+
 app.get("/", (req, res) => {
   res.end("PHORMULA SHARE API!");
 });

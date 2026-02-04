@@ -1,0 +1,17 @@
+._ComponentList_1rrlt_1 > div > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 2 colunas no Drawer */
+.puck-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.icon-puckeditor-item svg {
+  width: 20px;
+  height: 20px;
+}

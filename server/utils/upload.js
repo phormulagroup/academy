@@ -2,7 +2,7 @@ var db = require("./database");
 var util = require("util");
 
 module.exports = {
-  uploadFile: function (file, type, id_event) {
+  uploadFile: function (file, type) {
     return new Promise(async (resolve, reject) => {
       let sampleFile = null;
       if (file) {
@@ -20,7 +20,7 @@ module.exports = {
             file_name = `${sampleFile.name.split(".")[0].replace(" ", "_")}-${queryResult.length}.${sampleFile.name.split(".")[1]}`;
           }
 
-          await query("INSERT INTO media (name, type, id_event) VALUES (?, ?, ?)", [file_name, type ? type : "multimedia", id_event]);
+          await query("INSERT INTO media (name, type) VALUES (?, ?)", [file_name, type ? type : "multimedia"]);
 
           uploadPath = `./media/${file_name}`;
           sampleFile.mv(uploadPath, async (err) => {

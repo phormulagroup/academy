@@ -13,7 +13,7 @@ import { useParams } from "react-router-dom";
 export default function CourseDetails() {
   const { user } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(null);
 
   const { t } = useTranslation();
   let { id } = useParams();

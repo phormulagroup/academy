@@ -5,15 +5,15 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/table";
-import Create from "../../components/course/create";
-import Update from "../../components/course/update";
-import Delete from "../../components/delete";
-import Logs from "../../components/logs";
+import Table from "../../../components/table";
+import Create from "../../../components/course/create";
+import Update from "../../../components/course/update";
+import Delete from "../../../components/delete";
+import Logs from "../../../components/logs";
 
-import { Context } from "../../utils/context";
+import { Context } from "../../../utils/context";
 
-import endpoints from "../../utils/endpoints";
+import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 

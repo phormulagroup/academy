@@ -52,11 +52,15 @@ const ContextProvider = ({ children }) => {
       }
     } catch (err) {
       console.log(err);
-      setIsLoggedIn(false);
-      navigate("/login");
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1500);
+    }
+  }
+
+  async function getCourses() {
+    try {
+      const res = await axios.get(endpoints.course.read);
+      setCourses(res.data);
+    } catch (err) {
+      console.log(err);
     }
   }
 
@@ -66,6 +70,7 @@ const ContextProvider = ({ children }) => {
       try {
         const res = await axios.post(endpoints.auth.verifyToken, { data: token });
         login({ user: res.data.user, token: token });
+        getCourses();
         setTimeout(() => {
           setIsLoading(false);
         }, 1500);

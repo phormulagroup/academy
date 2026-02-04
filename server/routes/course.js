@@ -28,12 +28,32 @@ router.get("/readById", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
-      "SELECT * FROM course WHERE id = ?; SELECT * FROM course_module WHERE id_course = ?; " +
+      "SELECT * FROM course WHERE id = ?; SELECT course_module. * FROM course_module WHERE id_course = ?; " +
         "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_module = course_module.id WHERE course_module.id_course = ?; " +
         "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_module = course_module.id WHERE course_module.id_course = ?",
       [req.query.id, req.query.id, req.query.id, req.query.id],
     );
     res.send({ course: rows[0], modules: rows[1], topics: rows[2], tests: rows[3] });
+  } catch (e) {
+    throw e;
+  }
+});
+
+router.get("/readBySlug", async (req, res) => {
+  console.log("//// READ COURSE BY SLUG ////");
+  const query = util.promisify(db.query).bind(db);
+  try {
+    const rows = await query(
+      "SELECT * FROM course WHERE slug = ?; SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_module = course_module.id " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_module = course_module.id " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+        "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
+        "WHERE course_user_activity.id_user = ? AND course.slug = ?",
+      [req.query.slug, req.query.slug, req.query.slug, req.query.slug, req.query.id_user, req.query.slug],
+    );
+    res.send({ course: rows[0], modules: rows[1], topics: rows[2], tests: rows[3], progress: rows[4] });
   } catch (e) {
     throw e;
   }
@@ -90,6 +110,38 @@ router.post("/update", async (req, res, next) => {
     console.log(req.body);
 
     res.send(data);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/updateTopic", async (req, res, next) => {
+  console.log("//// UPDATE COURSE TOPIC ////");
+  try {
+    let data = req.body.data;
+    let whereId = data.id;
+    delete data.id;
+
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+
+    const query = util.promisify(db.query).bind(db);
+    const updatedRow = await query("UPDATE course_topic SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+
+    res.send(updatedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/updateProgress", async (req, res, next) => {
+  console.log("//// UPDATE COURSE PROGRESS ////");
+  try {
+    let data = req.body.data;
+    const query = util.promisify(db.query).bind(db);
+    const insertedRow = await query("INSERT INTO course_user_activity SET ?", data);
+
+    res.send(insertedRow);
   } catch (err) {
     throw err;
   }

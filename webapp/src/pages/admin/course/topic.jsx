@@ -8,6 +8,7 @@ import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Editor } from "../../../components/editor";
+import { AiOutlineConsoleSql } from "react-icons/ai";
 
 export default function Topic() {
   const { user } = useContext(Context);
@@ -29,7 +30,7 @@ export default function Topic() {
       })
       .then((res) => {
         console.log(res);
-        if (res.data.course && res.data.course.length > 0) setData(res.data.course[0]);
+        if (res.data && res.data.length > 0) setData(res.data[0]);
       })
       .catch((err) => {
         console.log(err);
@@ -37,5 +38,19 @@ export default function Topic() {
       });
   }
 
-  return <Editor />;
+  function submit(obj) {
+    console.log(obj);
+    axios
+      .post(endpoints.course.updateTopic, {
+        data: { id: idTopic, content: JSON.stringify(obj) },
+      })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  return <Editor data={data} submit={submit} />;
 }

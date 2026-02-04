@@ -88,7 +88,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
         bodyStyle={{ padding: 8 }}
       >
         <div className="flex items-center gap-2">
-          <Grip attributes={editing ? {} : attributes} listeners={editing ? {} : listeners} title="Arrastar tópico/teste" />
+          <Grip attributes={editing ? {} : attributes} listeners={editing ? {} : listeners} title="Arrastar topic/test" />
 
           {editing ? (
             <div className="flex items-center gap-2 w-full">
@@ -110,7 +110,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
             </div>
           ) : (
             <>
-              <Tag color={item.type === "teste" ? "geekblue" : "green"}>{item.type}</Tag>
+              <Tag color={item.type === "test" ? "geekblue" : "green"}>{item.type}</Tag>
               <Text className="flex-1">{item.title}</Text>
 
               {/* Setas ↑ ↓ para mover uma posição */}
@@ -121,7 +121,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
 
               <Space>
                 <Button
-                  onClick={() => navigate(`/admin/course/${course.id}/${item.type === "tópico" ? "topic" : "test"}/${parseInt(item.id.split("-")[1])}`)}
+                  onClick={() => navigate(`/admin/course/${course.id}/${item.type === "topic" ? "topic" : "test"}/${parseInt(item.id.split("-")[1])}`)}
                   icon={<AiOutlineEdit />}
                 />
                 <Button onClick={() => setEditing(true)} icon={<LuLetterText />} />
@@ -142,7 +142,7 @@ function TopicOverlay({ item }) {
     <Card size="small" className="shadow-xl border" bodyStyle={{ padding: 8 }}>
       <div className="flex items-center gap-2 opacity-80">
         <span>⋮⋮</span>
-        <Tag color={item.type === "teste" ? "geekblue" : "green"}>{item.type}</Tag>
+        <Tag color={item.type === "test" ? "geekblue" : "green"}>{item.type}</Tag>
         <Text>{item.title}</Text>
       </div>
     </Card>
@@ -278,7 +278,7 @@ export default function Constructor({ course }) {
           title: mod.title,
           items: mod.items
             ? JSON.parse(mod.items).map((i) => {
-                if (i.type === "teste") {
+                if (i.type === "test") {
                   if (res.data.tests.filter((t) => i.id === t.id).length > 0)
                     return {
                       id: `it-${res.data.tests.filter((t) => i.id === t.id)[0].id}`,
@@ -286,7 +286,7 @@ export default function Constructor({ course }) {
                       type: i.type,
                     };
                 }
-                if (i.type === "tópico") {
+                if (i.type === "topic") {
                   if (res.data.topics.filter((t) => i.id === t.id).length > 0)
                     return {
                       id: `it-${res.data.topics.filter((t) => i.id === t.id)[0].id}`,
@@ -397,7 +397,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("newit-"), title: "Novo tópico", type: "tópico" }],
+              items: [...m.items, { id: makeId("newit-"), title: "Novo topic", type: "topic" }],
             }
           : m,
       ),
@@ -411,7 +411,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("newit-"), title: "Novo teste", type: "teste" }],
+              items: [...m.items, { id: makeId("newit-"), title: "Novo test", type: "test" }],
             }
           : m,
       ),

@@ -72,4 +72,21 @@ select {
   padding: calc(var(--spacing) * 4) !important;
 }
 
+.collapse-learning .ant-collapse-header {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.collapse-learning .ant-collapse-expand-icon {
+  margin-left: 40px !important;
+}
+
+.collapse-learning .ant-collapse-body {
+  background-color: #eaeaea;
+  border: 0 !important;
+  padding: 20px !important;
+}
+
 @import "tailwindcss";

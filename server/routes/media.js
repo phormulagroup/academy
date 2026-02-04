@@ -38,7 +38,7 @@ router.post("/singleUpload", async (req, res) => {
   try {
     console.log(req.files.file);
     const data = req.body.data ? JSON.parse(req.body.data) : null;
-    const fileResponse = await uploadFile(req.files.file, data ? data.type : null, data ? data.id_event : null);
+    const fileResponse = await uploadFile(req.files.file, data ? data.type : null);
     console.log(fileResponse);
     res.send(fileResponse);
   } catch (e) {

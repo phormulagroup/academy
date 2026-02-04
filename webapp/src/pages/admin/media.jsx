@@ -32,9 +32,7 @@ function Media() {
   function handleGetMedia() {
     setIsLoading(true);
     axios
-      .get(endpoints.media.read, {
-        params: { id_event: selectedEventAdmin.id },
-      })
+      .get(endpoints.media.read)
       .then((res) => {
         setMedia(res.data);
         setIsLoading(false);
@@ -85,7 +83,7 @@ function Media() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("data", JSON.stringify({ id_event: selectedEventAdmin.id, type: "multimedia" }));
+      formData.append("data", JSON.stringify({ type: "multimedia" }));
       axios
         .post(endpoints.media.singleUpload, formData)
         .then((res) => {
