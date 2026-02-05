@@ -72,11 +72,44 @@ select {
   padding: calc(var(--spacing) * 4) !important;
 }
 
+.collapse-course {
+  background-color: transparent !important;
+}
+
+.collapse-course .ant-collapse-item {
+  margin-bottom: 20px !important;
+  border-bottom: 0 !important;
+  border: 1px solid #969696 !important;
+  border-radius: 0 !important;
+}
+
+.collapse-course .ant-collapse-header {
+  display: flex !important;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center !important;
+  background-color: #fff !important;
+  border-radius: 0 !important;
+}
+
+.collapse-course .ant-collapse-expand-icon {
+  margin-left: 0 !important;
+}
+
+.collapse-course .ant-collapse-body {
+  background-color: #fff;
+  border: 0 !important;
+  padding: 20px !important;
+}
+
+.collapse-course .ant-collapse-body {
+  padding: 0 !important;
+}
+
 .collapse-learning .ant-collapse-header {
   display: flex !important;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
 }
 
 .collapse-learning .ant-collapse-expand-icon {
@@ -87,6 +120,40 @@ select {
   background-color: #eaeaea;
   border: 0 !important;
   padding: 20px !important;
+}
+
+.button-learning-header {
+  background-color: transparent !important;
+  border: 2px solid #010202;
+  color: #010202 !important;
+  border-radius: 0 !important;
+  font-size: 16px !important;
+  height: 50px !important;
+}
+
+.button-learning-header:hover {
+  background-color: #010202 !important;
+  border: 2px solid #010202 !important;
+  color: #fff !important;
+}
+
+.button-learning-footer {
+  background-color: #010202 !important;
+  border: 2px solid #010202;
+  color: #fff !important;
+  border-radius: 0 !important;
+  font-size: 16px !important;
+  height: 50px !important;
+}
+
+.button-learning-footer:hover {
+  background-color: transparent !important;
+  border: 2px solid #010202 !important;
+  color: #010202 !important;
+}
+
+.ant-btn {
+  border-radius: 0 !important;
 }
 
 @import "tailwindcss";

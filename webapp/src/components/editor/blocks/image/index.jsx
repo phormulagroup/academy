@@ -17,16 +17,14 @@ const Image = {
       type: "object",
       objectFields: {
         width: {
-          type: "custom",
+          type: "text",
           label: "Width",
           labelIcon: <AiOutlineColumnWidth />,
-          type: "text",
         },
         height: {
-          type: "custom",
+          type: "text",
           label: "Height",
           labelIcon: <AiOutlineColumnHeight />,
-          type: "text",
         },
       },
     },

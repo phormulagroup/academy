@@ -338,7 +338,7 @@ export default function Constructor({ course }) {
         data: modules.map((m) => ({
           ...m,
           id_course: course.id,
-          items: m.items.map((i) => ({ ...i, id_module: m.id })),
+          items: m.items.map((i) => ({ ...i, id_course_module: m.id })),
         })),
         deleted: deletingItems,
       });
@@ -363,7 +363,7 @@ export default function Constructor({ course }) {
     pushHistory(modules);
     setDeletingItems((s) => new Set(s).add(itemId));
     const t = setTimeout(() => {
-      setModules((prev) => prev.map((m) => (m.id === moduleId ? { ...m, items: m.items.filter((i) => i.id !== itemId) } : m)));
+      setModules((prev) => prev.map((m) => (m?.id === moduleId ? { ...m, items: m.items.filter((i) => i?.id !== itemId) } : m)));
       setDeletingItems((s) => {
         const n = new Set(s);
         n.delete(itemId);
@@ -648,15 +648,15 @@ export default function Constructor({ course }) {
                     {/* ZONA DROPPABLE DO MÓDULO (aceita drop em área vazia) */}
                     <ModuleDropArea id={mod.id}>
                       {/* TÓPICOS/TESTES: lista VERTICAL */}
-                      <SortableContext items={mod.items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                      <SortableContext items={mod.items.map((i) => i?.id)} strategy={verticalListSortingStrategy}>
                         {mod.items.length === 0 ? (
                           <div className="text-gray-400 text-sm p-3 border border-dashed rounded bg-gray-50">Solta tópicos/testes aqui</div>
                         ) : (
                           mod.items.map((item, itemIndex) => (
                             <SortableTopic
-                              key={item.id}
-                              item={{ ...item, moduleId: mod.id }}
-                              isDeleting={deletingItems.has(item.id)}
+                              key={item?.id}
+                              item={{ ...item, moduleId: mod?.id }}
+                              isDeleting={deletingItems.has(item?.id)}
                               onDelete={deleteTopic}
                               onCommitLabel={commitTopicLabel}
                               canMoveUp={itemIndex > 0}

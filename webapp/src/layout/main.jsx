@@ -112,7 +112,7 @@ const Main = () => {
           )}
         </div>
       </Header>
-      <div className="p-6 h-[calc(100vh-64px)] overflow-auto">
+      <div className="h-[calc(100vh-64px)] overflow-auto bg-white">
         <Outlet />
       </div>
     </Layout>

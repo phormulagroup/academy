@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Tabs } from "antd";
 import Constructor from "./constructor";
 import { useParams } from "react-router-dom";
+import Settings from "./settings";
 
 export default function CourseDetails() {
   const { user } = useContext(Context);
@@ -56,7 +57,7 @@ export default function CourseDetails() {
             {
               key: "2",
               label: t("Settings"),
-              children: "Content of Tab Pane 2",
+              children: <Settings course={data} />,
             },
           ]}
         />
