@@ -10,6 +10,7 @@ import Course from "../pages/admin/course";
 import CourseDetails from "../pages/admin/course/details";
 
 import Topic from "../pages/admin/course/topic";
+import Test from "../pages/admin/course/test";
 
 export const adminRoutes = [
   {
@@ -19,6 +20,7 @@ export const adminRoutes = [
       { path: "/admin/", element: <MainAdmin /> },
       { path: "/admin/courses", element: <Course /> },
       { path: "/admin/course/:id", element: <CourseDetails /> },
+      { path: "/admin/course/:id/test/:idTest", element: <Test /> },
       { path: "/admin/languages", element: <Language /> },
       { path: "/admin/users", element: <User /> },
       { path: "/admin/media", element: <Media /> },

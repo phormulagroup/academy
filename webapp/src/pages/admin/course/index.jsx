@@ -79,7 +79,7 @@ export default function Course() {
                     label: t("Details"),
                     key: `${array[i].id}-details`,
                     icon: <FaRegEdit />,
-                    onClick: () => navigate(`/admin/courses/${array[i].id}`),
+                    onClick: () => navigate(`/admin/course/${array[i].id}`),
                   },
                   {
                     label: t("Update"),

@@ -76,14 +76,14 @@ router.get("/readByTopicId", async (req, res) => {
 });
 
 router.get("/readByTestId", async (req, res) => {
-  console.log("//// READ COURSE BY ID ////");
+  console.log("//// READ COURSE BY QUIZZ ID ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
       "SELECT course_test.*, course.name as `course_name`, course_module.title as `course_module_title` FROM course_topic " +
         "LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
         "LEFT JOIN course ON course.id = course_module.id_course WHERE course_test.id = ?; SELECT * FROM course_test_question WHERE id_course_test = ?",
-      [req.query.id, req.query.id],
+      [req.query.idTest, req.query.idTest],
     );
     res.send({ test: rows[0], questions: rows[1] });
   } catch (e) {

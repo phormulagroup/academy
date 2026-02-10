@@ -98,7 +98,7 @@ export default function Create({ open, close, submit }) {
             <>
               <p className="pb-2">{t("Image")}</p>
               <div
-                className="border border-dashed border-gray-300 rounded-lg mb-[24px] cursor-pointer flex justify-center items-center h-[150px] w-full overflow-hidden"
+                className="border border-dashed border-gray-300 rounded-lg mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
                 onClick={() => openMedia("img")}
                 style={{ background: `url(${config.server_ip}/media/${getFieldValue("img")})` }}
               >
