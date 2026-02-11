@@ -156,4 +156,108 @@ select {
   border-radius: 0 !important;
 }
 
+.review-test-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+  border: 1px solid #707070;
+  margin-bottom: 10px;
+}
+
+.test-form-item .ant-checkbox-group,
+.test-form-item-multiple .ant-checkbox-group {
+  width: 100%;
+}
+
+.test-form-item .ant-checkbox-wrapper,
+.test-form-item-multiple .ant-checkbox-wrapper {
+  width: 100%;
+  padding: 20px;
+  border: 1px solid #707070;
+  margin-bottom: 10px;
+}
+
+.test-form-item .ant-checkbox-wrapper-checked,
+.test-form-item-multiple .ant-checkbox-wrapper-checked {
+  border: 1px solid #00b9d6 !important;
+  background-color: rgba(0, 185, 214, 0.2);
+}
+
+.review-test-question.correct {
+  border: 1px solid #2f8351 !important;
+  background-color: #eef7f1;
+}
+
+.review-test-question.incorrect {
+  border: 1px solid #db0709 !important;
+  background-color: #faeeee;
+}
+
+.test-form-item .ant-checkbox .ant-checkbox-inner,
+.test-form-item-multiple .ant-checkbox .ant-checkbox-inner {
+  border-radius: 100% !important;
+  width: 20px;
+  height: 20px;
+}
+
+.review-test-question .circle {
+  border: 1px solid rgba(112, 112, 112, 1);
+  border-radius: 100% !important;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.review-test-question.multiple .circle {
+  border: 1px solid #00b9d6;
+}
+
+.test-form-item-multiple .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #00b9d6; /* cor do dot */
+  border-color: #00b9d6;
+}
+
+.test-form-item .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.test-form-item-multiple .ant-checkbox-wrapper-checked:hover .ant-checkbox-inner {
+  border-color: #00b9d6 !important;
+  background: #00b9d6 !important;
+}
+
+.test-form-item .ant-checkbox .ant-checkbox-inner::after {
+  /* remove o símbolo de check */
+  border: none !important;
+  width: 14px;
+  height: 14px;
+  background-color: #00b9d6; /* cor do dot */
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  content: "";
+  position: absolute;
+}
+
+.test-form-item .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Remove o fundo azul do AntD quando checked */
+.test-form-item .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: transparent;
+}
+
+.test-form-item .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+  border-color: #00b9d6 !important;
+  background: transparent !important;
+}
+
+.test.form-item .ant-checkbox:hover .ant-checkbox-inner {
+  background-color: transparent !important;
+  border-color: #00b9d6 !important;
+}
+
 @import "tailwindcss";

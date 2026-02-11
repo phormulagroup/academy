@@ -76,16 +76,16 @@ router.get("/readByTopicId", async (req, res) => {
 });
 
 router.get("/readByTestId", async (req, res) => {
-  console.log("//// READ COURSE BY QUIZZ ID ////");
+  console.log("//// READ COURSE BY TEST ID ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
-      "SELECT course_test.*, course.name as `course_name`, course_module.title as `course_module_title` FROM course_topic " +
-        "LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
-        "LEFT JOIN course ON course.id = course_module.id_course WHERE course_test.id = ?; SELECT * FROM course_test_question WHERE id_course_test = ?",
-      [req.query.idTest, req.query.idTest],
+      "SELECT course_test.*, course.name as `course_name`, course_module.title as `course_module_title` FROM course_test " +
+        "LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course_test.id = ?",
+      [req.query.idTest],
     );
-    res.send({ test: rows[0], questions: rows[1] });
+    res.send(rows);
   } catch (e) {
     throw e;
   }
@@ -134,6 +134,25 @@ router.post("/updateTopic", async (req, res, next) => {
 
     const query = util.promisify(db.query).bind(db);
     const updatedRow = await query("UPDATE course_topic SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+
+    res.send(updatedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/updateTest", async (req, res, next) => {
+  console.log("//// UPDATE COURSE TOPIC ////");
+  try {
+    let data = req.body.data;
+    let whereId = data.id;
+    delete data.id;
+
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+
+    const query = util.promisify(db.query).bind(db);
+    const updatedRow = await query("UPDATE course_test SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
 
     res.send(updatedRow);
   } catch (err) {

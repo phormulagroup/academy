@@ -16,6 +16,10 @@ export default function Main() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    console.log(courses);
+  }, [courses]);
+
   return (
     <div className="p-2">
       <div className="grid grid-cols-2 gap-4">

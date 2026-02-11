@@ -20,6 +20,7 @@ import { Render } from "@puckeditor/core";
 import { configRender } from "../../../components/editor";
 import dayjs from "dayjs";
 import Topic from "./topic";
+import Test from "./test";
 
 const { Header, Content, Sider } = Layout;
 
@@ -264,6 +265,9 @@ const Learning = () => {
             <div className="overflow-y-auto">
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "topic" && (
                 <Topic progress={progress} selectedCourseItem={selectedCourseItem} />
+              )}
+              {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
+                <Test progress={progress} selectedCourseItem={selectedCourseItem} />
               )}
             </div>
 

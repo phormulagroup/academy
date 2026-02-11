@@ -38,6 +38,9 @@ const endpoints = {
     create: "/course/create",
     delete: "/course/delete",
   },
+  test: {
+    update: "/course/updateTest",
+  },
   language: {
     read: "/language/read",
     update: "/language/update",
