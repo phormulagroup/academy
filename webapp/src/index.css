@@ -1,15 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 :root {
-  --ant-primary-color: #163986;
+  --ant-primary-color: #000000;
   --text-xs--line-height: 1.25rem;
+  --ant-blue-6: #00b9d6 !important;
 }
 
 #root {
   width: 100vw;
   height: 100vh;
   font-family: "Poppins";
-  color: #2b5067;
+  color: #000000;
 }
 
 .ant-layout {
@@ -154,6 +155,18 @@ select {
 
 .ant-btn {
   border-radius: 0 !important;
+}
+
+.ant-btn.blue {
+  background-color: #00b9d6;
+  color: #fff;
+  border-color: #00b9d6 !important;
+}
+
+.ant-btn.blue:hover {
+  background-color: transparent;
+  color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
 }
 
 .review-test-question {

@@ -36,7 +36,7 @@ export default function AppRoutes() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#0c3c61",
+          colorPrimary: "#000000",
           fontFamily: "Poppins",
         },
       }}

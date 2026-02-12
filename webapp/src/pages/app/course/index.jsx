@@ -118,6 +118,7 @@ export default function CourseDetails() {
             </div>
             <Progress
               strokeColor={"#2F8351"}
+              railColor={"#FFF"}
               percent={(100 * progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module").length) / (data?.topics?.length + data?.tests?.length)}
               className="w-full!"
               showInfo={false}

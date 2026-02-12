@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
-import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, Layout, Menu, Progress } from "antd";
+import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, Layout, Menu, Modal, Progress } from "antd";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -14,13 +14,15 @@ import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
 import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
-import { RxChevronRight, RxChevronLeft } from "react-icons/rx";
+import { RxChevronRight, RxChevronLeft, RxExclamationTriangle } from "react-icons/rx";
 
 import { Render } from "@puckeditor/core";
 import { configRender } from "../../../components/editor";
 import dayjs from "dayjs";
 import Topic from "./topic";
 import Test from "./test";
+
+const { confirm } = Modal;
 
 const { Header, Content, Sider } = Layout;
 
@@ -33,6 +35,7 @@ const Learning = () => {
   const [modules, setModules] = useState(null);
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
+  const [allowNext, setAllowNext] = useState(false);
 
   const { t, i18n } = useTranslation();
 
@@ -48,6 +51,10 @@ const Learning = () => {
   useEffect(() => {
     getData();
   }, [slug]);
+
+  useEffect(() => {
+    console.log(allowNext);
+  }, [allowNext]);
 
   useEffect(() => {
     calcProgress();
@@ -91,65 +98,120 @@ const Learning = () => {
 
   function next() {
     let auxData;
-    let moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
-    if (
-      selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
-      moduleSelectedCourseItem.items.length === progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
-    ) {
-      auxData = [
-        {
-          id_course: data.course.id,
-          id_user: user.id,
-          activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
-          id_course_topic: selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
-          id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
-          id_course_module: null,
-          is_completed: 1,
-          created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-        },
-        {
-          id_course: data.course.id,
-          id_user: user.id,
-          activity_type: "module",
-          id_course_topic: null,
-          id_course_test: null,
-          id_course_module: moduleSelectedCourseItem.id,
-          is_completed: 1,
-          created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-        },
-      ];
-    } else {
-      auxData = [
-        {
-          id_course: data.course.id,
-          id_user: user.id,
-          activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
-          id_course_topic: selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
-          id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
-          id_course_module: moduleSelectedCourseItem.id,
-          is_completed: 1,
-          created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-        },
-      ];
-    }
+    const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
+    let findInProgress = progress.filter((p) => (p.activity_type === "topic" ? p.id_course_topic === selectedCourseItem.id : p.id_course_test === selectedCourseItem.id));
+    let goToNextModule = false;
+    if (findInProgress.length === 0) {
+      if (
+        selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
+        moduleSelectedCourseItem.items.length === progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
+      ) {
+        auxData = [
+          {
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
+            id_course_topic: selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
+            id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
+            id_course_module: null,
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          },
+          {
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: "module",
+            id_course_topic: null,
+            id_course_test: null,
+            id_course_module: moduleSelectedCourseItem.id,
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          },
+        ];
 
-    axios
-      .post(endpoints.course.updateProgress, {
-        data: auxData,
-      })
-      .then((res) => {
-        console.log(res);
-        let newProgress = Object.assign([], progress);
-        newProgress = [...newProgress, ...auxData];
-        console.log(newProgress);
-        setProgress(newProgress);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+        goToNextModule = true;
+      } else {
+        auxData = [
+          {
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
+            id_course_topic: selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
+            id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
+            id_course_module: moduleSelectedCourseItem.id,
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          },
+        ];
+      }
+
+      axios
+        .post(endpoints.course.updateProgress, {
+          data: auxData,
+        })
+        .then((res) => {
+          console.log(res);
+          let newProgress = Object.assign([], progress);
+          newProgress = [...newProgress, ...auxData];
+          if (goToNextModule) {
+            const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
+            if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
+            else console.log("último módulo");
+          } else {
+            let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
+            setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem + 1]);
+          }
+          setProgress(newProgress);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      if (goToNextModule) {
+        const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
+        if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
+        else console.log("último módulo");
+      } else {
+        let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
+        setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem + 1]);
+      }
+    }
+  }
+
+  function previous() {
+    const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
+    const findIndexModule = modules.findIndex((m) => m.id === moduleSelectedCourseItem.id);
+    let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
+    if (findIndexModule === 0) {
+      if (indexOfSelectedItem > 0) {
+        setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem - 1]);
+      } else {
+        confirm({
+          title: t("Voltar para a página de curso?"),
+          icon: <RxExclamationTriangle />,
+          content: t("Como se encontra no primeiro"),
+          okText: "Yes",
+          okButtonProps: { background: "blue" },
+          onOk() {
+            navigate(`/course/${slug}`);
+          },
+          onCancel() {
+            console.log("Cancel");
+          },
+        });
+      }
+    } else {
+      if (indexOfSelectedItem === 0) {
+        console.log(modules[findIndexModule - 1].items);
+        console.log(modules[findIndexModule - 1].items.length);
+        setSelectedCourseItem(modules[findIndexModule - 1].items[modules[findIndexModule - 1].items.length - 1]);
+      } else {
+        setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem - 1]);
+      }
+    }
   }
 
   function calcProgress() {
@@ -179,12 +241,14 @@ const Learning = () => {
                   <Progress strokeColor={"#2F8351"} percent={progressPercentage} style={{ width: "500px" }} showInfo={false} />
                 </div>
                 <div className="flex justify-center items-center">
-                  <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2">
+                  <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
                     {t("Previous")}
                   </Button>
-                  <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()}>
-                    {t("Next")}
-                  </Button>
+                  {allowNext && (
+                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
+                      {t("Next")}
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -264,7 +328,7 @@ const Learning = () => {
           <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full">
             <div className="overflow-y-auto">
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "topic" && (
-                <Topic progress={progress} selectedCourseItem={selectedCourseItem} />
+                <Topic progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} />
               )}
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
                 <Test progress={progress} selectedCourseItem={selectedCourseItem} />
@@ -272,12 +336,14 @@ const Learning = () => {
             </div>
 
             <div className="p-8 flex justify-between items-center bg-[#707070]">
-              <Button icon={<RxChevronLeft />} className="button-learning-footer">
+              <Button icon={<RxChevronLeft />} type="primary" size="large" className="button-learning-footer" onClick={() => previous()}>
                 {t("Previous")}
               </Button>
-              <Button icon={<RxChevronRight />} iconPlacement="end" className="button-learning-footer" onClick={() => next()}>
-                {t("Next")}
-              </Button>
+              {allowNext && (
+                <Button icon={<RxChevronRight />} iconPlacement="end" type="primary" size="large" onClick={() => next()} disabled={!allowNext} className="button-learning-footer">
+                  {t("Next")}
+                </Button>
+              )}
             </div>
           </div>
         </Layout>
