@@ -3,8 +3,8 @@ import { Navigate } from "react-router-dom";
 import MainLayout from "../layout/main";
 
 import Main from "../pages/app";
-import Course from "../pages/app/course/eLearning";
-import CourseDetails from "../pages/app/course";
+import Course from "../pages/app/course";
+import CourseDetails from "../pages/app/course/details";
 import Learning from "../pages/app/course/eLearning";
 
 export const userRoutes = [

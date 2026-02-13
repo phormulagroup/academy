@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/extension-underline": "^3.19.0"
+  }
+}

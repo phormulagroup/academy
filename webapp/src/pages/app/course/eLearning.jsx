@@ -331,7 +331,7 @@ const Learning = () => {
                 <Topic progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} />
               )}
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
-                <Test progress={progress} selectedCourseItem={selectedCourseItem} />
+                <Test progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} />
               )}
             </div>
 

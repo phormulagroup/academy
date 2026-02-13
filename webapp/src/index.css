@@ -13,6 +13,71 @@
   color: #000000;
 }
 
+/* Container do loader */
+.ball-tailing {
+  position: relative;
+  width: var(--bt-size, 36px);
+  height: var(--bt-size, 36px);
+}
+
+/* Parametrização */
+:root {
+  /* defaults só por segurança */
+  --bt-size: 36px;
+  --bt-color: #1677ff;
+  --bt-speed: 0.9s;
+  --bt-count: 8;
+}
+
+/* Cada bolinha */
+.ball-tailing span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Diâmetro base do ponto líder ~16% do diâmetro total */
+  width: calc(var(--bt-size) * 0.16);
+  height: calc(var(--bt-size) * 0.16);
+  margin: calc(var(--bt-size) * -0.08);
+  background: var(--bt-color);
+  border-radius: 50%;
+
+  /* Orbit: o centro de rotação fica à direita para formar uma curva */
+  transform-origin: calc(var(--bt-size) * 0.45) 0;
+  /* Posiciona cada bolinha num ângulo inicial proporcional ao índice */
+  transform: rotate(calc((360deg / var(--bt-count)) * var(--i))) translateX(calc(var(--bt-size) * 0.22));
+
+  /* A sensação de "trilho" vem da escala/alpha decrescentes */
+  opacity: calc(0.25 + (0.75 * (var(--i) + 1) / var(--bt-count)));
+  /* líder (i mais alto) maior, cauda menor */
+  --scale: calc(0.6 + (0.6 * (var(--i) + 1) / var(--bt-count)));
+  /* animação com atraso, para seguir o líder */
+  animation:
+    bt-rotate var(--bt-speed) linear infinite,
+    bt-pulse calc(var(--bt-speed) * 1.25) ease-in-out infinite;
+  animation-delay: calc((var(--bt-speed) / var(--bt-count)) * (var(--bt-count) - var(--i))), calc((var(--bt-speed) / var(--bt-count)) * (var(--bt-count) - var(--i)));
+}
+
+/* Rotação contínua (faz o rastro) */
+@keyframes bt-rotate {
+  0% {
+    transform: rotate(calc((360deg / var(--bt-count)) * var(--i))) translateX(calc(var(--bt-size) * 0.22)) scale(var(--scale));
+  }
+  100% {
+    transform: rotate(calc((360deg / var(--bt-count)) * var(--i) + 360deg)) translateX(calc(var(--bt-size) * 0.22)) scale(var(--scale));
+  }
+}
+
+/* Um leve "pulso" dá vida ao líder e à cauda */
+@keyframes bt-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
 .ant-layout {
   height: 100%;
 }
@@ -21,8 +86,41 @@
   z-index: 1;
 }
 
+.menu-scroll-div {
+  overflow-y: auto;
+}
+
+.menu-scroll-div::-webkit-scrollbar {
+  width: 12px;
+}
+
+.menu-scroll-div::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background-color: #000;
+  border: 1px solid #000;
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.menu-scroll-div::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background-color: #363636;
+}
+
 .principal-menu {
-  background-color: #163986 !important;
+  background-color: #010202 !important;
+}
+
+.principal-menu .ant-menu-item .ant-menu-item-icon {
+  max-width: 20px;
+  margin-right: 6px !important;
+}
+
+.principal-menu .ant-menu-item-selected .ant-menu-item-icon {
+  filter: grayscale(100%) brightness(0);
+}
+
+.ant-menu-title-content {
+  margin-left: 0 !important;
 }
 
 .principal-menu .ant-menu-item {
@@ -48,7 +146,7 @@
 
 .principal-menu .ant-menu-item-selected {
   background-color: #fff !important;
-  color: #163986 !important;
+  color: #000 !important;
 }
 
 .principal-menu .ant-menu-item-selected .icon {
@@ -271,6 +369,29 @@ select {
 .test.form-item .ant-checkbox:hover .ant-checkbox-inner {
   background-color: transparent !important;
   border-color: #00b9d6 !important;
+}
+
+.radio-image {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-start-start-radius: 0 !important;
+  border-end-start-radius: 0 !important;
+  border-start-end-radius: 0 !important;
+  border-end-end-radius: 0 !important;
+}
+
+.radio-image span {
+  min-height: 60px !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.radio-image.ant-radio-button-wrapper-checked {
+  background: rgba(6, 24, 72, 0.2) !important;
 }
 
 @import "tailwindcss";

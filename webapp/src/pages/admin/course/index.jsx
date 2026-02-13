@@ -34,16 +34,20 @@ export default function Course() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getData();
-  }, []);
+    if (user) getData();
+  }, [user]);
 
   function getData() {
     setIsLoading(true);
+    console.log(user);
     axios
-      .get(endpoints.course.read)
+      .get(endpoints.course.read, {
+        params: { id_user: user.id },
+      })
       .then((res) => {
-        setData(res.data);
-        prepareData(res.data);
+        console.log(res.data);
+        setData(res.data.courses);
+        prepareData(res.data.courses);
         setIsLoading(false);
       })
       .catch((err) => {

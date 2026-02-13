@@ -2,71 +2,41 @@ import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 
-import { Context } from "../../../utils/context";
+import { Context } from "../../../../utils/context";
 
-import endpoints from "../../../utils/endpoints";
+import endpoints from "../../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { Button, Empty, Form, Input, InputNumber, Switch, Tabs } from "antd";
-import Constructor from "./constructor";
+import Constructor from "../constructor";
 import { useParams } from "react-router-dom";
-import Settings from "./settings";
+import Settings from "../settings";
+import { RxTrash } from "react-icons/rx";
 
-export default function Test() {
+export default function Question({ data }) {
   const { user, update } = useContext(Context);
-  const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState(null);
 
   const { t } = useTranslation();
-  let { id, idTest } = useParams();
 
   const [form] = Form.useForm();
 
   useEffect(() => {
-    getData();
-  }, []);
-
-  function getData() {
-    setIsLoading(true);
-    axios
-      .get(endpoints.course.readByTestId, {
-        params: { idTest },
-      })
-      .then((res) => {
-        if (res.data && res.data.length > 0) {
-          res.data[0].question = res.data[0].question ? JSON.parse(res.data[0].question) : [];
-          console.log(res.data[0]);
-          form.setFieldsValue(res.data[0]);
-          setData(res.data[0]);
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setIsLoading(false);
-      });
-  }
+    if (data) form.setFieldsValue(data);
+  }, [data]);
 
   async function submit(values) {
     try {
       if (values.question) values.question = JSON.stringify(values.question);
       const res = await update({ table: "test", data: values });
-      console.log(res);
     } catch (err) {
       console.log(err);
     }
   }
 
   return (
-    <div className="p-2">
-      <div className="flex justify-between items-center mb-4">
+    <div>
+      <div className="mb-4">
         <div>
-          <p className="text-sm">
-            {t("Course")} | {data?.course_name}
-          </p>
-          <p className="text-xl font-bold mt-4">{data?.title}</p>
-        </div>
-        <div>
-          <Button onClick={form.submit}>Save</Button>
+          <Button onClick={form.submit}>{t("Save")}</Button>
         </div>
       </div>
       <Form form={form} onFinish={submit}>
@@ -86,10 +56,15 @@ export default function Test() {
           {(fields, { add, remove, move }) => (
             <div>
               {fields.map((field) => (
-                <div className={`p-6 flex flex-col bg-[#FFF]`}>
-                  <p className="mb-4 font-bold">
-                    {t("Question nº ")} {field.name + 1}
-                  </p>
+                <div className={`p-6 flex flex-col bg-[#FFF] mb-4`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="font-bold">
+                      {t("Question nº ")} {field.name + 1}
+                    </p>
+                    <Button icon={<RxTrash />} onClick={() => remove(field.name)}>
+                      {t("Delete")}
+                    </Button>
+                  </div>
                   <Form.Item name={[field.name, "title"]}>
                     <Input size="large" />
                   </Form.Item>

@@ -12,12 +12,19 @@ import dayjs from "dayjs";
 import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
+import logo from "../../assets/BIAL-Regional-Academy.svg";
+import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
+import bgLogin from "../../assets/Background-login.png";
+
+import { useTranslation } from "react-i18next";
+
 export default function Login() {
   const { isLoggedIn, login, messageApi, microsoftLogin, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
+  const { t } = useTranslation();
 
   function submit(values, type) {
     setIsButtonLoading(true);
@@ -47,47 +54,60 @@ export default function Login() {
   }
 
   return (
-    <div className={`flex flex-col justify-between w-full h-full bg-cover bg-center bg-[#F1F9FF]`}>
+    <div className={`flex flex-col justify-between w-full h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full">
         <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)]">
-          <div className="bg-[#B1BDD7] p-6 flex justify-center items-center rounded-t-[5px]">
-            <img src={logoPhormula} alt="Phormula Logo" className="max-w-75 h-auto mx-auto" />
-          </div>
           <div className="flex flex-col p-6">
-            <p className="text-center text-[#707070] text-[14px] mb-6">
+            <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <p className="text-center text-[14px] mb-6">
               Bem vind@ à <b>BIAL Regional Academy</b>,
               <br /> a plataforma de e-learning!
             </p>
             <Form form={form} layout="vertical" onFinish={submit}>
-              <p className="pb-2 text-center text-[#163986] text-[14px]">E-mail</p>
+              <p className="pb-2 text-center text-[14px]">E-mail</p>
               <Form.Item name="email" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
                 <Input size="large" placeholder="nome.apelido@phormulagroup.com" />
               </Form.Item>
-              <p className="pb-2 text-center text-[#163986] text-[14px]">Password</p>
+              <p className="pb-2 text-center text-[14px]">Password</p>
               <Form.Item name="password" rules={[{ required: true, message: "Este campo é obrigatório" }]} className="mb-2!">
                 <Input.Password size="large" placeholder="●●●●●●●" />
               </Form.Item>
               <div className="flex justify-between mb-4">
                 <Form.Item name="remember" valuePropName="checked" className="mb-0!">
                   <Checkbox size="large">
-                    <p className="text-[#B1BDD7] text-[12px]">Lembrar-me</p>
+                    <p className="text-[#707070] text-[12px]">Lembrar-me</p>
                   </Checkbox>
                 </Form.Item>
                 <div className="flex justify-end items-center">
-                  <p className="text-[#B1BDD7] text-[12px]">
+                  <p className="text-[12px]">
                     <u>Esqueceu-se da password?</u>
                   </p>
                 </div>
               </div>
               <Button htmlType="submit" type="primary" size="large" className="w-full" loading={isButtonLoading}>
-                Login
+                {t("Login")}
               </Button>
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
-              Caso esteja com problemas de acesso por favor entre em contacto com o nosso <u>suporte help@bial-academy.pt</u>
+              Caso esteja com problemas de acesso por favor entre em contacto com o nosso suporte <u className="text-black">help@bial-academy.pt</u>
             </p>
           </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="p-4 flex justify-center items-center">
+          <img src={logoBialFooter} className="max-w-[180px]" />
+        </div>
+        <div className="flex flex-col justify-center items-center p-4">
+          <div className="flex gap-4">
+            <p className="text-[14px] text-center">Formulário de contacto</p>
+            <span className="text-[14px] text-center">|</span>
+            <p className="text-[14px] text-center">Termos e condições</p>
+            <span className="text-[14px] text-center">|</span>
+            <p className="text-[14px] text-center">Política de Privacidade</p>
+          </div>
+          <p className="text-[14px] mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
         </div>
       </div>
     </div>

@@ -23,24 +23,7 @@ export default function Main() {
   return (
     <div className="p-2">
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex justify-between items-center p-4 bg-[#FFF] rounded-md shadow-md col-span-2">
-          <div className="flex justify-center items-center">
-            <Avatar className="w-20! h-20!" icon={<FaRegUser className="w-10! h-10!" />} />
-            <div className="ml-4">
-              <p>Olá,</p>
-              <p className="text-[18px] font-semibold">{user.name}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-2">
-          {courses.map((item) => (
-            <div>
-              <p>{item.name}</p>
-              <Button onClick={() => navigate(`/course/${item.slug}`)}></Button>
-            </div>
-          ))}
-        </div>
+        <div className="col-span-2"></div>
       </div>
     </div>
   );

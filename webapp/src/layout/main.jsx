@@ -3,7 +3,7 @@ import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlin
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import logoPhormula from "../assets/logo-phormula.svg";
+import logo from "../assets/BIAL-Regional-Academy.svg";
 
 import endpoints from "../utils/endpoints";
 import config from "../utils/config";
@@ -81,10 +81,14 @@ const Main = () => {
   return (
     <Layout>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
-      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center">
-        <div className="flex justify-end items-center">
-          {windowDimension.width > 1080 ? (
-            <div className="flex justify-center items-center">
+      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-[100px] h-full!">
+        {windowDimension.width > 1080 ? (
+          <div className="flex justify-between items-center w-full container mx-auto">
+            <img src={logo} className="max-h-[60px]" />
+            <div>
+              <p>cenas</p>
+            </div>
+            <div className="flex items-center">
               <Dropdown
                 menu={{
                   items: languages.map((item) => ({
@@ -107,10 +111,10 @@ const Main = () => {
               <Avatar icon={<FaRegUser />} />
               <p className="text-[12px] ml-2">{user.name}</p>
             </div>
-          ) : (
-            <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
-          )}
-        </div>
+          </div>
+        ) : (
+          <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+        )}
       </Header>
       <div className="h-[calc(100vh-64px)] overflow-auto bg-white">
         <Outlet />

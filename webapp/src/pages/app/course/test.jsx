@@ -6,7 +6,7 @@ import { Button, Checkbox, Form, Input, Progress, Radio } from "antd";
 import { AiFillCheckCircle, AiOutlineArrowLeft, AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxFile, RxFileText, RxReload } from "react-icons/rx";
 
-const Test = ({ selectedCourseItem, progress, progressPercentage }) => {
+const Test = ({ selectedCourseItem, progress, progressPercentage, setAllowNext }) => {
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
@@ -23,6 +23,7 @@ const Test = ({ selectedCourseItem, progress, progressPercentage }) => {
   const timerRef = useRef(null);
 
   useEffect(() => {
+    setAllowNext(false);
     if (selectedCourseItem.type === "test") prepareData();
   }, [selectedCourseItem]);
 

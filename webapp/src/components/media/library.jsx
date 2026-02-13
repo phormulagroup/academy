@@ -78,15 +78,15 @@ function Library({ mediaKey, option, close }) {
       <div>
         {data.length > 0 ? (
           <Form form={form} onFinish={handleSubmit} onValuesChange={handleSearch}>
-            <Form.Item name="search">
+            <Form.Item name="search" className="mt-4!">
               <Input size="large" placeholder="Procure aqui pelo nome da imagem..." prefix={<SearchOutlined />} allowClear />
             </Form.Item>
             <Form.Item name={mediaKey}>
-              <Radio.Group buttonStyle="solid">
+              <Radio.Group buttonStyle="solid" className="grid! grid-cols-4 gap-4">
                 {filteredData.slice(minValue, maxValue).map((item) => {
                   return (
                     <Radio.Button value={item.name} className="radio-image">
-                      <div className="flex flex-col justify-center items-center h-full">
+                      <div className="flex flex-col justify-center items-center h-full w-full p-2 rounded-none!">
                         {item.name.split(".")[1] === "pdf" ? (
                           <Tooltip placement="bottom" title={item.name}>
                             <FaFilePdf className="text-[40px]" />

@@ -55,10 +55,10 @@ const ContextProvider = ({ children }) => {
     }
   }
 
-  async function getCourses() {
+  async function getCourses(auxUser) {
     try {
-      const res = await axios.get(endpoints.course.read);
-      setCourses(res.data);
+      const res = await axios.get(endpoints.course.read, { params: { id_user: auxUser ? auxUser.id : user.id } });
+      setCourses(res.data.courses);
     } catch (err) {
       console.log(err);
     }
@@ -70,22 +70,22 @@ const ContextProvider = ({ children }) => {
       try {
         const res = await axios.post(endpoints.auth.verifyToken, { data: token });
         login({ user: res.data.user, token: token });
-        getCourses();
+        getCourses(res.data.user);
         setTimeout(() => {
           setIsLoading(false);
-        }, 1500);
+        }, 3000);
       } catch (err) {
         console.log(err);
         setIsLoggedIn(false);
         navigate("/login");
         setTimeout(() => {
           setIsLoading(false);
-        }, 1500);
+        }, 3000);
       }
     } else {
       setTimeout(() => {
         setIsLoading(false);
-      }, 1500);
+      }, 3000);
     }
   }
 

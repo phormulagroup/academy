@@ -1,19 +1,36 @@
 import React, { useContext, useEffect, useState } from "react";
-import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
+import { CloseOutlined, LoginOutlined, MenuOutlined } from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
-import logoPhormula from "../assets/logo-phormula.svg";
-
-import endpoints from "../utils/endpoints";
-import config from "../utils/config";
-
-import { Context } from "../utils/context";
-
-import Logout from "../components/logout";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
+
+import { Context } from "../utils/context";
+import Logout from "../components/logout";
+
+import logo from "../assets/BIAL-Regional-Academy.svg";
+import PagesIcon from "../assets/Backoffice/Menu/Paginas.svg?react";
+import ArticlesIcon from "../assets/Backoffice/Menu/Artigos.svg?react";
+import MenusIcon from "../assets/Backoffice/Menu/Menus.svg?react";
+import MediaIcon from "../assets/Backoffice/Menu/Multimedia.svg?react";
+import PersonalizationIcon from "../assets/Backoffice/Menu/Personalizacao.svg?react";
+import LangIcon from "../assets/Backoffice/Menu/Traducoes.svg?react";
+import SettingsIcon from "../assets/Backoffice/Menu/Definicoes.svg?react";
+import CourseIcon from "../assets/Backoffice/Menu/Cursos.svg?react";
+import TestsIcon from "../assets/Backoffice/Menu/Testes.svg?react";
+import CertificatesIcon from "../assets/Backoffice/Menu/Certificados.svg?react";
+import ReportsIcon from "../assets/Backoffice/Menu/Relatorios.svg?react";
+import OrdersIcon from "../assets/Backoffice/Menu/Encomendas.svg?react";
+import UsersIcon from "../assets/Backoffice/Menu/Utilizadores.svg?react";
+import PermissionsIcon from "../assets/Backoffice/Menu/Permissoes.svg?react";
+import AccountIcon from "../assets/Backoffice/Menu/Conta.svg?react";
+import FormsIcon from "../assets/Backoffice/Menu/Formularios.svg?react";
+import AnswersIcon from "../assets/Backoffice/Menu/Respostas.svg?react";
+import TemplatesIcon from "../assets/Backoffice/Menu/Templates.svg?react";
+import SMTPIcon from "../assets/Backoffice/Menu/SMTP.svg?react";
+import APIsIcon from "../assets/Backoffice/Menu/APIS.svg?react";
+import { RxFile } from "react-icons/rx";
 
 const { Header, Content, Sider } = Layout;
 
@@ -37,13 +54,13 @@ const Main = () => {
       label: "Website",
       type: "group",
       children: [
-        { key: "/admin/pages", label: "Pages" },
-        { key: "/admin/articles", label: "Articles" },
-        { key: "/admin/menus", label: "Menus" },
-        { key: "/admin/media", label: "Multimedia" },
-        { key: "/admin/personalization", label: "Personalization" },
-        { key: "/admin/languages", label: t("Languages") },
-        { key: "/admin/settings", label: "Settings" },
+        { key: "/admin/pages", label: t("Pages"), icon: <PagesIcon /> },
+        { key: "/admin/articles", label: t("Articles"), icon: <ArticlesIcon /> },
+        { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
+        { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
+        { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
+        { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
+        { key: "/admin/settings", label: t("Settings"), icon: <SettingsIcon /> },
       ],
     },
     {
@@ -51,11 +68,11 @@ const Main = () => {
       label: "e-Learning",
       type: "group",
       children: [
-        { key: "/admin/courses", label: "Courses" },
-        { key: "/admin/quizzes", label: "Quizzes" },
-        { key: "/admin/certificates", label: "Certificates" },
-        { key: "/admin/reports", label: "Reports" },
-        { key: "/admin/orders", label: "Orders" },
+        { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
+        { key: "/admin/quizzes", label: t("Quizzes"), icon: <TestsIcon /> },
+        { key: "/admin/certificates", label: t("Certificates"), icon: <CertificatesIcon /> },
+        { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
+        { key: "/admin/orders", label: t("Orders"), icon: <OrdersIcon /> },
       ],
     },
     {
@@ -63,9 +80,9 @@ const Main = () => {
       label: "Gestão",
       type: "group",
       children: [
-        { key: "/admin/users", label: "Users" },
-        { key: "/admin/permissions", label: "Permissions" },
-        { key: "/admin/account", label: "My Account" },
+        { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
+        { key: "/admin/permissions", label: t("Permissions"), icon: <PermissionsIcon /> },
+        { key: "/admin/account", label: t("My Account"), icon: <AccountIcon /> },
       ],
     },
     {
@@ -73,8 +90,8 @@ const Main = () => {
       label: "Gestão",
       type: "group",
       children: [
-        { key: "/admin/forms", label: "Forms" },
-        { key: "/admin/answers", label: "Answers" },
+        { key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
+        { key: "/admin/answers", label: t("Answers"), icon: <AnswersIcon /> },
       ],
     },
     {
@@ -82,15 +99,15 @@ const Main = () => {
       label: "E-mail",
       type: "group",
       children: [
-        { key: "/admin/templates", label: "Templates" },
-        { key: "/admin/smtp", label: "SMTP" },
+        { key: "/admin/templates", label: t("Templates"), icon: <TemplatesIcon /> },
+        { key: "/admin/smtp", label: t("SMTP"), icon: <SMTPIcon /> },
       ],
     },
     {
       key: "grp-option",
       label: "Opções",
       type: "group",
-      children: [{ key: "/admin/apis", label: "APIS" }],
+      children: [{ key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> }],
     },
   ]);
 
@@ -147,10 +164,10 @@ const Main = () => {
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Layout>
         {windowDimension.width > 1080 ? (
-          <Sider width={250} className="bg-[#163986]! overflow-auto">
-            <div className="flex flex-col justify-between h-full p-4">
-              <div className="flex flex-col items-center w-full">
-                <img src={logoPhormula} alt="PhormulaShare Logo" className="w-45 mb-2" style={{ filter: "brightness(0) invert(1)" }} />
+          <Sider width={250} className="bg-[#010202]! overflow-auto">
+            <div className="flex flex-col justify-between items-start h-full p-4">
+              <img src={logo} alt="Bial Academy Logo" className="max-h-[70px] mb-2 pl-[16px]" style={{ filter: "brightness(0) invert(1)" }} />
+              <div className="flex flex-col items-center justify-start w-full menu-scroll-div">
                 <div className="mt-2.5 w-full">
                   <Menu data-tour-id="menu" className="principal-menu" selectedKeys={[current]} mode="inline" items={items} onClick={handleClickMenu} />
                 </div>
