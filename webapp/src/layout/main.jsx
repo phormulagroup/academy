@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../assets/BIAL-Regional-Academy.svg";
 
@@ -86,7 +86,7 @@ const Main = () => {
           <div className="flex justify-between items-center w-full container mx-auto">
             <img src={logo} className="max-h-[60px]" />
             <div>
-              <p>cenas</p>
+              <Link to="/courses">Cursos</Link>
             </div>
             <div className="flex items-center">
               <Dropdown

@@ -18,6 +18,7 @@ const userRouter = require("./routes/user");
 const courseRouter = require("./routes/course");
 const importRouter = require("./routes/import");
 const languageRouter = require("./routes/language");
+const roleRouter = require("./routes/role");
 const mediaRouter = require("./routes/media");
 
 require("dotenv").config();
@@ -74,6 +75,7 @@ app.use("/logs", middleware, logsRouter);
 app.use("/user", middleware, userRouter);
 app.use("/course", middleware, courseRouter);
 app.use("/language", languageRouter);
+app.use("/role", middleware, roleRouter);
 app.use("/media", mediaRouter);
 app.use("/import", middleware, importRouter);
 

@@ -63,11 +63,11 @@ export default function Course() {
         ...array[i],
         key: i + 1,
         is_deleted: array[i].is_deleted ? (
-          <Tag variant="outlined" color={"red"}>
+          <Tag variant="outlined" color={"#F04C4B"}>
             Inativo
           </Tag>
         ) : (
-          <Tag variant="outlined" color={"green"}>
+          <Tag variant="outlined" color={"#06D186"}>
             Ativo
           </Tag>
         ),

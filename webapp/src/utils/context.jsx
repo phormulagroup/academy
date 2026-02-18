@@ -18,6 +18,7 @@ const ContextProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingLanguage, setIsLoadingLanguage] = useState(false);
   const [user, setUser] = useState({});
+  const [roles, setRoles] = useState([]);
   const [courses, setCourses] = useState([]);
   const [languages, setLanguages] = useState([]);
   const { t } = useTranslation();
@@ -93,6 +94,8 @@ const ContextProvider = ({ children }) => {
     try {
       const coursesList = await axios.get(endpoints.user.read, { headers: { Authorization: token } });
       setCourses(coursesList.data);
+      const rolesList = await axios.get(endpoints.role.read, { headers: { Authorization: token } });
+      setRoles(rolesList.data);
     } catch (err) {
       console.log(err);
     }
@@ -227,6 +230,8 @@ const ContextProvider = ({ children }) => {
         isLoadingLanguage,
         setIsLoadingLanguage,
         t,
+        roles,
+        setRoles,
       }}
     >
       {contextHolder}

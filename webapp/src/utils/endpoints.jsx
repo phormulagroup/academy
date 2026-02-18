@@ -25,6 +25,12 @@ const endpoints = {
     delete: "/user/delete",
     generatePassword: "/user/generatePassword",
   },
+  role: {
+    read: "/role/read",
+    update: "/role/update",
+    create: "/role/create",
+    delete: "/role/delete",
+  },
   course: {
     read: "/course/read",
     readById: "/course/readById",

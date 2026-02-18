@@ -13,13 +13,6 @@
   color: #000000;
 }
 
-/* Container do loader */
-.ball-tailing {
-  position: relative;
-  width: var(--bt-size, 36px);
-  height: var(--bt-size, 36px);
-}
-
 /* Parametrização */
 :root {
   /* defaults só por segurança */
@@ -29,53 +22,18 @@
   --bt-count: 8;
 }
 
-/* Cada bolinha */
-.ball-tailing span {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  /* Diâmetro base do ponto líder ~16% do diâmetro total */
-  width: calc(var(--bt-size) * 0.16);
-  height: calc(var(--bt-size) * 0.16);
-  margin: calc(var(--bt-size) * -0.08);
-  background: var(--bt-color);
-  border-radius: 50%;
-
-  /* Orbit: o centro de rotação fica à direita para formar uma curva */
-  transform-origin: calc(var(--bt-size) * 0.45) 0;
-  /* Posiciona cada bolinha num ângulo inicial proporcional ao índice */
-  transform: rotate(calc((360deg / var(--bt-count)) * var(--i))) translateX(calc(var(--bt-size) * 0.22));
-
-  /* A sensação de "trilho" vem da escala/alpha decrescentes */
-  opacity: calc(0.25 + (0.75 * (var(--i) + 1) / var(--bt-count)));
-  /* líder (i mais alto) maior, cauda menor */
-  --scale: calc(0.6 + (0.6 * (var(--i) + 1) / var(--bt-count)));
-  /* animação com atraso, para seguir o líder */
-  animation:
-    bt-rotate var(--bt-speed) linear infinite,
-    bt-pulse calc(var(--bt-speed) * 1.25) ease-in-out infinite;
-  animation-delay: calc((var(--bt-speed) / var(--bt-count)) * (var(--bt-count) - var(--i))), calc((var(--bt-speed) / var(--bt-count)) * (var(--bt-count) - var(--i)));
+input,
+select,
+.ant-input-password,
+.ant-picker,
+.ant-select {
+  border-radius: 0 !important;
 }
 
-/* Rotação contínua (faz o rastro) */
-@keyframes bt-rotate {
-  0% {
-    transform: rotate(calc((360deg / var(--bt-count)) * var(--i))) translateX(calc(var(--bt-size) * 0.22)) scale(var(--scale));
-  }
-  100% {
-    transform: rotate(calc((360deg / var(--bt-count)) * var(--i) + 360deg)) translateX(calc(var(--bt-size) * 0.22)) scale(var(--scale));
-  }
-}
-
-/* Um leve "pulso" dá vida ao líder e à cauda */
-@keyframes bt-pulse {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.15);
-  }
+.auth-form .ant-form-item-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .ant-layout {

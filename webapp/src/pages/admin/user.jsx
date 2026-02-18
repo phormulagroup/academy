@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown } from "antd";
+import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -53,7 +53,20 @@ export default function User() {
       aux.push({
         ...array[i],
         key: array[i].id,
-        department_name: array[i].department_name,
+        status_tag:
+          array[i].status === "approved" ? (
+            <Tag variant="outlined" color={"#06D186"}>
+              {array[i].status}
+            </Tag>
+          ) : array[i].status === "denied" ? (
+            <Tag variant="outlined" color={"#F04C4B"}>
+              {array[i].status}
+            </Tag>
+          ) : array[i].status === "pending" ? (
+            <Tag variant="outlined" color={"#FF963B"}>
+              {array[i].status}
+            </Tag>
+          ) : null,
         actions: (
           <div className="flex justify-end items-center">
             <Dropdown
@@ -161,19 +174,6 @@ export default function User() {
             search: "email",
           },
           {
-            title: "Departamento",
-            dataIndex: "department_name",
-            key: "department_name",
-            sort: true,
-            sortType: "text",
-            filters:
-              tableData.filter((item) => item.department_name).length > 0
-                ? tableData
-                    .map((item, index) => (item.department_name ? { text: item.department_name, value: item.department_name } : {}))
-                    .filter((value, index, self) => (value.text ? index === self.findIndex((t) => t.value === value.text) : null))
-                : null,
-          },
-          {
             title: "Papel",
             dataIndex: "role_name",
             key: "role_name",
@@ -183,6 +183,19 @@ export default function User() {
               tableData.filter((item) => item.role_name).length > 0
                 ? tableData
                     .map((item, index) => (item.role_name ? { text: item.role_name, value: item.role_name } : {}))
+                    .filter((value, index, self) => (value.text ? index === self.findIndex((t) => t.value === value.text) : null))
+                : null,
+          },
+          {
+            title: "Status",
+            dataIndex: "status_tag",
+            key: "status_tag",
+            sort: true,
+            sortType: "text",
+            filters:
+              tableData.filter((item) => item.status).length > 0
+                ? tableData
+                    .map((item, index) => (item.status ? { text: item.status, value: item.status } : {}))
                     .filter((value, index, self) => (value.text ? index === self.findIndex((t) => t.value === value.text) : null))
                 : null,
           },

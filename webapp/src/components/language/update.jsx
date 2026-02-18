@@ -76,7 +76,7 @@ export default function Update({ data, open, close, submit }) {
             placeholder="Selecione..."
             onChange={(e) => form.setFieldValue("flag", languageOptions.filter((i) => i.name === e)[0].flag)}
             showSearch={{
-              optionFilterProp: ["label"],
+              optionFilterProp: "label",
             }}
             options={languageOptions.map((o) => ({
               label: (

@@ -5,7 +5,7 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { Context } from "../../utils/context";
 
 export default function Create({ open, close, submit }) {
-  const { create, companies, roles } = useContext(Context);
+  const { create, roles } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const inputRef = useRef(null);
@@ -59,15 +59,6 @@ export default function Create({ open, close, submit }) {
         </Form.Item>
         <Form.Item name="id_role" label="Role" rules={[{ required: true }]}>
           <Select size="large" placeholder="Role..." allowClear options={roles.map((item) => ({ label: item.name, value: item.id }))} />
-        </Form.Item>
-        <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.id_role !== currentValues.id_role}>
-          {({ getFieldValue }) =>
-            getFieldValue("id_role") !== 1 ? (
-              <Form.Item name="id_department" label="Departamento" rules={[{ required: true }]}>
-                <Select size="large" placeholder="Departamento..." allowClear options={companies.map((item) => ({ label: item.name, value: item.id }))} />
-              </Form.Item>
-            ) : null
-          }
         </Form.Item>
       </Form>
     </Drawer>

@@ -63,21 +63,27 @@ export default function CourseDetails() {
   }
 
   function calcProgress(items) {
-    console.log(items);
     if (items && items.length > 0) {
       let completed = (progress ?? []).filter((p) => p.is_completed === 1 && items[0].id_course_module === p.id_course_module && p.activity_type !== "module").length;
 
       let progressPercentage = (100 * completed) / items.length;
+      const isInteger = progressPercentage % 1 === 0;
       return (
         <p className="text-white">
           <span className="font-bold uppercase">
-            {progressPercentage}% {t("Completed")}
-          </span>
+            {!isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage}% {t("Completed")}
+          </span>{" "}
           | {completed}/{items.length} {t("Steps")}
         </p>
       );
     }
     return <p></p>;
+  }
+
+  function calcCourseProgress(a, b, c) {
+    let progressPercentage = (100 * a) / (b + c);
+    const isInteger = progressPercentage % 1 === 0;
+    return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;
   }
 
   return (
@@ -110,7 +116,8 @@ export default function CourseDetails() {
           <div className="p-2 pl-6 border-l border-l-white flex flex-col w-full">
             <div className="flex justify-between items-center mb-2">
               <p className="text-white text-[20px] font-bold uppercase">
-                {(100 * progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module").length) / (data?.topics?.length + data?.tests?.length)}% {t("Completed")}
+                {calcCourseProgress(progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module").length, data?.topics?.length, data?.tests?.length)}%{" "}
+                {t("Completed")}
               </p>
               <p className="text-white text-[16px]">
                 {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}

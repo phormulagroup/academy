@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Footer } from "antd/es/layout/layout";
 import { Button, Checkbox, Divider, Form, Input, message } from "antd";
 import { FaChevronRight } from "react-icons/fa";
@@ -63,7 +63,7 @@ export default function Login() {
               Bem vind@ à <b>BIAL Regional Academy</b>,
               <br /> a plataforma de e-learning!
             </p>
-            <Form form={form} layout="vertical" onFinish={submit}>
+            <Form form={form} layout="vertical" onFinish={submit} className="auth-form">
               <p className="pb-2 text-center text-[14px]">E-mail</p>
               <Form.Item name="email" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
                 <Input size="large" placeholder="nome.apelido@phormulagroup.com" />
@@ -87,6 +87,11 @@ export default function Login() {
               <Button htmlType="submit" type="primary" size="large" className="w-full" loading={isButtonLoading}>
                 {t("Login")}
               </Button>
+              <p className="text-center mt-4">
+                <Link to="/register" className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
+                  « Registar
+                </Link>
+              </p>
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
