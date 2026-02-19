@@ -107,4 +107,23 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
+router.post("/register", async (req, res, next) => {
+  console.log("///// REGISTER /////");
+  try {
+    const query = util.promisify(db.query).bind(db);
+    let data = req.body.data;
+    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+    if (user.length > 0) {
+      res.send({ message: "This e-mail already exists in our database!" });
+    } else {
+      data.password = await bcrypt.hash(data.password, saltRounds);
+      const insertedRow = await query("INSERT INTO user SET ?", data);
+      res.send(insertedRow);
+    }
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+});
+
 module.exports = router;

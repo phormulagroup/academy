@@ -14,8 +14,8 @@ export const userRoutes = [
       { path: "/login", element: <Navigate to="/" replace /> },
       { path: "/", element: <Main /> },
       { path: "/courses", element: <Course /> },
-      { path: "/course/:slug", element: <CourseDetails /> },
+      { path: "/courses/:slug", element: <CourseDetails /> },
     ],
   },
-  { path: "/course/:slug/learning", element: <Learning /> },
+  { path: "/courses/:slug/learning", element: <Learning /> },
 ];

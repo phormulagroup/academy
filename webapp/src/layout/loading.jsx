@@ -11,11 +11,11 @@ const Loading = () => {
 
   return (
     <div className={`flex flex-col justify-center items-center w-full h-full bg-cover bg-center`}>
-      <div className="max-w-[600px] h-[75%]">
+      <div className="max-w-150 h-[75%]">
         <Lottie animationData={bialLogoAnimation} loop={true} />
       </div>
-      <div className="max-h-[40px]!">
-        <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-[120px]" />
+      <div className="max-h-10!">
+        <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
       </div>
     </div>
   );

@@ -196,7 +196,7 @@ const Learning = () => {
           okText: "Yes",
           okButtonProps: { background: "blue" },
           onOk() {
-            navigate(`/course/${slug}`);
+            navigate(`/courses/${slug}`);
           },
           onCancel() {
             console.log("Cancel");

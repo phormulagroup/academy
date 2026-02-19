@@ -132,7 +132,7 @@ export default function CourseDetails() {
             />
           </div>
           <div className="p-2">
-            <Button className="min-w-50" onClick={() => navigate(`/course/${slug}/learning`)}>
+            <Button className="min-w-50" onClick={() => navigate(`/courses/${slug}/learning`)}>
               {t("Enter")}
             </Button>
           </div>

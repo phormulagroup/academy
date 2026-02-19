@@ -33,12 +33,23 @@ export default function Login() {
       .then((res) => {
         console.log(res);
         if (res.data.user) {
-          login({ user: res.data.user, token: res.data.token });
-          //createLog({ id_user: res.data.user.id, action: "login" });
-          messageApi.open({
-            type: "success",
-            content: res.data.message,
-          });
+          if (res.data.user.status === "approved") {
+            login({ user: res.data.user, token: res.data.token });
+            //createLog({ id_user: res.data.user.id, action: "login" });
+            messageApi.open({
+              type: "success",
+              content: res.data.message,
+            });
+          } else if (res.data.user.status === "pending")
+            messageApi.open({
+              type: "warning",
+              content: t("This user is still pending on approval. You'll need to wait until we approved you registration."),
+            });
+          else if (res.data.user.status === "denied")
+            messageApi.open({
+              type: "error",
+              content: t("This user was denied from our administration. If you have some complaints contact us through email"),
+            });
         } else {
           messageApi.open({
             type: "error",
@@ -102,7 +113,7 @@ export default function Login() {
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 flex justify-center items-center">
-          <img src={logoBialFooter} className="max-w-[180px]" />
+          <img src={logoBialFooter} className="max-w-45" />
         </div>
         <div className="flex flex-col justify-center items-center p-4">
           <div className="flex gap-4">

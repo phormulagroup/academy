@@ -1,4 +1,5 @@
 import { useEditorState } from "@tiptap/react";
+import React from "react";
 
 import { menuBarStateSelector } from "./menuBarState.jsx";
 

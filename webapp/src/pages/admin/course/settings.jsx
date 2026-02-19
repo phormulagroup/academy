@@ -28,7 +28,11 @@ export default function Settings({ course }) {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (course) form.setFieldsValue(course);
+    if (course) {
+      course.objection = course.objection ? (typeof course.objection === "string" ? JSON.parse(course.objection) : course.objection) : null;
+      course.material = course.material ? (typeof course.material === "string" ? JSON.parse(course.material) : course.material) : null;
+      form.setFieldsValue(course);
+    }
   }, [course]);
 
   function openMedia(k, i) {
@@ -50,7 +54,10 @@ export default function Settings({ course }) {
   }
 
   async function save(values) {
+    console.log(values);
     try {
+      values.objection = values.objection ? JSON.stringify(values.objection) : null;
+      values.material = values.material ? JSON.stringify(values.material) : null;
       const res = await axios.post(endpoints.course.update, {
         data: values,
       });
@@ -130,29 +137,29 @@ export default function Settings({ course }) {
             </div>
           </div>
           <Divider />
-          <p>{t("Course materials")}</p>
+          <p className="text-[18px] font-bold mb-4">{t("Course material")}</p>
           <div>
-            <Form.List name="materials">
+            <Form.List name="material">
               {(fields, { add, remove, move }) => (
                 <div className="grid grid-cols-4 gap-8 mt-4">
                   {fields.map((field) => (
                     <div>
-                      <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.materials !== currentValues.materials}>
+                      <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.material !== currentValues.material}>
                         {({ getFieldValue }) => {
-                          console.log(getFieldValue("materials"));
+                          console.log(getFieldValue("material"));
                           return (
                             <div className="relative">
                               <div
                                 className="relative border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                                onClick={() => openMedia("materials", field.name)}
+                                onClick={() => openMedia("material", field.name)}
                                 style={{
-                                  backgroundImage: `url(${config.server_ip}/media/${getFieldValue("materials")[field.name]?.file})`,
+                                  backgroundImage: `url(${config.server_ip}/media/${getFieldValue("material")[field.name]?.file})`,
                                   backgroundSize: "contain",
                                   backgroundRepeat: "no-repeat",
                                   backgroundPosition: "center",
                                 }}
                               >
-                                {!getFieldValue("materials")[field.name]?.file ? (
+                                {!getFieldValue("material")[field.name]?.file ? (
                                   <div className="flex justify-center items-center flex-col p-10">
                                     <AiOutlineFile className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Select file")}</p>
                                   </div>
@@ -162,7 +169,7 @@ export default function Settings({ course }) {
                               <Form.Item name={[field.name, "file"]} hidden>
                                 <Input />
                               </Form.Item>
-                              <div className="absolute top-[-5px] right-0 w-[20px] h-[20px] z-999">
+                              <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                 <Button onClick={() => remove(field.name)} icon={<RxTrash />}></Button>
                               </div>
                             </div>
@@ -182,29 +189,11 @@ export default function Settings({ course }) {
             </Form.List>
           </div>
           <Divider />
-          <p>{t("Objection book")}</p>
-          <Form.Item
-            name={"content"}
-            className="mb-0!"
-            label={t("Description")}
-            ules={[
-              { required: true, message: "Conteúdo é obrigatório" },
-              {
-                validator: (_, html) => {
-                  const text = (html || "").replace(/<[^>]*>/g, "").trim();
-                  return text ? Promise.resolve() : Promise.reject("Escreva algo no conteúdo");
-                },
-              },
-            ]}
-            normalize={(html) => html || "<p></p>"}
-          >
-            {/* O AntD injeta value/onChange no filho */}
+          <p className="text-[18px] font-bold mb-4">{t("Objection book")}</p>
+          <Form.Item name={["objection", "text"]} className="mb-0!" label={t("Description")}>
             <TiptapFormField placeholder="Escreva o conteúdo..." />
           </Form.Item>
           <div>
-            <Form.Item name={["objection", "text"]} hidden>
-              <Input />
-            </Form.Item>
             <Form.List name={["objection", "items"]}>
               {(fields, { add, remove, move }) => (
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -212,14 +201,15 @@ export default function Settings({ course }) {
                     <div>
                       <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.objection !== currentValues.objection}>
                         {({ getFieldValue }) => {
-                          console.log(getFieldValue("objection"));
-                          const editor = useEditor({ extensions: [TextStyleKit, StarterKit], content: getFieldValue(["objection", "items", field.name, "description"]) });
                           return (
                             <div className="p-6 h-full border border-dashed border-gray-300 mb-6 cursor-pointer flex flex-col justify-center items-center w-full overflow-hidden">
                               <Form.Item name={[field.name, "title"]} className="w-full!" label={t("Title")}>
                                 <Input size="large" />
                               </Form.Item>
-                              <div className="absolute top-[-5px] right-0 w-[20px] h-[20px] z-999">
+                              <Form.Item name={[field.name, "text"]} className="w-full!" label={t("Text")}>
+                                <Input size="large" />
+                              </Form.Item>
+                              <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                 <Button onClick={() => remove(field.name)} icon={<RxTrash />}></Button>
                               </div>
                             </div>

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
+import { CloseOutlined, DashboardOutlined, DashOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -18,18 +18,19 @@ import { TbWorld } from "react-icons/tb";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage } = useContext(Context);
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension } = useContext(Context);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
 
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
-  const [windowDimension, setWindowDimension] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  useEffect(() => {
+    console.log(user);
+  }, [user]);
+
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
     setIsLoadingLanguage(true);
@@ -37,14 +38,6 @@ const Main = () => {
       setIsLoadingLanguage(false);
     }, 1500);
   };
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/");
-    }
-  }, [isLoggedIn]);
 
   useEffect(() => {
     let pathname = location.pathname.split("/");
@@ -54,20 +47,6 @@ const Main = () => {
       setCurrent(`/${pathname[pathname.length - 1]}`);
     }
   }, [location]);
-
-  useEffect(() => {
-    const detectSize = () => {
-      setWindowDimension({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-    window.addEventListener("resize", detectSize);
-
-    return () => {
-      window.removeEventListener("resize", detectSize);
-    };
-  }, [windowDimension]);
 
   function handleClickMenu(e) {
     if (e.key === "logout") {
@@ -81,10 +60,10 @@ const Main = () => {
   return (
     <Layout>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
-      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-[100px] h-full!">
+      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-full!">
         {windowDimension.width > 1080 ? (
           <div className="flex justify-between items-center w-full container mx-auto">
-            <img src={logo} className="max-h-[60px]" />
+            <img src={logo} className="max-h-15" />
             <div>
               <Link to="/courses">Cursos</Link>
             </div>
@@ -108,8 +87,42 @@ const Main = () => {
                   <TbWorld className="w-5 h-5 mr-4" />
                 </div>
               </Dropdown>
-              <Avatar icon={<FaRegUser />} />
-              <p className="text-[12px] ml-2">{user.name}</p>
+
+              <Dropdown
+                menu={{
+                  items: [
+                    user.id_role === 1 && {
+                      key: "backoffice",
+                      label: (
+                        <Link className={`flex items-center`} to="/admin">
+                          <div className="flex items-center">
+                            <DashboardOutlined className="mr-2" />
+                            <p>{t("Go to backoffice")}</p>
+                          </div>
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: "profile",
+                      label: (
+                        <Link className={`flex items-center`} to="/profile">
+                          <div className="flex items-center">
+                            <UserOutlined className="mr-2" />
+                            <p>{t("Profile")}</p>
+                          </div>
+                        </Link>
+                      ),
+                    },
+                  ],
+                }}
+                trigger={["click"]}
+                placement="bottomRight"
+              >
+                <div className="flex justify-center items-center cursor-pointer">
+                  <Avatar icon={<FaRegUser />} />
+                  <p className="text-[12px] ml-2">{user.name}</p>
+                </div>
+              </Dropdown>
             </div>
           </div>
         ) : (

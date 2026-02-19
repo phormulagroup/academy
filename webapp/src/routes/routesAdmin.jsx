@@ -11,6 +11,9 @@ import CourseDetails from "../pages/admin/course/details";
 
 import Topic from "../pages/admin/course/topic";
 import Test from "../pages/admin/course/test";
+import SMTP from "../pages/admin/email/smtp";
+import Template from "../pages/admin/email/template";
+import TemplateDetails from "../pages/admin/email/templateDetails";
 
 export const adminRoutes = [
   {
@@ -19,15 +22,18 @@ export const adminRoutes = [
       { path: "/login", element: <Navigate to="/" replace /> },
       { path: "/admin/", element: <MainAdmin /> },
       { path: "/admin/courses", element: <Course /> },
-      { path: "/admin/course/:id", element: <CourseDetails /> },
-      { path: "/admin/course/:id/test/:idTest", element: <Test /> },
+      { path: "/admin/courses/:id", element: <CourseDetails /> },
+      { path: "/admin/courses/:id/test/:idTest", element: <Test /> },
       { path: "/admin/languages", element: <Language /> },
+      { path: "/admin/smtp", element: <SMTP /> },
+      { path: "/admin/templates", element: <Template /> },
+      { path: "/admin/templates/:id", element: <TemplateDetails /> },
       { path: "/admin/users", element: <User /> },
       { path: "/admin/media", element: <Media /> },
     ],
   },
   {
-    path: "/admin/course/:id/topic/:idTopic",
+    path: "/admin/courses/:id/topic/:idTopic",
     element: <Topic />,
   },
 ];

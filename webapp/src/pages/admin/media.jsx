@@ -132,7 +132,7 @@ function Media() {
       <Delete table="media" open={isOpenDelete} close={handleCloseDelete} data={selectedMedia} />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Courses")}</p>
+          <p className="text-xl font-bold">{t("Multimedia")}</p>
         </div>
       </div>
       <div>
@@ -152,19 +152,19 @@ function Media() {
                 className="media-card"
                 cover={
                   item.name.includes("pdf") ? (
-                    <div className="!flex justify-center items-center min-h-[100px]">
+                    <div className="flex! justify-center items-center min-h-25">
                       <FilePdfOutlined className="text-[50px]" />
                     </div>
                   ) : (
                     <div
-                      className="!flex justify-center items-center min-h-[100px] w-full bg-contain bg-center bg-no-repeat"
+                      className="flex! justify-center items-center min-h-25 w-full bg-contain bg-center bg-no-repeat"
                       style={{ backgroundImage: `url(${config.server_ip}/media/${item.name})` }}
                     ></div>
                   )
                 }
                 actions={[<CopyOutlined key="edit" onClick={() => handleCopyClipboard(item.name)} />, <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />]}
               >
-                <Meta title={<p className="!font-normal text-[12px]">{item.name}</p>} />
+                <Meta title={<p className="font-normal! text-[12px]">{item.name}</p>} />
               </Card>
             </div>
           );

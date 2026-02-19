@@ -34,6 +34,7 @@
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-email-editor": "^1.7.11",
     "react-highlight-words": "^0.21.0",
     "react-i18next": "^16.5.4",
     "react-icons": "^5.5.0",

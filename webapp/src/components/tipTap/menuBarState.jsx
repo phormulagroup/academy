@@ -1,6 +1,5 @@
 export function menuBarStateSelector(ctx) {
   return {
-    // Text formatting
     isBold: ctx.editor.isActive("bold") ?? false,
     canBold: ctx.editor.can().chain().toggleBold().run() ?? false,
     isItalic: ctx.editor.isActive("italic") ?? false,

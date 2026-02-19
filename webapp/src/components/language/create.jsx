@@ -87,7 +87,7 @@ export default function Create({ open, close, submit }) {
             showSearch={{
               optionFilterProp: ["label"],
             }}
-            options={countries.map((o) => ({ label: o, value: o }))}
+            options={countries.sort().map((o) => ({ label: o, value: o }))}
           />
         </Form.Item>
       </Form>

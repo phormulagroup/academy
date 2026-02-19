@@ -8,6 +8,7 @@ const endpoints = {
     loginCode: "/auth/loginCode",
     validateEmail: "/auth/validateEmail",
     generatePassword: "/auth/generatePassword",
+    register: "/auth/register",
     verifyToken: "/auth/verifyToken",
     verifyTokenGeneratePassword: "/auth/verifyTokenGeneratePassword",
     verifyUser: "/auth/verifyUser",
@@ -47,12 +48,25 @@ const endpoints = {
   test: {
     update: "/course/updateTest",
   },
+  email: {
+    read: "/email/read",
+    readById: "/email/readById",
+    update: "/email/update",
+    create: "/email/create",
+    delete: "/email/delete",
+  },
   language: {
     read: "/language/read",
     update: "/language/update",
     create: "/language/create",
     delete: "/language/delete",
     default: "/language/default",
+  },
+  settings: {
+    read: "/settings/read",
+    update: "/settings/update",
+    create: "/settings/create",
+    delete: "/settings/delete",
   },
   media: {
     read: "/media/read",

@@ -1,47 +1,65 @@
-// src/components/TiptapFormField.jsx
-import React, { useEffect } from "react";
+import "./styles.css";
 
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { MenuBar } from "./menuBar";
-import "./styles.css";
+import React, { useEffect } from "react";
 
-export default function TiptapFormField({ value = "", onChange, onBlur, placeholder = "Escreva aqui...", editable = true, className }) {
+import { MenuBar } from "./MenuBar.jsx";
+
+const extensions = [TextStyleKit, StarterKit];
+
+export default ({ value, onChange }) => {
   const editor = useEditor({
-    editable,
-    extensions: [TextStyleKit, StarterKit],
-    content: value || "",
+    extensions,
+    content: `
+<h2>
+  Hi there,
+</h2>
+<p>
+  this is a <em>basic</em> example of <strong>Tiptap</strong>. Sure, there are all kind of basic text styles you'd probably expect from a text editor. But wait until you see the lists:
+</p>
+<ul>
+  <li>
+    That's a bullet list with one …
+  </li>
+  <li>
+    … or two list items.
+  </li>
+</ul>
+<p>
+  Isn't that great? And all of that is editable. But wait, there's more. Let's try a code block:
+</p>
+<pre><code class="language-css">body {
+  display: none;
+}</code></pre>
+<p>
+  I know, I know, this is impressive. It's only the tip of the iceberg though. Give it a try and click a little bit around. Don't forget to check the other examples too.
+</p>
+<blockquote>
+  Wow, that's amazing. Good work, boy! 👏
+  <br />
+  — Mom
+</blockquote>
+`,
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      if (onChange) onChange(html);
-    },
-    onBlur: () => {
-      if (onBlur) onBlur();
+      onChange?.(editor.getHTML());
     },
   });
 
-  // Sincroniza mudanças externas (initialValues/resetFields) com o editor
+  // Atualiza o conteúdo quando o value vem do Form
   useEffect(() => {
-    if (!editor) return;
-    const current = editor.getHTML();
-    if (value !== undefined && value !== current) {
-      const { from, to } = editor.state.selection;
-      editor.commands.setContent(value, false); // false = não criar histórico
-      editor.commands.setTextSelection({ from, to });
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || "");
     }
   }, [value, editor]);
 
-  useEffect(() => {
-    return () => {
-      editor?.destroy();
-    };
-  }, [editor]);
+  if (!editor) return null;
 
   return (
-    <div>
+    <div className="bg-white p-6 tiptap-editor">
       <MenuBar editor={editor} />
       <EditorContent editor={editor} />
     </div>
   );
-}
+};

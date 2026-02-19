@@ -20,6 +20,8 @@ const importRouter = require("./routes/import");
 const languageRouter = require("./routes/language");
 const roleRouter = require("./routes/role");
 const mediaRouter = require("./routes/media");
+const settingsRouter = require("./routes/settings");
+const emailRouter = require("./routes/email");
 
 require("dotenv").config();
 
@@ -78,5 +80,7 @@ app.use("/language", languageRouter);
 app.use("/role", middleware, roleRouter);
 app.use("/media", mediaRouter);
 app.use("/import", middleware, importRouter);
+app.use("/settings", middleware, settingsRouter);
+app.use("/email", middleware, emailRouter);
 
 module.exports = app;

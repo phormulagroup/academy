@@ -31,7 +31,6 @@ export default function CourseDetails() {
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.read, { params: { id_user: user.id } });
-      console.log(res);
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxObj = {
@@ -67,10 +66,8 @@ export default function CourseDetails() {
   }
 
   function calcProgress(items, modules) {
-    console.log(modules);
     if (items && items.length > 0) {
       let steps = modules.map((m) => m.items.length).reduce((a, b) => a + b, 0);
-      console.log(steps);
       let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module").length;
 
       let progressPercentage = (100 * completed) / steps;
@@ -81,11 +78,11 @@ export default function CourseDetails() {
 
   return (
     <div className="bg-[#FFFFFF] relative">
-      <div className="container mx-auto p-6 grid grid-cols-3 gap-[40px]">
+      <div className="container mx-auto p-6 grid grid-cols-3 gap-10">
         {data.map((item) => (
           <div className="shadow-[0px_3px_6px_#00000029]">
             <div
-              className={`h-[300px] bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-[#000]`}
+              className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black`}
               style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
             >
               <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
@@ -94,7 +91,7 @@ export default function CourseDetails() {
             </div>
             <div className="bg-[#F7F7F7] p-4">
               <div className="flex items-center">
-                <Avatar src={avatarImg} className="w-[50px]! h-[50px]!" />
+                <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
                 <div className="ml-2">
                   <p className="text-[14px]">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
                   <p className="text-[11px] text-[#707070]">
@@ -125,7 +122,7 @@ export default function CourseDetails() {
               <div className="grid grid-cols-2"></div>
             </div>
             <div className="p-4 flex justify-center items-center">
-              <Link to={`/course/${item.course.slug}`}>
+              <Link to={`/courses/${item.course.slug}`}>
                 <Button size="large" type="primary" className="w-full!">
                   {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : calcProgress(item.progress, item.modules) === 100 ? "Rever" : "Entrar"}
                 </Button>

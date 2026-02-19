@@ -36,6 +36,16 @@ select,
   align-items: center;
 }
 
+.auth-form .ant-form-item-explain-error {
+  text-align: center;
+}
+
+.auth-form .ant-select-content,
+.auth-form input {
+  text-align: center;
+  justify-content: center;
+}
+
 .ant-layout {
   height: 100%;
 }

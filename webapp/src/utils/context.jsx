@@ -21,6 +21,12 @@ const ContextProvider = ({ children }) => {
   const [roles, setRoles] = useState([]);
   const [courses, setCourses] = useState([]);
   const [languages, setLanguages] = useState([]);
+
+  const [windowDimension, setWindowDimension] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
   const { t } = useTranslation();
 
   const [tablesName] = useState({ user: "Utilizador", course: "Curso" });
@@ -33,6 +39,20 @@ const ContextProvider = ({ children }) => {
     getData();
     getLanguages();
   }, []);
+
+  useEffect(() => {
+    const detectSize = () => {
+      setWindowDimension({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener("resize", detectSize);
+
+    return () => {
+      window.removeEventListener("resize", detectSize);
+    };
+  }, [windowDimension]);
 
   async function getLanguages() {
     try {
@@ -120,8 +140,9 @@ const ContextProvider = ({ children }) => {
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
-    console.log(window.location);
-    if (window.location.href.includes("login")) navigate("/admin");
+    if (window.location.href.includes("login"))
+      if (res.user.is_admin) navigate("/admin");
+      else navigate("/");
     else navigate(window.location.pathname);
   }
 
@@ -232,6 +253,8 @@ const ContextProvider = ({ children }) => {
         t,
         roles,
         setRoles,
+        windowDimension,
+        setWindowDimension,
       }}
     >
       {contextHolder}

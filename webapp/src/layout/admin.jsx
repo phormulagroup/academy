@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { CloseOutlined, LoginOutlined, MenuOutlined } from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
@@ -35,18 +35,13 @@ import { RxFile } from "react-icons/rx";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage } = useContext(Context);
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension } = useContext(Context);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
 
   const location = useLocation();
   const { t, i18n } = useTranslation();
-
-  const [windowDimension, setWindowDimension] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
 
   const [items, setItems] = useState([
     {
@@ -122,12 +117,6 @@ const Main = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/");
-    }
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     let pathname = location.pathname.split("/");
     if (pathname.length > 2) {
       setCurrent(`/${pathname[1]}/${pathname[2]}`);
@@ -135,20 +124,6 @@ const Main = () => {
       setCurrent(`/${pathname[pathname.length - 1]}`);
     }
   }, [location]);
-
-  useEffect(() => {
-    const detectSize = () => {
-      setWindowDimension({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-    window.addEventListener("resize", detectSize);
-
-    return () => {
-      window.removeEventListener("resize", detectSize);
-    };
-  }, [windowDimension]);
 
   function handleClickMenu(e) {
     if (e.key === "logout") {
@@ -166,7 +141,9 @@ const Main = () => {
         {windowDimension.width > 1080 ? (
           <Sider width={250} className="bg-[#010202]! overflow-auto">
             <div className="flex flex-col justify-between items-start h-full p-4">
-              <img src={logo} alt="Bial Academy Logo" className="max-h-[70px] mb-2 pl-[16px]" style={{ filter: "brightness(0) invert(1)" }} />
+              <Link to="/">
+                <img src={logo} alt="Bial Academy Logo" className="max-h-17.5 mb-2 pl-4" style={{ filter: "brightness(0) invert(1)" }} />
+              </Link>
               <div className="flex flex-col items-center justify-start w-full menu-scroll-div">
                 <div className="mt-2.5 w-full">
                   <Menu data-tour-id="menu" className="principal-menu" selectedKeys={[current]} mode="inline" items={items} onClick={handleClickMenu} />

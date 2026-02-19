@@ -13,6 +13,9 @@ import Logs from "../../components/logs";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
+import { RxSwitch } from "react-icons/rx";
+import { useTranslation } from "react-i18next";
+import Status from "../../components/user/status";
 
 export default function User() {
   const { user } = useContext(Context);
@@ -24,8 +27,11 @@ export default function User() {
 
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
+  const [isOpenStatus, setIsOpenStatus] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenLogs, setIsOpenLogs] = useState(false);
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (user.id_role === 1 || user.id_role === 2) getData();
@@ -74,20 +80,26 @@ export default function User() {
               placement="bottomRight"
               menu={{
                 items: [
-                  (user.id_role === 1 || (user.id_role === 2 && array[i].id_role !== 1)) && {
-                    label: "Editar",
+                  {
+                    label: t("Change status"),
+                    key: `${array[i].id}-status`,
+                    icon: <RxSwitch />,
+                    onClick: () => openStatus(array[i]),
+                  },
+                  {
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  (user.id_role === 1 || user.id_role === 2) && {
-                    label: "Histórico de alterações",
+                  {
+                    label: t("Logs"),
                     key: `${array[i].id}-logs`,
                     icon: <FaRegFile />,
                     onClick: () => openLogs(array[i]),
                   },
-                  (user.id_role === 1 || (user.id_role === 2 && array[i].id_role !== 1)) && {
-                    label: "Apagar",
+                  {
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -112,33 +124,36 @@ export default function User() {
     setIsOpenUpdate(true);
   }
 
+  function openStatus(obj) {
+    setSelectedData(obj);
+    setIsOpenStatus(true);
+  }
+
   function openLogs(obj) {
     setSelectedData(obj);
     setIsOpenLogs(true);
-  }
-
-  function closeUpdate(c) {
-    if (c) {
-      getData();
-    }
-    setIsOpenUpdate(false);
   }
 
   function openDelete() {
     setIsOpenDelete(true);
   }
 
-  function closeCreate(c) {
+  function closeAction(c) {
     if (c) {
       getData();
     }
     setIsOpenCreate(false);
+    setIsOpenUpdate(false);
+    setIsOpenDelete(false);
+    setIsOpenStatus(false);
+    setIsOpenLogs(false);
   }
 
   return (
     <div className="p-2">
-      <Create open={isOpenCreate} close={closeCreate} />
-      <Update data={selectedData} open={isOpenUpdate} close={closeUpdate} />
+      <Create open={isOpenCreate} close={closeAction} />
+      <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
+      <Status data={selectedData} open={isOpenStatus} close={closeAction} />
       <Logs table={"project"} id_project={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
       <div className="flex justify-between items-center mb-4">
         <div>

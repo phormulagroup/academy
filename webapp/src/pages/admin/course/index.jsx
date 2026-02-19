@@ -16,6 +16,7 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { RxReload } from "react-icons/rx";
 
 export default function Course() {
   const { user } = useContext(Context);
@@ -83,7 +84,7 @@ export default function Course() {
                     label: t("Details"),
                     key: `${array[i].id}-details`,
                     icon: <FaRegEdit />,
-                    onClick: () => navigate(`/admin/course/${array[i].id}`),
+                    onClick: () => navigate(`/admin/courses/${array[i].id}`),
                   },
                   {
                     label: t("Update"),
@@ -147,6 +148,7 @@ export default function Course() {
           <p className="text-xl font-bold">{t("Courses")}</p>
         </div>
         <div>
+          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
           <Button size="large" onClick={() => setIsOpenCreate(true)}>
             Adicionar
           </Button>

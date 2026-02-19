@@ -5,21 +5,21 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/table";
-import Create from "../../components/language/create";
-import Update from "../../components/language/update";
-import Delete from "../../components/delete";
-import Logs from "../../components/logs";
+import Table from "../../../components/table";
+import Create from "../../../components/language/create";
+import Update from "../../../components/language/update";
+import Delete from "../../../components/delete";
 
-import { Context } from "../../utils/context";
+import { Context } from "../../../utils/context";
 
-import endpoints from "../../utils/endpoints";
+import endpoints from "../../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../components/language/translations";
+import Translations from "../../../components/language/translations";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
+import { useNavigate } from "react-router-dom";
 
-export default function Language() {
+export default function Template() {
   const { user } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
@@ -27,10 +27,10 @@ export default function Language() {
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
 
-  const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     getData();
@@ -39,7 +39,7 @@ export default function Language() {
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.language.read)
+      .get(endpoints.email.read)
       .then((res) => {
         setData(res.data);
         prepareData(res.data);
@@ -83,13 +83,7 @@ export default function Language() {
                     label: "Update",
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
-                    onClick: () => openUpdate(array[i]),
-                  },
-                  array[i].is_default !== 1 && {
-                    label: "Translations",
-                    key: `${array[i].id}-translations`,
-                    icon: <FaRegFile />,
-                    onClick: () => openTranslations(array[i]),
+                    onClick: () => navigate(`/admin/templates/${array[i].id}`),
                   },
                   {
                     label: "Delete",
@@ -133,37 +127,25 @@ export default function Language() {
       getData();
     }
     setIsOpenUpdate(false);
-    setIsOpenCreate(false);
     setIsOpenDelete(false);
   }
 
   return (
     <div className="p-2">
-      <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
-      <Translations data={selectedData} defaultLanguage={data.filter((item) => item.is_default === 1)[0]} open={isOpenTranslations} close={() => setIsOpenTranslations(false)} />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Translations")}</p>
+          <p className="text-xl font-bold">{t("Templates")}</p>
         </div>
         <div>
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
-            {t("Add Language")}
-          </Button>
         </div>
       </div>
       <Table
         dataSource={tableData}
         loading={isLoading}
         columns={[
-          {
-            title: "",
-            dataIndex: "flag",
-            key: "flag",
-            width: "40px",
-          },
           {
             title: "Nome",
             dataIndex: "name",

@@ -121,7 +121,7 @@ function SortableTopic({ item, onDelete, onCommitLabel, isDeleting, canMoveUp, c
 
               <Space>
                 <Button
-                  onClick={() => navigate(`/admin/course/${course.id}/${item.type === "topic" ? "topic" : "test"}/${parseInt(item.id.split("-")[1])}`)}
+                  onClick={() => navigate(`/admin/courses/${course.id}/${item.type === "topic" ? "topic" : "test"}/${parseInt(item.id.split("-")[1])}`)}
                   icon={<AiOutlineEdit />}
                 />
                 <Button onClick={() => setEditing(true)} icon={<LuLetterText />} />
