@@ -4,6 +4,8 @@ import { AiOutlinePlus } from "react-icons/ai";
 
 import { Context } from "../../utils/context";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
+import endpoints from "../../utils/endpoints";
 
 export default function Status({ data, open, close, status }) {
   const { update } = useContext(Context);
@@ -20,7 +22,8 @@ export default function Status({ data, open, close, status }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await update({ data: { id: data.id, status: values.status }, table: "user" });
+      const res = await axios.post(endpoints.user.changeStatus, { data: { ...data, status: t(values.status) } });
+      console.log(res);
       setIsButtonLoading(false);
       close(true);
     } catch (err) {

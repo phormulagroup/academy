@@ -8,6 +8,7 @@ var router = express.Router();
 var db = require("../utils/database");
 const { createToken } = require("../utils/token");
 const { generatePassword } = require("../utils/email");
+const email = require("../utils/email");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -95,6 +96,23 @@ router.post("/update", async (req, res, next) => {
 
     let newToken = await createToken(user[0]);
     res.send({ user: user[0], token: newToken });
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/changeStatus", async (req, res, next) => {
+  console.log("//// CHANGE USER STATUS ////");
+  try {
+    let data = req.body.data;
+    let whereId = data.id;
+    delete data.id;
+
+    const query = util.promisify(db.query).bind(db);
+    const updatedRow = await query("UPDATE user SET status = ? WHERE id = " + whereId, data.status);
+    const emailResult = await email.change_status(data);
+    console.log("E-mail sent: ", emailResult.messageId);
+    res.send(updatedRow);
   } catch (err) {
     throw err;
   }

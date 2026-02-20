@@ -20,7 +20,6 @@ const api = {
   token: (token) => {
     return new Promise((resolve, reject) => {
       if (token) {
-        console.log(token);
         axios.defaults.headers.common["Authorization"] = token;
         resolve(token);
       } else {

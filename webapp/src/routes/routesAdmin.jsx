@@ -19,7 +19,6 @@ export const adminRoutes = [
   {
     element: <AdminLayout />,
     children: [
-      { path: "/login", element: <Navigate to="/" replace /> },
       { path: "/admin/", element: <MainAdmin /> },
       { path: "/admin/courses", element: <Course /> },
       { path: "/admin/courses/:id", element: <CourseDetails /> },
@@ -30,6 +29,7 @@ export const adminRoutes = [
       { path: "/admin/templates/:id", element: <TemplateDetails /> },
       { path: "/admin/users", element: <User /> },
       { path: "/admin/media", element: <Media /> },
+      { path: "/*", element: <Navigate to="/admin" replace /> },
     ],
   },
   {

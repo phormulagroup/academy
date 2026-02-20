@@ -70,7 +70,7 @@ export default function Create({ open, close, submit }) {
           required: "Este campo é obrigatório!",
         }}
       >
-        <Form.Item name="id_language" label={t("Language")} rules={[{ required: true }]}>
+        <Form.Item name="id_lang" label={t("Language")} rules={[{ required: true }]}>
           <Select
             size="large"
             className="w-full"

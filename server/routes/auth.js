@@ -109,21 +109,34 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
   console.log("///// REGISTER /////");
-  try {
-    const query = util.promisify(db.query).bind(db);
-    let data = req.body.data;
-    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
-    if (user.length > 0) {
-      res.send({ message: "This e-mail already exists in our database!" });
-    } else {
-      data.password = await bcrypt.hash(data.password, saltRounds);
-      const insertedRow = await query("INSERT INTO user SET ?", data);
-      res.send(insertedRow);
+
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+      const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+      if (user.length > 0) {
+        res.send({ message: "This e-mail already exists in our database!" });
+      } else {
+        data.password = await bcrypt.hash(data.password, saltRounds);
+        const insertedRow = await query("INSERT INTO user SET ?", data);
+        const emailResult = await email.register(data);
+        console.log("E-mail sent: ", emailResult.messageId);
+        await commit();
+        conn.release();
+        res.send(insertedRow);
+      }
+    } catch (err) {
+      await rollback();
+      conn.release();
+      throw err;
     }
-  } catch (err) {
-    console.log(err);
-    throw err;
-  }
+  });
 });
 
 module.exports = router;

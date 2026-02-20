@@ -62,13 +62,13 @@ export default function Template() {
             <img src={array[i].flag} className="max-w-5" />
           </div>
         ),
-        is_deleted: array[i].is_deleted ? (
-          <Tag variant="outlined" color={"red"}>
-            Inativo
+        is_active: array[i].is_active ? (
+          <Tag variant="outlined" color={"green"}>
+            {t("Active")}
           </Tag>
         ) : (
-          <Tag variant="outlined" color={"green"}>
-            Ativo
+          <Tag variant="outlined" color={"red"}>
+            {t("Inactive")}
           </Tag>
         ),
         full_data: array[i],
@@ -147,13 +147,19 @@ export default function Template() {
         loading={isLoading}
         columns={[
           {
-            title: "Nome",
+            title: t("Name"),
             dataIndex: "name",
             key: "name",
             sort: true,
             sortType: "text",
             search: "name",
             width: "80%",
+          },
+          {
+            title: t("Is active"),
+            dataIndex: "is_active",
+            key: "is_active",
+            width: "40px",
           },
           {
             title: "",

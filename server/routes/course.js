@@ -37,6 +37,32 @@ router.get("/read", async (req, res) => {
     throw e;
   }
 });
+router.get("/readByLang", async (req, res) => {
+  console.log("//// READ COURSE BY LANG ////");
+  const query = util.promisify(db.query).bind(db);
+  console.log(req.query);
+  try {
+    const rows = await query(
+      "SELECT * FROM course WHERE id_lang = ?; " +
+        "SELECT course_module. * FROM course_module; " +
+        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id; " +
+        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id; " +
+        "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
+        "WHERE course_user_activity.id_user = ? AND course.id_lang = ?; ",
+      [req.query.id_lang, req.query.id_user, req.query.id_lang],
+    );
+
+    let courses = rows[0];
+    let modules = rows[1];
+    let topics = rows[2];
+    let tests = rows[3];
+    let progress = rows[4];
+
+    res.send({ courses, modules, topics, tests, progress });
+  } catch (e) {
+    throw e;
+  }
+});
 
 router.get("/readById", async (req, res) => {
   console.log("//// READ COURSE BY ID ////");

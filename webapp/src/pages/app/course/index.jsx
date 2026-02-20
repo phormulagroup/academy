@@ -15,6 +15,11 @@ import { useTranslation } from "react-i18next";
 
 import avatarImg from "../../../assets/Female.svg";
 import config from "../../../utils/config";
+import DurationIcon from "../../../assets/Duracao.svg?react";
+import CertificateIcon from "../../../assets/Certificado.svg?react";
+import TrainerIcon from "../../../assets/Formador.svg?react";
+import VideosIcon from "../../../assets/Videos.svg?react";
+import i18n from "../../../utils/i18n";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -30,7 +35,7 @@ export default function CourseDetails() {
 
   async function getData() {
     try {
-      const res = await axios.get(endpoints.course.read, { params: { id_user: user.id } });
+      const res = await axios.get(endpoints.course.readByLang, { params: { id_user: user.id, id_lang: user.id_lang } });
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxObj = {
@@ -55,10 +60,11 @@ export default function CourseDetails() {
 
           auxObj.modules = newModules;
         }
+        auxObj.course.settings = auxObj.course.settings ? JSON.parse(auxObj.course.settings) : null;
 
         auxData.push(auxObj);
       }
-
+      console.log(auxData);
       setData(auxData);
     } catch (err) {
       console.log(err);
@@ -79,57 +85,94 @@ export default function CourseDetails() {
   return (
     <div className="bg-[#FFFFFF] relative">
       <div className="container mx-auto p-6 grid grid-cols-3 gap-10">
-        {data.map((item) => (
-          <div className="shadow-[0px_3px_6px_#00000029]">
-            <div
-              className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black`}
-              style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
-            >
-              <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
-                <p className="font-bold text-[18px]">{item.course?.name}</p>
-              </div>
-            </div>
-            <div className="bg-[#F7F7F7] p-4">
-              <div className="flex items-center">
-                <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
-                <div className="ml-2">
-                  <p className="text-[14px]">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
-                  <p className="text-[11px] text-[#707070]">
-                    {item.course?.responsible_job ?? "Marketing Manager"}, {item.course?.responsible_country ?? "África"}
-                  </p>
+        <div className="col-span-3 flex flex-col justify-center items-center mb-10">
+          <p className="text-[30px] font-bold">{t("Online Courses - Bial Academy")}</p>
+          <p className="italic">Keeping training in mind</p>
+        </div>
+        {data.length > 0 ? (
+          data.map((item) => (
+            <div className="shadow-[0px_3px_6px_#00000029]">
+              <div
+                className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black`}
+                style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
+              >
+                <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
+                  <p className="font-bold text-[18px]">{item.course?.name}</p>
                 </div>
               </div>
-              <div className="mt-4 mb-4 flex flex-col justify-center items-center">
-                {calcProgress(item.progress, item.modules) === 100 ? (
-                  <>
-                    <div className="flex justify-between">
+              <div className="bg-[#F7F7F7] p-4">
+                <div className="flex items-center">
+                  <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
+                  <div className="ml-2">
+                    <p className="text-[14px]">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
+                    <p className="text-[11px] text-[#707070]">
+                      {item.course?.responsible_job ?? "Marketing Manager"}, {item.course?.responsible_country ?? "África"}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 mb-4 flex flex-col justify-center items-center">
+                  {calcProgress(item.progress, item.modules) === 100 ? (
+                    <>
+                      <div className="flex justify-between">
+                        <p className="mb-2 uppercase">
+                          {calcProgress(item.progress, item.modules)}% {t("completed")}
+                        </p>
+                        <Button>{t("Certificate")}</Button>
+                      </div>
+                      <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
+                    </>
+                  ) : (
+                    <>
                       <p className="mb-2 uppercase">
                         {calcProgress(item.progress, item.modules)}% {t("completed")}
                       </p>
-                      <Button>{t("Certificate")}</Button>
+                      <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
+                    </>
+                  )}
+                </div>
+                <div className="grid grid-cols-2">
+                  {item.course.id_certificate && (
+                    <div className="flex items-center">
+                      <CertificateIcon className="mr-1" />
+                      <p className="text-[16px]">{t("With certificate")}</p>
                     </div>
-                    <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
-                  </>
-                ) : (
-                  <>
-                    <p className="mb-2 uppercase">
-                      {calcProgress(item.progress, item.modules)}% {t("completed")}
-                    </p>
-                    <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
-                  </>
-                )}
+                  )}
+                  {(item.course.settings?.duration_hours || item.course.settings?.duration_minutes) && (
+                    <div className="flex items-center">
+                      <DurationIcon className="mr-1" />
+                      <p className="text-[16px]">
+                        {item.course.settings.duration_hours} h {item.course.settings.duration_minutes ? `${item.course.settings.duration_minutes}m` : ""}
+                      </p>
+                    </div>
+                  )}
+                  {item.course.settings?.video && (
+                    <div className="flex items-center">
+                      <VideosIcon className="mr-1" />
+                      <p className="text-[16px]">{item.course.settings.video} videos</p>
+                    </div>
+                  )}
+                  {item.course.settings?.trainer && (
+                    <div className="flex items-center">
+                      <TrainerIcon className="mr-1" />
+                      <p className="text-[16px]">{item.course.settings.trainer}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="grid grid-cols-2"></div>
+              <div className="p-4 flex justify-center items-center">
+                <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
+                  <Button size="large" type="primary" className="w-full!">
+                    {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : calcProgress(item.progress, item.modules) === 100 ? "Rever" : "Entrar"}
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <div className="p-4 flex justify-center items-center">
-              <Link to={`/courses/${item.course.slug}`}>
-                <Button size="large" type="primary" className="w-full!">
-                  {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : calcProgress(item.progress, item.modules) === 100 ? "Rever" : "Entrar"}
-                </Button>
-              </Link>
-            </div>
+          ))
+        ) : (
+          <div className="col-span-3 flex flex-col justify-center items-center">
+            <p>{t("No courses enrolled yet")}</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

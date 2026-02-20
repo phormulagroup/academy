@@ -104,7 +104,9 @@ export default function TemplateDetails() {
     axios
       .post(endpoints.email.update, {
         data: {
-          id: data.id,
+          name_key: data.name_key,
+          name: data.name,
+          subject: data.subject,
           design: design,
           html: html,
         },

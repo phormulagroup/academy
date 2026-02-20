@@ -3,6 +3,7 @@ import { Button, Col, Row, Modal } from "antd";
 import { useTranslation } from "react-i18next";
 
 function Logout({ open, close, submit }) {
+  const { t } = useTranslation();
   return (
     <Modal
       key="modal-logout"
@@ -12,9 +13,9 @@ function Logout({ open, close, submit }) {
       open={open}
       maskClosable={false}
       footer={[
-        <Button onClick={close}>NN</Button>,
+        <Button onClick={close}>{t("No")}</Button>,
         <Button type="primary" onClick={submit}>
-          YY
+          {t("Yes, log me out")}
         </Button>,
       ]}
     >

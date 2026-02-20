@@ -61,7 +61,6 @@ const ContextProvider = ({ children }) => {
 
       const auxLanguages = res.data;
       for (let i = 0; i < auxLanguages.length; i++) {
-        console.log(auxLanguages[i].code);
         if (auxLanguages[i].translation) {
           const translation = JSON.parse(auxLanguages[i].translation).reduce((acc, item) => {
             acc[item.key] = item.value;
@@ -98,12 +97,13 @@ const ContextProvider = ({ children }) => {
       } catch (err) {
         console.log(err);
         setIsLoggedIn(false);
-        navigate("/login");
+        navigate(`/${i18n.language}/login`);
         setTimeout(() => {
           setIsLoading(false);
         }, 3000);
       }
     } else {
+      if (window.location.pathname.includes("admin")) navigate(`/${i18n.language}/login`);
       setTimeout(() => {
         setIsLoading(false);
       }, 3000);
@@ -127,7 +127,7 @@ const ContextProvider = ({ children }) => {
     setIsLoggedIn(false);
     setIsLoading(true);
     setUser({});
-    navigate("/login");
+    navigate(`/${i18n.language}/login`);
     createLog({ id_user: auxUser.id, action: "logout" });
     setTimeout(() => {
       setIsLoading(false);
@@ -141,7 +141,7 @@ const ContextProvider = ({ children }) => {
     setUser(res.user);
     setIsLoggedIn(true);
     if (window.location.href.includes("login"))
-      if (res.user.is_admin) navigate("/admin");
+      if (res.user.id_role === 1) navigate("/admin");
       else navigate("/");
     else navigate(window.location.pathname);
   }

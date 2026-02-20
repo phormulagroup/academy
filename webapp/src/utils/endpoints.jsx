@@ -22,6 +22,7 @@ const endpoints = {
     read: "/user/read",
     readByEmail: "/user/readByEmail",
     update: "/user/update",
+    changeStatus: "/user/changeStatus",
     create: "/user/create",
     delete: "/user/delete",
     generatePassword: "/user/generatePassword",
@@ -34,6 +35,7 @@ const endpoints = {
   },
   course: {
     read: "/course/read",
+    readByLang: "/course/readByLang",
     readById: "/course/readById",
     readBySlug: "/course/readBySlug",
     readByTopicId: "/course/readByTopicId",

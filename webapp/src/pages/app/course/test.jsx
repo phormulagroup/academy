@@ -4,9 +4,9 @@ import { configRender } from "../../../components/editor";
 import { useEffect, useRef, useState } from "react";
 import { Button, Checkbox, Form, Input, Progress, Radio } from "antd";
 import { AiFillCheckCircle, AiOutlineArrowLeft, AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
-import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxFile, RxFileText, RxReload } from "react-icons/rx";
+import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxFile, RxFileText, RxLockClosed, RxReload } from "react-icons/rx";
 
-const Test = ({ selectedCourseItem, progress, progressPercentage, setAllowNext }) => {
+const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, allItems }) => {
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
@@ -18,6 +18,7 @@ const Test = ({ selectedCourseItem, progress, progressPercentage, setAllowNext }
   const [timePercentage, setTimePercentage] = useState(100);
   const [result, setResult] = useState([]);
   const [finished, setFinished] = useState(false);
+  const [isTopicLocked, setIsTopicLocked] = useState(false);
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const timerRef = useRef(null);
@@ -25,6 +26,12 @@ const Test = ({ selectedCourseItem, progress, progressPercentage, setAllowNext }
   useEffect(() => {
     setAllowNext(false);
     if (selectedCourseItem.type === "test") prepareData();
+
+    // If the topic is already completed, allow to go to the next topic/test
+    if (progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id).length > 0) {
+      setAllowNext(true);
+      return;
+    }
   }, [selectedCourseItem]);
 
   function prepareData() {
@@ -180,182 +187,192 @@ const Test = ({ selectedCourseItem, progress, progressPercentage, setAllowNext }
           ) : (
             <p className="text-[26px] text-black font-bold">{selectedCourseItem.title}</p>
           )}
-          {Object.keys(data).length > 0 && (
-            <div>
-              {!begin ? (
-                <div>
-                  <Button onClick={startTest}>{t("Start test")}</Button>
-                </div>
-              ) : isCalculating ? (
-                <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
-                  <p className="mb-4 text-[24px] font-bold">{t("Calculating...")}</p>
-                  <Progress percent={calculate.percentage} showInfo={false} />
-                  {calculate.step ? <p className="font-bold mt-4 text-center">{calculate.step}</p> : <p className="font-bold mt-4 text-center">0 / {data.question?.length}</p>}
-                </div>
-              ) : finished ? (
-                <div className="flex flex-col mt-4">
-                  <p>
-                    <b>{result.filter((r) => r.is_correct).length}</b> {t("of")} <b>{result.length}</b> {t("questions answered correctly.")}
-                  </p>
+          {isTopicLocked ? (
+            <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
+              <RxLockClosed className="w-10 h-10 mr-2" />
+              <div>
+                <p className="text-[20px] font-bold">{t("This test is locked")}</p>
+                <p>{t("You'll need to complete the previous topic first")}</p>
+              </div>
+            </div>
+          ) : (
+            Object.keys(data).length > 0 && (
+              <div>
+                {!begin ? (
+                  <div>
+                    <Button onClick={startTest}>{t("Start test")}</Button>
+                  </div>
+                ) : isCalculating ? (
                   <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
-                    <p className="mb-4 font-bold text-[24px]">{t("Result")}</p>
-                    <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
-                    <p className="mt-4 mb-4 text-[24px] font-bold">
-                      {t("You obtained")} {result.filter((r) => r.is_correct).length} {t("of")} {result.length}
+                    <p className="mb-4 text-[24px] font-bold">{t("Calculating...")}</p>
+                    <Progress percent={calculate.percentage} showInfo={false} />
+                    {calculate.step ? <p className="font-bold mt-4 text-center">{calculate.step}</p> : <p className="font-bold mt-4 text-center">0 / {data.question?.length}</p>}
+                  </div>
+                ) : finished ? (
+                  <div className="flex flex-col mt-4">
+                    <p>
+                      <b>{result.filter((r) => r.is_correct).length}</b> {t("of")} <b>{result.length}</b> {t("questions answered correctly.")}
                     </p>
-                    <div className="flex mb-4 mt-4">
-                      <Button size="large" className="blue mr-2" onClick={() => setReview(true)} icon={<RxFileText />}>
-                        {t("Review questions")}
-                      </Button>
-                      <Button size="large" onClick={() => restartTest()} icon={<RxReload />}>
-                        {t("Restart test")}
-                      </Button>
-                    </div>
-                    {result.map((q, i) => (
-                      <div className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
-                        <p className="mb-4">
-                          <b>{i + 1}</b>. {q.title}
-                        </p>
-                        <div>
-                          {q.answer.filter((c) => c.is_correct).length > 1 ? (
-                            <div>
-                              {q.answer.map((a, index) => (
-                                <div
-                                  className={`review-test-question multiple ${q.myAnswer.includes(a.title) && q.is_correct ? "correct" : q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}
-                                >
-                                  <div className="flex">
-                                    <div className={`circle flex justify-center items-center`}>
-                                      {q.myAnswer.includes(a.title) && (
-                                        <div className="w-full h-full bg-[#00B9D6] rounded-full flex justify-center items-center">
-                                          <AiOutlineCheck className="text-white text-[12px]" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <p>{a.title}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center">
-                                    {q.myAnswer.includes(a.title) && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
-                                    {q.myAnswer.includes(a.title) && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
-                                    {q.myAnswer.includes(a.title) && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
-                                    <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div>
-                              {q.answer.map((a, index) => (
-                                <div className={`review-test-question ${a.title === q.myAnswer && !q.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}>
-                                  <div className="flex">
-                                    <div className={`circle flex justify-center items-center`}>
-                                      {a.title === q.myAnswer && <div className="w-3.5 h-3.5 bg-[#00B9D6] rounded-full"></div>}
-                                    </div>
-                                    <div>
-                                      <p>{a.title}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center">
-                                    {a.title === q.myAnswer && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
-                                    {a.title === q.myAnswer && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
-                                    {a.title === q.myAnswer && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
-                                    <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                    <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
+                      <p className="mb-4 font-bold text-[24px]">{t("Result")}</p>
+                      <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
+                      <p className="mt-4 mb-4 text-[24px] font-bold">
+                        {t("You obtained")} {result.filter((r) => r.is_correct).length} {t("of")} {result.length}
+                      </p>
+                      <div className="flex mb-4 mt-4">
+                        <Button size="large" className="blue mr-2" onClick={() => setReview(true)} icon={<RxFileText />}>
+                          {t("Review questions")}
+                        </Button>
+                        <Button size="large" onClick={() => restartTest()} icon={<RxReload />}>
+                          {t("Restart test")}
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <Form form={form} onFinish={submit}>
-                  <div className="p-4 bg-black mt-4">
-                    <div className=" flex justify-between items-center">
-                      <p className="text-[20px] text-white">{t("Limit time")}</p>
-                      <div>
-                        <p className="text-white text-[20px] font-bold">{countdown}</p>
-                      </div>
-                    </div>
-                    <Progress percent={timePercentage} showInfo={false} railColor={"#FFF"} strokeColor={"#00B9D6"} />
-                  </div>
-
-                  <div>
-                    <p className="mb-4 mt-4">
-                      {t("Question")} <b>{currentQuestion + 1}</b> {t("of")} <b>{data.question.length}</b>
-                    </p>
-                  </div>
-                  <div>
-                    {data.question.map((q, i) => (
-                      <div className={`${i === currentQuestion ? "flex flex-col" : "hidden"}`}>
-                        <div className={`bg-[#FFF] p-6 `}>
+                      {result.map((q, i) => (
+                        <div className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
                           <p className="mb-4">
                             <b>{i + 1}</b>. {q.title}
                           </p>
                           <div>
                             {q.answer.filter((c) => c.is_correct).length > 1 ? (
                               <div>
-                                <Form.Item name={[q.title, "answer"]} className="mb-0! test-form-item-multiple" valuePropName="checked">
-                                  <Checkbox.Group options={q.answer.map((a) => a.title)} />
-                                </Form.Item>
+                                {q.answer.map((a, index) => (
+                                  <div
+                                    className={`review-test-question multiple ${q.myAnswer.includes(a.title) && q.is_correct ? "correct" : q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}
+                                  >
+                                    <div className="flex">
+                                      <div className={`circle flex justify-center items-center`}>
+                                        {q.myAnswer.includes(a.title) && (
+                                          <div className="w-full h-full bg-[#00B9D6] rounded-full flex justify-center items-center">
+                                            <AiOutlineCheck className="text-white text-[12px]" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p>{a.title}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                      {q.myAnswer.includes(a.title) && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
+                                      {q.myAnswer.includes(a.title) && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
+                                      {q.myAnswer.includes(a.title) && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
+                                      <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             ) : (
                               <div>
                                 {q.answer.map((a, index) => (
-                                  <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[q.title] !== currentValues[q.title]}>
-                                    {({ getFieldValue }) => (
-                                      <Form.Item name={[q.title, "answer"]} className="mb-0! test-form-item">
-                                        <Checkbox
-                                          key={a.title}
-                                          checked={getFieldValue([q.title, "answer"]) === a.title}
-                                          onChange={() => form.setFieldValue([q.title, "answer"], a.title)}
-                                        >
-                                          {a.title}
-                                        </Checkbox>
-                                      </Form.Item>
-                                    )}
-                                  </Form.Item>
+                                  <div className={`review-test-question ${a.title === q.myAnswer && !q.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}>
+                                    <div className="flex">
+                                      <div className={`circle flex justify-center items-center`}>
+                                        {a.title === q.myAnswer && <div className="w-3.5 h-3.5 bg-[#00B9D6] rounded-full"></div>}
+                                      </div>
+                                      <div>
+                                        <p>{a.title}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                      {a.title === q.myAnswer && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
+                                      {a.title === q.myAnswer && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
+                                      {a.title === q.myAnswer && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
+                                      <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                    </div>
+                                  </div>
                                 ))}
                               </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    ))}
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) => prevValues[data.question[currentQuestion].title] !== currentValues[data.question[currentQuestion].title]}
-                    >
-                      {({ getFieldValue }) => {
-                        return (
-                          <div className="flex justify-between items-center mt-4">
-                            {currentQuestion > 0 ? (
-                              <Button size="large" onClick={() => setCurrentQuestion(currentQuestion - 1)} icon={<RxChevronLeft />}>
-                                {t("Previous question")}
-                              </Button>
-                            ) : (
-                              <div></div>
-                            )}
-                            {currentQuestion < data.question.length - 1 ? (
-                              <Button size="large" type="primary" onClick={() => setCurrentQuestion(currentQuestion + 1)} icon={<RxChevronRight />} iconPlacement="end">
-                                {t("Next question")}
-                              </Button>
-                            ) : (
-                              <Button size="large" type="primary" onClick={form.submit}>
-                                {t("Finish")}
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      }}
-                    </Form.Item>
+                      ))}
+                    </div>
                   </div>
-                </Form>
-              )}
-            </div>
+                ) : (
+                  <Form form={form} onFinish={submit}>
+                    <div className="p-4 bg-black mt-4">
+                      <div className=" flex justify-between items-center">
+                        <p className="text-[20px] text-white">{t("Limit time")}</p>
+                        <div>
+                          <p className="text-white text-[20px] font-bold">{countdown}</p>
+                        </div>
+                      </div>
+                      <Progress percent={timePercentage} showInfo={false} railColor={"#FFF"} strokeColor={"#00B9D6"} />
+                    </div>
+
+                    <div>
+                      <p className="mb-4 mt-4">
+                        {t("Question")} <b>{currentQuestion + 1}</b> {t("of")} <b>{data.question.length}</b>
+                      </p>
+                    </div>
+                    <div>
+                      {data.question.map((q, i) => (
+                        <div className={`${i === currentQuestion ? "flex flex-col" : "hidden"}`}>
+                          <div className={`bg-[#FFF] p-6 `}>
+                            <p className="mb-4">
+                              <b>{i + 1}</b>. {q.title}
+                            </p>
+                            <div>
+                              {q.answer.filter((c) => c.is_correct).length > 1 ? (
+                                <div>
+                                  <Form.Item name={[q.title, "answer"]} className="mb-0! test-form-item-multiple" valuePropName="checked">
+                                    <Checkbox.Group options={q.answer.map((a) => a.title)} />
+                                  </Form.Item>
+                                </div>
+                              ) : (
+                                <div>
+                                  {q.answer.map((a, index) => (
+                                    <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[q.title] !== currentValues[q.title]}>
+                                      {({ getFieldValue }) => (
+                                        <Form.Item name={[q.title, "answer"]} className="mb-0! test-form-item">
+                                          <Checkbox
+                                            key={a.title}
+                                            checked={getFieldValue([q.title, "answer"]) === a.title}
+                                            onChange={() => form.setFieldValue([q.title, "answer"], a.title)}
+                                          >
+                                            {a.title}
+                                          </Checkbox>
+                                        </Form.Item>
+                                      )}
+                                    </Form.Item>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) => prevValues[data.question[currentQuestion].title] !== currentValues[data.question[currentQuestion].title]}
+                      >
+                        {({ getFieldValue }) => {
+                          return (
+                            <div className="flex justify-between items-center mt-4">
+                              {currentQuestion > 0 ? (
+                                <Button size="large" onClick={() => setCurrentQuestion(currentQuestion - 1)} icon={<RxChevronLeft />}>
+                                  {t("Previous question")}
+                                </Button>
+                              ) : (
+                                <div></div>
+                              )}
+                              {currentQuestion < data.question.length - 1 ? (
+                                <Button size="large" type="primary" onClick={() => setCurrentQuestion(currentQuestion + 1)} icon={<RxChevronRight />} iconPlacement="end">
+                                  {t("Next question")}
+                                </Button>
+                              ) : (
+                                <Button size="large" type="primary" onClick={form.submit}>
+                                  {t("Finish")}
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        }}
+                      </Form.Item>
+                    </div>
+                  </Form>
+                )}
+              </div>
+            )
           )}
         </div>
       </div>

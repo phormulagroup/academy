@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input, Switch } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -23,13 +23,7 @@ export default function SMTP() {
   const { user } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
-  const [tableData, setTableData] = useState([]);
-  const [selectedData, setSelectedData] = useState({});
-
-  const [isOpenCreate, setIsOpenCreate] = useState(false);
-  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
-  const [isOpenDelete, setIsOpenDelete] = useState(false);
+  const [data, setData] = useState(null);
 
   const [form] = Form.useForm();
 
@@ -42,7 +36,11 @@ export default function SMTP() {
     axios
       .get(endpoints.settings.read)
       .then((res) => {
-        console.log(res);
+        if (res.data && res.data.length > 0) {
+          const smtpSettings = res.data.find((s) => s.name_key === "smtp");
+          form.setFieldsValue(JSON.parse(smtpSettings.meta_data));
+          setData(smtpSettings);
+        }
         setIsLoading(false);
       })
       .catch((err) => {
@@ -53,6 +51,19 @@ export default function SMTP() {
 
   function submit(values) {
     console.log(values);
+    axios
+      .post(endpoints.settings.update, {
+        data: {
+          id: data.id,
+          meta_data: JSON.stringify(values),
+        },
+      })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 
   function sendTestEmail() {
@@ -81,14 +92,14 @@ export default function SMTP() {
             <Form.Item name="port" label={t("Port")} className="mb-0!">
               <Input size="large" />
             </Form.Item>
-            <Form.Item name="is_secure" label={t("Is secure")} className="mb-0!">
-              <Input size="large" />
+            <Form.Item name="is_secure" label={t("Is secure")} className="mb-0!" valuePropName="checked">
+              <Switch size="large" />
             </Form.Item>
             <Form.Item name="email" label={t("E-mail")} className="mb-0!">
               <Input size="large" type="email" />
             </Form.Item>
             <Form.Item name="password" label={t("Password")} className="mb-0!">
-              <Input size="large" type="email" />
+              <Input.Password size="large" />
             </Form.Item>
           </div>
           <div className="flex justify-center items-center gap-4 mt-4">

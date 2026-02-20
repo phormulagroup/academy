@@ -15,6 +15,11 @@ import { useTranslation } from "react-i18next";
 import { RxChevronUp, RxChevronDown, RxCheck } from "react-icons/rx";
 import dayjs from "dayjs";
 import config from "../../../utils/config";
+import DurationIcon from "../../../assets/Duracao.svg?react";
+import CertificateIcon from "../../../assets/Certificado.svg?react";
+import TrainerIcon from "../../../assets/Formador.svg?react";
+import VideosIcon from "../../../assets/Videos.svg?react";
+import FlagIcon from "../../../assets/Flag.svg?react";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -35,6 +40,7 @@ export default function CourseDetails() {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id } });
       console.log(res);
       if (res.data.course.length > 0) {
+        res.data.course[0].settings = res.data.course[0].settings ? JSON.parse(res.data.course[0].settings) : null;
         setData({ course: res.data.course[0], modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
 
         if (res.data.modules.length > 0) {
@@ -88,7 +94,7 @@ export default function CourseDetails() {
 
   return (
     <div className="bg-[#FFFFFF] relative">
-      <div className="container m-auto grid grid-cols-3 mb-6 min-h-150 z-10">
+      <div className="container m-auto grid grid-cols-3 mb-6 min-h-150 z-10 absolute top-0 left-0 right-0">
         <div className="flex flex-col pt-[20%]">
           <p>{t("Course")}</p>
           <p className="text-[30px] font-bold text-black">{data.course?.name}</p>
@@ -101,18 +107,48 @@ export default function CourseDetails() {
               </div>
             </div>
             <Divider variant="dashed" className="mt-6! mb-6!" />
+            <div className="grid grid-cols-2">
+              {data.course?.id_certificate && (
+                <div className="flex items-center">
+                  <CertificateIcon className="mr-1" />
+                  <p className="text-[16px]">{t("With certificate")}</p>
+                </div>
+              )}
+              {(data.course?.settings?.duration_hours || data.course?.settings?.duration_minutes) && (
+                <div className="flex items-center">
+                  <DurationIcon className="mr-1" />
+                  <p className="text-[16px]">
+                    {data.course.settings.duration_hours} h {data.course.settings.duration_minutes ? `${data.course.settings.duration_minutes}m` : ""}
+                  </p>
+                </div>
+              )}
+              {data.course?.settings?.video && (
+                <div className="flex items-center">
+                  <VideosIcon className="mr-1" />
+                  <p className="text-[16px]">{data.course.settings.video} videos</p>
+                </div>
+              )}
+              {data.course?.settings?.trainer && (
+                <div className="flex items-center">
+                  <TrainerIcon className="mr-1" />
+                  <p className="text-[16px]">{data.course.settings.trainer}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-8 max-h-150 absolute top-0 right-0">
+      <div className="grid grid-cols-8 max-h-150">
         <div className="col-span-3"></div>
         <div className="col-span-5 pl-10 flex justify-center items-center">
           <img src={`${config.server_ip}/media/${data.course?.img}`} className="h-full!" />
         </div>
       </div>
-      <div className="container m-auto">
-        <div className="bg-[#000000] p-6 flex gap-16 mb-5">
-          <div className="p-2"></div>
+      <div className="container m-auto mt-[-40px] relative z-10">
+        <div className="bg-[#000000] p-6 flex gap-8 mb-5">
+          <div className="p-2 pr-0">
+            <FlagIcon className="max-w-[50px]" />
+          </div>
           <div className="p-2 pl-6 border-l border-l-white flex flex-col w-full">
             <div className="flex justify-between items-center mb-2">
               <p className="text-white text-[20px] font-bold uppercase">

@@ -14,13 +14,15 @@ import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
 import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
-import { RxChevronRight, RxChevronLeft, RxExclamationTriangle } from "react-icons/rx";
+import { RxChevronRight, RxChevronLeft, RxExclamationTriangle, RxLockClosed } from "react-icons/rx";
 
 import { Render } from "@puckeditor/core";
 import { configRender } from "../../../components/editor";
 import dayjs from "dayjs";
 import Topic from "./topic";
 import Test from "./test";
+
+import logo from "../../../assets/BIAL-Regional-Academy.svg";
 
 const { confirm } = Modal;
 
@@ -33,6 +35,7 @@ const Learning = () => {
   const [selectedCourseItem, setSelectedCourseItem] = useState(null);
   const [data, setData] = useState(null);
   const [modules, setModules] = useState(null);
+  const [allItems, setAllItems] = useState(null);
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
@@ -53,19 +56,18 @@ const Learning = () => {
   }, [slug]);
 
   useEffect(() => {
-    console.log(allowNext);
-  }, [allowNext]);
-
-  useEffect(() => {
     calcProgress();
   }, [progress]);
 
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id } });
-      console.log(res);
       if (res.data.course.length > 0) {
-        setData({ course: res.data.course[0], modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
+        const auxCourse = res.data.course[0];
+        auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
+        console.log(auxCourse);
+        setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
+        let auxAllItems = [];
 
         if (res.data.modules.length > 0) {
           let auxModules = res.data.modules;
@@ -78,11 +80,14 @@ const Learning = () => {
                   auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
                 if (auxModules[i].items[y].type === "test")
                   auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+
+                auxAllItems.push(auxModules[i].items[y]);
               }
               newModules.push(auxModules[i]);
             }
           }
 
+          setAllItems(auxAllItems);
           setModules(newModules);
           setProgress(res.data.progress);
         }
@@ -227,27 +232,34 @@ const Learning = () => {
         <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center h-25!">
           <div className="flex justify-center items-center w-full">
             {windowDimension.width > 1080 ? (
-              <div className="flex justify-between items-center w-full">
+              <div className="grid grid-cols-3 gap-4 w-full">
+                <div>
+                  <img src={logo} className="max-h-[70px]" />
+                </div>
                 <div className="flex flex-col justify-center items-center">
                   <div className="w-full flex justify-between items-center mb-2">
                     <p className="leading-[1em] text-[24px] font-bold uppercase">
                       {progressPercentage}% {t("Complete")}
                     </p>
                     <p className="leading-1">
-                      {progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length} /
+                      {progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length} /{" "}
                       {data?.topics.length + data?.tests.length} {t("steps")}
                     </p>
                   </div>
-                  <Progress strokeColor={"#2F8351"} percent={progressPercentage} style={{ width: "500px" }} showInfo={false} />
+                  <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
                 </div>
-                <div className="flex justify-center items-center">
-                  <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
-                    {t("Previous")}
-                  </Button>
-                  {allowNext && (
-                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
-                      {t("Next")}
-                    </Button>
+                <div className="flex justify-end items-center">
+                  {selectedCourseItem && (
+                    <>
+                      {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id && (
+                        <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
+                          {t("Previous")}
+                        </Button>
+                      )}
+                      <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
+                        {t("Next")}
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -270,45 +282,64 @@ const Learning = () => {
                     className="collapse-learning"
                     size="large"
                     bordered={false}
-                    items={modules.map((item) => ({
-                      key: item.id,
-                      label: (
-                        <div className="flex flex-col">
-                          <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
-                            {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                              <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                <AiOutlineCheck className="text-white" />
-                              </div>
-                            ) : (
-                              <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                            )}
-                            <p className={`text-[14px] ml-2`}>{item.title}</p>
-                          </div>
-                        </div>
-                      ),
-                      children: (
-                        <div className="flex flex-col">
-                          {item.items.map((_t) => (
-                            <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
-                              {progress.length > 0 && progress.filter((p) => p.id_course_topic === _t.id || p.id_course_test === _t.id).length > 0 ? (
+                    items={modules.map((item, mInd) => {
+                      console.log("mInd", mInd);
+                      console.log("find", progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length);
+                      return {
+                        key: item.id,
+                        label: (
+                          <div className="flex flex-col">
+                            <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
+                              {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
                                 <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                   <AiOutlineCheck className="text-white" />
                                 </div>
                               ) : (
                                 <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                               )}
-                              <p className={`text-[14px] ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
+                              <p className={`text-[14px] ml-2`}>{item.title}</p>
+                              {data?.course?.settings.progression_type === "linear"
+                                ? mInd > 0 &&
+                                  progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
+                                    <div className="flex justify-center items-center ml-4">
+                                      <RxLockClosed className="w-3.75 h-3.75" />
+                                    </div>
+                                  )
+                                : null}
                             </div>
-                          ))}
-                        </div>
-                      ),
-                    }))}
+                          </div>
+                        ),
+                        children: (
+                          <div className="flex flex-col">
+                            {item.items.map((_t, _i) => (
+                              <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
+                                {progress.length > 0 && progress.filter((p) => p.id_course_topic === _t.id || p.id_course_test === _t.id).length > 0 ? (
+                                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <AiOutlineCheck className="text-white" />
+                                  </div>
+                                ) : (
+                                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                )}
+                                <p className={`text-[14px] ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
+                                {data?.course?.settings.progression_type === "linear"
+                                  ? ((_i > 0 && mInd === 0) || (mInd > 0 && _i >= 0)) &&
+                                    progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === modules[mInd].items[_i - 1]?.id).length === 0 && (
+                                      <div className="flex justify-center items-center ml-4">
+                                        <RxLockClosed className="w-3.75 h-3.75" />
+                                      </div>
+                                    )
+                                  : null}
+                              </div>
+                            ))}
+                          </div>
+                        ),
+                      };
+                    })}
                     expandIconPlacement="end"
                     expandIcon={(panelProps) => {
                       let content = modules.filter((item) => item.id === parseInt(panelProps.panelKey))[0];
                       let topics = content.items?.filter((_t) => _t.type === "topic");
                       let tests = content.items?.filter((_t) => _t.type === "test");
-                      console.log(panelProps);
                       return (
                         <div className="flex justify-center items-center">
                           <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
@@ -328,21 +359,27 @@ const Learning = () => {
           <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full">
             <div className="overflow-y-auto">
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "topic" && (
-                <Topic progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} />
+                <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
               )}
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
-                <Test progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} />
+                <Test course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
               )}
             </div>
 
             <div className="p-8 flex justify-between items-center bg-[#707070]">
-              <Button icon={<RxChevronLeft />} type="primary" size="large" className="button-learning-footer" onClick={() => previous()}>
-                {t("Previous")}
-              </Button>
-              {allowNext && (
-                <Button icon={<RxChevronRight />} iconPlacement="end" type="primary" size="large" onClick={() => next()} disabled={!allowNext} className="button-learning-footer">
-                  {t("Next")}
-                </Button>
+              {selectedCourseItem && (
+                <>
+                  {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
+                    <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
+                      {t("Previous")}
+                    </Button>
+                  ) : (
+                    <div></div>
+                  )}
+                  <Button icon={<RxChevronRight />} iconPlacement="end" type="primary" size="large" onClick={() => next()} disabled={!allowNext} className="button-learning-footer">
+                    {t("Next")}
+                  </Button>
+                </>
               )}
             </div>
           </div>

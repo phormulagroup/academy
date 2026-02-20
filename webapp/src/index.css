@@ -26,8 +26,23 @@ input,
 select,
 .ant-input-password,
 .ant-picker,
-.ant-select {
+.ant-select,
+.ant-input-number {
   border-radius: 0 !important;
+}
+
+.ant-select-item-option-selected > div {
+  color: #fff !important;
+}
+
+.ant-select-item-option-selected .anticon svg {
+  filter: brightness(0) invert(1) !important;
+}
+
+.ant-form-item-control {
+  min-height: 40px !important;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 .auth-form .ant-form-item-label {
@@ -198,10 +213,22 @@ select {
   height: 50px !important;
 }
 
+.button-learning-header:disabled {
+  background-color: rgba(1, 2, 2, 0.2) !important;
+  border: 2px solid rgba(1, 2, 2, 0.2) !important;
+  color: rgba(1, 2, 2, 0.5) !important;
+}
+
 .button-learning-header:hover {
   background-color: #010202 !important;
   border: 2px solid #010202 !important;
   color: #fff !important;
+}
+
+.button-learning-header:disabled:hover {
+  background-color: rgba(1, 2, 2, 0.2) !important;
+  border: 2px solid rgba(1, 2, 2, 0.2) !important;
+  color: rgba(1, 2, 2, 0.5) !important;
 }
 
 .button-learning-footer {
@@ -213,10 +240,22 @@ select {
   height: 50px !important;
 }
 
+.button-learning-footer:disabled {
+  background-color: rgba(1, 2, 2, 0.2) !important;
+  border: 2px solid rgba(1, 2, 2, 0.2) !important;
+  color: rgba(1, 2, 2, 0.5) !important;
+}
+
 .button-learning-footer:hover {
   background-color: transparent !important;
   border: 2px solid #010202 !important;
   color: #010202 !important;
+}
+
+.button-learning-footer:disabled:hover {
+  background-color: rgba(1, 2, 2, 0.2) !important;
+  border: 2px solid rgba(1, 2, 2, 0.2) !important;
+  color: rgba(1, 2, 2, 0.5) !important;
 }
 
 .ant-btn {

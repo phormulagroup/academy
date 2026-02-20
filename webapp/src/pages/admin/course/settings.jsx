@@ -6,7 +6,7 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
-import { Button, Divider, Form, Input, Tabs } from "antd";
+import { Button, DatePicker, Divider, Form, Input, InputNumber, Radio, Select, Switch, Tabs } from "antd";
 import Constructor from "./constructor";
 import { useParams } from "react-router-dom";
 import Media from "../../../components/media/media";
@@ -20,6 +20,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TiptapFormField from "../../../components/tipTap/tipTapFormField";
 
 export default function Settings({ course }) {
+  const { languages } = useContext(Context);
   const [isOpenMedia, setIsOpenMedia] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
@@ -29,8 +30,10 @@ export default function Settings({ course }) {
 
   useEffect(() => {
     if (course) {
+      console.log(course);
       course.objection = course.objection ? (typeof course.objection === "string" ? JSON.parse(course.objection) : course.objection) : null;
       course.material = course.material ? (typeof course.material === "string" ? JSON.parse(course.material) : course.material) : null;
+      course.settings = course.settings ? (typeof course.settings === "string" ? JSON.parse(course.settings) : course.settings) : null;
       form.setFieldsValue(course);
     }
   }, [course]);
@@ -54,10 +57,10 @@ export default function Settings({ course }) {
   }
 
   async function save(values) {
-    console.log(values);
     try {
       values.objection = values.objection ? JSON.stringify(values.objection) : null;
       values.material = values.material ? JSON.stringify(values.material) : null;
+      values.settings = values.settings ? JSON.stringify(values.settings) : null;
       const res = await axios.post(endpoints.course.update, {
         data: values,
       });
@@ -76,12 +79,103 @@ export default function Settings({ course }) {
           <Form.Item hidden name="id">
             <Input />
           </Form.Item>
+          <p className="text-[18px] font-bold">{t("Information")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls additional information that users will see on course page")}</p>
+          <div className="grid grid-cols-3 gap-8">
+            <div>
+              <p className="pb-[8px]">Duration</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item name={["settings", "duration_hours"]} className="mb-0!">
+                  <InputNumber size="large" suffix="hours" className="w-full!" />
+                </Form.Item>
+                <Form.Item name={["settings", "duration_minutes"]} className="mb-0!">
+                  <InputNumber size="large" suffix="minutes" className="w-full!" />
+                </Form.Item>
+              </div>
+            </div>
+
+            <Form.Item name={["settings", "trainer"]} label={t("Trainer")} className="mb-0!">
+              <Select
+                size="large"
+                className="w-full"
+                placeholder="Selecione..."
+                allowClear
+                showSearch={{
+                  optionFilterProp: ["label"],
+                }}
+                options={[]}
+              />
+            </Form.Item>
+
+            <Form.Item name={["settings", "video"]} label={t("Video")} className="mb-0!">
+              <InputNumber size="large" className="w-full!" />
+            </Form.Item>
+          </div>
+
+          <Divider />
+          <p className="text-[18px] font-bold">{t("Access")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls additional restrictions that enrollees need to meet to access the course")}</p>
+          <div className="grid grid-cols-3 gap-8">
+            <div className="gap-4 flex flex-col">
+              <Form.Item name={["settings", "course_access_expiration"]} label={t("Course access expiration")} valuePropName="checked" className="mb-0!">
+                <Switch size="large" checkedChildren={t("Yes")} unCheckedChildren={t("No")} />
+              </Form.Item>
+              <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.settings?.course_access_expiration !== currentValues.settings?.course_access_expiration}>
+                {({ getFieldValue }) =>
+                  getFieldValue("settings")?.course_access_expiration ? (
+                    <div className="flex flex-col gap-4">
+                      <Form.Item name={["settings", "course_access_expiration_dates", "start_date"]} label={t("Start date")} className="mb-0!">
+                        <DatePicker showTime size="large" className="w-full" />
+                      </Form.Item>
+                      <Form.Item name={["settings", "course_access_expiration_dates", "end_date"]} label={t("End date")} className="mb-0!">
+                        <DatePicker showTime size="large" className="w-full" />
+                      </Form.Item>
+                    </div>
+                  ) : null
+                }
+              </Form.Item>
+            </div>
+            <div className="gap-4 flex flex-col">
+              <Form.Item name={["settings", "country_limit"]} label={t("Country limit")} valuePropName="checked" className="mb-0!">
+                <Switch size="large" checkedChildren={t("Yes")} unCheckedChildren={t("No")} />
+              </Form.Item>
+              <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.settings?.country_limit !== currentValues.settings?.country_limit}>
+                {({ getFieldValue }) =>
+                  getFieldValue("settings")?.country_limit ? (
+                    <div className="flex flex-col gap-4">
+                      <Form.Item name={["settings", "country"]} label={t("Country")} className="mb-0!">
+                        <Select
+                          mode="multiple"
+                          size="large"
+                          className="w-full"
+                          placeholder="Selecione..."
+                          allowClear
+                          showSearch={{
+                            optionFilterProp: ["label"],
+                          }}
+                          options={JSON.parse(languages.filter((l) => l.id === course.id_lang)[0].country).map((item) => ({ value: item, label: item }))}
+                        />
+                      </Form.Item>
+                    </div>
+                  ) : null
+                }
+              </Form.Item>
+            </div>
+            <Form.Item name={["settings", "student_limit"]} label={t("Student limit")} className="mb-0!">
+              <InputNumber size="large" className="w-full!" placeholder="0" />
+            </Form.Item>
+          </div>
+
+          <Divider />
+          <p className="text-[18px] font-bold">{t("Display and content options")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls the look and feel of the course and optional content settings")}</p>
+
           <div className="grid grid-cols-2 gap-8">
             <div>
               <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.img !== currentValues.img}>
                 {({ getFieldValue }) => (
                   <>
-                    <p className="pb-2">{t("Image")}</p>
+                    <p className="pb-2">{t("Banner image")}</p>
                     <div
                       className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
                       onClick={() => openMedia("img")}
@@ -136,57 +230,127 @@ export default function Settings({ course }) {
               </Form.Item>
             </div>
           </div>
-          <Divider />
-          <p className="text-[18px] font-bold mb-4">{t("Course material")}</p>
-          <div>
-            <Form.List name="material">
-              {(fields, { add, remove, move }) => (
-                <div className="grid grid-cols-4 gap-8 mt-4">
-                  {fields.map((field) => (
-                    <div>
-                      <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.material !== currentValues.material}>
-                        {({ getFieldValue }) => {
-                          console.log(getFieldValue("material"));
-                          return (
-                            <div className="relative">
-                              <div
-                                className="relative border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                                onClick={() => openMedia("material", field.name)}
-                                style={{
-                                  backgroundImage: `url(${config.server_ip}/media/${getFieldValue("material")[field.name]?.file})`,
-                                  backgroundSize: "contain",
-                                  backgroundRepeat: "no-repeat",
-                                  backgroundPosition: "center",
-                                }}
-                              >
-                                {!getFieldValue("material")[field.name]?.file ? (
-                                  <div className="flex justify-center items-center flex-col p-10">
-                                    <AiOutlineFile className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Select file")}</p>
-                                  </div>
-                                ) : null}
-                              </div>
-
-                              <Form.Item name={[field.name, "file"]} hidden>
-                                <Input />
-                              </Form.Item>
-                              <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
-                                <Button onClick={() => remove(field.name)} icon={<RxTrash />}></Button>
-                              </div>
+          <p>Materials</p>
+          <Form.List name="material">
+            {(fields, { add, remove, move }) => (
+              <div className="grid grid-cols-4 gap-8 mt-4">
+                {fields.map((field) => (
+                  <div>
+                    <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.material !== currentValues.material}>
+                      {({ getFieldValue }) => {
+                        return (
+                          <div className="relative">
+                            <div
+                              className="relative border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
+                              onClick={() => openMedia("material", field.name)}
+                              style={{
+                                backgroundSize: "contain",
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "center",
+                              }}
+                            >
+                              {!getFieldValue("material")[field.name]?.file ? (
+                                <div className="flex justify-center items-center flex-col p-10">
+                                  <AiOutlineFile className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Select file")}</p>
+                                </div>
+                              ) : (
+                                <div className="flex justify-center items-center flex-col p-10">
+                                  <AiOutlineFile className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{getFieldValue("material")[field.name]?.file}</p>
+                                </div>
+                              )}
                             </div>
-                          );
-                        }}
-                      </Form.Item>
-                    </div>
-                  ))}
 
-                  <div className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden" onClick={() => add()}>
-                    <div className="flex justify-center items-center flex-col p-10">
-                      <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add material")}</p>
-                    </div>
+                            <Form.Item name={[field.name, "file"]} hidden>
+                              <Input />
+                            </Form.Item>
+                            <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
+                              <Button onClick={() => remove(field.name)} icon={<RxTrash />}></Button>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    </Form.Item>
+                  </div>
+                ))}
+
+                <div className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden" onClick={() => add()}>
+                  <div className="flex justify-center items-center flex-col p-10">
+                    <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add material")}</p>
                   </div>
                 </div>
-              )}
-            </Form.List>
+              </div>
+            )}
+          </Form.List>
+          <Divider />
+          <p className="text-[18px] font-bold">{t("Navigation")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls how students interact with the content and their navigational experience")}</p>
+          <div className="grid grid-cols-3 gap-8">
+            <Form.Item name={["settings", "progression_type"]} className="mb-0!">
+              <Radio.Group>
+                <Radio value="linear" className="mb-4!">
+                  <p className="font-bold">{t("Linear")}</p>
+                  <p className="text-[12px]">{t("Student must progress through the course in the designated sequence. Linear Progress does not work with Open courses.")}</p>
+                </Radio>
+                <Radio value="free">
+                  <p className="font-bold">{t("Free form")}</p>
+                  <p className="text-[12px]">{t("Allows the student to move freely through the course without following the designated step sequence")}</p>
+                </Radio>
+              </Radio.Group>
+            </Form.Item>
+          </div>
+          <Divider />
+          <p className="text-[18px] font-bold">{t("Enrollment")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls how students gain access to the course")}</p>
+          <div className="grid grid-cols-3 gap-8">
+            <div>
+              <Form.Item name={"enrollment"} className="mb-0!">
+                <Radio.Group>
+                  <Radio value="open" className="mb-4!">
+                    <p className="font-bold">{t("Open")}</p>
+                    <p className="text-[12px]">{t("The course is not protected. Any student can access its content without the need to be logged-in or enrolled.")}</p>
+                  </Radio>
+                  <Radio value="free" className="mb-4!">
+                    <p className="font-bold">{t("Free")}</p>
+                    <p className="text-[12px]">{t("The course is protected. Registration and enrolment are required in order to access the content.")}</p>
+                  </Radio>
+                  <Radio value="buy_now" className="mb-4!">
+                    <p className="font-bold">{t("Buy now")}</p>
+                    <p className="text-[12px]">
+                      {t("The course is protected via the LearnDash built-in PayPal and/or Stripe. Students need to purchase the course (one-time fee) in order to gain access.")}
+                    </p>
+                  </Radio>
+                </Radio.Group>
+              </Form.Item>
+
+              <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.enrollment !== currentValues.enrollment}>
+                {({ getFieldValue }) =>
+                  getFieldValue("enrollment") === "buy_now" && (
+                    <div>
+                      <Form.Item name={["settings", "course_price"]} label={t("Course price")} className="mb-0! ml-6!">
+                        <InputNumber size="large" className="w-full!" placeholder="0" suffix="€" />
+                      </Form.Item>
+                    </div>
+                  )
+                }
+              </Form.Item>
+            </div>
+          </div>
+          <Divider />
+          <p className="text-[18px] font-bold">{t("Completion awards")}</p>
+          <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls the look and feel of the course and optional content settings")}</p>
+          <div className="grid grid-cols-3 gap-8">
+            <Form.Item name={"id_certificate"} label={t("Certificate")} className="mb-0!">
+              <Select
+                size="large"
+                className="w-full"
+                placeholder="Selecione..."
+                allowClear
+                showSearch={{
+                  optionFilterProp: ["label"],
+                }}
+                options={[]}
+              />
+            </Form.Item>
           </div>
           <Divider />
           <p className="text-[18px] font-bold mb-4">{t("Objection book")}</p>
@@ -221,7 +385,7 @@ export default function Settings({ course }) {
 
                   <div className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-full w-full overflow-hidden" onClick={() => add()}>
                     <div className="flex justify-center items-center flex-col p-10">
-                      <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add material")}</p>
+                      <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add books")}</p>
                     </div>
                   </div>
                 </div>
