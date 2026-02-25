@@ -57,6 +57,13 @@ const endpoints = {
     create: "/email/create",
     delete: "/email/delete",
   },
+  course_certificate: {
+    read: "/certificate/read",
+    readById: "/certificate/readById",
+    update: "/certificate/update",
+    create: "/certificate/create",
+    delete: "/certificate/delete",
+  },
   language: {
     read: "/language/read",
     update: "/language/update",

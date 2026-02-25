@@ -24,19 +24,34 @@ export default function Settings({ course }) {
   const [isOpenMedia, setIsOpenMedia] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
+  const [certificates, setCertificates] = useState([]);
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
 
   useEffect(() => {
     if (course) {
-      console.log(course);
       course.objection = course.objection ? (typeof course.objection === "string" ? JSON.parse(course.objection) : course.objection) : null;
       course.material = course.material ? (typeof course.material === "string" ? JSON.parse(course.material) : course.material) : null;
       course.settings = course.settings ? (typeof course.settings === "string" ? JSON.parse(course.settings) : course.settings) : null;
       form.setFieldsValue(course);
+      getCertificates();
     }
   }, [course]);
+
+  function getCertificates() {
+    axios
+      .get(endpoints.course_certificate.read)
+      .then((res) => {
+        if (res.data.length > 0) {
+          console.log(res.data);
+          setCertificates(res.data.filter((c) => c.id_lang === course.id_lang).map((c) => ({ value: c.id, label: c.name })));
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
 
   function openMedia(k, i) {
     setMediaKey(k);
@@ -339,7 +354,7 @@ export default function Settings({ course }) {
           <p className="text-[18px] font-bold">{t("Completion awards")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls the look and feel of the course and optional content settings")}</p>
           <div className="grid grid-cols-3 gap-8">
-            <Form.Item name={"id_certificate"} label={t("Certificate")} className="mb-0!">
+            <Form.Item name={"id_course_certificate"} label={t("Certificate")} className="mb-0!">
               <Select
                 size="large"
                 className="w-full"
@@ -348,7 +363,7 @@ export default function Settings({ course }) {
                 showSearch={{
                   optionFilterProp: ["label"],
                 }}
-                options={[]}
+                options={certificates}
               />
             </Form.Item>
           </div>
@@ -393,7 +408,9 @@ export default function Settings({ course }) {
             </Form.List>
           </div>
         </Form>
-        <Button onClick={form.submit}>Save</Button>
+        <Button className="mt-4" size="large" type="primary" onClick={form.submit}>
+          Save
+        </Button>
       </div>
     </div>
   );

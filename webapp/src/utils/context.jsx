@@ -142,7 +142,7 @@ const ContextProvider = ({ children }) => {
     setIsLoggedIn(true);
     if (window.location.href.includes("login"))
       if (res.user.id_role === 1) navigate("/admin");
-      else navigate("/");
+      else navigate(`/${i18n.language}/`);
     else navigate(window.location.pathname);
   }
 

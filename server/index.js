@@ -22,6 +22,7 @@ const roleRouter = require("./routes/role");
 const mediaRouter = require("./routes/media");
 const settingsRouter = require("./routes/settings");
 const emailRouter = require("./routes/email");
+const certificateRouter = require("./routes/certificate");
 
 require("dotenv").config();
 
@@ -82,5 +83,6 @@ app.use("/media", mediaRouter);
 app.use("/import", middleware, importRouter);
 app.use("/settings", middleware, settingsRouter);
 app.use("/email", middleware, emailRouter);
+app.use("/certificate", middleware, certificateRouter);
 
 module.exports = app;

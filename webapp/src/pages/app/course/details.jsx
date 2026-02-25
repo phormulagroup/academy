@@ -20,6 +20,7 @@ import CertificateIcon from "../../../assets/Certificado.svg?react";
 import TrainerIcon from "../../../assets/Formador.svg?react";
 import VideosIcon from "../../../assets/Videos.svg?react";
 import FlagIcon from "../../../assets/Flag.svg?react";
+import i18n from "../../../utils/i18n";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -168,7 +169,7 @@ export default function CourseDetails() {
             />
           </div>
           <div className="p-2">
-            <Button className="min-w-50" onClick={() => navigate(`/courses/${slug}/learning`)}>
+            <Button className="min-w-50" onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}>
               {t("Enter")}
             </Button>
           </div>

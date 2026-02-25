@@ -65,7 +65,6 @@ const Learning = () => {
       if (res.data.course.length > 0) {
         const auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
-        console.log(auxCourse);
         setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
         let auxAllItems = [];
 
@@ -158,7 +157,6 @@ const Learning = () => {
           data: auxData,
         })
         .then((res) => {
-          console.log(res);
           let newProgress = Object.assign([], progress);
           newProgress = [...newProgress, ...auxData];
           if (goToNextModule) {
@@ -201,7 +199,7 @@ const Learning = () => {
           okText: "Yes",
           okButtonProps: { background: "blue" },
           onOk() {
-            navigate(`/courses/${slug}`);
+            navigate(`/${i18n.language}/courses/${slug}`);
           },
           onCancel() {
             console.log("Cancel");
@@ -210,8 +208,6 @@ const Learning = () => {
       }
     } else {
       if (indexOfSelectedItem === 0) {
-        console.log(modules[findIndexModule - 1].items);
-        console.log(modules[findIndexModule - 1].items.length);
         setSelectedCourseItem(modules[findIndexModule - 1].items[modules[findIndexModule - 1].items.length - 1]);
       } else {
         setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem - 1]);
@@ -283,8 +279,15 @@ const Learning = () => {
                     size="large"
                     bordered={false}
                     items={modules.map((item, mInd) => {
-                      console.log("mInd", mInd);
-                      console.log("find", progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length);
+                      console.log(
+                        progress.filter((p) =>
+                          mInd > 0 && 0 === 0
+                            ? p.activity_type === "topic"
+                              ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
+                              : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
+                            : p.activity_type === "topic" && p.id_course_topic === modules[mInd].items[0]?.id,
+                        ),
+                      );
                       return {
                         key: item.id,
                         label: (
@@ -323,7 +326,15 @@ const Learning = () => {
                                 <p className={`text-[14px] ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
                                 {data?.course?.settings.progression_type === "linear"
                                   ? ((_i > 0 && mInd === 0) || (mInd > 0 && _i >= 0)) &&
-                                    progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === modules[mInd].items[_i - 1]?.id).length === 0 && (
+                                    progress.filter((p) =>
+                                      mInd > 0 && _i === 0
+                                        ? p.activity_type === "topic"
+                                          ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
+                                          : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
+                                        : p.activity_type === "topic"
+                                          ? p.id_course_topic === modules[mInd].items[_i - 1]?.id
+                                          : p.id_course_test === modules[mInd].items[_i - 1]?.id,
+                                    ).length === 0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
                                       </div>

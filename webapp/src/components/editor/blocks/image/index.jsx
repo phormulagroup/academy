@@ -30,7 +30,6 @@ const Image = {
     },
   },
   render: ({ image, caption, size }) => {
-    console.log(size);
     if (!image?.url) return null;
     return (
       <figure>

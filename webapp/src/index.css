@@ -401,4 +401,16 @@ select {
   background: rgba(6, 24, 72, 0.2) !important;
 }
 
+.certificate-button {
+  background-color: #ffc600 !important;
+  border: 2px solid #ffc600;
+  color: #000 !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+}
+
+.certificate-button:hover {
+  border: 2px solid #ffc600 !important;
+}
+
 @import "tailwindcss";

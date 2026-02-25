@@ -65,7 +65,7 @@ const Main = () => {
       children: [
         { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
         { key: "/admin/quizzes", label: t("Quizzes"), icon: <TestsIcon /> },
-        { key: "/admin/certificates", label: t("Certificates"), icon: <CertificatesIcon /> },
+        { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
         { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
         { key: "/admin/orders", label: t("Orders"), icon: <OrdersIcon /> },
       ],

@@ -54,7 +54,7 @@ export default function Register() {
             content: t("User registered successfully. You're registration is now pending for review."),
           });
           setTimeout(() => {
-            navigate("/login", { replace: true });
+            navigate(`/${i18n.language}/login`, { replace: true });
             setIsButtonLoading(false);
           }, 1500);
         } else if (res.data.message) {

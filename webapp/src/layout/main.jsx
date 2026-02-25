@@ -19,7 +19,7 @@ const { Header, Content, Sider } = Layout;
 
 const Main = () => {
   const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension } = useContext(Context);
-  const [current, setCurrent] = useState("/admin/");
+  const [current, setCurrent] = useState("");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
 

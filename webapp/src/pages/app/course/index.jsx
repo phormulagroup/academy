@@ -19,7 +19,10 @@ import DurationIcon from "../../../assets/Duracao.svg?react";
 import CertificateIcon from "../../../assets/Certificado.svg?react";
 import TrainerIcon from "../../../assets/Formador.svg?react";
 import VideosIcon from "../../../assets/Videos.svg?react";
+import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
+import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import i18n from "../../../utils/i18n";
+import certificate from "../../../utils/certificate";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -82,9 +85,26 @@ export default function CourseDetails() {
     return 0;
   }
 
+  function downloadCertificate(item) {
+    console.log(item);
+    axios
+      .get(endpoints.course_certificate.readById, { params: { id: item.id_course_certificate } })
+      .then((res) => {
+        console.log(res.data);
+        certificate.generate({
+          background: `${config.server_ip}/media/${res.data[0].background}`,
+          text: res.data[0].text,
+          fileName: `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   return (
     <div className="bg-[#FFFFFF] relative">
-      <div className="container mx-auto p-6 grid grid-cols-3 gap-10">
+      <div className="container mx-auto p-6 grid grid-cols-3 gap-10 mt-10">
         <div className="col-span-3 flex flex-col justify-center items-center mb-10">
           <p className="text-[30px] font-bold">{t("Online Courses - Bial Academy")}</p>
           <p className="italic">Keeping training in mind</p>
@@ -93,12 +113,17 @@ export default function CourseDetails() {
           data.map((item) => (
             <div className="shadow-[0px_3px_6px_#00000029]">
               <div
-                className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black`}
+                className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
                 style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
               >
                 <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
                   <p className="font-bold text-[18px]">{item.course?.name}</p>
                 </div>
+                {calcProgress(item.progress, item.modules) === 100 && (
+                  <div className="absolute -bottom-4 right-4 rounded-[40px] flex items-center">
+                    <CertificateIconWhite className="w-[80px] h-[80px]" />
+                  </div>
+                )}
               </div>
               <div className="bg-[#F7F7F7] p-4">
                 <div className="flex items-center">
@@ -113,25 +138,32 @@ export default function CourseDetails() {
                 <div className="mt-4 mb-4 flex flex-col justify-center items-center">
                   {calcProgress(item.progress, item.modules) === 100 ? (
                     <>
-                      <div className="flex justify-between">
-                        <p className="mb-2 uppercase">
+                      <div className="flex items-center justify-between w-full mb-2 min-h-[33px]">
+                        <p className="uppercase">
                           {calcProgress(item.progress, item.modules)}% {t("completed")}
                         </p>
-                        <Button>{t("Certificate")}</Button>
+                        <Button className="certificate-button" onClick={() => downloadCertificate(item.course)}>
+                          <div className="flex justify-center items-center">
+                            <DownloadCloudIcon className="mr-2" />
+                            {t("Certificate")}
+                          </div>
+                        </Button>
                       </div>
                       <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
                     </>
                   ) : (
                     <>
-                      <p className="mb-2 uppercase">
-                        {calcProgress(item.progress, item.modules)}% {t("completed")}
-                      </p>
+                      <div className="flex items-center justify-center w-full mb-2 min-h-[33px]">
+                        <p className="mb-2 uppercase">
+                          {calcProgress(item.progress, item.modules)}% {t("completed")}
+                        </p>
+                      </div>
                       <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
                     </>
                   )}
                 </div>
-                <div className="grid grid-cols-2">
-                  {item.course.id_certificate && (
+                <div className="grid grid-cols-2 gap-4">
+                  {item.course.id_course_certificate && (
                     <div className="flex items-center">
                       <CertificateIcon className="mr-1" />
                       <p className="text-[16px]">{t("With certificate")}</p>

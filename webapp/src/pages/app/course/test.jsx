@@ -30,7 +30,26 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
     // If the topic is already completed, allow to go to the next topic/test
     if (progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id).length > 0) {
       setAllowNext(true);
+      setIsTopicLocked(false);
       return;
+    }
+
+    if (course.settings && course.settings.progression_type === "linear") {
+      let findIndex = allItems.findIndex((i) => i.id === selectedCourseItem.id && i.type === selectedCourseItem.type);
+      if (findIndex > 0) {
+        let previousItem = allItems[findIndex - 1];
+        let previousCompleted = progress.filter(
+          (p) =>
+            p.is_completed === 1 &&
+            ((p.activity_type === "topic" && p.id_course_topic === previousItem.id) || (p.activity_type === "test" && p.id_course_test === previousItem.id)),
+        ).length;
+
+        if (previousCompleted > 0) {
+          setIsTopicLocked(false);
+        } else {
+          setIsTopicLocked(true);
+        }
+      }
     }
   }, [selectedCourseItem]);
 
@@ -153,6 +172,10 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
         if (index === questions.length + 1) {
           clearInterval(interval);
           setIsCalculating(false);
+
+          if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= 80) {
+            setAllowNext(true);
+          }
           console.log("Terminou!");
         }
       }, 1500);

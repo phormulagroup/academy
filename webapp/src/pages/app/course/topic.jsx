@@ -9,13 +9,15 @@ import { RxLockClosed } from "react-icons/rx";
 const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, modules, allItems }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
+  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
     setAllowNext(false);
     setIsTopicLocked(false);
-    const iframe = document.querySelector('iframe[src*="player.vimeo.com"]');
+
     if (selectedCourseItem.type === "topic") {
+      const iframe = document.querySelector('iframe[src*="player.vimeo.com"]');
       // If the topic is already completed, allow to go to the next topic/test
       if (progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === selectedCourseItem.id).length > 0) {
         setAllowNext(true);
@@ -79,11 +81,21 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
         });
 
         player.on("ended", () => {
+          console.log("ended");
           setAllowNext(true);
+          setIsVideoCompleted(true);
         });
       }
     }
   });
+
+  useEffect(() => {
+    setIsVideoCompleted(false);
+  }, [selectedCourseItem]);
+
+  useEffect(() => {
+    if (isVideoCompleted) setAllowNext(true);
+  }, [isVideoCompleted]);
 
   return (
     <div>

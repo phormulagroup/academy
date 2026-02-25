@@ -56,7 +56,7 @@ export default function GeneratePassword() {
       .then((res) => {
         if (res.data.updated) {
           messageApi.success("A sua password foi associada com sucesso!");
-          navigate("/");
+          navigate(`/${i18n.language}/`);
         } else {
           messageApi.error(res.data.message);
         }
