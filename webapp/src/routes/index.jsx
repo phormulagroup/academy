@@ -15,10 +15,6 @@ export default function AppRoutes() {
   const { isLoggedIn, isLoading, isLoadingLanguage, user, languages } = useContext(Context);
   const { lang } = useParams();
 
-  useEffect(() => {
-    console.log(languages);
-  }, [languages]);
-
   const finalRoutes = (() => {
     if (isLoading || isLoadingLanguage || !languages || languages.length === 0) return null;
 
@@ -67,12 +63,10 @@ export default function AppRoutes() {
     ];
   })();
 
-  console.log(finalRoutes);
-
   const element = finalRoutes ? useRoutes(finalRoutes) : null;
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: "#000000", fontFamily: "Poppins" } }}>
+    <ConfigProvider theme={{ token: { colorPrimary: "#000000", fontFamily: "Poppins", blue: "#00b9d6" } }}>
       {isLoading ? <Loading /> : isLoadingLanguage ? <LoadingLanguage /> : element}
     </ConfigProvider>
   );

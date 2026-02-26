@@ -23,6 +23,7 @@ import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react"
 import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import i18n from "../../../utils/i18n";
 import certificate from "../../../utils/certificate";
+import dayjs from "dayjs";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -77,7 +78,7 @@ export default function CourseDetails() {
   function calcProgress(items, modules) {
     if (items && items.length > 0) {
       let steps = modules.map((m) => m.items.length).reduce((a, b) => a + b, 0);
-      let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module").length;
+      let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length;
 
       let progressPercentage = (100 * completed) / steps;
       return progressPercentage;
@@ -85,17 +86,26 @@ export default function CourseDetails() {
     return 0;
   }
 
-  function downloadCertificate(item) {
+  function downloadCertificate(item, progress) {
     console.log(item);
     axios
       .get(endpoints.course_certificate.readById, { params: { id: item.id_course_certificate } })
       .then((res) => {
-        console.log(res.data);
-        certificate.generate({
-          background: `${config.server_ip}/media/${res.data[0].background}`,
-          text: res.data[0].text,
-          fileName: `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`,
-        });
+        certificate.generate(
+          {
+            background: `${config.server_ip}/media/${res.data[0].background}`,
+            text: res.data[0].text,
+            fileName: `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`,
+          },
+          {
+            name: user.name,
+            course: item.name,
+            date:
+              progress.filter((p) => p.id_course === item.id && p.activity_type === "course").length > 0
+                ? dayjs(progress.filter((p) => p.id_course === item.id && p.activity_type === "course")[0]?.created_at).format("YYYY-MM-DD HH:mm")
+                : null,
+          },
+        );
       })
       .catch((err) => {
         console.log(err);
@@ -121,7 +131,7 @@ export default function CourseDetails() {
                 </div>
                 {calcProgress(item.progress, item.modules) === 100 && (
                   <div className="absolute -bottom-4 right-4 rounded-[40px] flex items-center">
-                    <CertificateIconWhite className="w-[80px] h-[80px]" />
+                    <CertificateIconWhite className="w-20 h-20" />
                   </div>
                 )}
               </div>
@@ -138,11 +148,11 @@ export default function CourseDetails() {
                 <div className="mt-4 mb-4 flex flex-col justify-center items-center">
                   {calcProgress(item.progress, item.modules) === 100 ? (
                     <>
-                      <div className="flex items-center justify-between w-full mb-2 min-h-[33px]">
+                      <div className="flex items-center justify-between w-full mb-2 min-h-8.25">
                         <p className="uppercase">
                           {calcProgress(item.progress, item.modules)}% {t("completed")}
                         </p>
-                        <Button className="certificate-button" onClick={() => downloadCertificate(item.course)}>
+                        <Button className="certificate-button" onClick={() => downloadCertificate(item.course, item.progress)}>
                           <div className="flex justify-center items-center">
                             <DownloadCloudIcon className="mr-2" />
                             {t("Certificate")}
@@ -153,7 +163,7 @@ export default function CourseDetails() {
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center justify-center w-full mb-2 min-h-[33px]">
+                      <div className="flex items-center justify-center w-full mb-2 min-h-8.25">
                         <p className="mb-2 uppercase">
                           {calcProgress(item.progress, item.modules)}% {t("completed")}
                         </p>
@@ -193,9 +203,15 @@ export default function CourseDetails() {
               </div>
               <div className="p-4 flex justify-center items-center">
                 <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
-                  <Button size="large" type="primary" className="w-full!">
-                    {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : calcProgress(item.progress, item.modules) === 100 ? "Rever" : "Entrar"}
-                  </Button>
+                  {calcProgress(item.progress, item.modules) === 100 ? (
+                    <Button size="large" color="blue" variant="solid" className="w-full!">
+                      Rever
+                    </Button>
+                  ) : (
+                    <Button size="large" type="primary" className="w-full!">
+                      {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
+                    </Button>
+                  )}
                 </Link>
               </div>
             </div>

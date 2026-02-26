@@ -117,7 +117,7 @@ const Learning = () => {
             activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
             id_course_topic: selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
             id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
-            id_course_module: null,
+            id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
             created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
@@ -134,6 +134,19 @@ const Learning = () => {
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
         ];
+
+        if (moduleSelectedCourseItem.id === modules[modules.length - 1].id)
+          auxData.push({
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: "course",
+            id_course_topic: null,
+            id_course_test: null,
+            id_course_module: null,
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          });
 
         goToNextModule = true;
       } else {
@@ -230,7 +243,7 @@ const Learning = () => {
             {windowDimension.width > 1080 ? (
               <div className="grid grid-cols-3 gap-4 w-full">
                 <div>
-                  <img src={logo} className="max-h-[70px]" />
+                  <img src={logo} className="max-h-17.5" />
                 </div>
                 <div className="flex flex-col justify-center items-center">
                   <div className="w-full flex justify-between items-center mb-2">

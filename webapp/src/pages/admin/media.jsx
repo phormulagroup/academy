@@ -23,13 +23,16 @@ function Media() {
   const [isUploading, setIsUploading] = useState(false);
 
   const [media, setMedia] = useState([]);
-  const [fileList, setFileList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(32);
   const [minValue, setMinValue] = useState(0);
   const [maxValue, setMaxValue] = useState(32);
 
-  function handleGetMedia() {
+  useEffect(() => {
+    getData();
+  }, []);
+
+  function getData() {
     setIsLoading(true);
     axios
       .get(endpoints.media.read)
@@ -170,7 +173,9 @@ function Media() {
           );
         })}
         {media.length > 0 && (
-          <Pagination align="center" showSizeChanger={false} onChange={handleChangePage} pageSize={itemsPerPage} defaultCurrent={1} current={currentPage} total={media.length} />
+          <div className="col-span-8 mt-4">
+            <Pagination align="center" showSizeChanger={false} onChange={handleChangePage} pageSize={itemsPerPage} defaultCurrent={1} current={currentPage} total={media.length} />
+          </div>
         )}
       </div>
     </div>
