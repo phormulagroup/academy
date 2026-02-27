@@ -5,7 +5,7 @@ import { FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
 import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../../components/table";
+import Table from "../../../components/admin/table";
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
@@ -135,7 +135,7 @@ export default function CourseDetails() {
                   </div>
                 )}
               </div>
-              <div className="bg-[#F7F7F7] p-4">
+              <div className="bg-[#F7F7F7] p-6">
                 <div className="flex items-center">
                   <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
                   <div className="ml-2">
@@ -201,7 +201,7 @@ export default function CourseDetails() {
                   )}
                 </div>
               </div>
-              <div className="p-4 flex justify-center items-center">
+              <div className="p-8 flex justify-center items-center">
                 <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
                   {calcProgress(item.progress, item.modules) === 100 ? (
                     <Button size="large" color="blue" variant="solid" className="w-full!">

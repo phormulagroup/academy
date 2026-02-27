@@ -5,16 +5,9 @@ import { Button, Dropdown, Spin, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../../components/table";
-import Create from "../../../components/language/create";
-import Update from "../../../components/language/update";
-import Delete from "../../../components/delete";
-
 import { Context } from "../../../utils/context";
-
 import endpoints from "../../../utils/endpoints";
-import { AiOutlineLoading, AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../../components/language/translations";
+
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import EmailEditor from "react-email-editor";

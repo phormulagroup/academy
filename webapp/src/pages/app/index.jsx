@@ -5,7 +5,7 @@ import { FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
 import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/table";
+import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";

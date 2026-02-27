@@ -11,7 +11,6 @@ export default function LanguageWrapper() {
 
   // 1) valida o idioma do URL
   const isSupported = !!lang && languages.filter((l) => l.code === lang).length > 0;
-  console.log(isSupported);
 
   // 2) se não for suportado, redireciona preservando o resto do caminho
   if (!isSupported) {
@@ -25,7 +24,6 @@ export default function LanguageWrapper() {
 
   // 3) sincronizar i18next com o :lang do URL
   useEffect(() => {
-    console.log(lang);
     if (lang && i18n.language !== lang) {
       i18n.changeLanguage(lang);
     }

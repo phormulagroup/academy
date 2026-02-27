@@ -7,7 +7,7 @@ import axios from "axios";
 import config from "../../utils/config";
 import endpoints from "../../utils/endpoints";
 
-import Delete from "../../components/delete";
+import Delete from "../../components/admin/delete";
 import upload from "../../utils/upload";
 import { useContext } from "react";
 import { Context } from "../../utils/context";

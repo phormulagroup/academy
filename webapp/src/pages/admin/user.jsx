@@ -5,17 +5,17 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/table";
-import Create from "../../components/user/create";
-import Update from "../../components/user/update";
-import Logs from "../../components/logs";
+import Table from "../../components/admin/table";
+import Create from "../../components/admin/user/create";
+import Update from "../../components/admin/user/update";
+import Logs from "../../components/admin/logs";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { RxSwitch } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
-import Status from "../../components/user/status";
+import Status from "../../components/admin/user/status";
 
 export default function User() {
   const { user } = useContext(Context);

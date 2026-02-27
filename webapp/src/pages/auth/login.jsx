@@ -17,6 +17,7 @@ import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
 import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
+import i18n from "../../utils/i18n";
 
 export default function Login() {
   const { isLoggedIn, login, messageApi, microsoftLogin, createLog } = useContext(Context);
@@ -99,7 +100,7 @@ export default function Login() {
                 {t("Login")}
               </Button>
               <p className="text-center mt-4">
-                <Link to="/register" className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
+                <Link to={`/${i18n.language}/register`} className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
                   « Registar
                 </Link>
               </p>

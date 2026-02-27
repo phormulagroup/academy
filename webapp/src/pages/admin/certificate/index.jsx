@@ -6,10 +6,10 @@ import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 import { RxReload } from "react-icons/rx";
 
-import Table from "../../../components/table";
-import Delete from "../../../components/delete";
-import Create from "../../../components/certificate/create";
-import Logs from "../../../components/logs";
+import Table from "../../../components/admin/table";
+import Delete from "../../../components/admin/delete";
+import Create from "../../../components/admin/certificate/create";
+import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
 

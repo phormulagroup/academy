@@ -5,16 +5,14 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../../components/table";
-import Create from "../../../components/language/create";
-import Update from "../../../components/language/update";
-import Delete from "../../../components/delete";
+import Table from "../../../components/admin/table";
+import Update from "../../../components/admin/language/update";
+import Delete from "../../../components/admin/delete";
 
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../../components/language/translations";
+
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +25,6 @@ export default function Template() {
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
 
-  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
 
   const navigate = useNavigate();
@@ -106,16 +103,6 @@ export default function Template() {
     setTableData(aux);
   }
 
-  function openUpdate(obj) {
-    setSelectedData(obj);
-    setIsOpenUpdate(true);
-  }
-
-  function openTranslations(obj) {
-    setSelectedData(obj);
-    setIsOpenTranslations(true);
-  }
-
   function openDelete(obj) {
     setSelectedData(obj);
     setIsOpenDelete(true);
@@ -126,13 +113,12 @@ export default function Template() {
     if (c) {
       getData();
     }
-    setIsOpenUpdate(false);
+
     setIsOpenDelete(false);
   }
 
   return (
     <div className="p-2">
-      <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
       <div className="flex justify-between items-center mb-4">
         <div>

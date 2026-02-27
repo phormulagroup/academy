@@ -12,6 +12,7 @@
   height: 100vh;
   font-family: "Poppins";
   color: #000000;
+  overflow-x: hidden;
 }
 
 /* Parametrização */
@@ -155,6 +156,72 @@ select {
   padding: calc(var(--spacing) * 4) !important;
 }
 
+.collapse-learning .ant-collapse-header {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.collapse-learning .ant-collapse-expand-icon {
+  margin-left: 40px !important;
+}
+
+.collapse-learning .ant-collapse-body {
+  background-color: #eaeaea;
+  border: 0 !important;
+  padding: 20px !important;
+}
+
+.collapse-result {
+  background-color: transparent !important;
+}
+
+.collapse-result .ant-collapse-item {
+  margin-bottom: 20px !important;
+  border-bottom: 0 !important;
+  border: 1px solid #969696 !important;
+  border-radius: 0 !important;
+}
+
+.collapse-result .ant-collapse-header {
+  display: flex !important;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center !important;
+  background-color: #fff !important;
+  border-radius: 0 !important;
+}
+
+.collapse-result.completed .ant-collapse-header {
+  background-color: #eef7f1 !important;
+}
+
+.collapse-result.completed .ant-collapse-item {
+  border: 1px solid #2f8351 !important;
+}
+
+.collapse-result.completed .ant-collapse-body {
+  background-color: #eef7f1;
+}
+
+.collapse-result .ant-collapse-expand-icon {
+  margin-left: 0 !important;
+}
+
+.collapse-result .ant-collapse-body {
+  background-color: #eaeaea;
+  border: 0 !important;
+  padding: 20px !important;
+}
+
+.collapse-result .collapse-course .ant-collapse-header {
+  background-color: #fff !important;
+}
+
+.collapse-result .collapse-course .ant-collapse-body {
+  background-color: #fff !important;
+}
+
 .collapse-course {
   background-color: transparent !important;
 }
@@ -189,20 +256,36 @@ select {
   padding: 0 !important;
 }
 
-.collapse-learning .ant-collapse-header {
-  display: flex !important;
-  flex-direction: column;
-  justify-content: center;
+.ant-btn {
+  border-radius: 0 !important;
 }
 
-.collapse-learning .ant-collapse-expand-icon {
-  margin-left: 40px !important;
+.ant-btn.blue {
+  background-color: #00b9d6;
+  color: #fff;
+  border-color: #00b9d6 !important;
 }
 
-.collapse-learning .ant-collapse-body {
-  background-color: #eaeaea;
-  border: 0 !important;
-  padding: 20px !important;
+.ant-btn.blue:hover {
+  background-color: transparent;
+  color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+}
+
+.button-back-learning-header {
+  background-color: transparent !important;
+  border: 2px solid #010202;
+  color: #010202 !important;
+  border-style: dashed;
+  border-radius: 40px !important;
+  font-size: 16px !important;
+  height: 50px !important;
+}
+
+.button-back-learning-header:hover {
+  background-color: #010202 !important;
+  color: #fff !important;
+  border: 2px solid #010202 !important;
 }
 
 .button-learning-header {
@@ -257,22 +340,6 @@ select {
   background-color: rgba(1, 2, 2, 0.2) !important;
   border: 2px solid rgba(1, 2, 2, 0.2) !important;
   color: rgba(1, 2, 2, 0.5) !important;
-}
-
-.ant-btn {
-  border-radius: 0 !important;
-}
-
-.ant-btn.blue {
-  background-color: #00b9d6;
-  color: #fff;
-  border-color: #00b9d6 !important;
-}
-
-.ant-btn.blue:hover {
-  background-color: transparent;
-  color: #00b9d6 !important;
-  border-color: #00b9d6 !important;
 }
 
 .review-test-question {
@@ -412,6 +479,56 @@ select {
 
 .certificate-button:hover {
   border: 2px solid #ffc600 !important;
+}
+
+.user-card-button-account {
+  color: #00b9d6;
+  border-color: #00b9d6;
+}
+
+.user-card-button-account:hover {
+  color: #fff !important;
+  background: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+}
+
+.user-card-button-account.selected {
+  color: #fff !important;
+  background: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+}
+
+.user-card-button-account.selected:hover {
+  color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+  background-color: #fff !important;
+}
+
+.user-card-button-result {
+  color: #000;
+  border-color: #000;
+}
+
+.user-card-button-result:hover {
+  color: #fff !important;
+  background: #000 !important;
+  border-color: #000 !important;
+}
+
+.user-card-button-result.selected {
+  color: #fff !important;
+  background: #000 !important;
+  border-color: #000 !important;
+}
+
+.user-card-button-result.selected:hover {
+  color: #000 !important;
+  border-color: #000 !important;
+  background-color: #fff !important;
+}
+
+.ant-dropdown-menu {
+  border-radius: 0 !important;
 }
 
 @import "tailwindcss";

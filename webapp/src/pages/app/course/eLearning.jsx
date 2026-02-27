@@ -16,13 +16,12 @@ import { TbWorld } from "react-icons/tb";
 import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
 import { RxChevronRight, RxChevronLeft, RxExclamationTriangle, RxLockClosed } from "react-icons/rx";
 
-import { Render } from "@puckeditor/core";
-import { configRender } from "../../../components/editor";
 import dayjs from "dayjs";
 import Topic from "./topic";
 import Test from "./test";
 
 import logo from "../../../assets/BIAL-Regional-Academy.svg";
+import Module from "./module";
 
 const { confirm } = Modal;
 
@@ -39,8 +38,11 @@ const Learning = () => {
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
+  const [metaData, setMetaData] = useState(null);
 
   const { t, i18n } = useTranslation();
+
+  const location = useLocation();
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -52,8 +54,13 @@ const Learning = () => {
   const { slug } = useParams();
 
   useEffect(() => {
+    console.log("cenas");
     getData();
   }, [slug]);
+
+  useEffect(() => {
+    console.log(location);
+  }, [location]);
 
   useEffect(() => {
     calcProgress();
@@ -86,6 +93,13 @@ const Learning = () => {
             }
           }
 
+          if (location.state && location.state.courseItemId && location.state.courseItemType) {
+            if (location.state.courseItemType === "module") selectCourseItem(res.data.modules.filter((item) => item.id === location.state.courseItemId)[0]);
+            else if (location.state.courseItemType === "topic")
+              selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+            else if (location.state.courseItemType === "test")
+              selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+          }
           setAllItems(auxAllItems);
           setModules(newModules);
           setProgress(res.data.progress);
@@ -97,13 +111,17 @@ const Learning = () => {
   }
 
   function selectCourseItem(item) {
+    console.log(item);
     setSelectedCourseItem(item);
   }
 
-  function next() {
-    let auxData;
+  function next(changeItem, itemMetaData) {
+    console.log(changeItem);
+    let auxData = [];
     const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
-    let findInProgress = progress.filter((p) => (p.activity_type === "topic" ? p.id_course_topic === selectedCourseItem.id : p.id_course_test === selectedCourseItem.id));
+    let findInProgress = progress.filter((p) =>
+      p.activity_type === "topic" ? p.id_course_topic === selectedCourseItem.id : p.id_course_test === selectedCourseItem.id && p.is_completed === 1,
+    );
     let goToNextModule = false;
     if (findInProgress.length === 0) {
       if (
@@ -119,6 +137,7 @@ const Learning = () => {
             id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
             id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
+            meta_data: selectedCourseItem.type === "test" && itemMetaData ? JSON.stringify(itemMetaData) : null,
             created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
@@ -159,6 +178,7 @@ const Learning = () => {
             id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
             id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
+            meta_data: selectedCourseItem.type === "test" && metaData ? JSON.stringify(metaData) : null,
             created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
@@ -172,13 +192,15 @@ const Learning = () => {
         .then((res) => {
           let newProgress = Object.assign([], progress);
           newProgress = [...newProgress, ...auxData];
-          if (goToNextModule) {
-            const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
-            if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
-            else console.log("último módulo");
-          } else {
-            let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
-            setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem + 1]);
+          if (changeItem === undefined || changeItem !== false) {
+            if (goToNextModule) {
+              const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
+              if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
+              else console.log("último módulo");
+            } else {
+              let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
+              setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem + 1]);
+            }
           }
           setProgress(newProgress);
         })
@@ -186,7 +208,10 @@ const Learning = () => {
           console.log(err);
         });
     } else {
-      if (goToNextModule) {
+      if (
+        selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
+        moduleSelectedCourseItem.items.length === progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
+      ) {
         const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
         if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
         else console.log("último módulo");
@@ -234,6 +259,10 @@ const Learning = () => {
     setProgressPercentage((100 * completed) / total);
   }
 
+  function updateProgress(newObj) {
+    setProgress([...progress, newObj]);
+  }
+
   return (
     <Layout>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
@@ -258,7 +287,10 @@ const Learning = () => {
                   <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
                 </div>
                 <div className="flex justify-end items-center">
-                  {selectedCourseItem && (
+                  <Button size="large" icon={<RxChevronLeft />} className="button-back-learning-header mr-4" onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
+                    {t("Back to course")}
+                  </Button>
+                  {selectedCourseItem?.type && (
                     <>
                       {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id && (
                         <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
@@ -292,15 +324,6 @@ const Learning = () => {
                     size="large"
                     bordered={false}
                     items={modules.map((item, mInd) => {
-                      console.log(
-                        progress.filter((p) =>
-                          mInd > 0 && 0 === 0
-                            ? p.activity_type === "topic"
-                              ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
-                              : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
-                            : p.activity_type === "topic" && p.id_course_topic === modules[mInd].items[0]?.id,
-                        ),
-                      );
                       return {
                         key: item.id,
                         label: (
@@ -329,7 +352,7 @@ const Learning = () => {
                           <div className="flex flex-col">
                             {item.items.map((_t, _i) => (
                               <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
-                                {progress.length > 0 && progress.filter((p) => p.id_course_topic === _t.id || p.id_course_test === _t.id).length > 0 ? (
+                                {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
                                   <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
@@ -342,11 +365,11 @@ const Learning = () => {
                                     progress.filter((p) =>
                                       mInd > 0 && _i === 0
                                         ? p.activity_type === "topic"
-                                          ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
-                                          : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id
+                                          ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
+                                          : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
                                         : p.activity_type === "topic"
-                                          ? p.id_course_topic === modules[mInd].items[_i - 1]?.id
-                                          : p.id_course_test === modules[mInd].items[_i - 1]?.id,
+                                          ? p.id_course_topic === modules[mInd].items[_i - 1]?.id && p.is_completed
+                                          : p.id_course_test === modules[mInd].items[_i - 1]?.id && p.is_completed,
                                     ).length === 0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
@@ -386,23 +409,54 @@ const Learning = () => {
                 <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
               )}
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
-                <Test course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
+                <Test
+                  course={data.course}
+                  progress={progress}
+                  selectedCourseItem={selectedCourseItem}
+                  setAllowNext={setAllowNext}
+                  modules={modules}
+                  allItems={allItems}
+                  metaData={metaData}
+                  setMetaData={setMetaData}
+                  updateProgress={updateProgress}
+                  next={next}
+                />
+              )}
+              {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && !selectedCourseItem.type && (
+                <Module
+                  course={data.course}
+                  progress={progress}
+                  selectedCourseItem={selectedCourseItem}
+                  modules={modules}
+                  allItems={allItems}
+                  selectCourseItem={selectCourseItem}
+                />
               )}
             </div>
 
             <div className="p-8 flex justify-between items-center bg-[#707070]">
               {selectedCourseItem && (
                 <>
-                  {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
+                  {selectedCourseItem.type && allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
                     <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
                       {t("Previous")}
                     </Button>
                   ) : (
                     <div></div>
                   )}
-                  <Button icon={<RxChevronRight />} iconPlacement="end" type="primary" size="large" onClick={() => next()} disabled={!allowNext} className="button-learning-footer">
-                    {t("Next")}
-                  </Button>
+                  {selectedCourseItem.type && (
+                    <Button
+                      icon={<RxChevronRight />}
+                      iconPlacement="end"
+                      type="primary"
+                      size="large"
+                      onClick={() => next()}
+                      disabled={!allowNext}
+                      className="button-learning-footer"
+                    >
+                      {t("Next")}
+                    </Button>
+                  )}
                 </>
               )}
             </div>

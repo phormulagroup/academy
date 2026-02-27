@@ -5,17 +5,16 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/table";
-import Create from "../../components/language/create";
-import Update from "../../components/language/update";
-import Delete from "../../components/delete";
-import Logs from "../../components/logs";
+import Table from "../../components/admin/table";
+import Create from "../../components/admin/language/create";
+import Update from "../../components/admin/language/update";
+import Delete from "../../components/admin/delete";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../components/language/translations";
+import Translations from "../../components/admin/language/translations";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 

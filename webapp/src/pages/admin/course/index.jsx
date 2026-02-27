@@ -5,11 +5,11 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../../components/table";
-import Create from "../../../components/course/create";
-import Update from "../../../components/course/update";
-import Delete from "../../../components/delete";
-import Logs from "../../../components/logs";
+import Table from "../../../components/admin/table";
+import Create from "../../../components/admin/course/create";
+import Update from "../../../components/admin/course/update";
+import Delete from "../../../components/admin/delete";
+import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
 

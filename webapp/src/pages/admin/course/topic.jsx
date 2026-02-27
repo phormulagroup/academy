@@ -7,8 +7,7 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
-import { Editor } from "../../../components/editor";
-import { AiOutlineConsoleSql } from "react-icons/ai";
+import { Editor } from "../../../components/admin/editor";
 
 export default function Topic() {
   const { user } = useContext(Context);

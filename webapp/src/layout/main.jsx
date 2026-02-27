@@ -14,6 +14,9 @@ import Logout from "../components/logout";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
+import { Footer } from "antd/es/layout/layout";
+
+import bialLogo from "../assets/BIAL-logo-footer.svg";
 
 const { Header, Content, Sider } = Layout;
 
@@ -26,10 +29,6 @@ const Main = () => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
 
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
@@ -50,11 +49,11 @@ const Main = () => {
   }, [location]);
 
   return (
-    <Layout>
+    <Layout className="min-h-100vh">
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-full!">
         {windowDimension.width > 1080 ? (
-          <div className="flex justify-between items-center w-full container mx-auto pl-6 pr-6">
+          <div className="flex justify-between items-center w-full container mx-auto">
             <img src={logo} className="max-h-15" />
             <div>
               <Link to={`/${i18n.language}/courses`}>Cursos</Link>
@@ -106,10 +105,21 @@ const Main = () => {
                       {
                         key: "profile",
                         label: (
-                          <Link className={`flex items-center`} to="/profile">
+                          <Link className={`flex items-center`} to={`/${i18n.language}/account`}>
                             <div className="flex items-center">
                               <UserOutlined className="mr-2" />
-                              <p>{t("Profile")}</p>
+                              <p>{t("My account")}</p>
+                            </div>
+                          </Link>
+                        ),
+                      },
+                      {
+                        key: "result",
+                        label: (
+                          <Link className={`flex items-center`} to={`/${i18n.language}/result`}>
+                            <div className="flex items-center">
+                              <UserOutlined className="mr-2" />
+                              <p>{t("Results")}</p>
                             </div>
                           </Link>
                         ),
@@ -140,9 +150,29 @@ const Main = () => {
           <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
         )}
       </Header>
-      <div className="h-[calc(100vh-64px)] overflow-auto bg-white">
+      <Content className="bg-white min-h-[unset]!">
         <Outlet />
-      </div>
+      </Content>
+      <Footer className="bg-black!">
+        <div className="container flex justify-between items-end m-auto bg-black pt-4 pb-4">
+          <div>
+            <div className="mb-4">
+              <p className="text-white">{t("Follow us")}</p>
+            </div>
+            <div className="flex justify-center items-center gap-4">
+              <p className="text-white text-[14px] underline">Formulário de contacto</p>
+              <p className="text-white">|</p>
+              <p className="text-white text-[14px] underline">Termos e condições</p>
+              <p className="text-white">|</p>
+              <p className="text-white text-[14px] underline">Política de Privacidade</p>
+            </div>
+          </div>
+          <div>
+            <img src={bialLogo} className="max-h-10 invert-[1] brightness-[0]" />
+            <p className="text-white text-[14px] mt-6!">© 2024 BIAL. All rights reserved.</p>
+          </div>
+        </div>
+      </Footer>
     </Layout>
   );
 };

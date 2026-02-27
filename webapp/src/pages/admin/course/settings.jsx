@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Button, DatePicker, Divider, Form, Input, InputNumber, Radio, Select, Switch, Tabs } from "antd";
 import Constructor from "./constructor";
 import { useParams } from "react-router-dom";
-import Media from "../../../components/media/media";
+import Media from "../../../components/admin/media/media";
 import { AiOutlineFile, AiOutlinePlus } from "react-icons/ai";
 import config from "../../../utils/config";
 import { RxTrash } from "react-icons/rx";
@@ -17,7 +17,7 @@ import { RxTrash } from "react-icons/rx";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import TiptapFormField from "../../../components/tipTap/tipTapFormField";
+import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
 
 export default function Settings({ course }) {
   const { languages } = useContext(Context);
@@ -284,6 +284,9 @@ export default function Settings({ course }) {
                           </div>
                         );
                       }}
+                    </Form.Item>
+                    <Form.Item name={[field.name, "name"]}>
+                      <Input size="large" placeholder={t("File name")} />
                     </Form.Item>
                   </div>
                 ))}

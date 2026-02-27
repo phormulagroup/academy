@@ -5,7 +5,7 @@ import { FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
 import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../../components/table";
+import Table from "../../../components/admin/table";
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
@@ -25,6 +25,10 @@ import i18n from "../../../utils/i18n";
 export default function CourseContent({ modules, progress, data }) {
   const { t } = useTranslation();
 
+  const { slug } = useParams();
+
+  const navigate = useNavigate();
+
   function calcProgress(items) {
     if (items && items.length > 0) {
       let completed = items
@@ -39,8 +43,6 @@ export default function CourseContent({ modules, progress, data }) {
             ).length,
         )
         .reduce((acc, v) => acc + v, 0);
-
-      console.log(completed);
 
       let progressPercentage = (100 * completed) / items.length;
       const isInteger = progressPercentage % 1 === 0;
@@ -65,7 +67,17 @@ export default function CourseContent({ modules, progress, data }) {
         key: item.id,
         label: (
           <div className="flex flex-col">
-            <div className="p-2 cursor-pointer flex">
+            <div
+              className="p-2 cursor-pointer flex"
+              onClick={() =>
+                navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                  state: {
+                    courseItemId: item.id,
+                    courseItemType: "module",
+                  },
+                })
+              }
+            >
               {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
                 <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                   <RxCheck className="text-white" />
@@ -73,7 +85,7 @@ export default function CourseContent({ modules, progress, data }) {
               ) : (
                 <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
               )}
-              <div className="flex flex-col  ml-4">
+              <div className="flex flex-col ml-4">
                 <p className={`text-[16px]`}>{item.title}</p>
                 <p className="text-[12px] mt-1">
                   {data?.topics && data.topics.filter((_t) => _t.id_course_module === item.id).length > 0
@@ -94,8 +106,18 @@ export default function CourseContent({ modules, progress, data }) {
             </div>
             <div className="p-4">
               {item.items.map((_t, i) => (
-                <div onClick={() => selectCourseItem(_t)} className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
-                  {progress.length > 0 && progress.filter((p) => p.id_course_topic === _t.id || p.id_course_test === _t.id).length > 0 ? (
+                <div
+                  onClick={() =>
+                    navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                      state: {
+                        courseItemId: _t.id,
+                        courseItemType: _t.type,
+                      },
+                    })
+                  }
+                  className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}
+                >
+                  {progress.length > 0 && progress.filter((p) => p.is_completed === 1 && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
                     <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                       <RxCheck className="text-white" />
                     </div>

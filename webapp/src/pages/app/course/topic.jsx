@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Render } from "@puckeditor/core";
-import { configRender } from "../../../components/editor";
+import { configRender } from "../../../components/admin/editor";
 import { useEffect, useRef, useState } from "react";
 
 import Player from "@vimeo/player";
@@ -21,6 +21,7 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
       // If the topic is already completed, allow to go to the next topic/test
       if (progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === selectedCourseItem.id).length > 0) {
         setAllowNext(true);
+        return;
       }
 
       // If the test progress is free, allow to go to the next topic/test

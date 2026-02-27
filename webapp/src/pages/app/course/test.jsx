@@ -1,12 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { Render } from "@puckeditor/core";
-import { configRender } from "../../../components/editor";
-import { useEffect, useRef, useState } from "react";
-import { Button, Checkbox, Form, Input, Progress, Radio } from "antd";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Button, Checkbox, Form, Input, message, Progress, Radio } from "antd";
 import { AiFillCheckCircle, AiOutlineArrowLeft, AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxFile, RxFileText, RxLockClosed, RxReload } from "react-icons/rx";
+import axios from "axios";
+import endpoints from "../../../utils/endpoints";
+import { Context } from "../../../utils/context";
+import dayjs from "dayjs";
+import { PiWarning } from "react-icons/pi";
 
-const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, allItems }) => {
+const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, setMetaData, modules, updateProgress, next }) => {
+  const { user } = useContext(Context);
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
@@ -19,19 +23,24 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
   const [result, setResult] = useState([]);
   const [finished, setFinished] = useState(false);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
+  const [isAllowStart, setIsAllowStart] = useState(true);
+  const [isAllowRestart, setIsAllowRestart] = useState(true);
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const timerRef = useRef(null);
 
   useEffect(() => {
     setAllowNext(false);
+    setMetaData(null);
     if (selectedCourseItem.type === "test") prepareData();
 
     // If the topic is already completed, allow to go to the next topic/test
-    if (progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id).length > 0) {
+    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 1 && p.id_course_test === selectedCourseItem.id).length > 0) {
       setAllowNext(true);
       setIsTopicLocked(false);
-      return;
+    }
+    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id).length === 3) {
+      setIsAllowStart(false);
     }
 
     if (course.settings && course.settings.progression_type === "linear") {
@@ -110,16 +119,28 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
       timerRef.current = null;
     }
 
-    setResult({});
-    setTimePercentage(100);
-    setReview(false);
-    setCurrentQuestion(0);
-    setCalculate({});
-    setTimerEnded(false);
-    setFinished(false);
-    prepareData();
-    form.resetFields();
-    startTimer(data.time * 60);
+    if (canRestart()) {
+      setResult({});
+      setMetaData(null);
+      setTimePercentage(100);
+      setReview(false);
+      setCurrentQuestion(0);
+      setCalculate({});
+      setTimerEnded(false);
+      setFinished(false);
+      prepareData();
+      form.resetFields();
+      startTimer(data.time * 60);
+    } else {
+      message.open({
+        type: "error",
+        content: t("You reached the limit of times"),
+      });
+    }
+  }
+
+  function canRestart() {
+    return progress.filter((p) => p.activity_type === "test" && selectedCourseItem.id === p.id_course_test).length < 3;
   }
 
   function submit(values) {
@@ -137,6 +158,7 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
       const interval = setInterval(() => {
         if (index < questions.length) {
           if (values[questions[index]]) {
+            console.log(values[questions[index]]);
             if (typeof values[questions[index]].answer === "string") {
               const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
               const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
@@ -147,11 +169,12 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
               let is_correct = true;
               const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
               const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
+              console.log(findCorrectAnswer);
               if (findCorrectAnswer.length > 0) {
-                for (let y = 0; y < values[questions[index]].answer.length; y++) {
-                  console.log(findCorrectAnswer);
-                  console.log(values[questions[index]].answer[y]);
-                  if (findCorrectAnswer.filter((q) => q.title === values[questions[index]].answer[y]).length === 0) {
+                for (let y = 0; y < findCorrectAnswer.length; y++) {
+                  const findInMyAnswers = values[questions[index]].answer.filter((a) => a === findCorrectAnswer[y].title);
+                  console.log(findInMyAnswers);
+                  if (findInMyAnswers.length === 0) {
                     is_correct = false;
                   }
                 }
@@ -165,6 +188,7 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
         }
 
         setResult(auxResult);
+        setMetaData(auxResult);
         setFinished(true);
 
         index++;
@@ -175,6 +199,9 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
 
           if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= 80) {
             setAllowNext(true);
+            next(false, auxResult);
+          } else {
+            createActivity(auxResult);
           }
           console.log("Terminou!");
         }
@@ -193,14 +220,39 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
     return arr;
   }
 
+  function createActivity(auxMetaData) {
+    const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
+    const auxData = [
+      {
+        id_course: course.id,
+        id_user: user.id,
+        activity_type: "test",
+        id_course_test: selectedCourseItem.id,
+        id_course_module: moduleSelectedCourseItem.id,
+        is_completed: 0,
+        meta_data: auxMetaData ? JSON.stringify(auxMetaData) : null,
+        created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      },
+    ];
+
+    axios
+      .post(endpoints.course.updateProgress, {
+        data: auxData,
+      })
+      .then((res) => {
+        updateProgress(auxData[0]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   return (
     <div>
       <div className="flex justify-between flex-col h-full">
         <div className="p-8 overflow-y-auto">
-          {progress.length > 0 &&
-          progress.filter(
-            (p) => (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem.id || p.id_course_test === selectedCourseItem.id),
-          ).length > 0 ? (
+          {progress.length > 0 && progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id && p.is_completed === 1).length > 0 ? (
             <div className="p-4 bg-black flex justify-between items-center">
               <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
               <div className="p-4 bg-[#2F8351]">
@@ -221,7 +273,15 @@ const Test = ({ course, selectedCourseItem, progress, progressPercentage, setAll
           ) : (
             Object.keys(data).length > 0 && (
               <div>
-                {!begin ? (
+                {!isAllowStart ? (
+                  <div className="p-4 flex items-center bg-red-500 text-white mt-4">
+                    <PiWarning className="w-10 h-10 mr-2" />
+                    <div>
+                      <p className="text-[20px] font-bold">{t("You reached the limit")}</p>
+                      <p>{t("You can't start making the test cause you reached the limit of times that you can try")}</p>
+                    </div>
+                  </div>
+                ) : !begin ? (
                   <div>
                     <Button onClick={startTest}>{t("Start test")}</Button>
                   </div>

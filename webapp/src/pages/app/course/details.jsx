@@ -1,27 +1,27 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Avatar, Button, Collapse, Divider, Progress, Tabs } from "antd";
-import { FaRegUser } from "react-icons/fa";
+import { Avatar, Button, Divider, Progress, Tabs } from "antd";
 import { useContext } from "react";
-import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
+import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import dayjs from "dayjs";
 
-import Table from "../../../components/table";
+import CourseContent from "./content";
+import CourseMaterial from "./material";
+
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { useNavigate, useParams } from "react-router-dom";
-import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
-import { useTranslation } from "react-i18next";
-import { RxChevronUp, RxChevronDown, RxCheck } from "react-icons/rx";
-import dayjs from "dayjs";
 import config from "../../../utils/config";
+
 import DurationIcon from "../../../assets/Duracao.svg?react";
 import CertificateIcon from "../../../assets/Certificado.svg?react";
 import TrainerIcon from "../../../assets/Formador.svg?react";
 import VideosIcon from "../../../assets/Videos.svg?react";
 import FlagIcon from "../../../assets/Flag.svg?react";
 import i18n from "../../../utils/i18n";
-import CourseContent from "./content";
+import CourseIcon from "../../../assets/Curso.svg?react";
+import MaterialIcon from "../../../assets/Materiais.svg?react";
 
 export default function CourseDetails() {
   const { user, setSelectedCourse } = useContext(Context);
@@ -40,9 +40,10 @@ export default function CourseDetails() {
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id } });
-      console.log(res);
       if (res.data.course.length > 0) {
         res.data.course[0].settings = res.data.course[0].settings ? JSON.parse(res.data.course[0].settings) : null;
+        res.data.course[0].material = res.data.course[0].material ? JSON.parse(res.data.course[0].material) : null;
+        res.data.course[0].objection = res.data.course[0].objection ? JSON.parse(res.data.course[0].objection) : null;
         setData({ course: res.data.course[0], modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
 
         if (res.data.modules.length > 0) {
@@ -180,9 +181,24 @@ export default function CourseDetails() {
         <Tabs
           defaultActiveKey="1"
           items={[
-            { key: "1", label: "Tab 1", children: <CourseContent modules={modules} progress={progress} data={data} /> },
-            { key: "2", label: "Tab 2", children: "Content of Tab Pane 2" },
-            { key: "3", label: "Tab 3", children: "Content of Tab Pane 3" },
+            {
+              key: "1",
+              label: (
+                <div className="flex p-2 justify-center items-center">
+                  <CourseIcon className="w-[25px] h-[25px] mr-2" /> <p className="font-bold text-[22px]">{t("Course")}</p>
+                </div>
+              ),
+              children: <CourseContent modules={modules} progress={progress} data={data} />,
+            },
+            {
+              key: "3",
+              label: (
+                <div className="flex p-2 justify-center items-center">
+                  <MaterialIcon className="w-[25px] h-[25px] mr-2" /> <p className="font-bold text-[22px]">{t("Materials")}</p>
+                </div>
+              ),
+              children: <CourseMaterial data={data.course} />,
+            },
           ]}
           onChange={(key) => console.log(key)}
           indicator={{ size: (origin) => origin - 20, align: "center" }}

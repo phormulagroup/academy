@@ -1,25 +1,15 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Form, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-import Table from "../../../components/table";
-import Create from "../../../components/language/create";
-import Update from "../../../components/language/update";
-import Delete from "../../../components/delete";
+import { Button, Form } from "antd";
 
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../../components/language/translations";
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 import { useNavigate, useParams } from "react-router-dom";
-import CertificateForm from "../../../components/certificate/form";
-import CertificatePreview from "../../../components/certificate/preview";
+import CertificateForm from "../../../components/admin/certificate/form";
+import CertificatePreview from "../../../components/admin/certificate/preview";
 
 export default function CertificateDetails() {
   const { user, messageApi } = useContext(Context);

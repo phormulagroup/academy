@@ -33,7 +33,7 @@ export const adminRoutes = [
       { path: "/admin/media", element: <Media /> },
       { path: "/admin/certificate", element: <Certificate /> },
       { path: "/admin/certificate/:id", element: <CertificateDetails /> },
-      { path: "/*", element: <Navigate to="/admin" replace /> },
+      { path: "/admin/*", element: <Navigate to="/admin" replace /> },
     ],
   },
   {
