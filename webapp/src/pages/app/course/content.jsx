@@ -124,7 +124,7 @@ export default function CourseContent({ modules, progress, data }) {
                   ) : (
                     <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                   )}
-                  <p className="text-[14px] ml-2">{_t.title}</p>
+                  <p className="text-sm ml-2">{_t.title}</p>
                 </div>
               ))}
             </div>
@@ -135,7 +135,7 @@ export default function CourseContent({ modules, progress, data }) {
       expandIcon={(panelProps) => {
         return (
           <div className="flex justify-center items-center">
-            <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-[14px]">{t("Collapase")}</p> : <p className="font-bold text-[14px]">{t("Expand")}</p>}</div>
+            <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
               {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
             </div>

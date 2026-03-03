@@ -78,7 +78,7 @@ export default function CourseDetails() {
   function calcProgress(items, modules) {
     if (items && items.length > 0) {
       let steps = modules.map((m) => m.items.length).reduce((a, b) => a + b, 0);
-      let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length;
+      let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length;
 
       let progressPercentage = (100 * completed) / steps;
       return progressPercentage;
@@ -116,12 +116,12 @@ export default function CourseDetails() {
     <div className="bg-[#FFFFFF] relative">
       <div className="container mx-auto p-6 grid grid-cols-3 gap-10 mt-10">
         <div className="col-span-3 flex flex-col justify-center items-center mb-10">
-          <p className="text-[30px] font-bold">{t("Online Courses - Bial Academy")}</p>
-          <p className="italic">Keeping training in mind</p>
+          <p className="text-[30px] font-bold text-center">{t("Online Courses - Bial Academy")}</p>
+          <p className="italic text-center">Keeping training in mind</p>
         </div>
         {data.length > 0 ? (
           data.map((item) => (
-            <div className="shadow-[0px_3px_6px_#00000029]">
+            <div className="shadow-[0px_3px_6px_#00000029] col-span-3 md:col-span-1">
               <div
                 className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
                 style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
@@ -139,7 +139,7 @@ export default function CourseDetails() {
                 <div className="flex items-center">
                   <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
                   <div className="ml-2">
-                    <p className="text-[14px]">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
+                    <p className="text-sm">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
                     <p className="text-[11px] text-[#707070]">
                       {item.course?.responsible_job ?? "Marketing Manager"}, {item.course?.responsible_country ?? "África"}
                     </p>

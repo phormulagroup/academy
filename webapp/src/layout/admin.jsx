@@ -35,7 +35,7 @@ import { RxFile } from "react-icons/rx";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension } = useContext(Context);
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage } = useContext(Context);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
@@ -106,12 +106,8 @@ const Main = () => {
     },
   ]);
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    setIsLoadingLanguage(true);
-    setTimeout(() => {
-      setIsLoadingLanguage(false);
-    }, 1500);
+  const selectLanguage = (lang) => {
+    setSelectedLanguage(lang);
   };
 
   const navigate = useNavigate();
@@ -124,6 +120,10 @@ const Main = () => {
       setCurrent(`/${pathname[pathname.length - 1]}`);
     }
   }, [location]);
+
+  useEffect(() => {
+    console.log(selectedLanguage);
+  }, [selectedLanguage]);
 
   function handleClickMenu(e) {
     if (e.key === "logout") {
@@ -183,7 +183,7 @@ const Main = () => {
                       items: languages.map((item) => ({
                         key: item.code,
                         label: (
-                          <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                          <div className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`} onClick={() => selectLanguage(item)}>
                             <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                             <p>{item.name}</p>
                           </div>

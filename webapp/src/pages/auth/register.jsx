@@ -83,8 +83,8 @@ export default function Register() {
   }
 
   return (
-    <div className={`flex flex-col justify-between w-full h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
-      <div className="flex flex-col justify-center items-center min-h-125 w-full h-full">
+    <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
+      <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
         <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)]">
           <div className="flex flex-col p-6">
             <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
@@ -98,12 +98,12 @@ export default function Register() {
               onFinishFailed={() => message.error(t("Some fields are missing"))}
             >
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item name="name" label={t("Name")} rules={[{ required: true }]} className="mb-0!">
                     <Input size="large" placeholder="John Doe" />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item name="country" label={t("Country")} rules={[{ required: false }]} className="mb-0!">
                     <Select
                       size="large"
@@ -114,7 +114,7 @@ export default function Register() {
                     />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item label={t("Academic background")} name="academic_background" rules={[{ required: true }]} className="mb-0!">
                     <Select
                       size="large"
@@ -129,27 +129,27 @@ export default function Register() {
                     />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item name="email" label={t("E-mail")} rules={[{ required: true }]} className="mb-0!">
                     <Input type="email" size="large" placeholder="E-mail" />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!">
                     <DatePicker size="large" placeholder="Select birth date" className="w-full" />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item label={t("Bial's starting date")} name="bial_starting_date" rules={[{ required: true }]} className="mb-0!">
                     <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item label={t("Password")} name="password" rules={[{ required: true }]} className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
                 </div>
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <Form.Item
                     label={t("Confirm password")}
                     name="confirm_password"
@@ -208,18 +208,22 @@ export default function Register() {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 flex justify-center items-center">
+        <div className="col-span-3 md:col-span-1 p-4 flex justify-center items-center">
           <img src={logoBialFooter} className="max-w-45" />
         </div>
-        <div className="flex flex-col justify-center items-center p-4">
-          <div className="flex gap-4">
-            <p className="text-[14px] text-center">Formulário de contacto</p>
-            <span className="text-[14px] text-center">|</span>
-            <p className="text-[14px] text-center">Termos e condições</p>
-            <span className="text-[14px] text-center">|</span>
-            <p className="text-[14px] text-center">Política de Privacidade</p>
+        <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
+          <div className="flex">
+            <div className="pr-3">
+              <p className="text-sm text-center">Formulário de contacto</p>
+            </div>
+            <div className="border-r border-l pl-3 pr-3">
+              <p className="text-sm text-center">Termos e condições</p>
+            </div>
+            <div className="pl-3">
+              <p className="text-sm text-center">Política de Privacidade</p>
+            </div>
           </div>
-          <p className="text-[14px] mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
+          <p className="text-sm mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
         </div>
       </div>
     </div>

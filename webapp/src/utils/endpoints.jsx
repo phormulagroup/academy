@@ -20,6 +20,7 @@ const endpoints = {
   },
   user: {
     read: "/user/read",
+    readById: "/user/readById",
     readByEmail: "/user/readByEmail",
     update: "/user/update",
     changeStatus: "/user/changeStatus",

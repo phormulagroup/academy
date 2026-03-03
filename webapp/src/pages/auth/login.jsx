@@ -66,21 +66,21 @@ export default function Login() {
   }
 
   return (
-    <div className={`flex flex-col justify-between w-full h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
-      <div className="flex flex-col justify-center items-center min-h-125 w-full h-full">
-        <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)]">
+    <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
+      <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
+        <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] ">
           <div className="flex flex-col p-6">
             <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
-            <p className="text-center text-[14px] mb-6">
+            <p className="text-center text-sm mb-6">
               Bem vind@ à <b>BIAL Regional Academy</b>,
               <br /> a plataforma de e-learning!
             </p>
             <Form form={form} layout="vertical" onFinish={submit} className="auth-form">
-              <p className="pb-2 text-center text-[14px]">E-mail</p>
+              <p className="pb-2 text-center text-sm">E-mail</p>
               <Form.Item name="email" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
                 <Input size="large" placeholder="nome.apelido@phormulagroup.com" />
               </Form.Item>
-              <p className="pb-2 text-center text-[14px]">Password</p>
+              <p className="pb-2 text-center text-sm">Password</p>
               <Form.Item name="password" rules={[{ required: true, message: "Este campo é obrigatório" }]} className="mb-2!">
                 <Input.Password size="large" placeholder="●●●●●●●" />
               </Form.Item>
@@ -113,18 +113,22 @@ export default function Login() {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 flex justify-center items-center">
+        <div className="col-span-3 md:col-span-1 p-4 flex justify-center items-center">
           <img src={logoBialFooter} className="max-w-45" />
         </div>
-        <div className="flex flex-col justify-center items-center p-4">
-          <div className="flex gap-4">
-            <p className="text-[14px] text-center">Formulário de contacto</p>
-            <span className="text-[14px] text-center">|</span>
-            <p className="text-[14px] text-center">Termos e condições</p>
-            <span className="text-[14px] text-center">|</span>
-            <p className="text-[14px] text-center">Política de Privacidade</p>
+        <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
+          <div className="flex">
+            <div className="pr-3">
+              <p className="text-sm text-center">Formulário de contacto</p>
+            </div>
+            <div className="border-r border-l pl-3 pr-3">
+              <p className="text-sm text-center">Termos e condições</p>
+            </div>
+            <div className="pl-3">
+              <p className="text-sm text-center">Política de Privacidade</p>
+            </div>
           </div>
-          <p className="text-[14px] mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
+          <p className="text-sm mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
         </div>
       </div>
     </div>

@@ -161,7 +161,7 @@ export default function Result() {
             {data.map((c) => (
               <Collapse
                 key={`results-collapse-${c.course.id}`}
-                className={`${(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length) / (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) === 100 ? "completed" : "ongoing"} collapse-result`}
+                className={`${(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) / (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) === 100 ? "completed" : "ongoing"} collapse-result`}
                 size="large"
                 bordered={false}
                 items={[
@@ -181,7 +181,9 @@ export default function Result() {
                                   </div>
                                 )
                               : null}
-                            {(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length) /
+                            {(100 *
+                              c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                .length) /
                               (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) ===
                               100 && (
                               <div className="flex items-center w-full">
@@ -205,7 +207,8 @@ export default function Result() {
                             </div>
                             <div className="flex justify-start items-center w-full">
                               {calcCourseProgress(
-                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length,
+                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                  .length,
                                 c.allItems.filter((_c) => _c.type === "topic").length,
                                 c.allItems.filter((_c) => _c.type === "test").length,
                               )}
@@ -213,10 +216,12 @@ export default function Result() {
                                 strokeColor={"#2F8351"}
                                 railColor={"#EAEAEA"}
                                 percent={
-                                  (100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course").length) /
+                                  (100 *
+                                    c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                      .length) /
                                   (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length)
                                 }
-                                className="max-w-[300px]"
+                                className="max-w-75"
                                 showInfo={false}
                               />
                             </div>
@@ -273,7 +278,7 @@ export default function Result() {
                                     ) : (
                                       <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                     )}
-                                    <p className="text-[14px] ml-2">{_t.title}</p>
+                                    <p className="text-sm ml-2">{_t.title}</p>
                                   </div>
                                 ))}
                               </div>
@@ -285,7 +290,7 @@ export default function Result() {
                           return (
                             <div className="flex justify-center items-center">
                               <div className="mr-2">
-                                {panelProps.isActive ? <p className="font-bold text-[14px]">{t("Collapase")}</p> : <p className="font-bold text-[14px]">{t("Expand")}</p>}
+                                {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
                               </div>
                               <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                                 {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
@@ -301,9 +306,7 @@ export default function Result() {
                 expandIcon={(panelProps) => {
                   return (
                     <div className="flex justify-center items-center">
-                      <div className="mr-2">
-                        {panelProps.isActive ? <p className="font-bold text-[14px]">{t("Collapase")}</p> : <p className="font-bold text-[14px]">{t("Expand")}</p>}
-                      </div>
+                      <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
                       <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                         {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
                       </div>

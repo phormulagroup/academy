@@ -5,20 +5,21 @@ import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
-import Table from "../../components/admin/table";
-import Create from "../../components/admin/user/create";
-import Update from "../../components/admin/user/update";
-import Logs from "../../components/admin/logs";
+import Table from "../../../components/admin/table";
+import Create from "../../../components/admin/user/create";
+import Update from "../../../components/admin/user/update";
+import Logs from "../../../components/admin/logs";
 
-import { Context } from "../../utils/context";
+import { Context } from "../../../utils/context";
 
-import endpoints from "../../utils/endpoints";
+import endpoints from "../../../utils/endpoints";
 import { RxSwitch } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
-import Status from "../../components/admin/user/status";
+import Status from "../../../components/admin/user/status";
+import { useNavigate } from "react-router-dom";
 
 export default function User() {
-  const { user } = useContext(Context);
+  const { user, languages } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -30,6 +31,8 @@ export default function User() {
   const [isOpenStatus, setIsOpenStatus] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenLogs, setIsOpenLogs] = useState(false);
+
+  const navigate = useNavigate();
 
   const { t } = useTranslation();
 
@@ -59,6 +62,8 @@ export default function User() {
       aux.push({
         ...array[i],
         key: array[i].id,
+        language: languages.filter((l) => l.id === array[i].id_lang)[0].code.toUpperCase(),
+        country: array[i].country,
         status_tag:
           array[i].status === "approved" ? (
             <Tag variant="outlined" color={"#06D186"}>
@@ -90,7 +95,7 @@ export default function User() {
                     label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
-                    onClick: () => openUpdate(array[i]),
+                    onClick: () => navigate(`/admin/users/${array[i].id}`),
                   },
                   {
                     label: t("Logs"),
@@ -187,6 +192,16 @@ export default function User() {
             sort: true,
             sortType: "text",
             search: "email",
+          },
+          {
+            title: "Language",
+            dataIndex: "language",
+            key: "language",
+          },
+          {
+            title: "Country",
+            dataIndex: "country",
+            key: "country",
           },
           {
             title: "Papel",

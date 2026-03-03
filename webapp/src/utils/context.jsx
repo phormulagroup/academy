@@ -21,6 +21,7 @@ const ContextProvider = ({ children }) => {
   const [roles, setRoles] = useState([]);
   const [courses, setCourses] = useState([]);
   const [languages, setLanguages] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -255,6 +256,8 @@ const ContextProvider = ({ children }) => {
         setRoles,
         windowDimension,
         setWindowDimension,
+        selectedLanguage,
+        setSelectedLanguage,
       }}
     >
       {contextHolder}

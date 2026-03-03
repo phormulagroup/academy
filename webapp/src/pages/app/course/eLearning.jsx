@@ -13,7 +13,7 @@ import Logout from "../../../components/logout";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
-import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
+import { AiFillCloseCircle, AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
 import { RxChevronRight, RxChevronLeft, RxExclamationTriangle, RxLockClosed } from "react-icons/rx";
 
 import dayjs from "dayjs";
@@ -28,7 +28,7 @@ const { confirm } = Modal;
 const { Header, Content, Sider } = Layout;
 
 const Learning = () => {
-  const { user, logout, languages } = useContext(Context);
+  const { user, logout, languages, windowDimension } = useContext(Context);
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
   const [selectedCourseItem, setSelectedCourseItem] = useState(null);
@@ -43,11 +43,6 @@ const Learning = () => {
   const { t, i18n } = useTranslation();
 
   const location = useLocation();
-
-  const [windowDimension, setWindowDimension] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
 
   const navigate = useNavigate();
 
@@ -111,8 +106,8 @@ const Learning = () => {
   }
 
   function selectCourseItem(item) {
-    console.log(item);
     setSelectedCourseItem(item);
+    closeDrawer();
   }
 
   function next(changeItem, itemMetaData) {
@@ -263,6 +258,10 @@ const Learning = () => {
     setProgress([...progress, newObj]);
   }
 
+  function closeDrawer() {
+    setIsOpenDrawerMenu(false);
+  }
+
   return (
     <Layout>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
@@ -305,106 +304,229 @@ const Learning = () => {
                 </div>
               </div>
             ) : (
-              <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+              <div className="flex justify-between items-center w-full">
+                <img src={logo} className="max-h-17.5" />
+                <MenuOutlined className="text-xl" onClick={() => setIsOpenDrawerMenu(true)} />
+              </div>
             )}
           </div>
         </Header>
 
         <Layout>
-          <Sider width={400} className="bg-white! overflow-auto">
-            <div className="flex flex-col h-full">
-              <div className="flex flex-col w-full p-6 bg-[#010202]">
-                <p className="text-white">{t("Course")}</p>
-                <p className="text-[20px] font-bold text-white">{data?.course?.name}</p>
-              </div>
-              <div className="w-full">
-                {modules?.length > 0 && (
-                  <Collapse
-                    className="collapse-learning"
-                    size="large"
-                    bordered={false}
-                    items={modules.map((item, mInd) => {
-                      return {
-                        key: item.id,
-                        label: (
-                          <div className="flex flex-col">
-                            <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
-                              {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                  <AiOutlineCheck className="text-white" />
-                                </div>
-                              ) : (
-                                <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                              )}
-                              <p className={`text-[14px] ml-2`}>{item.title}</p>
-                              {data?.course?.settings.progression_type === "linear"
-                                ? mInd > 0 &&
-                                  progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
-                                    <div className="flex justify-center items-center ml-4">
-                                      <RxLockClosed className="w-3.75 h-3.75" />
-                                    </div>
-                                  )
-                                : null}
-                            </div>
-                          </div>
-                        ),
-                        children: (
-                          <div className="flex flex-col">
-                            {item.items.map((_t, _i) => (
-                              <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
-                                {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+          {windowDimension.width > 1080 ? (
+            <Sider width={400} className="bg-white! overflow-auto">
+              <div className="flex flex-col h-full">
+                <div className="flex flex-col w-full p-6 bg-[#010202]">
+                  <p className="text-white">{t("Course")}</p>
+                  <p className="text-[20px] font-bold text-white">{data?.course?.name}</p>
+                </div>
+                <div className="w-full">
+                  {modules?.length > 0 && (
+                    <Collapse
+                      className="collapse-learning"
+                      size="large"
+                      bordered={false}
+                      items={modules.map((item, mInd) => {
+                        return {
+                          key: item.id,
+                          label: (
+                            <div className="flex flex-col">
+                              <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
+                                {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
                                   <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
                                   <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
-                                <p className={`text-[14px] ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
+                                <p className={`text-sm ml-2`}>{item.title}</p>
                                 {data?.course?.settings.progression_type === "linear"
-                                  ? ((_i > 0 && mInd === 0) || (mInd > 0 && _i >= 0)) &&
-                                    progress.filter((p) =>
-                                      mInd > 0 && _i === 0
-                                        ? p.activity_type === "topic"
-                                          ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
-                                          : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
-                                        : p.activity_type === "topic"
-                                          ? p.id_course_topic === modules[mInd].items[_i - 1]?.id && p.is_completed
-                                          : p.id_course_test === modules[mInd].items[_i - 1]?.id && p.is_completed,
-                                    ).length === 0 && (
+                                  ? mInd > 0 &&
+                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
                                       </div>
                                     )
                                   : null}
                               </div>
-                            ))}
+                            </div>
+                          ),
+                          children: (
+                            <div className="flex flex-col">
+                              {item.items.map((_t, _i) => (
+                                <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
+                                  {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+                                    <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      <AiOutlineCheck className="text-white" />
+                                    </div>
+                                  ) : (
+                                    <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  )}
+                                  <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
+                                  {data?.course?.settings.progression_type === "linear"
+                                    ? ((_i > 0 && mInd === 0) || (mInd > 0 && _i >= 0)) &&
+                                      progress.filter((p) =>
+                                        p.activity_type !== "enroll" && mInd > 0 && _i === 0
+                                          ? p.activity_type === "topic"
+                                            ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
+                                            : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
+                                          : p.activity_type === "topic"
+                                            ? p.id_course_topic === modules[mInd].items[_i - 1]?.id && p.is_completed
+                                            : p.id_course_test === modules[mInd].items[_i - 1]?.id && p.is_completed,
+                                      ).length === 0 && (
+                                        <div className="flex justify-center items-center ml-4">
+                                          <RxLockClosed className="w-3.75 h-3.75" />
+                                        </div>
+                                      )
+                                    : null}
+                                </div>
+                              ))}
+                            </div>
+                          ),
+                        };
+                      })}
+                      expandIconPlacement="end"
+                      expandIcon={(panelProps) => {
+                        let content = modules.filter((item) => item.id === parseInt(panelProps.panelKey))[0];
+                        let topics = content.items?.filter((_t) => _t.type === "topic");
+                        let tests = content.items?.filter((_t) => _t.type === "test");
+                        return (
+                          <div className="flex justify-center items-center">
+                            <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                              {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
+                            </div>
+                            <p>
+                              {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""} {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                            </p>
                           </div>
-                        ),
-                      };
-                    })}
-                    expandIconPlacement="end"
-                    expandIcon={(panelProps) => {
-                      let content = modules.filter((item) => item.id === parseInt(panelProps.panelKey))[0];
-                      let topics = content.items?.filter((_t) => _t.type === "topic");
-                      let tests = content.items?.filter((_t) => _t.type === "test");
-                      return (
-                        <div className="flex justify-center items-center">
-                          <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                            {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
+                        );
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </Sider>
+          ) : null}
+          <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full">
+            <Drawer open={isOpenDrawerMenu} size={"80%"} onClose={closeDrawer} maskClosable={false} extra={[]} className="drawer-learning">
+              <div className="flex flex-col h-full">
+                <div className="absolute top-5 right-5 flex justify-end">
+                  <AiFillCloseCircle className="text-white text-3xl" onClick={closeDrawer} />
+                </div>
+                <div className="flex flex-col w-full p-6 bg-[#010202]">
+                  <p className="text-white">{t("Course")}</p>
+                  <p className="text-[20px] font-bold text-white">{data?.course?.name}</p>
+                </div>
+                <div className="w-full">
+                  {modules?.length > 0 && (
+                    <Collapse
+                      className="collapse-learning"
+                      size="large"
+                      bordered={false}
+                      items={modules.map((item, mInd) => {
+                        return {
+                          key: item.id,
+                          label: (
+                            <div className="flex flex-col">
+                              <div className="p-2 cursor-pointer flex items-center">
+                                {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
+                                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <AiOutlineCheck className="text-white" />
+                                  </div>
+                                ) : (
+                                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                )}
+                                <p className={`text-sm ml-2`} onClick={() => selectCourseItem(item)}>
+                                  {item.title}
+                                </p>
+                                {data?.course?.settings.progression_type === "linear"
+                                  ? mInd > 0 &&
+                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
+                                      <div className="flex justify-center items-center ml-4">
+                                        <RxLockClosed className="w-3.75 h-3.75" />
+                                      </div>
+                                    )
+                                  : null}
+                              </div>
+                            </div>
+                          ),
+                          children: (
+                            <div className="flex flex-col">
+                              {item.items.map((_t, _i) => (
+                                <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
+                                  {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+                                    <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      <AiOutlineCheck className="text-white" />
+                                    </div>
+                                  ) : (
+                                    <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  )}
+                                  <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
+                                  {data?.course?.settings.progression_type === "linear"
+                                    ? ((_i > 0 && mInd === 0) || (mInd > 0 && _i >= 0)) &&
+                                      progress.filter((p) =>
+                                        mInd > 0 && _i === 0
+                                          ? p.activity_type === "topic"
+                                            ? p.id_course_topic === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
+                                            : p.id_course_test === modules[mInd - 1].items[modules[mInd - 1].items.length - 1]?.id && p.is_completed
+                                          : p.activity_type === "topic"
+                                            ? p.id_course_topic === modules[mInd].items[_i - 1]?.id && p.is_completed
+                                            : p.id_course_test === modules[mInd].items[_i - 1]?.id && p.is_completed,
+                                      ).length === 0 && (
+                                        <div className="flex justify-center items-center ml-4">
+                                          <RxLockClosed className="w-3.75 h-3.75" />
+                                        </div>
+                                      )
+                                    : null}
+                                </div>
+                              ))}
+                            </div>
+                          ),
+                        };
+                      })}
+                      expandIconPlacement="end"
+                      expandIcon={(panelProps) => {
+                        let content = modules.filter((item) => item.id === parseInt(panelProps.panelKey))[0];
+                        let topics = content.items?.filter((_t) => _t.type === "topic");
+                        let tests = content.items?.filter((_t) => _t.type === "test");
+                        return (
+                          <div className="flex justify-center items-center">
+                            <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                              {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
+                            </div>
+                            <p>
+                              {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""} {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                            </p>
                           </div>
-                          <p>
-                            {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""} {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
-                          </p>
-                        </div>
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </Drawer>
+            <div className="overflow-y-auto">
+              <div className="flex lg:hidden justify-between bg-white p-6 gap-8">
+                {selectedCourseItem?.type && (
+                  <>
+                    {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id && (
+                      <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}></Button>
+                    )}
+                  </>
+                )}
+                <div className="flex flex-col justify-center items-center w-full">
+                  <p className="leading-[1em] text-[16px] lg:text-[24px] font-bold uppercase mb-2">
+                    {progressPercentage}% {t("Complete")}
+                  </p>
+                  <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
+                </div>
+
+                {selectedCourseItem?.type && (
+                  <>
+                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}></Button>
+                  </>
                 )}
               </div>
-            </div>
-          </Sider>
-          <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full">
-            <div className="overflow-y-auto">
               {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "topic" && (
                 <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
               )}
@@ -433,32 +555,33 @@ const Learning = () => {
                 />
               )}
             </div>
-
-            <div className="p-8 flex justify-between items-center bg-[#707070]">
-              {selectedCourseItem && (
-                <>
-                  {selectedCourseItem.type && allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
-                    <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
-                      {t("Previous")}
-                    </Button>
-                  ) : (
-                    <div></div>
-                  )}
-                  {selectedCourseItem.type && (
-                    <Button
-                      icon={<RxChevronRight />}
-                      iconPlacement="end"
-                      type="primary"
-                      size="large"
-                      onClick={() => next()}
-                      disabled={!allowNext}
-                      className="button-learning-footer"
-                    >
-                      {t("Next")}
-                    </Button>
-                  )}
-                </>
-              )}
+            <div>
+              <div className="p-8 flex justify-between items-center bg-[#707070]">
+                {selectedCourseItem && (
+                  <>
+                    {selectedCourseItem.type && allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
+                      <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
+                        {t("Previous")}
+                      </Button>
+                    ) : (
+                      <div></div>
+                    )}
+                    {selectedCourseItem.type && (
+                      <Button
+                        icon={<RxChevronRight />}
+                        iconPlacement="end"
+                        type="primary"
+                        size="large"
+                        onClick={() => next()}
+                        disabled={!allowNext}
+                        className="button-learning-footer"
+                      >
+                        {t("Next")}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </Layout>

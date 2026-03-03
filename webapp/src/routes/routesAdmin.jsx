@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 
 import MainAdmin from "../pages/admin";
 import AdminLayout from "../layout/admin";
-import User from "../pages/admin/user";
+import User from "../pages/admin/user/index";
 import Language from "../pages/admin/language";
 import Media from "../pages/admin/media";
 
@@ -16,6 +16,7 @@ import Template from "../pages/admin/email/template";
 import TemplateDetails from "../pages/admin/email/templateDetails";
 import Certificate from "../pages/admin/certificate";
 import CertificateDetails from "../pages/admin/certificate/details";
+import UserDetails from "../pages/admin/user/details";
 
 export const adminRoutes = [
   {
@@ -30,6 +31,7 @@ export const adminRoutes = [
       { path: "/admin/templates", element: <Template /> },
       { path: "/admin/templates/:id", element: <TemplateDetails /> },
       { path: "/admin/users", element: <User /> },
+      { path: "/admin/users/:id", element: <UserDetails /> },
       { path: "/admin/media", element: <Media /> },
       { path: "/admin/certificate", element: <Certificate /> },
       { path: "/admin/certificate/:id", element: <CertificateDetails /> },

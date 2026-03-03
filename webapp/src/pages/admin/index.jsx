@@ -10,14 +10,14 @@ import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 
 export default function Main() {
-  const { user } = useContext(Context);
+  const { user, selectedLanguage } = useContext(Context);
   const [data, setData] = useState(0);
   const [myProjects, setMyProjects] = useState(0);
   const [tableLoading, setTableLoading] = useState(true);
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [selectedLanguage]);
 
   function getData() {
     axios

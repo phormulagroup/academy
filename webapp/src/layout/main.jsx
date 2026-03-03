@@ -147,29 +147,32 @@ const Main = () => {
             </div>
           </div>
         ) : (
-          <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+          <div className="flex justify-between items-center w-full container mx-auto">
+            <img src={logo} className="max-h-15" />
+            <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+          </div>
         )}
       </Header>
       <Content className="bg-white min-h-[unset]!">
         <Outlet />
       </Content>
       <Footer className="bg-black!">
-        <div className="container flex justify-between items-end m-auto bg-black pt-4 pb-4">
-          <div>
-            <div className="mb-4">
+        <div className="container flex flex-col md:flex-row justify-between items-end m-auto bg-black pt-4 pb-4 gap-8">
+          <div className="w-full">
+            <div className="mb-4 flex flex-col items-center md:items-start">
               <p className="text-white">{t("Follow us")}</p>
             </div>
-            <div className="flex justify-center items-center gap-4">
-              <p className="text-white text-[14px] underline">Formulário de contacto</p>
+            <div className="flex justify-center md:justify-start items-center gap-4">
+              <p className="text-white text-sm underline text-center md:text-left">Formulário de contacto</p>
               <p className="text-white">|</p>
-              <p className="text-white text-[14px] underline">Termos e condições</p>
+              <p className="text-white text-sm underline text-center md:text-left">Termos e condições</p>
               <p className="text-white">|</p>
-              <p className="text-white text-[14px] underline">Política de Privacidade</p>
+              <p className="text-white text-sm underline text-center md:text-left">Política de Privacidade</p>
             </div>
           </div>
-          <div>
+          <div className="flex flex-col justify-center items-center md:items-end w-full">
             <img src={bialLogo} className="max-h-10 invert-[1] brightness-[0]" />
-            <p className="text-white text-[14px] mt-6!">© 2024 BIAL. All rights reserved.</p>
+            <p className="text-white text-sm mt-6!">© 2024 BIAL. All rights reserved.</p>
           </div>
         </div>
       </Footer>
