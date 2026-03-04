@@ -55,6 +55,7 @@ const Main = () => {
         { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
         { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
         { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
+        { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
         { key: "/admin/settings", label: t("Settings"), icon: <SettingsIcon /> },
       ],
     },

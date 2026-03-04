@@ -11,6 +11,7 @@ import Constructor from "../constructor";
 import { useParams } from "react-router-dom";
 import Settings from "../settings";
 import { RxTrash } from "react-icons/rx";
+import { TbTrash } from "react-icons/tb";
 
 export default function Question({ data }) {
   const { user, update } = useContext(Context);
@@ -34,11 +35,6 @@ export default function Question({ data }) {
 
   return (
     <div>
-      <div className="mb-4">
-        <div>
-          <Button onClick={form.submit}>{t("Save")}</Button>
-        </div>
-      </div>
       <Form form={form} onFinish={submit}>
         <Form.Item name="id" hidden>
           <InputNumber />
@@ -72,37 +68,42 @@ export default function Question({ data }) {
                     {(fieldsAnswer, { add, remove, move }) => (
                       <div className="p-6 border border-dashed ">
                         {fieldsAnswer.length > 0 && (
-                          <div className={`grid grid-cols-6 gap-4 mb-4`}>
-                            <div className="col-span-5">
+                          <div className={`grid grid-cols-8 gap-4 mb-4`}>
+                            <div className="col-span-6">
                               <p>{t("Answers")}</p>
                             </div>
-                            <div className="flex items-center">
+                            <div className="flex justify-center items-center">
                               <p>{t("Is correct")}</p>
                             </div>
                           </div>
                         )}
-                        {fieldsAnswer.map((f) => (
-                          <div className={`grid grid-cols-6 gap-4 mb-4`}>
-                            <div className="col-span-5">
+                        {fieldsAnswer.map((f, _i) => (
+                          <div className={`grid grid-cols-8 gap-4 mb-4`}>
+                            <div className="col-span-6">
                               <Form.Item name={[f.name, "title"]} className="mb-0!">
                                 <Input size="large" />
                               </Form.Item>
                             </div>
                             <div className="flex justify-center items-center">
-                              <Form.Item name={[f.name, "is_correct"]} className="w-full! mb-0!" valuePropName="checked">
+                              <Form.Item name={[f.name, "is_correct"]} className="mb-0!" valuePropName="checked">
                                 <Switch size="large" defaultValue={false} />
                               </Form.Item>
                             </div>
+                            {fieldsAnswer.length > 1 && <Button size="large" onClick={() => remove(f.name)} icon={<TbTrash />}></Button>}
                           </div>
                         ))}
-                        <Button onClick={() => add()}>{t("Add answer")}</Button>
+                        <div className="flex justify-center items-center">
+                          <Button size="large" onClick={() => add()}>
+                            {t("Add answer")}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </Form.List>
                 </div>
               ))}
               <div className="flex justify-center items-center">
-                <Button className="mt-4" onClick={() => add()}>
+                <Button size="large" className="mt-4" onClick={() => add()}>
                   {t("Add question")}
                 </Button>
               </div>
@@ -110,6 +111,11 @@ export default function Question({ data }) {
           )}
         </Form.List>
       </Form>
+      <div className="mt-4 flex justify-center items-center">
+        <Button size="large" type="primary" onClick={form.submit}>
+          {t("Save")}
+        </Button>
+      </div>
     </div>
   );
 }

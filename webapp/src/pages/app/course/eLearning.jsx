@@ -63,7 +63,7 @@ const Learning = () => {
 
   async function getData() {
     try {
-      const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id } });
+      const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id, id_lang: user.id_lang } });
       if (res.data.course.length > 0) {
         const auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;

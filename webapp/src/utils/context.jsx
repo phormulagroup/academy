@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 
 import endpoints from "./endpoints";
 import api from "./api";
-import { message, Tour } from "antd";
+import { message, notification, Tour } from "antd";
 import i18n from "./i18n";
+import { socket } from "./socket";
 import { useTranslation } from "react-i18next";
 
 export const Context = createContext();
@@ -21,7 +22,9 @@ const ContextProvider = ({ children }) => {
   const [roles, setRoles] = useState([]);
   const [courses, setCourses] = useState([]);
   const [languages, setLanguages] = useState([]);
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [notifications, setNotifications] = useState([]);
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -32,13 +35,48 @@ const ContextProvider = ({ children }) => {
 
   const [tablesName] = useState({ user: "Utilizador", course: "Curso" });
 
-  const [messageApi, contextHolder] = message.useMessage();
+  const [messageApi, contextMessageHolder] = message.useMessage();
+  const [notificationApi, contextNotificationHolder] = notification.useNotification();
 
   const navigate = useNavigate();
 
   useEffect(() => {
     getData();
     getLanguages();
+  }, []);
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("🟢 Socket ligado", socket.id);
+      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country }); // Exemplo
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 Socket desligado");
+    });
+
+    socket.on("reconnect_attempt", (attempt) => {
+      console.log(`🔄 A tentar reconectar... tentativa ${attempt}`);
+    });
+
+    socket.on("reconnect", () => {
+      console.log("🟢 Reconectado com sucesso!");
+      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country }); // Exemplo
+    });
+
+    socket.on("received", (data) => {
+      console.log("Notificações recebida!");
+      console.log(data);
+      notificationApi.open({ type: "info", placement: "top", title: <div dangerouslySetInnerHTML={{ __html: data.title }}></div> });
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("reconnect_attempt");
+      socket.off("reconnect");
+      socket.off("receive");
+    };
   }, []);
 
   useEffect(() => {
@@ -71,6 +109,8 @@ const ContextProvider = ({ children }) => {
           i18n.addResources(auxLanguages[i].code, "translation", translation);
         }
       }
+
+      setSelectedLanguage(res.data.filter((_l) => _l.is_default === 1)[0]);
     } catch (err) {
       console.log(err);
     }
@@ -136,11 +176,16 @@ const ContextProvider = ({ children }) => {
   }
 
   function login(res) {
+    console.log(res);
     localStorage.setItem("token", res.token);
     api.token(res.token);
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
+
+    socket.connect();
+    socket.emit("register_user", { userId: res.user.id, lang: res.user.id_lang, country: res.user.country }); // Exemplo
+
     if (window.location.href.includes("login"))
       if (res.user.id_role === 1) navigate("/admin");
       else navigate(`/${i18n.language}/`);
@@ -243,6 +288,7 @@ const ContextProvider = ({ children }) => {
         isLoading,
         setIsLoading,
         messageApi,
+        notificationApi,
         createLog,
         update,
         create,
@@ -260,7 +306,8 @@ const ContextProvider = ({ children }) => {
         setSelectedLanguage,
       }}
     >
-      {contextHolder}
+      {contextMessageHolder}
+      {contextNotificationHolder}
       {children}
     </Context.Provider>
   );

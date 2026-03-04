@@ -53,9 +53,11 @@ const Main = () => {
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-full!">
         {windowDimension.width > 1080 ? (
-          <div className="flex justify-between items-center w-full container mx-auto">
-            <img src={logo} className="max-h-15" />
-            <div>
+          <div className="grid grid-cols-6 w-full container mx-auto">
+            <Link to={`/${i18n.language}`}>
+              <img src={logo} className="max-h-15" />
+            </Link>
+            <div className="col-span-4 flex justify-center items-center">
               <Link to={`/${i18n.language}/courses`}>Cursos</Link>
               {user && Object.keys(user).length === 0 && (
                 <>
@@ -64,8 +66,8 @@ const Main = () => {
                 </>
               )}
             </div>
-            <div className="flex items-center">
-              {((user && Object.keys(user).length === 0) || user?.id_role !== 1) && (
+            <div className="flex justify-end items-center">
+              {((user && Object.keys(user).length === 0) || user?.id_role === 1) && (
                 <Dropdown
                   menu={{
                     items: languages.map((item) => ({
@@ -81,68 +83,70 @@ const Main = () => {
                   trigger={["click"]}
                   placement="bottomRight"
                 >
-                  <div className="flex justify-center items-center cursor-pointer">
-                    <TbWorld className="w-5 h-5 mr-4" />
+                  <div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
+                    <div
+                      className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
+                      style={{ backgroundImage: `url(${languages.filter((l) => l.code === i18n.language)[0].flag})` }}
+                    ></div>
+                    <p>{i18n.language.toUpperCase()}</p>
                   </div>
                 </Dropdown>
               )}
 
               {user && Object.keys(user).length > 0 && (
-                <Dropdown
-                  menu={{
-                    items: [
-                      user.id_role === 1 && {
-                        key: "backoffice",
-                        label: (
-                          <Link className={`flex items-center`} to="/admin">
-                            <div className="flex items-center">
-                              <DashboardOutlined className="mr-2" />
-                              <p>{t("Go to backoffice")}</p>
-                            </div>
-                          </Link>
-                        ),
-                      },
-                      {
-                        key: "profile",
-                        label: (
-                          <Link className={`flex items-center`} to={`/${i18n.language}/account`}>
-                            <div className="flex items-center">
-                              <UserOutlined className="mr-2" />
-                              <p>{t("My account")}</p>
-                            </div>
-                          </Link>
-                        ),
-                      },
-                      {
-                        key: "result",
-                        label: (
-                          <Link className={`flex items-center`} to={`/${i18n.language}/result`}>
-                            <div className="flex items-center">
-                              <UserOutlined className="mr-2" />
-                              <p>{t("Results")}</p>
-                            </div>
-                          </Link>
-                        ),
-                      },
-                      {
-                        key: "logout",
-                        label: (
-                          <div className="flex items-center" onClick={() => setIsOpenLogout(true)}>
-                            <LogoutOutlined className="mr-2" />
-                            <p>{t("Logout")}</p>
-                          </div>
-                        ),
-                      },
-                    ],
-                  }}
-                  trigger={["click"]}
-                  placement="bottomRight"
-                >
-                  <div className="flex justify-center items-center cursor-pointer">
-                    <Avatar icon={<FaRegUser />} />
-                    <p className="text-[12px] ml-2">{user.name}</p>
+                <div className="flex">
+                  <Dropdown
+                    menu={{
+                      items: [
+                        user.id_role === 1 && {
+                          key: "backoffice",
+                          label: (
+                            <Link className={`flex items-center`} to="/admin">
+                              <div className="flex items-center">
+                                <DashboardOutlined className="mr-2" />
+                                <p>{t("Go to backoffice")}</p>
+                              </div>
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: "profile",
+                          label: (
+                            <Link className={`flex items-center`} to={`/${i18n.language}/account`}>
+                              <div className="flex items-center">
+                                <UserOutlined className="mr-2" />
+                                <p>{t("My account")}</p>
+                              </div>
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: "result",
+                          label: (
+                            <Link className={`flex items-center`} to={`/${i18n.language}/result`}>
+                              <div className="flex items-center">
+                                <UserOutlined className="mr-2" />
+                                <p>{t("Results")}</p>
+                              </div>
+                            </Link>
+                          ),
+                        },
+                      ],
+                    }}
+                    trigger={["click"]}
+                    placement="bottomRight"
+                  >
+                    <div className="flex justify-center items-center cursor-pointer">
+                      <Avatar icon={<FaRegUser />} />
+                      <p className="text-[12px] ml-2">
+                        {user.name.split(" ")[0]} {user.name.split(" ")[1]}
+                      </p>
+                    </div>
+                  </Dropdown>
+                  <div className="flex items-center ml-6 cursor-pointer" onClick={() => setIsOpenLogout(true)}>
+                    <LogoutOutlined />
                   </div>
-                </Dropdown>
+                </div>
               )}
             </div>
           </div>

@@ -30,7 +30,7 @@ select,
 .ant-picker,
 .ant-select,
 .ant-input-number {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .ant-select-item-option-selected > div {
@@ -180,7 +180,7 @@ select {
   margin-bottom: 20px !important;
   border-bottom: 0 !important;
   border: 1px solid #969696 !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .collapse-result .ant-collapse-header {
@@ -189,7 +189,7 @@ select {
   justify-content: center;
   align-items: center !important;
   background-color: #fff !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .collapse-result.completed .ant-collapse-header {
@@ -230,7 +230,7 @@ select {
   margin-bottom: 20px !important;
   border-bottom: 0 !important;
   border: 1px solid #969696 !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .collapse-course .ant-collapse-header {
@@ -239,7 +239,7 @@ select {
   justify-content: center;
   align-items: center !important;
   background-color: #fff !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .collapse-course .ant-collapse-expand-icon {
@@ -257,7 +257,7 @@ select {
 }
 
 .ant-btn {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .ant-btn.blue {
@@ -292,7 +292,7 @@ select {
   background-color: transparent !important;
   border: 2px solid #010202;
   color: #010202 !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   font-size: 16px !important;
   height: 50px !important;
   min-width: 50px !important;
@@ -320,7 +320,7 @@ select {
   background-color: #010202 !important;
   border: 2px solid #010202;
   color: #fff !important;
-  border-radius: 0 !important;
+  border-radius: 5px !important;
   font-size: 16px !important;
   height: 50px !important;
 }
@@ -529,7 +529,7 @@ select {
 }
 
 .ant-dropdown-menu {
-  border-radius: 0 !important;
+  border-radius: 5px !important;
 }
 
 .drawer-learning .ant-drawer-header {

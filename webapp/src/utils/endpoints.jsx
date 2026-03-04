@@ -85,6 +85,14 @@ const endpoints = {
     update: "/media/update",
     delete: "/media/delete",
   },
+  notification: {
+    read: "/notification/read",
+    readByLang: "/notification/readByLang",
+    update: "/notification/update",
+    create: "/notification/create",
+    send: "/notification/send",
+    delete: "/notification/delete",
+  },
 };
 
 export default endpoints;

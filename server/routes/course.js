@@ -64,7 +64,6 @@ router.get("/readProgress", async (req, res) => {
 router.get("/readByLang", async (req, res) => {
   console.log("//// READ COURSE BY LANG ////");
   const query = util.promisify(db.query).bind(db);
-  console.log(req.query);
   try {
     const rows = await query(
       "SELECT * FROM course WHERE id_lang = ?; " +
@@ -111,14 +110,14 @@ router.get("/readBySlug", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
-      "SELECT * FROM course WHERE slug = ?; SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+      "SELECT * FROM course WHERE slug = ? AND id_lang = ?; SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
         "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
         "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
         "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
         "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
         "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
         "WHERE course_user_activity.id_user = ? AND course.slug = ?",
-      [req.query.slug, req.query.slug, req.query.slug, req.query.slug, req.query.id_user, req.query.slug],
+      [req.query.slug, req.query.id_lang, req.query.slug, req.query.slug, req.query.slug, req.query.id_user, req.query.slug],
     );
     res.send({ course: rows[0], modules: rows[1], topics: rows[2], tests: rows[3], progress: rows[4] });
   } catch (e) {

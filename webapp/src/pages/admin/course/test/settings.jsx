@@ -31,41 +31,41 @@ export default function Settings() {
   return (
     <div className="p-2">
       <div>
-        <Form form={form} onFinish={save}>
-          <Form.Item hidden name="id">
-            <Input />
-          </Form.Item>
+        <Form form={form} onFinish={save} layout="vertical">
+          <div className="grid grid-cols-3 gap-8">
+            <Form.Item hidden name="id">
+              <Input />
+            </Form.Item>
 
-          <Form.Item name="passing_score" label={t("Passing score")}>
-            <InputNumber suffix={"% score"} />
-          </Form.Item>
+            <Form.Item name="passing_score" label={t("Passing score")}>
+              <InputNumber suffix={"% score"} size="large" className="w-full!" />
+            </Form.Item>
 
-          <Form.Item name="restrict_test_retakes" label={t("Restrict test retakes")} valuePropName="checked">
-            <Switch size="large" />
-          </Form.Item>
+            <Form.Item name="time" label={t("Time limit")}>
+              <InputNumber size="large" suffix="minutes" className="w-full!" />
+            </Form.Item>
 
-          <Form.Item name="retries_allowed" label={t("Retries allowed")}>
-            <InputNumber suffix={"% score"} />
-          </Form.Item>
+            <Form.Item name="retries_allowed" label={t("Retries allowed")}>
+              <InputNumber suffix={""} className="w-full!" size="large" />
+            </Form.Item>
 
-          <Form.Item name="question_completion" label={t("Question Completion")} valuePropName="checked">
-            <Checkbox size="large">{t("All Questions required to complete")}</Checkbox>
-          </Form.Item>
+            <Form.Item name="restrict_test_retakes" label={t("Restrict test retakes")} valuePropName="checked">
+              <Switch size="large" />
+            </Form.Item>
 
-          <Form.Item name="time" label={t("Time limit")}>
-            <InputNumber size="large" suffix="minutes" />
-          </Form.Item>
+            <Form.Item name="question_completion" label={t("Question Completion")} valuePropName="checked">
+              <Checkbox size="large">{t("All Questions required to complete")}</Checkbox>
+            </Form.Item>
 
-          <Form.Item name="randomize_questions" label={t("Randomize questions")} valuePropName="checked">
-            <Switch size="large" />
-          </Form.Item>
-
-          <Form.Item name="quizz_material" label={t("Quizz materials")} valuePropName="checked">
-            <Switch size="large" />
-          </Form.Item>
+            <Form.Item name="randomize_questions" label={t("Randomize questions")} valuePropName="checked">
+              <Switch size="large" />
+            </Form.Item>
+          </div>
         </Form>
 
-        <Button onClick={form.submit}>Save</Button>
+        <Button type="primary" size="large" onClick={form.submit} className="mt-4">
+          Save
+        </Button>
       </div>
     </div>
   );

@@ -12,6 +12,8 @@ import endpoints from "../../../utils/endpoints";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
+import dayjs from "dayjs";
+import Lottie from "lottie-react";
 
 import avatarImg from "../../../assets/Female.svg";
 import config from "../../../utils/config";
@@ -23,11 +25,14 @@ import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react"
 import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import i18n from "../../../utils/i18n";
 import certificate from "../../../utils/certificate";
-import dayjs from "dayjs";
+import trailLoadingAnimation from "../../../assets/Trail-loading.json";
+import { GridIcon, ListIcon } from "lucide-react";
 
 export default function CourseDetails() {
-  const { user, setSelectedCourse } = useContext(Context);
+  const { user, languages } = useContext(Context);
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewType, setViewType] = useState("grid");
 
   let { slug } = useParams();
   const { t } = useTranslation();
@@ -35,11 +40,13 @@ export default function CourseDetails() {
 
   useEffect(() => {
     if (user) getData();
-  }, [user]);
+  }, [user, i18n.language]);
 
   async function getData() {
     try {
-      const res = await axios.get(endpoints.course.readByLang, { params: { id_user: user.id, id_lang: user.id_lang } });
+      const res = await axios.get(endpoints.course.readByLang, {
+        params: { id_user: user.id, id_lang: user.id_role === 1 ? languages.filter((_l) => _l.code === i18n.language)[0].id : user.id_lang },
+      });
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxObj = {
@@ -68,8 +75,11 @@ export default function CourseDetails() {
 
         auxData.push(auxObj);
       }
-      console.log(auxData);
+
       setData(auxData);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
     } catch (err) {
       console.log(err);
     }
@@ -87,7 +97,6 @@ export default function CourseDetails() {
   }
 
   function downloadCertificate(item, progress) {
-    console.log(item);
     axios
       .get(endpoints.course_certificate.readById, { params: { id: item.id_course_certificate } })
       .then((res) => {
@@ -114,108 +123,124 @@ export default function CourseDetails() {
 
   return (
     <div className="bg-[#FFFFFF] relative">
-      <div className="container mx-auto p-6 grid grid-cols-3 gap-10 mt-10">
+      <div className="container mx-auto p-6 mt-10">
         <div className="col-span-3 flex flex-col justify-center items-center mb-10">
           <p className="text-[30px] font-bold text-center">{t("Online Courses - Bial Academy")}</p>
           <p className="italic text-center">Keeping training in mind</p>
         </div>
-        {data.length > 0 ? (
-          data.map((item) => (
-            <div className="shadow-[0px_3px_6px_#00000029] col-span-3 md:col-span-1">
-              <div
-                className={`h-75 bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
-                style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
-              >
-                <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
-                  <p className="font-bold text-[18px]">{item.course?.name}</p>
-                </div>
-                {calcProgress(item.progress, item.modules) === 100 && (
-                  <div className="absolute -bottom-4 right-4 rounded-[40px] flex items-center">
-                    <CertificateIconWhite className="w-20 h-20" />
-                  </div>
-                )}
-              </div>
-              <div className="bg-[#F7F7F7] p-6">
-                <div className="flex items-center">
-                  <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
-                  <div className="ml-2">
-                    <p className="text-sm">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
-                    <p className="text-[11px] text-[#707070]">
-                      {item.course?.responsible_job ?? "Marketing Manager"}, {item.course?.responsible_country ?? "África"}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 mb-4 flex flex-col justify-center items-center">
-                  {calcProgress(item.progress, item.modules) === 100 ? (
-                    <>
-                      <div className="flex items-center justify-between w-full mb-2 min-h-8.25">
-                        <p className="uppercase">
-                          {calcProgress(item.progress, item.modules)}% {t("completed")}
-                        </p>
-                        <Button className="certificate-button" onClick={() => downloadCertificate(item.course, item.progress)}>
-                          <div className="flex justify-center items-center">
-                            <DownloadCloudIcon className="mr-2" />
-                            {t("Certificate")}
-                          </div>
-                        </Button>
-                      </div>
-                      <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-center w-full mb-2 min-h-8.25">
-                        <p className="mb-2 uppercase">
-                          {calcProgress(item.progress, item.modules)}% {t("completed")}
-                        </p>
-                      </div>
-                      <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
-                    </>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {item.course.id_course_certificate && (
-                    <div className="flex items-center">
-                      <CertificateIcon className="mr-1" />
-                      <p className="text-[16px]">{t("With certificate")}</p>
-                    </div>
-                  )}
-                  {(item.course.settings?.duration_hours || item.course.settings?.duration_minutes) && (
-                    <div className="flex items-center">
-                      <DurationIcon className="mr-1" />
-                      <p className="text-[16px]">
-                        {item.course.settings.duration_hours} h {item.course.settings.duration_minutes ? `${item.course.settings.duration_minutes}m` : ""}
-                      </p>
-                    </div>
-                  )}
-                  {item.course.settings?.video && (
-                    <div className="flex items-center">
-                      <VideosIcon className="mr-1" />
-                      <p className="text-[16px]">{item.course.settings.video} videos</p>
-                    </div>
-                  )}
-                  {item.course.settings?.trainer && (
-                    <div className="flex items-center">
-                      <TrainerIcon className="mr-1" />
-                      <p className="text-[16px]">{item.course.settings.trainer}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="p-8 flex justify-center items-center">
-                <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
-                  {calcProgress(item.progress, item.modules) === 100 ? (
-                    <Button size="large" color="blue" variant="solid" className="w-full!">
-                      Rever
-                    </Button>
-                  ) : (
-                    <Button size="large" type="primary" className="w-full!">
-                      {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
-                    </Button>
-                  )}
-                </Link>
-              </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center w-full h-full col-span-3">
+            <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
+          </div>
+        ) : data.length > 0 ? (
+          <div className={`flex flex-col grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"}`}>
+            <div className="col-span-3 flex justify-end items-center gap-4 mb-4">
+              <GridIcon className="cursor-pointer" onClick={() => setViewType("grid")} />
+              <ListIcon className="cursor-pointer" onClick={() => setViewType("list")} />
             </div>
-          ))
+            {data.map((item) => (
+              <div className={`shadow-[0px_3px_6px_#00000029] ${viewType === "list" ? "flex" : "flex flex-col"}`}>
+                <div
+                  className={`${viewType === "grid" ? "h-75" : "h-full w-[200px]"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
+                  style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
+                >
+                  <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
+                    <p className={`font-bold ${viewType === "list" ? "text-[14px]" : "text-[18px]"}`}>{item.course?.name}</p>
+                  </div>
+                  {viewType === "grid" && calcProgress(item.progress, item.modules) === 100 && (
+                    <div className="absolute -bottom-4 right-4 rounded-[40px] flex items-center">
+                      <CertificateIconWhite className="w-20 h-20" />
+                    </div>
+                  )}
+                </div>
+                <div className={`w-full ${viewType === "list" ? "grid grid-cols-5" : "flex-col"}`}>
+                  <div className={`bg-[#F7F7F7] p-6 ${viewType === "list" ? "col-span-4 grid grid-cols-3 gap-10" : "col-span-1"}`}>
+                    <div className="flex flex-col">
+                      {item.course.settings.id_trainer && (
+                        <div className="flex items-center mb-4">
+                          <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
+                          <div className="ml-2">
+                            <p className="text-sm">{item.course?.responsible_name ?? "Claúdia Meneses"}</p>
+                            <p className="text-[11px] text-[#707070]">
+                              {item.course?.responsible_job ?? "Marketing Manager"}, {item.course?.responsible_country ?? "África"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className={`${item.course.settings.id_trainer ? "mt-4" : "mt-0"} mb-4 flex flex-col justify-center items-center`}>
+                        {calcProgress(item.progress, item.modules) === 100 ? (
+                          <>
+                            <div className="flex items-center justify-between w-full mb-2 min-h-8.25">
+                              <p className="uppercase">
+                                {calcProgress(item.progress, item.modules)}% {t("completed")}
+                              </p>
+                              <Button className="certificate-button" onClick={() => downloadCertificate(item.course, item.progress)}>
+                                <div className="flex justify-center items-center">
+                                  <DownloadCloudIcon className="mr-2" />
+                                  {t("Certificate")}
+                                </div>
+                              </Button>
+                            </div>
+                            <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-center w-full mb-2 min-h-8.25">
+                              <p className="mb-2 uppercase">
+                                {calcProgress(item.progress, item.modules)}% {t("completed")}
+                              </p>
+                            </div>
+                            <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`col-span-2 grid ${viewType === "list" ? "grid-cols-4" : "grid-cols-2"} gap-4`}>
+                      {item.course.id_course_certificate && (
+                        <div className="flex items-center">
+                          <CertificateIcon className="mr-1" />
+                          <p className="text-[16px]">{t("Certificate")}</p>
+                        </div>
+                      )}
+                      {(item.course.settings?.duration_hours || item.course.settings?.duration_minutes) && (
+                        <div className="flex items-center">
+                          <DurationIcon className="mr-1" />
+                          <p className="text-[16px]">
+                            {item.course.settings.duration_hours} h {item.course.settings.duration_minutes ? `${item.course.settings.duration_minutes}m` : ""}
+                          </p>
+                        </div>
+                      )}
+                      {item.course.settings?.video && (
+                        <div className="flex items-center">
+                          <VideosIcon className="mr-1" />
+                          <p className="text-[16px]">{item.course.settings.video} videos</p>
+                        </div>
+                      )}
+                      {item.course.settings?.trainer && (
+                        <div className="flex items-center">
+                          <TrainerIcon className="mr-1" />
+                          <p className="text-[16px]">{item.course.settings.trainer}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-8 flex justify-center items-center">
+                    <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
+                      {calcProgress(item.progress, item.modules) === 100 ? (
+                        <Button size="large" color="blue" variant="solid" className="w-full!">
+                          Rever
+                        </Button>
+                      ) : (
+                        <Button size="large" type="primary" className="w-full!">
+                          {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
+                        </Button>
+                      )}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="col-span-3 flex flex-col justify-center items-center">
             <p>{t("No courses enrolled yet")}</p>

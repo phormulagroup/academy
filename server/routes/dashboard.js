@@ -19,7 +19,7 @@ router.get("/read", async (req, res) => {
     const rows = await query(
       "SELECT * FROM course; " +
         "SELECT * FROM user; " +
-        "SELECT * FROM languages; " +
+        "SELECT * FROM language; " +
         "SELECT * FROM course WHERE id_lang = ?; " +
         "SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ?; " +
         "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +

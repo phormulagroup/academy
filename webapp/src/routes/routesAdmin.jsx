@@ -17,6 +17,7 @@ import TemplateDetails from "../pages/admin/email/templateDetails";
 import Certificate from "../pages/admin/certificate";
 import CertificateDetails from "../pages/admin/certificate/details";
 import UserDetails from "../pages/admin/user/details";
+import Notification from "../pages/admin/notification";
 
 export const adminRoutes = [
   {
@@ -35,6 +36,7 @@ export const adminRoutes = [
       { path: "/admin/media", element: <Media /> },
       { path: "/admin/certificate", element: <Certificate /> },
       { path: "/admin/certificate/:id", element: <CertificateDetails /> },
+      { path: "/admin/notification", element: <Notification /> },
       { path: "/admin/*", element: <Navigate to="/admin" replace /> },
     ],
   },
