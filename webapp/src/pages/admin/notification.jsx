@@ -32,7 +32,7 @@ export default function Notification() {
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [selectedLanguage.id]);
 
   function getData() {
     setIsLoading(true);
@@ -99,6 +99,7 @@ export default function Notification() {
   }
 
   function sendNotification(obj) {
+    console.log(obj);
     axios
       .post(endpoints.notification.send, {
         data: obj,

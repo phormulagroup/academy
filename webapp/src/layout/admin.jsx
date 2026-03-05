@@ -10,6 +10,7 @@ import { Context } from "../utils/context";
 import Logout from "../components/logout";
 
 import logo from "../assets/BIAL-Regional-Academy.svg";
+import DashboardIcon from "../assets/Backoffice/Menu/Dashboard.svg?react";
 import PagesIcon from "../assets/Backoffice/Menu/Paginas.svg?react";
 import ArticlesIcon from "../assets/Backoffice/Menu/Artigos.svg?react";
 import MenusIcon from "../assets/Backoffice/Menu/Menus.svg?react";
@@ -44,6 +45,12 @@ const Main = () => {
   const { t, i18n } = useTranslation();
 
   const [items, setItems] = useState([
+    {
+      key: "grp-admin",
+      label: "Amin",
+      type: "group",
+      children: [{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> }],
+    },
     {
       key: "grp-web",
       label: "Website",
@@ -194,8 +201,12 @@ const Main = () => {
                     trigger={["click"]}
                     placement="bottomRight"
                   >
-                    <div className="flex justify-center items-center cursor-pointer">
-                      <TbWorld className="w-5 h-5 mr-4" />
+                    <div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
+                      <div
+                        className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
+                        style={{ backgroundImage: `url(${languages.filter((l) => l.id === selectedLanguage.id)[0].flag})` }}
+                      ></div>
+                      <p>{selectedLanguage.code.toUpperCase()}</p>
                     </div>
                   </Dropdown>
                   <Avatar icon={<FaRegUser />} />

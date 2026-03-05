@@ -28,6 +28,7 @@ import Lottie from "lottie-react";
 export default function CourseDetails() {
   const { user, languages } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [data, setData] = useState({});
   const [modules, setModules] = useState([]);
   const [progress, setProgress] = useState([]);
@@ -85,10 +86,38 @@ export default function CourseDetails() {
     return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;
   }
 
+  function enroll() {
+    setIsEnrolling(true);
+    let auxData = [
+      {
+        id_course: data.course.id,
+        id_user: user.id,
+        activity_type: "enroll",
+        is_completed: 1,
+        created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      },
+    ];
+
+    axios
+      .post(endpoints.course.updateProgress, {
+        data: auxData,
+      })
+      .then((res) => {
+        console.log(res);
+        setIsEnrolling(false);
+        navigate(`/${i18n.language}/courses/${slug}/learning`);
+      })
+      .catch((err) => {
+        console.log(err);
+        setIsEnrolling(false);
+      });
+  }
+
   return (
     <div className="bg-[#FFFFFF] relative">
       {isLoading ? (
-        <div className="flex justify-center items-center w-full min-h-[300px] col-span-3">
+        <div className="flex justify-center items-center w-full min-h-75 col-span-3">
           <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
         </div>
       ) : data.course ? (
@@ -193,6 +222,10 @@ export default function CourseDetails() {
                 ) === 100 ? (
                   <Button className="min-w-50" color="blue" variant="solid" size="large" onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}>
                     {t("Review")}
+                  </Button>
+                ) : progress.filter((p) => p.activity_type === "enroll").length === 0 ? (
+                  <Button className="min-w-50" color="black" variant="solid" size="large" onClick={() => enroll()}>
+                    {t("Initiate")}
                   </Button>
                 ) : (
                   <Button className="min-w-50" color="black" variant="solid" size="large" onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}>

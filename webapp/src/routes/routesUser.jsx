@@ -7,6 +7,7 @@ import CourseDetails from "../pages/app/course/details";
 import Learning from "../pages/app/course/eLearning";
 import Account from "../pages/app/account";
 import Result from "../pages/app/results";
+import Notifications from "../pages/app/notification";
 
 export const userRoutes = [
   // Com layout principal
@@ -18,6 +19,7 @@ export const userRoutes = [
       { path: "account", element: <Account /> }, // "/:lang/courses"
       { path: "result", element: <Result /> }, // "/:lang/courses"
       { path: "courses", element: <Course /> }, // "/:lang/courses"
+      { path: "notifications", element: <Notifications /> }, // "/:lang/courses"
       { path: "courses/:slug", element: <CourseDetails /> }, // "/:lang/courses/:slug"
       // { path: "*", element: <Navigate to="." replace /> },  // opcional
     ],

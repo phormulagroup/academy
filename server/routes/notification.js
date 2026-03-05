@@ -24,6 +24,21 @@ router.get("/read", async (req, res) => {
   }
 });
 
+router.get("/readByUser", async (req, res) => {
+  console.log("//// READ NOTIFICATION BY USER ////");
+  const query = util.promisify(db.query).bind(db);
+  try {
+    const rows = await query(
+      "SELECT notification.title, notification.description, notification_user.* FROM notification_user " +
+        "LEFT JOIN notification ON notification.id = notification_user.id_notification WHERE id_user = ? ORDER BY created_at DESC",
+      [req.query.id_user],
+    );
+    res.send(rows);
+  } catch (e) {
+    throw e;
+  }
+});
+
 router.get("/readByLang", async (req, res) => {
   console.log("//// READ NOTIFICATION BY LANG ////");
   const query = util.promisify(db.query).bind(db);
@@ -70,13 +85,37 @@ router.post("/update", async (req, res, next) => {
 
 router.post("/send", async (req, res, next) => {
   console.log("//// SEND NOTIFICATION ////");
-  try {
-    const socket = getSocketInstance();
-    socket.notifyAllUsers(req.body.data);
-    res.send({ send: true });
-  } catch (err) {
-    throw err;
-  }
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+
+      data.country = data.country ? (typeof data.country === "string" ? JSON.parse(data.country) : data.country) : null;
+      let insertData = [];
+      const rows = await query("SELECT * FROM user WHERE status = 'approved' AND id_lang = ?", data.id_lang);
+
+      for (let i = 0; i < rows.length; i++) {
+        insertData.push([data.id, rows[i].id]);
+      }
+
+      await query("INSERT INTO notification_user (id_notification, id_user) VALUES ?", [insertData]);
+
+      const socket = getSocketInstance();
+      socket.notifyAllUsers(data);
+      await commit();
+      conn.release();
+      res.send({ send: true });
+    } catch (err) {
+      await rollback();
+      conn.release();
+      throw err;
+    }
+  });
 });
 
 router.post("/delete", async (req, res, next) => {

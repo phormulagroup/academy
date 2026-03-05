@@ -31,6 +31,7 @@ const Learning = () => {
   const { user, logout, languages, windowDimension } = useContext(Context);
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [selectedCourseItem, setSelectedCourseItem] = useState(null);
   const [data, setData] = useState(null);
   const [modules, setModules] = useState(null);
@@ -144,11 +145,12 @@ const Learning = () => {
             id_course_test: null,
             id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
-            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            created_at: dayjs().add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
           },
         ];
 
+        //Falta saber se é o último tópico ou teste que pode fazer se o curso não for do tipo linear
         if (moduleSelectedCourseItem.id === modules[modules.length - 1].id)
           auxData.push({
             id_course: data.course.id,
@@ -158,8 +160,8 @@ const Learning = () => {
             id_course_test: null,
             id_course_module: null,
             is_completed: 1,
-            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            created_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
           });
 
         goToNextModule = true;
@@ -314,7 +316,7 @@ const Learning = () => {
 
         <Layout>
           {windowDimension.width > 1080 ? (
-            <Sider width={400} className="bg-white! overflow-auto">
+            <Sider width={400} className="bg-white! overflow-auto learning-sider">
               <div className="flex flex-col h-full">
                 <div className="flex flex-col w-full p-6 bg-[#010202]">
                   <p className="text-white">{t("Course")}</p>

@@ -1,6 +1,6 @@
 const { Server } = require("socket.io");
 
-const connectedUsers = new Map(); // userId → socketId
+const connectedUsers = new Map(); // userId → {socketId, id_lang, country}
 
 function setupSocket(server) {
   const io = new Server(server, {
@@ -38,10 +38,10 @@ function setupSocket(server) {
   }
 
   function notifyAllUsers(data) {
-    console.log(connectedUsers);
-    for (const [userId, obj] of connectedUsers.entries()) {
-      console.log(obj.socketId);
-      io.to(obj.socketId).emit("received", data);
+    const users = new Map([...connectedUsers].filter(([, info]) => info.lang === data.id_lang));
+
+    for (const [_, obj] of users.entries()) {
+      io.to(obj.socketId).emit("received", { ...data, is_read: 0 });
     }
   }
 

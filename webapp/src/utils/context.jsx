@@ -46,8 +46,13 @@ const ContextProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (Object.keys(user).length === 0) return;
+    else socket.connect();
+
     socket.on("connect", () => {
       console.log("🟢 Socket ligado", socket.id);
+      console.log("User: ", user);
+      console.log("socket.connected: ", socket.connected);
       if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country }); // Exemplo
     });
 
@@ -67,7 +72,16 @@ const ContextProvider = ({ children }) => {
     socket.on("received", (data) => {
       console.log("Notificações recebida!");
       console.log(data);
-      notificationApi.open({ type: "info", placement: "top", title: <div dangerouslySetInnerHTML={{ __html: data.title }}></div> });
+      notificationApi.open({
+        type: "info",
+        placement: "top",
+        title: <div dangerouslySetInnerHTML={{ __html: data.title }}></div>,
+        description: <div dangerouslySetInnerHTML={{ __html: data.description }}></div>,
+      });
+
+      const auxNotifications = Object.assign([], notifications);
+      auxNotifications.unshift(data);
+      setNotifications(auxNotifications);
     });
 
     return () => {
@@ -77,7 +91,7 @@ const ContextProvider = ({ children }) => {
       socket.off("reconnect");
       socket.off("receive");
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const detectSize = () => {
@@ -125,12 +139,23 @@ const ContextProvider = ({ children }) => {
     }
   }
 
+  async function getNotifications(auxUser) {
+    try {
+      const res = await axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser ? auxUser.id : user.id } });
+      console.log(res);
+      setNotifications(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   async function getData() {
     let token = localStorage.getItem("token");
     if (token) {
       try {
         const res = await axios.post(endpoints.auth.verifyToken, { data: token });
         login({ user: res.data.user, token: token });
+        getNotifications(res.data.user);
         getCourses(res.data.user);
         setTimeout(() => {
           setIsLoading(false);
@@ -182,9 +207,6 @@ const ContextProvider = ({ children }) => {
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
-
-    socket.connect();
-    socket.emit("register_user", { userId: res.user.id, lang: res.user.id_lang, country: res.user.country }); // Exemplo
 
     if (window.location.href.includes("login"))
       if (res.user.id_role === 1) navigate("/admin");
@@ -304,6 +326,8 @@ const ContextProvider = ({ children }) => {
         setWindowDimension,
         selectedLanguage,
         setSelectedLanguage,
+        notifications,
+        setNotifications,
       }}
     >
       {contextMessageHolder}

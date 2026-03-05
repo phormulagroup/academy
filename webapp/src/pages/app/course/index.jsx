@@ -29,7 +29,7 @@ import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
 
 export default function CourseDetails() {
-  const { user, languages } = useContext(Context);
+  const { user, languages, windowDimension } = useContext(Context);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
@@ -41,6 +41,10 @@ export default function CourseDetails() {
   useEffect(() => {
     if (user) getData();
   }, [user, i18n.language]);
+
+  useEffect(() => {
+    if (windowDimension < 1080) setViewType("grid");
+  }, [windowDimension]);
 
   async function getData() {
     try {
@@ -133,7 +137,7 @@ export default function CourseDetails() {
             <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
           </div>
         ) : data.length > 0 ? (
-          <div className={`flex flex-col grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"}`}>
+          <div className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"}`}>
             <div className="col-span-3 flex justify-end items-center gap-4 mb-4">
               <GridIcon className="cursor-pointer" onClick={() => setViewType("grid")} />
               <ListIcon className="cursor-pointer" onClick={() => setViewType("list")} />
@@ -141,7 +145,7 @@ export default function CourseDetails() {
             {data.map((item) => (
               <div className={`shadow-[0px_3px_6px_#00000029] ${viewType === "list" ? "flex" : "flex flex-col"}`}>
                 <div
-                  className={`${viewType === "grid" ? "h-75" : "h-full w-[200px]"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
+                  className={`${viewType === "grid" ? "h-75" : "h-full w-50"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
                   style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
                 >
                   <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
