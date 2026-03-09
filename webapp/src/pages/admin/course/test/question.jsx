@@ -10,7 +10,7 @@ import { Button, Empty, Form, Input, InputNumber, Switch, Tabs } from "antd";
 import Constructor from "../constructor";
 import { useParams } from "react-router-dom";
 import Settings from "../settings";
-import { RxTrash } from "react-icons/rx";
+import { RxArrowDown, RxArrowUp, RxTrash } from "react-icons/rx";
 import { TbTrash } from "react-icons/tb";
 
 export default function Question({ data }) {
@@ -57,9 +57,15 @@ export default function Question({ data }) {
                     <p className="font-bold">
                       {t("Question nº ")} {field.name + 1}
                     </p>
-                    <Button icon={<RxTrash />} onClick={() => remove(field.name)}>
-                      {t("Delete")}
-                    </Button>
+                    <div className="flex gap-4">
+                      <div className="flex gap-2">
+                        {field.name > 0 && <Button icon={<RxArrowUp />} onClick={() => move(field.name, field.name - 1)} />}
+                        <Button icon={<RxArrowDown />} onClick={() => move(field.name, field.name + 1)} />
+                      </div>
+                      <Button icon={<RxTrash />} onClick={() => remove(field.name)}>
+                        {t("Delete")}
+                      </Button>
+                    </div>
                   </div>
                   <Form.Item name={[field.name, "title"]}>
                     <Input size="large" />

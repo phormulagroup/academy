@@ -98,7 +98,7 @@ export default function Settings({ course }) {
           <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls additional information that users will see on course page")}</p>
           <div className="grid grid-cols-3 gap-8">
             <div>
-              <p className="pb-[8px]">Duration</p>
+              <p className="pb-2">Duration</p>
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item name={["settings", "duration_hours"]} className="mb-0!">
                   <InputNumber size="large" suffix="hours" className="w-full!" />
