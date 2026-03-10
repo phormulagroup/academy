@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
-import { CloseOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
-import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, Layout, Menu, Modal, Progress } from "antd";
+import { CloseOutlined, CustomerServiceOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
+import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, FloatButton, Layout, Menu, Modal, Progress } from "antd";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -14,7 +14,7 @@ import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
 import { AiFillCloseCircle, AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
-import { RxChevronRight, RxChevronLeft, RxExclamationTriangle, RxLockClosed } from "react-icons/rx";
+import { RxChevronRight, RxChevronLeft, RxExclamationTriangle, RxLockClosed, RxArrowLeft, RxArrowRight } from "react-icons/rx";
 
 import dayjs from "dayjs";
 import Topic from "./topic";
@@ -22,6 +22,7 @@ import Test from "./test";
 
 import logo from "../../../assets/BIAL-Regional-Academy.svg";
 import Module from "./module";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const { confirm } = Modal;
 
@@ -267,56 +268,56 @@ const Learning = () => {
   return (
     <Layout>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
-      <Layout>
-        <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center h-25!">
-          <div className="flex justify-center items-center w-full">
-            {windowDimension.width > 1080 ? (
-              <div className="grid grid-cols-3 gap-4 w-full">
-                <div>
-                  <img src={logo} className="max-h-17.5" />
-                </div>
-                <div className="flex flex-col justify-center items-center">
-                  <div className="w-full flex justify-between items-center mb-2">
-                    <p className="leading-[1em] text-[24px] font-bold uppercase">
-                      {progressPercentage}% {t("Complete")}
-                    </p>
-                    <p className="leading-1">
-                      {progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length} /{" "}
-                      {data?.topics.length + data?.tests.length} {t("steps")}
-                    </p>
-                  </div>
-                  <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
-                </div>
-                <div className="flex justify-end items-center">
-                  <Button size="large" icon={<RxChevronLeft />} className="button-back-learning-header mr-4" onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
-                    {t("Back to course")}
-                  </Button>
-                  {selectedCourseItem?.type && (
-                    <>
-                      {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id && (
-                        <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
-                          {t("Previous")}
-                        </Button>
-                      )}
-                      <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
-                        {t("Next")}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center w-full">
-                <img src={logo} className="max-h-17.5" />
-                <MenuOutlined className="text-xl" onClick={() => setIsOpenDrawerMenu(true)} />
-              </div>
-            )}
-          </div>
-        </Header>
-
-        <Layout>
+      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center h-25!">
+        <div className="flex justify-center items-center w-full">
           {windowDimension.width > 1080 ? (
-            <Sider width={400} className="bg-white! overflow-auto learning-sider">
+            <div className="grid grid-cols-3 gap-4 w-full">
+              <div>
+                <img src={logo} className="max-h-17.5" />
+              </div>
+              <div className="flex flex-col justify-center items-center">
+                <div className="w-full flex justify-between items-center mb-2">
+                  <p className="leading-[1em] text-[24px] font-bold uppercase">
+                    {progressPercentage}% {t("Complete")}
+                  </p>
+                  <p className="leading-1">
+                    {progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length} /{" "}
+                    {data?.topics.length + data?.tests.length} {t("steps")}
+                  </p>
+                </div>
+                <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
+              </div>
+              <div className="flex justify-end items-center">
+                <Button size="large" icon={<RxChevronLeft />} className="button-back-learning-header mr-4" onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
+                  {t("Back to course")}
+                </Button>
+                {selectedCourseItem?.type && (
+                  <>
+                    {allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id && (
+                      <Button size="large" icon={<RxChevronLeft />} className="button-learning-header mr-2" onClick={() => previous()}>
+                        {t("Previous")}
+                      </Button>
+                    )}
+                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
+                      {t("Next")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center w-full">
+              <img src={logo} className="max-h-17.5" />
+              <MenuOutlined className="text-xl" onClick={() => setIsOpenDrawerMenu(true)} />
+            </div>
+          )}
+        </div>
+      </Header>
+
+      <Layout>
+        {windowDimension.width > 1080 ? (
+          <Sider width={400} className="bg-white! overflow-auto learning-sider" collapsed={collapsed}>
+            {!collapsed && (
               <div className="flex flex-col h-full">
                 <div className="flex flex-col w-full p-6 bg-[#010202]">
                   <p className="text-white">{t("Course")}</p>
@@ -407,9 +408,18 @@ const Learning = () => {
                   )}
                 </div>
               </div>
-            </Sider>
-          ) : null}
-          <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full">
+            )}
+          </Sider>
+        ) : null}
+        <Content>
+          <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full relative">
+            <Button
+              variant="solid"
+              color="yellow"
+              className="absolute! top-20 -left-6! h-12! w-12! rounded-full! flex justify-center items-center"
+              onClick={() => setCollapsed(!collapsed)}
+              icon={collapsed ? <ArrowRight className="w-6! h-6! text-black!" /> : <ArrowLeft className="w-6! h-6! text-black!" />}
+            ></Button>
             <Drawer open={isOpenDrawerMenu} size={"80%"} onClose={closeDrawer} maskClosable={false} extra={[]} className="drawer-learning">
               <div className="flex flex-col h-full">
                 <div className="absolute top-5 right-5 flex justify-end">
@@ -558,7 +568,7 @@ const Learning = () => {
               )}
             </div>
             <div>
-              <div className="p-8 flex justify-between items-center bg-[#707070]">
+              <div className="p-6 flex justify-between items-center bg-[#707070]">
                 {selectedCourseItem && (
                   <>
                     {selectedCourseItem.type && allItems && allItems.length > 0 && selectedCourseItem.id !== allItems[0].id ? (
@@ -586,7 +596,7 @@ const Learning = () => {
               </div>
             </div>
           </div>
-        </Layout>
+        </Content>
       </Layout>
     </Layout>
   );

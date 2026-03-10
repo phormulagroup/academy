@@ -67,6 +67,11 @@ select,
   height: 100%;
 }
 
+.ant-layout-sider-collapsed {
+  max-width: 40px !important;
+  min-width: 40px !important;
+}
+
 .ant-layout-header {
   z-index: 1;
 }
@@ -140,6 +145,12 @@ select,
 
 .ant-btn {
   box-shadow: none !important;
+}
+
+.ant-btn-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .ant-picker,
@@ -254,10 +265,6 @@ select {
 
 .collapse-course .ant-collapse-body {
   padding: 0 !important;
-}
-
-.ant-btn {
-  border-radius: 5px !important;
 }
 
 .ant-btn.blue {

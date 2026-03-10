@@ -251,7 +251,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   return (
     <div>
       <div className="flex justify-between flex-col h-full">
-        <div className="p-8 overflow-y-auto">
+        <div className="p-8 lg:pl-12! overflow-y-auto">
           {progress.length > 0 && progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id && p.is_completed === 1).length > 0 ? (
             <div className="p-4 bg-black flex justify-between items-center">
               <p className="text-[20px] text-white">{selectedCourseItem.title}</p>

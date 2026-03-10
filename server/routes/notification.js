@@ -75,7 +75,26 @@ router.post("/update", async (req, res, next) => {
     const values = Object.values(data);
 
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE language SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const updatedRow = await query("UPDATE notification SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+
+    res.send(updatedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/markAsRead", async (req, res, next) => {
+  console.log("//// MARK AS READ NOTIFICATION ////");
+  try {
+    let data = req.body.data;
+    let whereId = data.id;
+    delete data.id;
+
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+
+    const query = util.promisify(db.query).bind(db);
+    const updatedRow = await query("UPDATE notification_user SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
 
     res.send(updatedRow);
   } catch (err) {
