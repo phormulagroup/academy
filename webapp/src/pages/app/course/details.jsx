@@ -22,8 +22,10 @@ import FlagIcon from "../../../assets/Flag.svg?react";
 import i18n from "../../../utils/i18n";
 import CourseIcon from "../../../assets/Curso.svg?react";
 import MaterialIcon from "../../../assets/Materiais.svg?react";
+import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
+import CourseObjection from "./objection";
 
 export default function CourseDetails() {
   const { user, languages } = useContext(Context);
@@ -244,19 +246,28 @@ export default function CourseDetails() {
                   key: "1",
                   label: (
                     <div className="flex p-2 justify-center items-center">
-                      <CourseIcon className="w-5 h-5 sm:w-6.25 sm:h-6.25 mr-2" /> <p className="font-bold text-lg sm:text-[22px]">{t("Course")}</p>
+                      <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Course")}</p>
                     </div>
                   ),
                   children: <CourseContent modules={modules} progress={progress} data={data} />,
                 },
-                {
-                  key: "3",
+                data.course.material && {
+                  key: "2",
                   label: (
                     <div className="flex p-2 justify-center items-center">
-                      <MaterialIcon className="w-5 h-5 sm:w-6.25 sm:h-6.25 mr-2" /> <p className="font-bold text-lg sm:text-[22px]">{t("Materials")}</p>
+                      <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Materials")}</p>
                     </div>
                   ),
                   children: <CourseMaterial data={data.course} />,
+                },
+                data.course.objection && {
+                  key: "3",
+                  label: (
+                    <div className="flex p-2 justify-center items-center">
+                      <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-sm sm:text-[20px]">{t("Objection books")}</p>
+                    </div>
+                  ),
+                  children: <CourseObjection data={data.course} />,
                 },
               ]}
               onChange={(key) => console.log(key)}

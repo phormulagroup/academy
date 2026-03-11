@@ -33,7 +33,7 @@ const ContextProvider = ({ children }) => {
 
   const { t } = useTranslation();
 
-  const [tablesName] = useState({ user: "Utilizador", course: "Curso" });
+  const [tablesName] = useState({ user: "Utilizador", course: "Curso", test: "Test" });
 
   const [messageApi, contextMessageHolder] = message.useMessage();
   const [notificationApi, contextNotificationHolder] = notification.useNotification();
@@ -124,7 +124,10 @@ const ContextProvider = ({ children }) => {
         }
       }
 
-      setSelectedLanguage(res.data.filter((_l) => _l.is_default === 1)[0]);
+      const idLangStorage = localStorage.getItem("id_lang");
+      console.log(idLangStorage);
+
+      setSelectedLanguage(res.data.filter((_l) => (idLangStorage ? _l.id === parseInt(idLangStorage) : _l.is_default === 1))[0]);
     } catch (err) {
       console.log(err);
     }

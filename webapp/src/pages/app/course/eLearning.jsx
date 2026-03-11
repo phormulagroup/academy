@@ -413,13 +413,15 @@ const Learning = () => {
         ) : null}
         <Content>
           <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full relative">
-            <Button
-              variant="solid"
-              color="yellow"
-              className="absolute! top-20 -left-6! h-12! w-12! rounded-full! flex justify-center items-center"
-              onClick={() => setCollapsed(!collapsed)}
-              icon={collapsed ? <ArrowRight className="w-6! h-6! text-black!" /> : <ArrowLeft className="w-6! h-6! text-black!" />}
-            ></Button>
+            {windowDimension.width > 1080 && (
+              <Button
+                variant="solid"
+                color="yellow"
+                className="absolute! top-20 -left-6! h-12! w-12! rounded-full! flex justify-center items-center"
+                onClick={() => setCollapsed(!collapsed)}
+                icon={collapsed ? <ArrowRight className="w-6! h-6! text-black!" /> : <ArrowLeft className="w-6! h-6! text-black!" />}
+              ></Button>
+            )}
             <Drawer open={isOpenDrawerMenu} size={"80%"} onClose={closeDrawer} maskClosable={false} extra={[]} className="drawer-learning">
               <div className="flex flex-col h-full">
                 <div className="absolute top-5 right-5 flex justify-end">

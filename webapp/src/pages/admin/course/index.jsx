@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { RxReload } from "react-icons/rx";
 
 export default function Course() {
-  const { user } = useContext(Context);
+  const { user, selectedLanguage } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -36,14 +36,14 @@ export default function Course() {
 
   useEffect(() => {
     if (user) getData();
-  }, [user]);
+  }, [user, selectedLanguage]);
 
   function getData() {
     setIsLoading(true);
     console.log(user);
     axios
-      .get(endpoints.course.read, {
-        params: { id_user: user.id },
+      .get(endpoints.course.readByLang, {
+        params: { id_lang: selectedLanguage.id },
       })
       .then((res) => {
         console.log(res.data);

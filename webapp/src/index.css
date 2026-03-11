@@ -24,6 +24,13 @@
   --bt-count: 8;
 }
 
+ol,
+ul {
+  list-style: disc;
+  padding: 0 1rem;
+  margin: 1.25rem 1rem 1.25rem 0.4rem;
+}
+
 input,
 select,
 .ant-input-password,

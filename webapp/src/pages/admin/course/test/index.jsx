@@ -35,7 +35,8 @@ export default function Test() {
       .then((res) => {
         if (res.data && res.data.length > 0) {
           res.data[0].question = res.data[0].question ? JSON.parse(res.data[0].question) : [];
-          console.log(res.data[0]);
+          res.data[0].settings = res.data[0].settings ? JSON.parse(res.data[0].settings) : {};
+
           form.setFieldsValue(res.data[0]);
           setData(res.data[0]);
         }
@@ -67,7 +68,7 @@ export default function Test() {
           {
             key: "2",
             label: t("Settings"),
-            children: <Settings />,
+            children: <Settings data={data} />,
           },
         ]}
       />

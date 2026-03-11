@@ -59,89 +59,91 @@ export default function CourseContent({ modules, progress, data }) {
   }
 
   return (
-    <Collapse
-      className="collapse-course"
-      size="large"
-      bordered={false}
-      items={modules?.map((item) => ({
-        key: item.id,
-        label: (
-          <div className="flex flex-col">
-            <div
-              className="p-2 cursor-pointer flex"
-              onClick={() =>
-                navigate(`/${i18n.language}/courses/${slug}/learning`, {
-                  state: {
-                    courseItemId: item.id,
-                    courseItemType: "module",
-                  },
-                })
-              }
-            >
-              {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                  <RxCheck className="text-white" />
+    <div className="mb-10">
+      <Collapse
+        className="collapse-course"
+        size="large"
+        bordered={false}
+        items={modules?.map((item) => ({
+          key: item.id,
+          label: (
+            <div className="flex flex-col">
+              <div
+                className="p-2 cursor-pointer flex"
+                onClick={() =>
+                  navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                    state: {
+                      courseItemId: item.id,
+                      courseItemType: "module",
+                    },
+                  })
+                }
+              >
+                {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
+                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                    <RxCheck className="text-white" />
+                  </div>
+                ) : (
+                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                )}
+                <div className="flex flex-col ml-4">
+                  <p className={`text-[16px]`}>{item.title}</p>
+                  <p className="text-[12px] mt-1">
+                    {data?.topics && data.topics.filter((_t) => _t.id_course_module === item.id).length > 0
+                      ? `${data.topics.filter((_t) => _t.id_course_module === item.id).length} ${t("topic")} ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? " | " : ""}`
+                      : ""}{" "}
+                    {` ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? `${data.tests.filter((_t) => _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
+                  </p>
                 </div>
-              ) : (
-                <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-              )}
-              <div className="flex flex-col ml-4">
-                <p className={`text-[16px]`}>{item.title}</p>
-                <p className="text-[12px] mt-1">
-                  {data?.topics && data.topics.filter((_t) => _t.id_course_module === item.id).length > 0
-                    ? `${data.topics.filter((_t) => _t.id_course_module === item.id).length} ${t("topic")} ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? " | " : ""}`
-                    : ""}{" "}
-                  {` ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? `${data.tests.filter((_t) => _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
-                </p>
               </div>
             </div>
-          </div>
-        ),
-        children: (
-          <div className="flex flex-col">
-            {item.description && <div className="p-6">{item.description}</div>}
-            <div className="p-6 bg-[#414141] flex justify-between items-center">
-              <p className="text-white">{t("Module content")}</p>
-              <div>{calcProgress(item.items)}</div>
+          ),
+          children: (
+            <div className="flex flex-col">
+              {item.description && <div className="p-6">{item.description}</div>}
+              <div className="p-6 bg-[#414141] flex justify-between items-center">
+                <p className="text-white">{t("Module content")}</p>
+                <div>{calcProgress(item.items)}</div>
+              </div>
+              <div className="p-4">
+                {item.items.map((_t, i) => (
+                  <div
+                    onClick={() =>
+                      navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                        state: {
+                          courseItemId: _t.id,
+                          courseItemType: _t.type,
+                        },
+                      })
+                    }
+                    className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}
+                  >
+                    {progress.length > 0 && progress.filter((p) => p.is_completed === 1 && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+                      <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                        <RxCheck className="text-white" />
+                      </div>
+                    ) : (
+                      <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                    )}
+                    <p className="text-sm ml-2">{_t.title}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="p-4">
-              {item.items.map((_t, i) => (
-                <div
-                  onClick={() =>
-                    navigate(`/${i18n.language}/courses/${slug}/learning`, {
-                      state: {
-                        courseItemId: _t.id,
-                        courseItemType: _t.type,
-                      },
-                    })
-                  }
-                  className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}
-                >
-                  {progress.length > 0 && progress.filter((p) => p.is_completed === 1 && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
-                    <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                      <RxCheck className="text-white" />
-                    </div>
-                  ) : (
-                    <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                  )}
-                  <p className="text-sm ml-2">{_t.title}</p>
-                </div>
-              ))}
+          ),
+        }))}
+        expandIconPlacement="end"
+        expandIcon={(panelProps) => {
+          return (
+            <div className="flex justify-center items-center">
+              <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
+              <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
+              </div>
             </div>
-          </div>
-        ),
-      }))}
-      expandIconPlacement="end"
-      expandIcon={(panelProps) => {
-        return (
-          <div className="flex justify-center items-center">
-            <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
-            <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-              {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
-            </div>
-          </div>
-        );
-      }}
-    />
+          );
+        }}
+      />
+    </div>
   );
 }

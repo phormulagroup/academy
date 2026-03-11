@@ -6,18 +6,19 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
-import { Button, DatePicker, Divider, Form, Input, InputNumber, Radio, Select, Switch, Tabs } from "antd";
+import { Button, Card, DatePicker, Divider, Form, Input, InputNumber, Radio, Select, Space, Switch, Tabs } from "antd";
 import Constructor from "./constructor";
 import { useParams } from "react-router-dom";
 import Media from "../../../components/admin/media/media";
 import { AiOutlineFile, AiOutlinePlus } from "react-icons/ai";
 import config from "../../../utils/config";
-import { RxTrash } from "react-icons/rx";
+import { RxCross1, RxPlus, RxTrash } from "react-icons/rx";
 
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
+import { CgClose } from "react-icons/cg";
 
 export default function Settings({ course }) {
   const { languages } = useContext(Context);
@@ -25,6 +26,7 @@ export default function Settings({ course }) {
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
   const [certificates, setCertificates] = useState([]);
+  const [activeKey, setActiveKey] = useState("0");
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
@@ -375,42 +377,95 @@ export default function Settings({ course }) {
           <Form.Item name={["objection", "text"]} className="mb-0!" label={t("Description")}>
             <TiptapFormField placeholder="Escreva o conteúdo..." />
           </Form.Item>
-          <div>
-            <Form.List name={["objection", "items"]}>
-              {(fields, { add, remove, move }) => (
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  {fields.map((field) => (
-                    <div>
-                      <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.objection !== currentValues.objection}>
-                        {({ getFieldValue }) => {
-                          return (
-                            <div className="p-6 h-full border border-dashed border-gray-300 mb-6 cursor-pointer flex flex-col justify-center items-center w-full overflow-hidden">
-                              <Form.Item name={[field.name, "title"]} className="w-full!" label={t("Title")}>
-                                <Input size="large" />
-                              </Form.Item>
-                              <Form.Item name={[field.name, "text"]} className="w-full!" label={t("Text")}>
-                                <Input size="large" />
-                              </Form.Item>
-                              <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
-                                <Button onClick={() => remove(field.name)} icon={<RxTrash />}></Button>
+          <div className="mt-4">
+            <Form.List name={["objection", "tabs"]}>
+              {(fields, { add, remove }) => {
+                const items = fields.map((field) => ({
+                  key: field.name.toString(),
+                  label: (
+                    <div className="flex justify-center items-center">
+                      Objection nº {(field.name + 1).toString()}{" "}
+                      <RxTrash
+                        className="ml-2"
+                        onClick={() => {
+                          remove(field.name);
+                          fields.splice(field.name, 1);
+                          console.log(fields);
+                        }}
+                      />
+                    </div>
+                  ),
+                  forceRender: true,
+                  children: (
+                    <Card>
+                      {/* Form List interno */}
+                      <Form.Item name={[field.name, "label"]} label="Label">
+                        <Input size="large" />
+                      </Form.Item>
+                      <Form.List name={[field.name, "items"]}>
+                        {(subFields, subOps) => (
+                          <>
+                            {subFields.map((sub) => (
+                              <div className="p-6 h-full border border-dashed border-gray-300 mb-6 cursor-pointer flex flex-col justify-center items-center w-full overflow-hidden">
+                                <Form.Item name={[sub.name, "title"]} className="w-full!" label={t("Title")}>
+                                  <Input size="large" />
+                                </Form.Item>
+                                <Form.Item name={[sub.name, "text"]} className="w-full!" label={t("Text")}>
+                                  <TiptapFormField placeholder="Escreva o conteúdo..." />
+                                </Form.Item>
+                                <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
+                                  <Button onClick={() => subOps.remove(field.name)} icon={<RxTrash />}></Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            <div
+                              className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-full w-full overflow-hidden"
+                              onClick={() => subOps.add()}
+                            >
+                              <div className="flex justify-center items-center flex-col p-10">
+                                <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add objection")}</p>
                               </div>
                             </div>
-                          );
-                        }}
-                      </Form.Item>
-                    </div>
-                  ))}
+                          </>
+                        )}
+                      </Form.List>
+                    </Card>
+                  ),
+                }));
 
-                  <div className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-full w-full overflow-hidden" onClick={() => add()}>
-                    <div className="flex justify-center items-center flex-col p-10">
-                      <AiOutlinePlus className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add books")}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                return (
+                  <Tabs
+                    destroyInactiveTabPane={false}
+                    type="editable-card"
+                    activeKey={activeKey}
+                    items={items}
+                    onChange={(key) => setActiveKey(key)}
+                    onEdit={(target, action) => {
+                      console.log(target);
+                      console.log(action);
+                      if (action === "add") {
+                        const newIndex = fields.length;
+                        add({ label: `Tab ${newIndex + 1}`, items: [] });
+                        setActiveKey(String(newIndex));
+                      } else if (action === "remove") {
+                        remove(parseInt(target));
+                        items.splice(parseInt(target), 1);
+                      }
+                    }}
+                    addIcon={
+                      <div className="p-4 flex gap-2 justify-center items-center">
+                        <AiOutlinePlus />
+                        {t("Add objection book")}
+                      </div>
+                    }
+                  />
+                );
+              }}
             </Form.List>
           </div>
         </Form>
+
         <Button className="mt-4" size="large" type="primary" onClick={form.submit}>
           Save
         </Button>

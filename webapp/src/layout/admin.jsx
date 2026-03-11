@@ -115,6 +115,7 @@ const Main = () => {
   ]);
 
   const selectLanguage = (lang) => {
+    localStorage.setItem("id_lang", lang.id);
     setSelectedLanguage(lang);
   };
 
@@ -128,10 +129,6 @@ const Main = () => {
       setCurrent(`/${pathname[pathname.length - 1]}`);
     }
   }, [location]);
-
-  useEffect(() => {
-    console.log(selectedLanguage);
-  }, [selectedLanguage]);
 
   function handleClickMenu(e) {
     if (e.key === "logout") {

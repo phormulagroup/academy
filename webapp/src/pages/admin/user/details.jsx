@@ -302,7 +302,7 @@ export default function UserDetails() {
                     label: (
                       <div className="p-2 cursor-pointer flex items-center">
                         <div className="flex flex-col ml-2 w-full">
-                          <div className="flex justify-center mb-4">
+                          <div className="flex mb-4">
                             <p className={`text-[20px] font-bold`}>{c.course.name}</p>
                             {data?.course?.settings.progression_type === "linear"
                               ? mInd > 0 &&

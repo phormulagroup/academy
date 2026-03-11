@@ -19,7 +19,9 @@ export default function UserCard({ courses }) {
 
   const location = useLocation();
 
-  console.log(location);
+  useEffect(() => {
+    console.log(courses);
+  }, [courses]);
 
   return (
     <div className="bg-white p-10 flex flex-col items-center">
@@ -37,22 +39,24 @@ export default function UserCard({ courses }) {
         </Button>
       </Link>
 
-      <div className="flex justify-center items-center gap-4 mt-10!">
-        <div className="flex flex-col justify-start items-center">
-          <p className="text-[40px] font-bold text-center">{courses.length}</p>
-          <p className="text-[#707C87] text-sm text-center">{t("Course(s)")}</p>
+      {courses && (
+        <div className="flex justify-center items-center gap-4 mt-10!">
+          <div className="flex flex-col justify-start items-center">
+            <p className="text-[40px] font-bold text-center">{courses?.length}</p>
+            <p className="text-[#707C87] text-sm text-center">{t("Course(s)")}</p>
+          </div>
+          <Divider orientation="vertical" className="m-0! h-full!" />
+          <div className="flex flex-col justify-start items-center">
+            <p className="text-[40px] font-bold text-center">{courses?.length}</p>
+            <p className="text-[#707C87] text-sm text-center">{t("Completed")}</p>
+          </div>
+          <Divider orientation="vertical" className="m-0!  h-full!" />
+          <div className="flex flex-col justify-start items-center">
+            <p className="text-[40px] font-bold text-center">{courses?.length}</p>
+            <p className="text-[#707C87] text-sm text-center">{t("Certificate(s)")}</p>
+          </div>
         </div>
-        <Divider orientation="vertical" className="m-0! h-full!" />
-        <div className="flex flex-col justify-start items-center">
-          <p className="text-[40px] font-bold text-center">{courses.length}</p>
-          <p className="text-[#707C87] text-sm text-center">{t("Completed")}</p>
-        </div>
-        <Divider orientation="vertical" className="m-0!  h-full!" />
-        <div className="flex flex-col justify-start items-center">
-          <p className="text-[40px] font-bold text-center">{courses.length}</p>
-          <p className="text-[#707C87] text-sm text-center">{t("Certificate(s)")}</p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

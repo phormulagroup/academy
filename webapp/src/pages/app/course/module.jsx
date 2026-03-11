@@ -45,7 +45,7 @@ const Module = ({ selectedCourseItem, progress, selectCourseItem, modules, allIt
                   console.log(item);
                   return (
                     <div className="p-4 border-solid border border-black mt-4 flex items-center cursor-pointer" onClick={() => selectCourseItem(item)}>
-                      {progress.length > 0 && progress.filter((p) => p.id_course_topic === item.id || p.id_course_test === item.id).length > 0 ? (
+                      {progress.length > 0 && progress.filter((p) => (p.id_course_topic === item.id || p.id_course_test === item.id) && p.is_completed).length > 0 ? (
                         <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                           <AiOutlineCheck className="text-white" />
                         </div>

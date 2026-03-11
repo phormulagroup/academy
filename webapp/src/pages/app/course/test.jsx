@@ -1,16 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { useContext, useEffect, useRef, useState } from "react";
-import { Button, Checkbox, Form, Input, message, Progress, Radio } from "antd";
+import { Button, Checkbox, Form, Input, message, Progress, Radio, Spin } from "antd";
 import { AiFillCheckCircle, AiOutlineArrowLeft, AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
-import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxFile, RxFileText, RxLockClosed, RxReload } from "react-icons/rx";
+import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxClock, RxFile, RxFileText, RxLockClosed, RxReload } from "react-icons/rx";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
+import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import dayjs from "dayjs";
 import { PiWarning } from "react-icons/pi";
+import Lottie from "lottie-react";
 
 const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, setMetaData, modules, updateProgress, next }) => {
-  const { user } = useContext(Context);
+  const { user, messageApi } = useContext(Context);
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
@@ -24,14 +26,19 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   const [finished, setFinished] = useState(false);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isAllowStart, setIsAllowStart] = useState(true);
-  const [isAllowRestart, setIsAllowRestart] = useState(true);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [countdownToBeAvailable, setCountdownToBeAvailable] = useState("");
+
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const timerRef = useRef(null);
+  const timerAvailableRef = useRef(null);
 
   useEffect(() => {
     setAllowNext(false);
     setMetaData(null);
+    let aux = Object.assign({}, selectedCourseItem);
+
     if (selectedCourseItem.type === "test") prepareData();
 
     // If the topic is already completed, allow to go to the next topic/test
@@ -39,7 +46,8 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       setAllowNext(true);
       setIsTopicLocked(false);
     }
-    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id).length === 3) {
+
+    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id).length === (aux.settings?.retries_allowed ?? 5)) {
       setIsAllowStart(false);
     }
 
@@ -64,14 +72,17 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
   function prepareData() {
     let aux = Object.assign({}, selectedCourseItem);
-    aux.question = aux.question ? shuffleArray(JSON.parse(aux.question)) : [];
+    aux.settings = aux.settings ? JSON.parse(aux.settings) : {};
+
+    aux.question = aux.question ? (aux.settings?.randomize_questions ? shuffleArray(JSON.parse(aux.question)) : JSON.parse(aux.question)) : [];
     for (let i = 0; i < aux.question.length; i++) {
       if (aux.question[i].answer && aux.question[i].answer.length > 0) {
-        aux.question[i].answer = shuffleArray(aux.question[i].answer);
+        aux.question[i].answer = aux.settings?.randomize_answers ? shuffleArray(aux.question[i].answer) : aux.question[i].answer;
       }
     }
-    if (aux.time) {
-      let timer = aux.time * 60,
+
+    if (aux.settings?.time) {
+      let timer = aux.settings?.time * 60,
         minutes,
         seconds;
       minutes = parseInt(timer / 60, 10);
@@ -80,6 +91,21 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       minutes = minutes < 10 ? "0" + minutes : minutes;
       seconds = seconds < 10 ? "0" + seconds : seconds;
       setCountdown(minutes + ":" + seconds);
+    }
+    console.log(aux.settings);
+    if (aux.settings.access_date) {
+      const date1 = dayjs();
+      const date2 = dayjs(aux.settings.access_date);
+
+      if (date1.diff(date2) < 0) {
+        setIsAvailable(false);
+        setCountdownToBeAvailable(
+          <div className="flex flex-col justify-center items-center mt-4">
+            <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-20" />
+          </div>,
+        );
+        startAvailableTimer(aux.settings.access_date);
+      }
     }
 
     setData(aux);
@@ -108,9 +134,49 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     }, 1000);
   }
 
+  function startAvailableTimer(date) {
+    const countDownDate = new Date(date).getTime();
+    // limpa interval antigo antes de criar outro
+    if (timerAvailableRef.current) clearInterval(timerAvailableRef.current);
+
+    timerAvailableRef.current = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = countDownDate - now;
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      let timer = `${days} d | ${hours} h | ${minutes} min`;
+
+      if (days === 0) {
+        if (hours === 0 && minutes === 0) {
+          timer = `${seconds} s`;
+        } else if (hours === 0) {
+          timer = `${minutes} min | ${seconds} s`;
+        } else {
+          timer = `${hours} h | ${minutes} min | ${seconds} s`;
+        }
+      }
+
+      setCountdownToBeAvailable(
+        <div className="flex flex-col justify-center items-center border rounded-[5px] border-[#707070] p-6 mt-4">
+          <p>{t("Time to be available:")}</p>
+          <p className="text-[30px]">{timer}</p>
+        </div>,
+      );
+
+      if (--timer < 0) {
+        setIsAvailable(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+
   function startTest() {
     setBegin(true);
-    startTimer(data.time * 60);
+    if (data.settings?.time) startTimer(data.settings?.time * 60);
   }
 
   function restartTest() {
@@ -130,7 +196,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       setFinished(false);
       prepareData();
       form.resetFields();
-      startTimer(data.time * 60);
+      if (data.settings?.time) startTimer(data.settings?.time * 60);
     } else {
       message.open({
         type: "error",
@@ -140,14 +206,14 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   }
 
   function canRestart() {
-    return progress.filter((p) => p.activity_type === "test" && selectedCourseItem.id === p.id_course_test).length < 3;
+    return progress.filter((p) => p.activity_type === "test" && selectedCourseItem.id === p.id_course_test).length < (data.settings?.retries_allowed ?? 5);
   }
 
   function submit(values) {
     const isValid = Object.keys(values).map((key) => values[key]?.answer && (!Array.isArray(values[key].answer) || values[key].answer.length > 0));
 
     if (isValid.filter((item) => !item).length > 0) {
-      console.log("falta a resposta");
+      messageApi.open({ type: "info", content: t("You will need to answer ALL questions! Please check if you miss any question.") });
     } else {
       setIsCalculating(true);
       const questions = Object.keys(values);
@@ -184,6 +250,8 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
             }
           }
 
+          console.log(auxResult);
+
           setCalculate({ percentage: ((index + 1) * 100) / questions.length, step: `${index + 1} / ${questions.length}` });
         }
 
@@ -197,7 +265,11 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
           clearInterval(interval);
           setIsCalculating(false);
 
-          if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= 80) {
+          let passingScore = data.settings?.passing_score ?? 80;
+          console.log(passingScore);
+          console.log((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length);
+
+          if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= passingScore) {
             setAllowNext(true);
             next(false, auxResult);
           } else {
@@ -205,7 +277,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
           }
           console.log("Terminou!");
         }
-      }, 1500);
+      }, 100);
     }
   }
 
@@ -273,7 +345,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
           ) : (
             Object.keys(data).length > 0 && (
               <div>
-                {!isAllowStart ? (
+                {!isAvailable ? (
+                  <div>{countdownToBeAvailable}</div>
+                ) : !isAllowStart ? (
                   <div className="p-4 flex items-center bg-red-500 text-white mt-4">
                     <PiWarning className="w-10 h-10 mr-2" />
                     <div>
@@ -282,8 +356,19 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                     </div>
                   </div>
                 ) : !begin ? (
-                  <div>
-                    <Button onClick={startTest}>{t("Start test")}</Button>
+                  <div className="flex flex-col justify-center items-center border border-[#707070] p-6 rounded-[5px] mt-4">
+                    <p className="text-[16px]">
+                      <b>{t("Approval percentage")}:</b> {data.settings.passing_score}%
+                    </p>
+                    <p className="text-[16px]">
+                      <b>{t("Time")}:</b> {data.settings.time} minutes
+                    </p>
+                    <p className="text-[16px]">
+                      <b>{t("Your tries")}:</b> {progress.filter((p) => p.activity_type === "test" && p.id_course_test === course.id).length} / {data.settings.retries_allowed}
+                    </p>
+                    <Button onClick={startTest} className="mt-4" type="primary" size="large">
+                      {t("Start test")}
+                    </Button>
                   </div>
                 ) : isCalculating ? (
                   <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
@@ -302,6 +387,8 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                       <p className="mt-4 mb-4 text-[24px] font-bold">
                         {t("You obtained")} {result.filter((r) => r.is_correct).length} {t("of")} {result.length}
                       </p>
+                      <p className="mt-4">Your percentage:</p>
+                      <p className="mb-4 text-[24px] font-bold">{(result.filter((r) => r.is_correct).length * 100) / result.length} %</p>
                       <div className="flex mb-4 mt-4">
                         <Button size="large" className="blue mr-2" onClick={() => setReview(true)} icon={<RxFileText />}>
                           {t("Review questions")}
@@ -312,15 +399,17 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                       </div>
                       {result.map((q, i) => (
                         <div className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
-                          <p className="mb-4">
-                            <b>{i + 1}</b>. {q.title}
-                          </p>
+                          <div className="flex justify-between">
+                            <p className="mb-4">
+                              <b>{i + 1}</b>. {q.title}
+                            </p>
+                          </div>
                           <div>
                             {q.answer.filter((c) => c.is_correct).length > 1 ? (
                               <div>
                                 {q.answer.map((a, index) => (
                                   <div
-                                    className={`review-test-question multiple ${q.myAnswer.includes(a.title) && q.is_correct ? "correct" : q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}
+                                    className={`review-test-question multiple ${q.myAnswer.includes(a.title) ? (a.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : "") : ""}`}
                                   >
                                     <div className="flex">
                                       <div className={`circle flex justify-center items-center`}>
@@ -338,7 +427,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                       {q.myAnswer.includes(a.title) && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
                                       {q.myAnswer.includes(a.title) && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
                                       {q.myAnswer.includes(a.title) && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
-                                      <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                      {((q.myAnswer.includes(a.title) && a.is_correct) || data.settings.show_correct_answers) && (
+                                        <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -346,7 +437,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                             ) : (
                               <div>
                                 {q.answer.map((a, index) => (
-                                  <div className={`review-test-question ${a.title === q.myAnswer && !q.is_correct ? "incorrect" : a.is_correct ? "correct" : ""}`}>
+                                  <div
+                                    className={`review-test-question ${a.title === q.myAnswer ? (q.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (a.is_correct ? "correct" : !a.is_correct ? "incorrect" : "") : ""}`}
+                                  >
                                     <div className="flex">
                                       <div className={`circle flex justify-center items-center`}>
                                         {a.title === q.myAnswer && <div className="w-3.5 h-3.5 bg-[#00B9D6] rounded-full"></div>}
@@ -359,7 +452,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                       {a.title === q.myAnswer && a.is_correct && <AiOutlineCheck className="mr-2 text-[#2F8351]" />}
                                       {a.title === q.myAnswer && !a.is_correct && <AiOutlineClose className="mr-2 text-[#DB0709]" />}
                                       {a.title === q.myAnswer && !a.is_correct && <p className={"text-[#DB0709]"}>{t("Incorrect answer")}</p>}
-                                      <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                      {((a.title === q.myAnswer && a.is_correct) || data.settings.show_correct_answers) && (
+                                        <p className={"text-[#2F8351]"}>{a.is_correct && t("Correct answer")}</p>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -368,6 +463,14 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                ) : timerEnded ? (
+                  <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
+                    <RxClock className="w-10 h-10 mr-2" />
+                    <div>
+                      <p className="text-[20px] font-bold">{t("Timer ended")}</p>
+                      <p>{t("The time ended, please try again")}</p>
                     </div>
                   </div>
                 ) : (

@@ -22,63 +22,66 @@ import certificate from "../../utils/certificate";
 import config from "../../utils/config";
 
 export default function Result() {
-  const { user, courses } = useContext(Context);
+  const { user } = useContext(Context);
   const [data, setData] = useState([]);
+  const [coursesData, setCoursesData] = useState([]);
 
   const { t } = useTranslation();
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log(courses);
-  }, [courses]);
-
-  useEffect(() => {
     getData();
   }, []);
 
-  async function getData() {
-    try {
-      const res = await axios.get(endpoints.course.readByLang, { params: { id_user: user.id, id_lang: user.id_lang } });
-      console.log(res);
-      if (res.data.courses.length > 0) {
-        let auxCourse = [];
-        for (let c = 0; c < res.data.courses.length; c++) {
-          let aux = {};
-          let auxAllItems = [];
-          aux.settings = aux.settings ? JSON.parse(aux.settings) : null;
+  function getData() {
+    axios
+      .get(endpoints.user.readById, { params: { id: user.id } })
+      .then((res) => {
+        if (res.data.user) {
+          prepareData(res);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
 
-          let courseModules = res.data.modules.filter((m) => m.id_course === res.data.courses[c].id);
-          if (courseModules.length > 0) {
-            let newModules = [];
-            for (let i = 0; i < courseModules.length; i++) {
-              courseModules[i].items = courseModules[i].items ? JSON.parse(courseModules[i].items) : null;
-              if (courseModules[i].items) {
-                for (let y = 0; y < courseModules[i].items.length; y++) {
-                  if (courseModules[i].items[y].type === "topic")
-                    courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
-                  if (courseModules[i].items[y].type === "test")
-                    courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+  function prepareData(res) {
+    if (res.data.courses.length > 0) {
+      let auxCourse = [];
+      for (let c = 0; c < res.data.courses.length; c++) {
+        let aux = {};
+        let auxAllItems = [];
+        aux.settings = aux.settings ? JSON.parse(aux.settings) : null;
 
-                  auxAllItems.push(courseModules[i].items[y]);
-                }
-                newModules.push(courseModules[i]);
+        let courseModules = res.data.modules.filter((m) => m.id_course === res.data.courses[c].id);
+        if (courseModules.length > 0) {
+          let newModules = [];
+          for (let i = 0; i < courseModules.length; i++) {
+            courseModules[i].items = courseModules[i].items ? JSON.parse(courseModules[i].items) : null;
+            if (courseModules[i].items) {
+              for (let y = 0; y < courseModules[i].items.length; y++) {
+                if (courseModules[i].items[y].type === "topic")
+                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+                if (courseModules[i].items[y].type === "test")
+                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+
+                auxAllItems.push(courseModules[i].items[y]);
               }
+              newModules.push(courseModules[i]);
             }
-
-            aux.course = res.data.courses[c];
-            aux.modules = newModules;
-            aux.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id);
-            aux.allItems = auxAllItems;
-            auxCourse.push(aux);
           }
 
-          console.log(auxCourse);
-          setData(auxCourse);
+          aux.course = res.data.courses[c];
+          aux.modules = newModules;
+          aux.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id);
+          aux.allItems = auxAllItems;
+          auxCourse.push(aux);
         }
+
+        setCoursesData(auxCourse);
       }
-    } catch (err) {
-      console.log(err);
     }
   }
 
@@ -155,10 +158,10 @@ export default function Result() {
     <div className="p-10 bg-[#EAEAEA] min-h-full">
       <div className="container m-auto">
         <div className="grid grid-cols-4">
-          <UserCard />
+          <UserCard courses={coursesData} />
           <div className="bg-[#F7F7F7] col-span-3 p-10">
             <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
-            {data.map((c) => (
+            {coursesData.map((c) => (
               <Collapse
                 key={`results-collapse-${c.course.id}`}
                 className={`${(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) / (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) === 100 ? "completed" : "ongoing"} collapse-result`}
@@ -170,7 +173,7 @@ export default function Result() {
                     label: (
                       <div className="p-2 cursor-pointer flex items-center">
                         <div className="flex flex-col ml-2 w-full">
-                          <div className="flex justify-center mb-4">
+                          <div className="flex mb-4">
                             <p className={`text-[20px] font-bold`}>{c.course.name}</p>
                             {data?.course?.settings.progression_type === "linear"
                               ? mInd > 0 &&

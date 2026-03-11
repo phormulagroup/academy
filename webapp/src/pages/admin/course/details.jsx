@@ -52,11 +52,13 @@ export default function CourseDetails() {
             {
               key: "1",
               label: t("Constructor"),
+              forceRender: true,
               children: <Constructor course={data} />,
             },
             {
               key: "2",
               label: t("Settings"),
+              forceRender: true,
               children: <Settings course={data} />,
             },
           ]}

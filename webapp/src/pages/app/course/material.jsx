@@ -10,13 +10,13 @@ export default function CourseMaterial({ data }) {
   }
 
   return (
-    <div>
+    <div className="mb-10">
       {data.material && data.material.length > 0 ? (
         <div className="flex flex-col">
           {data.material.map((m, i) => (
-            <div key={i} className="flex items-center border border-gray-300 p-4 mb-4 cursor-pointer hover:bg-gray-100" onClick={() => downloadFile(m)}>
-              <MaterialIcon className="w-[25px] h-[25px] mr-2" />
-              <p className="text-lg font-semibold">{m.file}</p>
+            <div key={i} className="flex items-center border border-gray-300 p-4 mb-4 cursor-pointer hover:bg-gray-100 rounded-[5px]" onClick={() => downloadFile(m)}>
+              <MaterialIcon className="w-[20px] h-[20px] mr-2" />
+              <p className="text-[16px]">{m.file}</p>
             </div>
           ))}
         </div>
