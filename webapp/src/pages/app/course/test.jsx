@@ -39,7 +39,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     setMetaData(null);
     let aux = Object.assign({}, selectedCourseItem);
 
-    if (selectedCourseItem.type === "test") prepareData();
+    if (selectedCourseItem && selectedCourseItem.type === "test") prepareData();
 
     // If the topic is already completed, allow to go to the next topic/test
     if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 1 && p.id_course_test === selectedCourseItem.id).length > 0) {
@@ -213,7 +213,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     const isValid = Object.keys(values).map((key) => values[key]?.answer && (!Array.isArray(values[key].answer) || values[key].answer.length > 0));
 
     if (isValid.filter((item) => !item).length > 0) {
-      messageApi.open({ type: "info", content: t("You will need to answer ALL questions! Please check if you miss any question.") });
+      messageApi.open({ type: "error", content: t("You will need to answer ALL questions! Please check if you miss any question.") });
     } else {
       setIsCalculating(true);
       const questions = Object.keys(values);
@@ -323,8 +323,8 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   return (
     <div>
       <div className="flex justify-between flex-col h-full">
-        <div className="p-8 lg:pl-12! overflow-y-auto">
-          {progress.length > 0 && progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id && p.is_completed === 1).length > 0 ? (
+        <div className="overflow-y-auto">
+          {progress?.length > 0 && progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id && p.is_completed === 1).length > 0 ? (
             <div className="p-4 bg-black flex justify-between items-center">
               <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
               <div className="p-4 bg-[#2F8351]">
@@ -332,7 +332,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
               </div>
             </div>
           ) : (
-            <p className="text-[26px] text-black font-bold">{selectedCourseItem.title}</p>
+            <p className="text-[26px] text-black font-bold">{selectedCourseItem?.title}</p>
           )}
           {isTopicLocked ? (
             <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { CloseOutlined, CustomerServiceOutlined, DownOutlined, LoginOutlined, MenuOutlined, ProfileOutlined } from "@ant-design/icons";
-import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, FloatButton, Layout, Menu, Modal, Progress } from "antd";
+import { Avatar, Button, Collapse, Divider, Drawer, Dropdown, FloatButton, Layout, Menu, Modal, Progress, Tabs } from "antd";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -23,6 +23,13 @@ import Test from "./test";
 import logo from "../../../assets/BIAL-Regional-Academy.svg";
 import Module from "./module";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+
+import CourseContent from "./content";
+import CourseMaterial from "./material";
+import CourseObjection from "./objection";
+import CourseIcon from "../../../assets/Curso.svg?react";
+import MaterialIcon from "../../../assets/Materiais.svg?react";
+import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
 
 const { confirm } = Modal;
 
@@ -69,6 +76,9 @@ const Learning = () => {
       if (res.data.course.length > 0) {
         const auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
+        auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
+        auxCourse.objection = auxCourse.objection ? JSON.parse(auxCourse.objection) : null;
+
         setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
         let auxAllItems = [];
 
@@ -541,33 +551,93 @@ const Learning = () => {
                   </>
                 )}
               </div>
-              {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "topic" && (
-                <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
-              )}
-              {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && selectedCourseItem.type === "test" && (
-                <Test
-                  course={data.course}
-                  progress={progress}
-                  selectedCourseItem={selectedCourseItem}
-                  setAllowNext={setAllowNext}
-                  modules={modules}
-                  allItems={allItems}
-                  metaData={metaData}
-                  setMetaData={setMetaData}
-                  updateProgress={updateProgress}
-                  next={next}
-                />
-              )}
-              {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && !selectedCourseItem.type && (
-                <Module
-                  course={data.course}
-                  progress={progress}
-                  selectedCourseItem={selectedCourseItem}
-                  modules={modules}
-                  allItems={allItems}
-                  selectCourseItem={selectCourseItem}
-                />
-              )}
+              <div className="p-8 lg:pl-12!">
+                {selectedCourseItem &&
+                Object.keys(selectedCourseItem).length > 0 &&
+                (selectedCourseItem.type === "topic" || selectedCourseItem.type === "test") &&
+                (data.course.material || data.course.objection) ? (
+                  <Tabs
+                    items={[
+                      {
+                        key: "1",
+                        label: (
+                          <div className="flex p-2 justify-center items-center">
+                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Content")}</p>
+                          </div>
+                        ),
+                        forceRender: true,
+                        children:
+                          selectedCourseItem.type === "topic" ? (
+                            <Topic
+                              course={data.course}
+                              progress={progress}
+                              selectedCourseItem={selectedCourseItem}
+                              setAllowNext={setAllowNext}
+                              modules={modules}
+                              allItems={allItems}
+                            />
+                          ) : (
+                            <Test
+                              course={data.course}
+                              progress={progress}
+                              selectedCourseItem={selectedCourseItem}
+                              setAllowNext={setAllowNext}
+                              modules={modules}
+                              allItems={allItems}
+                              metaData={metaData}
+                              setMetaData={setMetaData}
+                              updateProgress={updateProgress}
+                              next={next}
+                            />
+                          ),
+                      },
+                      data.course.material && {
+                        key: "2",
+                        label: (
+                          <div className="flex p-2 justify-center items-center">
+                            <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Materials")}</p>
+                          </div>
+                        ),
+                        children: <CourseMaterial data={data.course} />,
+                      },
+                      data.course.objection && {
+                        key: "3",
+                        label: (
+                          <div className="flex p-2 justify-center items-center">
+                            <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-sm sm:text-[20px]">{t("Objection books")}</p>
+                          </div>
+                        ),
+                        children: <CourseObjection data={data.course} />,
+                      },
+                    ]}
+                  />
+                ) : selectedCourseItem?.type === "topic" ? (
+                  <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
+                ) : selectedCourseItem?.type === "test" ? (
+                  <Test
+                    course={data?.course}
+                    progress={progress}
+                    selectedCourseItem={selectedCourseItem}
+                    setAllowNext={setAllowNext}
+                    modules={modules}
+                    allItems={allItems}
+                    metaData={metaData}
+                    setMetaData={setMetaData}
+                    updateProgress={updateProgress}
+                    next={next}
+                  />
+                ) : null}
+                {selectedCourseItem && Object.keys(selectedCourseItem).length > 0 && !selectedCourseItem.type && (
+                  <Module
+                    course={data.course}
+                    progress={progress}
+                    selectedCourseItem={selectedCourseItem}
+                    modules={modules}
+                    allItems={allItems}
+                    selectCourseItem={selectCourseItem}
+                  />
+                )}
+              </div>
             </div>
             <div>
               <div className="p-6 flex justify-between items-center bg-[#707070]">

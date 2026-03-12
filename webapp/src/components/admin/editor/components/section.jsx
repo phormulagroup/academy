@@ -4,12 +4,15 @@ import utils from "../utils";
 
 const getClassName = utils.getClassNameFactory("Section", styles);
 
-export const Section = forwardRef(({ children, className, maxWidth = "1280px", style = {} }, ref) => {
+export const Section = forwardRef(({ children, className, maxWidth = "1280px", style = {}, justifyContent, alignItems }, ref) => {
   return (
     <div
       className={`${getClassName()}${className ? ` ${className}` : ""}`}
       style={{
         ...style,
+        justifyContent,
+        alignItems,
+        display: "flex",
       }}
       ref={ref}
     >

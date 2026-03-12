@@ -24,6 +24,15 @@ const FlexInternal = {
         { label: "End", value: "end" },
       ],
     },
+    alignItems: {
+      label: "Align Items",
+      type: "radio",
+      options: [
+        { label: "Start", value: "start" },
+        { label: "Center", value: "center" },
+        { label: "End", value: "end" },
+      ],
+    },
     gap: {
       label: "Gap",
       type: "number",
@@ -51,13 +60,14 @@ const FlexInternal = {
     },
     items: [],
   },
-  render: ({ justifyContent, direction, gap, wrap, items: Items }) => {
+  render: ({ justifyContent, alignItems, direction, gap, wrap, items: Items }) => {
     return (
       <Section style={{ height: "100%" }}>
         <Items
           className={getClassName()}
           style={{
             justifyContent,
+            alignItems,
             flexDirection: direction,
             gap,
             flexWrap: wrap,
