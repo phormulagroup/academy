@@ -29,6 +29,7 @@ import { RiRectangleLine } from "react-icons/ri";
 
 import "./style.css";
 import Loading from "../../../layout/loading";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const configRender = {
   categories: {
@@ -96,6 +97,10 @@ export function Editor({ data, submit }) {
   const [content, setContent] = useState(null);
   const latestDataRef = useRef(null);
 
+  const navigate = useNavigate();
+
+  const { id } = useParams();
+
   useEffect(() => {
     setContent(data && data.content ? JSON.parse(data.content) : initialData);
   }, [data]);
@@ -148,7 +153,10 @@ export function Editor({ data, submit }) {
           headerActions: ({ children }) => (
             <>
               <div className="flex justify-center items-center">
-                <_Button className="mr-2!" onClick={() => console.log("go back?")}>
+                <_Button className="mr-2!" onClick={() => navigate(`/admin/courses/${id}`)}>
+                  Exit
+                </_Button>
+                <_Button className="mr-2!" onClick={() => console.log("view page")}>
                   View page
                 </_Button>
                 <_Button onClick={() => save()} type="primary" disabled={!latestDataRef.current}>

@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 import { Editor } from "../../../components/admin/editor";
 
 export default function Topic() {
-  const { user } = useContext(Context);
+  const { user, messageApi } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
 
@@ -45,6 +45,7 @@ export default function Topic() {
       })
       .then((res) => {
         console.log(res);
+        messageApi.open({ type: "success", content: "Topic was successfully saved!" });
       })
       .catch((err) => {
         console.log(err);
