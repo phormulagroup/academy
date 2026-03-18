@@ -102,11 +102,12 @@ router.post("/update", (req, res, next) => {
       fs.writeFileSync(`./templates/${whereKey}.handlebars`, data.html);
 
       const query = util.promisify(conn.query).bind(conn);
-      const updatedRow = await query("UPDATE email_template SET name = ?, design = ?, html = ?, subject = ? WHERE name_key = ?", [
+      const updatedRow = await query("UPDATE email_template SET name = ?, design = ?, html = ?, subject = ?, id_lang = ? WHERE name_key = ?", [
         data.name,
         JSON.stringify(data.design),
         JSON.stringify(data.html),
         data.subject,
+        data.id_lang,
         whereKey,
       ]);
 

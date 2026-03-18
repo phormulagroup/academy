@@ -204,12 +204,12 @@ const ContextProvider = ({ children }) => {
   }
 
   function login(res) {
-    console.log(res);
     localStorage.setItem("token", res.token);
     api.token(res.token);
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
+    createLog({ id_user: res.user.id, action: "login" });
 
     if (window.location.href.includes("login"))
       if (res.user.id_role === 1) navigate("/admin");
@@ -219,32 +219,10 @@ const ContextProvider = ({ children }) => {
 
   async function createLog(obj) {
     try {
-      if (user.id) {
-        if (obj.action !== "update") {
-          await axios.post(endpoints.logs.create, { data: { modified_by: user.id, ...obj } });
-        } else {
-          if (obj.action === "update" && obj.changed && obj.changed.old && obj.changed.new) {
-            const old = Object.keys(obj.changed.new).reduce((acc, key) => {
-              if (obj.changed.old.hasOwnProperty(key)) {
-                acc[key] = obj.changed.old[key];
-              }
-              return acc;
-            }, {});
-
-            obj.changed.old = old;
-          }
-
-          await axios.post(endpoints.logs.create, {
-            data: { ...obj, modified_by: user.id, changed: JSON.stringify(obj.changed) },
-          });
-        }
-      } else {
-        if (obj.action === "login") {
-          await axios.post(endpoints.logs.create, {
-            data: { ...obj, modified_by: obj.id_user },
-          });
-        }
-      }
+      const res = await axios.post(endpoints.logs.create, {
+        data: obj,
+      });
+      console.log(res);
     } catch (err) {
       console.log(err);
     }
@@ -255,12 +233,12 @@ const ContextProvider = ({ children }) => {
       console.log(obj);
       try {
         const res = await axios.post(endpoints[obj.table].create, { data: obj.data });
-        /*createLog({
+        createLog({
+          id_user: user.id,
           action: "create",
-          changed: null,
-          type: obj.table,
-          [`id_${obj.table}`]: res.insertId,
-        });*/
+          table_name: obj.table,
+          meta_data: JSON.stringify({ ...obj, id: res.insertId }),
+        });
         messageApi.open({
           type: "success",
           content: `${obj.table.charAt(0).toUpperCase() + obj.table.slice(1)} criado com sucesso!`,
@@ -276,16 +254,16 @@ const ContextProvider = ({ children }) => {
     });
   }
 
-  function update(obj, changed) {
+  function update(obj) {
     return new Promise(async (resolve, reject) => {
       try {
         const res = await axios.post(endpoints[obj.table].update, { data: obj.data });
-        /*createLog({
+        createLog({
+          id_user: user.id,
           action: "update",
-          changed: changed,
-          type: obj.table,
-          [`id_${obj.table}`]: obj.data.id,
-        });*/
+          table_name: obj.table,
+          meta_data: obj.data,
+        });
         messageApi.open({
           type: "success",
           content: `${tablesName[obj.table]} foi editado com sucesso.`,

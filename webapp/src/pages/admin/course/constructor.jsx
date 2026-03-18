@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, PointerSensor, DragOverlay, useSensor, useSensors, closestCenter, useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -11,13 +11,15 @@ import { LuLetterText } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
+import { Context } from "../../../utils/context";
 
 const { Text } = Typography;
 
 /* -------------------- Utils -------------------- */
 const makeId = (p = "") => p + Math.random().toString(36).slice(2, 8);
 const isModuleId = (id) => typeof id === "string" && id.startsWith("mod-");
-const isTopicId = (id) => typeof id === "string" && id.startsWith("it-");
+const isTopicId = (id) => typeof id === "string" && id.startsWith("topic-");
+const isTestId = (id) => typeof id === "string" && id.startsWith("test-");
 
 /* -------------------- Grip (drag handle) -------------------- */
 function Grip({ attributes, listeners, title }) {
@@ -240,6 +242,7 @@ function SortableModule({
 }
 
 export default function Constructor({ course }) {
+  const { createLog, user } = useContext(Context);
   const [isUnsaved, setIsUnsaved] = useState(true);
   const [original, setOriginal] = useState([]);
   const [modules, setModules] = useState([]);
@@ -281,7 +284,7 @@ export default function Constructor({ course }) {
                 if (i.type === "test") {
                   if (res.data.tests.filter((t) => i.id === t.id).length > 0)
                     return {
-                      id: `it-${res.data.tests.filter((t) => i.id === t.id)[0].id}`,
+                      id: `test-${res.data.tests.filter((t) => i.id === t.id)[0].id}`,
                       title: res.data.tests.filter((t) => i.id === t.id)[0].title,
                       type: i.type,
                     };
@@ -289,7 +292,7 @@ export default function Constructor({ course }) {
                 if (i.type === "topic") {
                   if (res.data.topics.filter((t) => i.id === t.id).length > 0)
                     return {
-                      id: `it-${res.data.topics.filter((t) => i.id === t.id)[0].id}`,
+                      id: `topic-${res.data.topics.filter((t) => i.id === t.id)[0].id}`,
                       title: res.data.topics.filter((t) => i.id === t.id)[0].title,
                       type: i.type,
                     };
@@ -333,19 +336,33 @@ export default function Constructor({ course }) {
   /* ---------- Guardar (persistir) ---------- */
   async function save() {
     try {
-      console.log(modules);
       const insert = await axios.post(endpoints.course.module, {
         data: modules.map((m) => ({
           ...m,
           id_course: course.id,
           items: m.items.map((i) => ({ ...i, id_course_module: m.id })),
         })),
-        deleted: deletingItems,
+        deleted: { items: Array.from(deletingItems), modules: Array.from(deletingModules) },
+      });
+
+      await createLog({
+        id_user: user.id,
+        action: "update",
+        table_name: "course_module",
+        meta_data: JSON.stringify({
+          data: modules.map((m) => ({
+            ...m,
+            id_course: course.id,
+            items: m.items.map((i) => ({ ...i, id_course_module: m.id })),
+          })),
+          deleted: { items: Array.from(deletingItems), modules: Array.from(deletingModules) },
+        }),
       });
       console.log(insert);
       setOriginal(Object.assign([], modules));
       message.success("Estado guardado!");
     } catch (err) {
+      console.log(err);
       message.error("Falha ao guardar.");
     }
   }
@@ -360,15 +377,12 @@ export default function Constructor({ course }) {
   }
 
   function deleteTopic(moduleId, itemId) {
+    console.log(moduleId, itemId);
     pushHistory(modules);
     setDeletingItems((s) => new Set(s).add(itemId));
     const t = setTimeout(() => {
       setModules((prev) => prev.map((m) => (m?.id === moduleId ? { ...m, items: m.items.filter((i) => i?.id !== itemId) } : m)));
-      setDeletingItems((s) => {
-        const n = new Set(s);
-        n.delete(itemId);
-        return n;
-      });
+
       timersRef.current.items.delete(itemId);
     }, ANIM_MS);
     timersRef.current.items.set(itemId, t);
@@ -379,11 +393,6 @@ export default function Constructor({ course }) {
     setDeletingModules((s) => new Set(s).add(moduleId));
     const t = setTimeout(() => {
       setModules((prev) => prev.filter((m) => m.id !== moduleId));
-      setDeletingModules((s) => {
-        const n = new Set(s);
-        n.delete(moduleId);
-        return n;
-      });
       timersRef.current.mods.delete(moduleId);
     }, ANIM_MS);
     timersRef.current.mods.set(moduleId, t);
@@ -397,7 +406,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("newit-"), title: "Novo topic", type: "topic" }],
+              items: [...m.items, { id: makeId("newtopic-"), title: "Novo topic", type: "topic" }],
             }
           : m,
       ),
@@ -411,7 +420,7 @@ export default function Constructor({ course }) {
         m.id === moduleId
           ? {
               ...m,
-              items: [...m.items, { id: makeId("newit-"), title: "Novo test", type: "test" }],
+              items: [...m.items, { id: makeId("newtest-"), title: "Novo test", type: "test" }],
             }
           : m,
       ),

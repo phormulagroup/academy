@@ -21,7 +21,7 @@ import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
 import { CgClose } from "react-icons/cg";
 
 export default function Settings({ course }) {
-  const { languages } = useContext(Context);
+  const { languages, createLog, user } = useContext(Context);
   const [isOpenMedia, setIsOpenMedia] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
@@ -80,6 +80,13 @@ export default function Settings({ course }) {
       values.settings = values.settings ? JSON.stringify(values.settings) : null;
       const res = await axios.post(endpoints.course.update, {
         data: values,
+      });
+
+      await createLog({
+        id_user: user.id,
+        action: "update",
+        table_name: "course",
+        meta_data: JSON.stringify(values),
       });
 
       console.log(res);

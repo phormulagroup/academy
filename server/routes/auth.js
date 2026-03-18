@@ -139,4 +139,93 @@ router.post("/register", async (req, res, next) => {
   });
 });
 
+router.post("/recover", async (req, res, next) => {
+  console.log("///// RECOVER /////");
+
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+      const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+      if (user.length > 0) {
+        let code = "";
+        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let charactersLength = characters.length;
+        for (var i = 0; i < 6; i++) {
+          code += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        const codeEncrypt = await bcrypt.hash(code, saltRounds);
+        await query("UPDATE user SET recover_code = ?, WHERE id = ?", [codeEncrypt, user[0].id]);
+        const emailResult = await email.recover({ ...user[0], code: codeEncrypt });
+        console.log("E-mail sent: ", emailResult.messageId);
+        await commit();
+        conn.release();
+        res.send({ status: true });
+      } else {
+        res.send({ status: false, message: "This e-mail does not exists in our database!" });
+      }
+    } catch (err) {
+      await rollback();
+      conn.release();
+      throw err;
+    }
+  });
+});
+
+router.post("/verifyRecoverCode", async (req, res, next) => {
+  try {
+    let data = req.body.data;
+    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+    if (user.length > 0) {
+      if (user[0].recover_code) {
+        const compareCode = await bcrypt.compare(data.code, user[0].recover_code);
+        if (compareCode) {
+          res.send({ user: true, message: "The recover code is correct, now you will need to choose your new password!" });
+        } else {
+          res.send({ user: false, message: "The recover code is not correct, try again." });
+        }
+      } else {
+        res.send({ user: false, message: "You will need to require a recover code first." });
+      }
+    } else {
+      res.send({ user: false, message: "This user does not exist on our database!" });
+    }
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/password", async (req, res, next) => {
+  console.log("///// RECOVER PASSWORD /////");
+
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+      const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+      if (user.length > 0) {
+        data.password = await bcrypt.hash(data.password, saltRounds);
+        await query(`UPDATE user SET recover_code = NULL AND password = ? WHERE email = ?`, [data.password, data.email]);
+        res.send({ user: true, message: "Congrats! You have a new password, now you can login!" });
+      } else {
+        res.send({ user: false, message: "This user does not exist on our database!" });
+      }
+    } catch (err) {
+      await rollback();
+      conn.release();
+      throw err;
+    }
+  });
+});
+
 module.exports = router;

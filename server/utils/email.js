@@ -108,4 +108,57 @@ module.exports = {
       });
     });
   },
+
+  recover: function (data) {
+    return new Promise((resolve, reject) => {
+      db.getConnection(async (error, conn) => {
+        if (error) throw error;
+        try {
+          const query = util.promisify(conn.query).bind(conn);
+          const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
+          const smtpSettings = rows[0].meta_data ? JSON.parse(rows[0].meta_data) : null;
+          const template = await query("SELECT * FROM email_template WHERE name_key = ?", `recover_${data.id_lang}`);
+
+          const transporter = nodemailer.createTransport({
+            host: smtpSettings.host,
+            port: smtpSettings.port,
+            secure: smtpSettings.secure,
+            auth: {
+              user: smtpSettings.email,
+              pass: smtpSettings.password,
+            },
+          });
+
+          const hbsOptions = {
+            viewEngine: {
+              defaultLayout: false,
+            },
+            viewPath: "./templates",
+          };
+
+          transporter.use("compile", hbs(hbsOptions));
+
+          const mailOptions = {
+            from: `${smtpSettings.name} <${smtpSettings.email}>`,
+            to: data.email,
+            subject: template[0].subject,
+            template: `recover_${data.id_lang}`,
+            context: {
+              name: data.name,
+              code: data.code,
+            },
+          };
+
+          transporter.sendMail(mailOptions, (err, info) => {
+            if (err) reject(err);
+            resolve(info);
+            conn.release();
+          });
+        } catch (err) {
+          reject(err);
+          conn.release();
+        }
+      });
+    });
+  },
 };

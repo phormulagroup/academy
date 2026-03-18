@@ -14,7 +14,7 @@ import EmailEditor from "react-email-editor";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function TemplateDetails() {
-  const { user, messageApi } = useContext(Context);
+  const { user, messageApi, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -102,6 +102,7 @@ export default function TemplateDetails() {
           subject: data.subject,
           design: design,
           html: html,
+          id_lang: selectedLanguage.id,
         },
       })
       .then((res) => {

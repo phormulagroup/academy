@@ -4,19 +4,23 @@ const endpoints = {
   },
   auth: {
     login: "/auth/login",
-    loginMicrosoft: "/auth/loginMicrosoft",
-    loginCode: "/auth/loginCode",
     validateEmail: "/auth/validateEmail",
     generatePassword: "/auth/generatePassword",
     register: "/auth/register",
     verifyToken: "/auth/verifyToken",
     verifyTokenGeneratePassword: "/auth/verifyTokenGeneratePassword",
     verifyUser: "/auth/verifyUser",
+    recover: "/auth/recover",
   },
   import: {
     table: "/import/table",
     project: "/import/project",
     account: "/import/account",
+  },
+  logs: {
+    read: "/logs/read",
+    readByParams: "/logs/readByParams",
+    create: "/logs/create",
   },
   user: {
     read: "/user/read",

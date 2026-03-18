@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { read } = require("fs");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -18,9 +19,11 @@ router.get("/read", async (req, res) => {
   try {
     const rows = await query(
       "SELECT * FROM course; " +
-        "SELECT course_module. * FROM course_module; " +
-        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id; " +
-        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id; " +
+        "SELECT course_module. * FROM course_module WHERE is_deleted = 0; " +
+        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
+        "WHERE course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
+        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+        "WHERE course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
         "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
         "WHERE course_user_activity.id_user = ?; ",
       req.query.id_user,
@@ -41,7 +44,6 @@ router.get("/read", async (req, res) => {
 router.get("/readProgress", async (req, res) => {
   console.log("//// READ PROGRESS BY USER ////");
   const query = util.promisify(db.query).bind(db);
-  console.log(req.query);
   try {
     const rows = await query(
       "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
@@ -67,11 +69,11 @@ router.get("/readByLang", async (req, res) => {
   try {
     const rows = await query(
       "SELECT * FROM course WHERE id_lang = ?; " +
-        "SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ?; " +
+        "SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ? AND is_deleted = 0; " +
         "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
-        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ?; " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
         "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
-        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ?; " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
         "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
         "WHERE course_user_activity.id_user = ? AND course.id_lang = ?; ",
       [req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_user, req.query.id_lang],
@@ -94,9 +96,11 @@ router.get("/readById", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
-      "SELECT * FROM course WHERE id = ?; SELECT course_module. * FROM course_module WHERE id_course = ?; " +
-        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id WHERE course_module.id_course = ?; " +
-        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id WHERE course_module.id_course = ?",
+      "SELECT * FROM course WHERE id = ? AND is_deleted = 0; SELECT course_module. * FROM course_module WHERE id_course = ? AND is_deleted = 0; " +
+        "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id WHERE course_module.id_course = ? " +
+        "AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
+        "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id WHERE course_module.id_course = ?" +
+        "AND course_test.is_deleted = 0 AND course_module.is_deleted = 0; ",
       [req.query.id, req.query.id, req.query.id, req.query.id],
     );
     res.send({ course: rows[0], modules: rows[1], topics: rows[2], tests: rows[3] });
@@ -110,11 +114,12 @@ router.get("/readBySlug", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
-      "SELECT * FROM course WHERE slug = ? AND id_lang = ?; SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+      "SELECT * FROM course WHERE slug = ? AND id_lang = ? AND is_deleted = 0; SELECT course_module.* FROM course_module " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_module.is_deleted = 0; " +
         "SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
-        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
         "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
-        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ?; " +
+        "LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
         "SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
         "WHERE course_user_activity.id_user = ? AND course.slug = ?",
       [req.query.slug, req.query.id_lang, req.query.slug, req.query.slug, req.query.slug, req.query.id_user, req.query.slug],
@@ -262,6 +267,10 @@ router.post("/module", async (req, res, next) => {
     try {
       await transaction();
       let data = req.body.data;
+      console.log(req.body.deleted);
+      let deletedItems = req.body.deleted.items;
+      let deletedModules = req.body.deleted.modules;
+
       for (let i = 0; i < data.length; i++) {
         const aux = data[i];
 
@@ -280,20 +289,43 @@ router.post("/module", async (req, res, next) => {
         if (aux.items && aux.items.length > 0) {
           let newItems = [];
           for (let z = 0; z < aux.items.length; z++) {
-            console.log(aux.items[z].type);
             const insertedItem = await query(
-              `INSERT INTO ${aux.items[z].type === "test" ? "course_test" : "course_topic"} SET ? ON DUPLICATE KEY UPDATE title = VALUES(title), id_course_module = VALUES(id_course_module)`,
+              `INSERT INTO ${aux.items[z].type === "test" ? "course_test" : "course_topic"} SET ? ON DUPLICATE KEY UPDATE title = VALUES(title), id_course_module = VALUES(id_course_module), is_deleted = 0`,
               {
-                id: aux.items[z].id.split("-")[0] === "newit" ? null : parseInt(aux.items[z].id.split("-")[1]),
+                id: aux.items[z].id.split("-")[0] === "newtopic" || aux.items[z].id.split("-")[0] === "newtest" ? null : parseInt(aux.items[z].id.split("-")[1]),
                 id_course_module: aux.id,
                 title: aux.items[z].title,
+                is_deleted: 0,
               },
             );
 
-            newItems.push({ id: aux.items[z].id.split("-")[0] === "newit" ? insertedItem.insertId : parseInt(aux.items[z].id.split("-")[1]), type: aux.items[z].type });
+            newItems.push({
+              id: aux.items[z].id.split("-")[0] === "newtopic" || aux.items[z].id.split("-")[0] === "newtest" ? insertedItem.insertId : parseInt(aux.items[z].id.split("-")[1]),
+              type: aux.items[z].type,
+            });
           }
 
           await query("UPDATE course_module SET items = ? WHERE id = ?", [JSON.stringify(newItems), aux.id]);
+        }
+      }
+
+      if (deletedItems.length > 0) {
+        let deletedItemsId = deletedItems.filter((_t) => _t.includes("topic")).map((_i) => parseInt(_i.split("-")[1]));
+        if (deletedItemsId.length > 0) {
+          await query("UPDATE course_topic SET is_deleted = 1 WHERE id IN (?)", deletedItemsId);
+        }
+
+        let deletedTestsId = deletedItems.filter((_t) => _t.includes("test")).map((_i) => parseInt(_i.split("-")[1]));
+        if (deletedTestsId.length > 0) {
+          await query("UPDATE course_test SET is_deleted = 1 WHERE id IN (?)", deletedTestsId);
+        }
+      }
+
+      if (deletedModules.length > 0) {
+        let deletedModulesId = deletedModules.map((_i) => parseInt(_i.split("-")[1]));
+        console.log(deletedModulesId);
+        if (deletedModulesId.length > 0) {
+          await query("UPDATE course_module SET is_deleted = 1 WHERE id IN (?)", deletedModulesId);
         }
       }
 
@@ -301,6 +333,7 @@ router.post("/module", async (req, res, next) => {
       conn.release();
       res.send(data);
     } catch (err) {
+      console.log(err);
       await rollback();
       conn.release();
       throw err;
