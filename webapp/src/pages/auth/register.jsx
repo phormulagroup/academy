@@ -85,7 +85,7 @@ export default function Register() {
   return (
     <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
-        <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)]">
+        <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15">
           <div className="flex flex-col p-6">
             <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
             <Form

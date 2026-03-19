@@ -10,7 +10,9 @@ const endpoints = {
     verifyToken: "/auth/verifyToken",
     verifyTokenGeneratePassword: "/auth/verifyTokenGeneratePassword",
     verifyUser: "/auth/verifyUser",
+    verifyRecoverCode: "/auth/verifyRecoverCode",
     recover: "/auth/recover",
+    password: "/auth/password",
   },
   import: {
     table: "/import/table",

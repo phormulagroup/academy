@@ -7,6 +7,7 @@ import GeneratePassword from "../pages/auth/generatePassword";
 import Register from "../pages/auth/register";
 import Main from "../pages/app";
 import Error404 from "../pages/app/404";
+import Recover from "../pages/auth/recover";
 
 export const publicRoutes = [
   {
@@ -17,6 +18,7 @@ export const publicRoutes = [
     ],
   },
   { path: "login", element: <Login /> },
+  { path: "recover", element: <Recover /> },
   { path: "register", element: <Register /> },
   { path: "gerar-password", element: <GeneratePassword /> },
 ];
