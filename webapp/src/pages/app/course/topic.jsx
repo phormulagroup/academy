@@ -102,19 +102,6 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
     <div>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
-          {progress.length > 0 &&
-          progress.filter(
-            (p) => (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem.id || p.id_course_test === selectedCourseItem.id),
-          ).length > 0 ? (
-            <div className="p-4 bg-black flex justify-between items-center">
-              <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
-              <div className="p-4 bg-[#2F8351]">
-                <p className="text-white text-[16px]">{t("Completed")}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-[26px] text-black font-bold">{selectedCourseItem.title}</p>
-          )}
           {isTopicLocked ? (
             <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
               <RxLockClosed className="w-10 h-10 mr-2" />

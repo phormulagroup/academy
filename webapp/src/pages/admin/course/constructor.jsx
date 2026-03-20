@@ -242,7 +242,7 @@ function SortableModule({
 }
 
 export default function Constructor({ course }) {
-  const { createLog, user } = useContext(Context);
+  const { createLog, user, selectedLanguage } = useContext(Context);
   const [isUnsaved, setIsUnsaved] = useState(true);
   const [original, setOriginal] = useState([]);
   const [modules, setModules] = useState([]);
@@ -348,15 +348,17 @@ export default function Constructor({ course }) {
       await createLog({
         id_user: user.id,
         action: "update",
-        table_name: "course_module",
+        table_name: "course",
         meta_data: JSON.stringify({
-          data: modules.map((m) => ({
+          items: modules.map((m) => ({
             ...m,
             id_course: course.id,
             items: m.items.map((i) => ({ ...i, id_course_module: m.id })),
           })),
+          name: course.name,
           deleted: { items: Array.from(deletingItems), modules: Array.from(deletingModules) },
         }),
+        id_lang: selectedLanguage.id,
       });
       console.log(insert);
       setOriginal(Object.assign([], modules));

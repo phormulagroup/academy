@@ -153,20 +153,32 @@ router.post("/recover", async (req, res, next) => {
       let data = req.body.data;
       const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
       if (user.length > 0) {
-        let code = "";
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        let charactersLength = characters.length;
-        for (var i = 0; i < 6; i++) {
-          code += characters.charAt(Math.floor(Math.random() * charactersLength));
+        if (user[0].status !== "approved") {
+          await commit();
+          res.send({
+            status: false,
+            message:
+              user[0].status === "pending"
+                ? "This account is waiting for approval, contact your representative for more information"
+                : "This account is not approved, contact your representative for more information",
+          });
+        } else {
+          let code = "";
+          let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+          let charactersLength = characters.length;
+          for (var i = 0; i < 6; i++) {
+            code += characters.charAt(Math.floor(Math.random() * charactersLength));
+          }
+          const codeEncrypt = await bcrypt.hash(code, saltRounds);
+          await query("UPDATE user SET recover_code = ? WHERE id = ?", [codeEncrypt, user[0].id]);
+          const emailResult = await email.recover({ ...user[0], code: code });
+          console.log("E-mail sent: ", emailResult.messageId);
+          await commit();
+          conn.release();
+          res.send({ status: true });
         }
-        const codeEncrypt = await bcrypt.hash(code, saltRounds);
-        await query("UPDATE user SET recover_code = ? WHERE id = ?", [codeEncrypt, user[0].id]);
-        const emailResult = await email.recover({ ...user[0], code: code });
-        console.log("E-mail sent: ", emailResult.messageId);
-        await commit();
-        conn.release();
-        res.send({ status: true });
       } else {
+        await commit();
         res.send({ status: false, message: "This e-mail does not exists in our database!" });
       }
     } catch (err) {

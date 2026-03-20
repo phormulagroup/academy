@@ -182,8 +182,8 @@ const Main = () => {
       <Content className="bg-white min-h-[unset]!">
         <Outlet />
       </Content>
-      <Footer className="bg-black!">
-        <div className="container flex flex-col md:flex-row justify-between items-end m-auto bg-black pt-4 pb-4 gap-8">
+      <Footer className="bg-[#163986]!">
+        <div className="container flex flex-col md:flex-row justify-between items-end m-auto pt-4 pb-4 gap-8">
           <div className="w-full">
             <div className="mb-4 flex flex-col items-center md:items-start">
               <p className="text-white">{t("Follow us")}</p>

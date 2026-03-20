@@ -21,7 +21,7 @@ import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
 import { CgClose } from "react-icons/cg";
 
 export default function Settings({ course }) {
-  const { languages, createLog, user } = useContext(Context);
+  const { languages, createLog, user, selectedLanguage } = useContext(Context);
   const [isOpenMedia, setIsOpenMedia] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
@@ -87,6 +87,7 @@ export default function Settings({ course }) {
         action: "update",
         table_name: "course",
         meta_data: JSON.stringify(values),
+        id_lang: selectedLanguage.id,
       });
 
       console.log(res);
@@ -101,6 +102,9 @@ export default function Settings({ course }) {
       <div>
         <Form form={form} onFinish={save} layout="vertical">
           <Form.Item hidden name="id">
+            <Input />
+          </Form.Item>
+          <Form.Item name="name" hidden>
             <Input />
           </Form.Item>
           <p className="text-[18px] font-bold">{t("Information")}</p>

@@ -24,6 +24,13 @@ const endpoints = {
     readByParams: "/logs/readByParams",
     create: "/logs/create",
   },
+  inbox: {
+    read: "/inbox/read",
+    readByUser: "/inbox/readByUser",
+    create: "/inbox/create",
+    update: "/inbox/update",
+    delete: "/inbox/create",
+  },
   user: {
     read: "/user/read",
     readById: "/user/readById",

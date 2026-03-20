@@ -21,6 +21,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   const [timerEnded, setTimerEnded] = useState(false);
   const [review, setReview] = useState(false);
   const [countdown, setCountdown] = useState("");
+  const [timePassed, setTimePassed] = useState(0);
   const [timePercentage, setTimePercentage] = useState(100);
   const [result, setResult] = useState([]);
   const [finished, setFinished] = useState(false);
@@ -92,7 +93,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       seconds = seconds < 10 ? "0" + seconds : seconds;
       setCountdown(minutes + ":" + seconds);
     }
-    console.log(aux.settings);
+
     if (aux.settings.access_date) {
       const date1 = dayjs();
       const date2 = dayjs(aux.settings.access_date);
@@ -126,6 +127,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
       setCountdown(minutes + ":" + seconds);
       setTimePercentage((timer * 100) / (duration ?? 60 * 45));
+      setTimePassed(timer);
 
       if (--timer < 0) {
         setTimerEnded(true);
@@ -175,6 +177,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   }
 
   function startTest() {
+    setTimePassed(0);
     setBegin(true);
     if (data.settings?.time) startTimer(data.settings?.time * 60);
   }
@@ -215,6 +218,11 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     if (isValid.filter((item) => !item).length > 0) {
       messageApi.open({ type: "error", content: t("You will need to answer ALL questions! Please check if you miss any question.") });
     } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
       setIsCalculating(true);
       const questions = Object.keys(values);
 
@@ -224,7 +232,6 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       const interval = setInterval(() => {
         if (index < questions.length) {
           if (values[questions[index]]) {
-            console.log(values[questions[index]]);
             if (typeof values[questions[index]].answer === "string") {
               const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
               const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
@@ -235,11 +242,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
               let is_correct = true;
               const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
               const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
-              console.log(findCorrectAnswer);
               if (findCorrectAnswer.length > 0) {
                 for (let y = 0; y < findCorrectAnswer.length; y++) {
                   const findInMyAnswers = values[questions[index]].answer.filter((a) => a === findCorrectAnswer[y].title);
-                  console.log(findInMyAnswers);
                   if (findInMyAnswers.length === 0) {
                     is_correct = false;
                   }
@@ -250,12 +255,10 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
             }
           }
 
-          console.log(auxResult);
-
           setCalculate({ percentage: ((index + 1) * 100) / questions.length, step: `${index + 1} / ${questions.length}` });
         }
 
-        setResult(auxResult);
+        setResult({ items: auxResult, time: timePassed });
         setMetaData(auxResult);
         setFinished(true);
 
@@ -266,14 +269,12 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
           setIsCalculating(false);
 
           let passingScore = data.settings?.passing_score ?? 80;
-          console.log(passingScore);
-          console.log((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length);
 
           if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= passingScore) {
             setAllowNext(true);
-            next(false, auxResult);
+            next(false, { items: auxResult, time: timePassed });
           } else {
-            createActivity(auxResult);
+            createActivity({ items: auxResult, time: timePassed });
           }
           console.log("Terminou!");
         }
@@ -324,16 +325,6 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     <div>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
-          {progress?.length > 0 && progress.filter((p) => p.activity_type === "test" && p.id_course_test === selectedCourseItem.id && p.is_completed === 1).length > 0 ? (
-            <div className="p-4 bg-black flex justify-between items-center">
-              <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
-              <div className="p-4 bg-[#2F8351]">
-                <p className="text-white text-[16px]">{t("Completed")}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-[26px] text-black font-bold">{selectedCourseItem?.title}</p>
-          )}
           {isTopicLocked ? (
             <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
               <RxLockClosed className="w-10 h-10 mr-2" />
@@ -379,16 +370,16 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                 ) : finished ? (
                   <div className="flex flex-col mt-4">
                     <p>
-                      <b>{result.filter((r) => r.is_correct).length}</b> {t("of")} <b>{result.length}</b> {t("questions answered correctly.")}
+                      <b>{result.items?.filter((r) => r.is_correct).length}</b> {t("of")} <b>{result.items?.length}</b> {t("questions answered correctly.")}
                     </p>
                     <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
                       <p className="mb-4 font-bold text-[24px]">{t("Result")}</p>
                       <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
                       <p className="mt-4 mb-4 text-[24px] font-bold">
-                        {t("You obtained")} {result.filter((r) => r.is_correct).length} {t("of")} {result.length}
+                        {t("You obtained")} {result.items?.filter((r) => r.is_correct).length} {t("of")} {result.items?.length}
                       </p>
                       <p className="mt-4">Your percentage:</p>
-                      <p className="mb-4 text-[24px] font-bold">{(result.filter((r) => r.is_correct).length * 100) / result.length} %</p>
+                      <p className="mb-4 text-[24px] font-bold">{(result.items?.filter((r) => r.is_correct).length * 100) / result.items?.length} %</p>
                       <div className="flex mb-4 mt-4">
                         <Button size="large" className="blue mr-2" onClick={() => setReview(true)} icon={<RxFileText />}>
                           {t("Review questions")}
@@ -397,7 +388,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                           {t("Restart test")}
                         </Button>
                       </div>
-                      {result.map((q, i) => (
+                      {result.items?.map((q, i) => (
                         <div className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
                           <div className="flex justify-between">
                             <p className="mb-4">

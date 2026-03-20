@@ -123,7 +123,6 @@ const Learning = () => {
   }
 
   function next(changeItem, itemMetaData) {
-    console.log(changeItem);
     let auxData = [];
     const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
     let findInProgress = progress.filter((p) =>
@@ -329,7 +328,7 @@ const Learning = () => {
           <Sider width={400} className="bg-white! overflow-auto learning-sider" collapsed={collapsed}>
             {!collapsed && (
               <div className="flex flex-col h-full">
-                <div className="flex flex-col w-full p-6 bg-[#010202]">
+                <div className="flex flex-col w-full p-6 bg-[#506BA4]">
                   <p className="text-white">{t("Course")}</p>
                   <p className="text-[20px] font-bold text-white">{data?.course?.name}</p>
                 </div>
@@ -346,11 +345,11 @@ const Learning = () => {
                             <div className="flex flex-col">
                               <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
                                 {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p className={`text-sm ml-2`}>{item.title}</p>
                                 {data?.course?.settings.progression_type === "linear"
@@ -369,11 +368,11 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
                                   {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
-                                    <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
-                                    <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                   )}
                                   <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
                                   {data?.course?.settings.progression_type === "linear"
@@ -552,6 +551,19 @@ const Learning = () => {
                 )}
               </div>
               <div className="p-8 lg:pl-12!">
+                {progress?.length > 0 &&
+                progress.filter(
+                  (p) => (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem.id || p.id_course_test === selectedCourseItem.id),
+                ).length > 0 ? (
+                  <div className="p-4 bg-black flex justify-between items-center">
+                    <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
+                    <div className="p-4 bg-[#2F8351]">
+                      <p className="text-white text-[16px]">{t("Completed")}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[26px] text-black font-bold">{selectedCourseItem?.title}</p>
+                )}
                 {selectedCourseItem &&
                 Object.keys(selectedCourseItem).length > 0 &&
                 (selectedCourseItem.type === "topic" || selectedCourseItem.type === "test") &&

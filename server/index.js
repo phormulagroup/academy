@@ -26,6 +26,7 @@ const settingsRouter = require("./routes/settings");
 const emailRouter = require("./routes/email");
 const certificateRouter = require("./routes/certificate");
 const notificationRouter = require("./routes/notification");
+const inboxRouter = require("./routes/inbox");
 
 /* Socket imports */
 const setupSocket = require("./socket");
@@ -102,5 +103,6 @@ app.use("/settings", middleware, settingsRouter);
 app.use("/email", middleware, emailRouter);
 app.use("/certificate", middleware, certificateRouter);
 app.use("/notification", middleware, notificationRouter);
+app.use("/inbox", middleware, inboxRouter);
 
 module.exports = app;

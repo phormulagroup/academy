@@ -5,7 +5,7 @@ import endpoints from "../../utils/endpoints";
 import { Context } from "../../utils/context";
 
 export default function Delete({ open, close, data, table }) {
-  const { messageApi, createLog } = useContext(Context);
+  const { messageApi, createLog, user, selectedLanguage } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [tablesName] = useState({ account: "Conta", course: "Cliente", project: "Project" });
 
@@ -20,9 +20,11 @@ export default function Delete({ open, close, data, table }) {
         data: data,
       });
       createLog({
+        id_user: user.id,
         action: "delete",
-        type: table,
-        [`id_${table}`]: data.id,
+        table: table,
+        meta_data: JSON.stringify(data),
+        id_lang: selectedLanguage.id,
       });
       close(true);
       messageApi.success(`${tablesName[table]} foi apagado com sucesso, é considerado como inativo.`);

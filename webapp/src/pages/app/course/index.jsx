@@ -137,13 +137,13 @@ export default function CourseDetails() {
             <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
           </div>
         ) : data.length > 0 ? (
-          <div className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"}`}>
+          <div className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"} gap-8`}>
             <div className="col-span-3 flex justify-end items-center gap-4 mb-4">
               <GridIcon className="cursor-pointer" onClick={() => setViewType("grid")} />
               <ListIcon className="cursor-pointer" onClick={() => setViewType("list")} />
             </div>
             {data.map((item) => (
-              <div className={`shadow-[0px_3px_6px_#00000029] ${viewType === "list" ? "flex" : "flex flex-col"}`}>
+              <div className={`shadow-[0px_3px_6px_#00000029] ${viewType === "list" ? "flex" : "flex flex-col"} ${viewType === "list" ? "col-span-3" : "col-span-1"}`}>
                 <div
                   className={`${viewType === "grid" ? "h-75" : "h-full w-50"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
                   style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
@@ -160,7 +160,7 @@ export default function CourseDetails() {
                 <div className={`w-full ${viewType === "list" ? "grid grid-cols-5" : "flex-col"}`}>
                   <div className={`bg-[#F7F7F7] p-6 ${viewType === "list" ? "col-span-4 grid grid-cols-3 gap-10" : "col-span-1"}`}>
                     <div className="flex flex-col">
-                      {item.course.settings.id_trainer && (
+                      {item.course.settings?.id_trainer && (
                         <div className="flex items-center mb-4">
                           <Avatar src={avatarImg} className="w-12.5! h-12.5!" />
                           <div className="ml-2">
@@ -171,7 +171,7 @@ export default function CourseDetails() {
                           </div>
                         </div>
                       )}
-                      <div className={`${item.course.settings.id_trainer ? "mt-4" : "mt-0"} mb-4 flex flex-col justify-center items-center`}>
+                      <div className={`${item.course.settings?.id_trainer ? "mt-4" : "mt-0"} mb-4 flex flex-col justify-center items-center`}>
                         {calcProgress(item.progress, item.modules) === 100 ? (
                           <>
                             <div className="flex items-center justify-between w-full mb-2 min-h-8.25">

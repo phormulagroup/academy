@@ -214,16 +214,16 @@ export default function Register() {
         <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
           <div className="flex">
             <div className="pr-3">
-              <p className="text-sm text-center">Formulário de contacto</p>
+              <p className="text-sm text-center text-[#163986]">Formulário de contacto</p>
             </div>
-            <div className="border-r border-l pl-3 pr-3">
-              <p className="text-sm text-center">Termos e condições</p>
+            <div className="border-r border-l border-[#163986] pl-3 pr-3">
+              <p className="text-sm text-center text-[#163986]">Termos e condições</p>
             </div>
             <div className="pl-3">
-              <p className="text-sm text-center">Política de Privacidade</p>
+              <p className="text-sm text-center text-[#163986]">Política de Privacidade</p>
             </div>
           </div>
-          <p className="text-sm mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
+          <p className="text-sm mt-4 text-[#163986]">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
         </div>
       </div>
     </div>

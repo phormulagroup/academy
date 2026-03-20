@@ -23,6 +23,7 @@ export default function Recover() {
   const { isLoggedIn, login, messageApi, microsoftLogin, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [userRecover, setUserRecover] = useState({});
   const [currentStep, setCurrentStep] = useState(0);
 
   const [form] = Form.useForm();
@@ -82,6 +83,7 @@ export default function Recover() {
         if (res.data.status) {
           messageApi.open({ type: "success", content: "The password was changed, now you can login with the new one" });
           formCode.setFieldValue("email", values.email);
+          createLog({ id_user: userRecover.id, action: "recover password" });
           navigate(`/${i18n.language}/login`);
         } else {
           messageApi.open({ type: "error", content: res.data.message ?? "Something went wrong, please try again" });
@@ -117,7 +119,7 @@ export default function Recover() {
                     {t("Send code")}
                   </Button>
                   <p className="text-center mt-4">
-                    <Link to={`/${i18n.language}/login`} className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
+                    <Link to={`/${i18n.language}/login`} className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
                       « Login
                     </Link>
                   </p>
@@ -142,7 +144,7 @@ export default function Recover() {
                     {t("Send code")}
                   </Button>
                   <p className="text-center mt-4">
-                    <Link to={`/${i18n.language}/login`} className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
+                    <Link to={`/${i18n.language}/login`} className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
                       « Login
                     </Link>
                   </p>
@@ -188,7 +190,7 @@ export default function Recover() {
                     {t("Recover password")}
                   </Button>
                   <p className="text-center mt-4">
-                    <Link to={`/${i18n.language}/login`} className="text-[#FF7D5A]! hover:text-[#FFC600]! font-bold underline!">
+                    <Link to={`/${i18n.language}/login`} className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
                       « Login
                     </Link>
                   </p>
@@ -209,16 +211,16 @@ export default function Recover() {
         <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
           <div className="flex">
             <div className="pr-3">
-              <p className="text-sm text-center">Formulário de contacto</p>
+              <p className="text-sm text-center text-[#163986]">Formulário de contacto</p>
             </div>
-            <div className="border-r border-l pl-3 pr-3">
-              <p className="text-sm text-center">Termos e condições</p>
+            <div className="border-r border-l border-[#163986] pl-3 pr-3">
+              <p className="text-sm text-center text-[#163986]">Termos e condições</p>
             </div>
             <div className="pl-3">
-              <p className="text-sm text-center">Política de Privacidade</p>
+              <p className="text-sm text-center text-[#163986]">Política de Privacidade</p>
             </div>
           </div>
-          <p className="text-sm mt-4">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
+          <p className="text-sm mt-4 text-[#163986]">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>
         </div>
       </div>
     </div>

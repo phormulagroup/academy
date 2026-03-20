@@ -144,7 +144,7 @@ const Main = () => {
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Layout>
         {windowDimension.width > 1080 ? (
-          <Sider width={250} className="bg-[#010202]! overflow-auto">
+          <Sider width={250} className="bg-[#163986]! overflow-auto">
             <div className="flex flex-col justify-between items-start h-full p-4">
               <Link to="/">
                 <img src={logo} alt="Bial Academy Logo" className="max-h-17.5 mb-2 pl-4" style={{ filter: "brightness(0) invert(1)" }} />

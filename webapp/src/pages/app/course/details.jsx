@@ -128,8 +128,8 @@ export default function CourseDetails() {
             <div className="flex flex-col xl:pt-[10%] col-span-3 xl:col-span-1">
               <div className="pt-6 xl:p-0 flex justify-between p-6">
                 <div>
-                  <p>{t("Course")}</p>
-                  <p className="text-[30px] font-bold text-black">{data.course?.name}</p>
+                  <p className="text-[#163986]">{t("Course")}</p>
+                  <p className="text-[40px] font-bold text-[#163986]">{data.course?.name}</p>
                 </div>
                 <div className="flex lg:hidden justify-center items-center" onClick={() => navigate(`/${i18n.language}/courses`)}>
                   <p>{t("Go back")}</p>
@@ -138,35 +138,35 @@ export default function CourseDetails() {
               <div className="flex xl:hidden justify-center items-center">
                 <img src={`${config.server_ip}/media/${data.course?.img}`} className="h-full!" />
               </div>
-              <div className="bg-black sm:bg-transparent p-6 sm:p-0">
-                <div className="bg-[#EAEAEA] flex flex-col p-5 mt-0 lg:mt-4">
+              <div className="bg-[#C5CEE1] sm:bg-transparent p-6 sm:p-0">
+                <div className="bg-[#8B9CC3] flex flex-col p-5 mt-0 lg:mt-4 rounded-[5px]">
                   <div className="flex items-center">
                     <Avatar className="w-10! h-10!" />
                     <div className="ml-2">
-                      <p className="text-black font-semibold">Cláudia Meneses</p>
-                      <p className="text-[#414141] text-[12px]">Cláudia Meneses</p>
+                      <p className="text-white font-semibold">Cláudia Meneses</p>
+                      <p className="text-white text-[12px]">Cláudia Meneses</p>
                     </div>
                   </div>
-                  <Divider variant="dashed" className="mt-6! mb-6!" />
+                  <Divider variant="dashed" className="mt-6! mb-6! border-white!" />
                   <div className="grid grid-cols-2 gap-4">
                     {data.course?.id_course_certificate && (
                       <div className="flex items-center col-span-2 sm:col-span-1">
-                        <CertificateIcon className="mr-1" />
-                        <p className="text-[16px]">{t("With certificate")}</p>
+                        <CertificateIcon className="mr-1 brightness-[0] invert-[1]" />
+                        <p className="text-[16px] text-white">{t("With certificate")}</p>
                       </div>
                     )}
                     {(data.course?.settings?.duration_hours || data.course?.settings?.duration_minutes) && (
                       <div className="flex items-center col-span-2 sm:col-span-1">
-                        <DurationIcon className="mr-1" />
-                        <p className="text-[16px]">
+                        <DurationIcon className="mr-1 brightness-[0] invert-[1]" />
+                        <p className="text-[16px] text-white">
                           {data.course.settings.duration_hours} h {data.course.settings.duration_minutes ? `${data.course.settings.duration_minutes}m` : ""}
                         </p>
                       </div>
                     )}
                     {data.course?.settings?.video && (
                       <div className="flex items-center col-span-2 sm:col-span-1">
-                        <VideosIcon className="mr-1" />
-                        <p className="text-[16px]">{data.course.settings.video} videos</p>
+                        <VideosIcon className="mr-1 brightness-[0] invert-[1]" />
+                        <p className="text-[16px] text-white">{data.course.settings.video} videos</p>
                       </div>
                     )}
                     {data.course?.settings?.trainer && (
@@ -187,13 +187,16 @@ export default function CourseDetails() {
             </div>
           </div>
           <div className="container m-auto xl:-mt-10 relative z-10">
-            <div className="bg-[#000000] p-6 flex flex-col sm:flex-row gap-8 mb-5">
+            <div className="bg-[#C5CEE1] p-6 flex flex-col sm:flex-row gap-8 mb-5">
               <div className="hidden sm:flex p-2 pr-0">
-                <FlagIcon className="max-w-12.5" />
+                <FlagIcon
+                  className="max-w-12.5"
+                  style={{ filter: "brightness(0) saturate(100%) invert(12%) sepia(71%) saturate(4132%) hue-rotate(221deg) brightness(84%) contrast(85%)" }}
+                />
               </div>
-              <div className="p-2 sm:pl-6 border-0 sm:border-l border-l-white flex flex-col w-full">
+              <div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full">
                 <div className="flex flex-col sm:flex-row items-center justify-start mb-2">
-                  <p className="text-white text-[20px] font-bold uppercase">
+                  <p className="text-[#163986] text-[20px] font-bold uppercase">
                     {calcCourseProgress(
                       progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,
                       data?.topics?.length,
@@ -201,9 +204,11 @@ export default function CourseDetails() {
                     )}
                     % {t("Completed")}
                   </p>
-                  <p className="text-white text-sm ml-4">
-                    {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
-                  </p>
+                  {progress.length > 0 && (
+                    <p className="text-[#163986] text-sm ml-4">
+                      {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
+                    </p>
+                  )}
                 </div>
                 <Progress
                   strokeColor={"#2F8351"}
@@ -222,15 +227,27 @@ export default function CourseDetails() {
                   data?.topics?.length,
                   data?.tests?.length,
                 ) === 100 ? (
-                  <Button className="min-w-50" color="blue" variant="solid" size="large" onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}>
+                  <Button
+                    className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
+                    color="#163986"
+                    variant="solid"
+                    size="large"
+                    onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}
+                  >
                     {t("Review")}
                   </Button>
                 ) : progress.filter((p) => p.activity_type === "enroll").length === 0 ? (
-                  <Button className="min-w-50" color="black" variant="solid" size="large" onClick={() => enroll()}>
+                  <Button className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!" variant="solid" size="large" onClick={() => enroll()}>
                     {t("Initiate")}
                   </Button>
                 ) : (
-                  <Button className="min-w-50" color="black" variant="solid" size="large" onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}>
+                  <Button
+                    className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
+                    color="black"
+                    variant="solid"
+                    size="large"
+                    onClick={() => navigate(`/${i18n.language}/courses/${slug}/learning`)}
+                  >
                     {t("Enter")}
                   </Button>
                 )}

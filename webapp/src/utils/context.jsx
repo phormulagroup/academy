@@ -197,7 +197,7 @@ const ContextProvider = ({ children }) => {
     setIsLoading(true);
     setUser({});
     navigate(`/${i18n.language}/login`);
-    createLog({ id_user: auxUser.id, action: "logout" });
+    createLog({ id_user: auxUser.id, action: "logout", id_lang: auxUser.id_role !== 1 ? languages.filter((l) => l.code === i18n.language)[0].id : selectedLanguage.id });
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
@@ -209,7 +209,6 @@ const ContextProvider = ({ children }) => {
     getInfoData(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
-    createLog({ id_user: res.user.id, action: "login" });
 
     if (window.location.href.includes("login"))
       if (res.user.id_role === 1) navigate("/admin");
@@ -237,7 +236,8 @@ const ContextProvider = ({ children }) => {
           id_user: user.id,
           action: "create",
           table_name: obj.table,
-          meta_data: JSON.stringify({ ...obj, id: res.insertId }),
+          meta_data: JSON.stringify({ ...obj.data, id: res.insertId }),
+          id_lang: selectedLanguage.id,
         });
         messageApi.open({
           type: "success",
@@ -263,6 +263,7 @@ const ContextProvider = ({ children }) => {
           action: "update",
           table_name: obj.table,
           meta_data: obj.data,
+          id_lang: selectedLanguage.id,
         });
         messageApi.open({
           type: "success",
