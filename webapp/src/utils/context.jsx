@@ -25,6 +25,7 @@ const ContextProvider = ({ children }) => {
   const [selectedLanguage, setSelectedLanguage] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [notifications, setNotifications] = useState([]);
+  const [inbox, setInbox] = useState([]);
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -152,6 +153,15 @@ const ContextProvider = ({ children }) => {
     }
   }
 
+  async function getMessages(auxUser) {
+    try {
+      const res = await axios.get(auxUser.id_role === 1 ? endpoints.inbox.readBySupport : endpoints.inbox.readByUser, { params: { id_user: auxUser.id } });
+      setInbox(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   async function getData() {
     let token = localStorage.getItem("token");
     if (token) {
@@ -159,6 +169,7 @@ const ContextProvider = ({ children }) => {
         const res = await axios.post(endpoints.auth.verifyToken, { data: token });
         login({ user: res.data.user, token: token });
         getNotifications(res.data.user);
+        getMessages(res.data.user);
         getCourses(res.data.user);
         setTimeout(() => {
           setIsLoading(false);
@@ -310,6 +321,8 @@ const ContextProvider = ({ children }) => {
         setSelectedLanguage,
         notifications,
         setNotifications,
+        inbox,
+        setInbox,
       }}
     >
       {contextMessageHolder}

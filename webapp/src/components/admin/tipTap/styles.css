@@ -1,5 +1,10 @@
 .tiptap-editor {
-  border: 1px solid black;
+  border: 1px solid #c0c0c0;
+  border-radius: 5px;
+}
+.tiptap-editor > div:last-child {
+  max-height: 150px;
+  overflow: auto;
 }
 
 .tiptap {

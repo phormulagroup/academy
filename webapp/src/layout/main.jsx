@@ -22,7 +22,7 @@ import NotificationIcon from "../assets/Notifications-off.svg?react";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, notifications } = useContext(Context);
+  const { user, logout, languages, setIsLoadingLanguage, windowDimension, notifications, inbox } = useContext(Context);
   const [current, setCurrent] = useState("");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
@@ -89,7 +89,7 @@ const Main = () => {
                   <div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
                     <div
                       className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                      style={{ backgroundImage: `url(${languages.filter((l) => l.code === i18n.language)[0].flag})` }}
+                      style={{ backgroundImage: `url(${languages?.filter((l) => l.code === i18n.language)[0]?.flag})` }}
                     ></div>
                     <p>{i18n.language.toUpperCase()}</p>
                   </div>
@@ -130,6 +130,25 @@ const Main = () => {
                               <div className="flex items-center">
                                 <div className="w-5 mr-2"></div>
                                 <p>{t("Results")}</p>
+                              </div>
+                            </Link>
+                          ),
+                        },
+                        {
+                          key: "inbox",
+                          label: (
+                            <Link className={`flex items-center`} to={`/${i18n.language}/inbox`}>
+                              <div className="flex items-center">
+                                <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                  {inbox.filter((n) => n.is_read === 0).length > 0 ? (
+                                    <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                                      <p className="text-white text-[10px]">{inbox.filter((n) => n.is_read === 0).length}</p>
+                                    </div>
+                                  ) : (
+                                    <NotificationIcon className="mr-2" />
+                                  )}
+                                </div>
+                                <p>{t("Inbox")}</p>
                               </div>
                             </Link>
                           ),

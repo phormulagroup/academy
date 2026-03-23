@@ -298,7 +298,7 @@ export default function Main() {
               <div className="flex items-center">
                 <p className="font-bold mr-2">{"Course progress"}</p>
                 <Select
-                  className="min-w-[200px]"
+                  className="min-w-50"
                   placeholder={t("Choose a course")}
                   showSearch={{ optionFilterProp: "label" }}
                   allowClear
@@ -342,10 +342,10 @@ export default function Main() {
                     {Object.keys(graphicCourses).map((_k) => (
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <div className={`mr-2 min-w-[12px] w-[12px] min-h-[12px] h-[12px] rounded-full`} style={{ backgroundColor: graphicCourses[_k].color }}></div>
+                          <div className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`} style={{ backgroundColor: graphicCourses[_k].color }}></div>
                           <p className="text-[11px]">{graphicCourses[_k].label}</p>
                         </div>
-                        <div className="min-w-[40px] flex justify-center items-center">
+                        <div className="min-w-10 flex justify-center items-center">
                           <p className="text-[11px]">{graphicCourses[_k].value}</p>
                         </div>
                       </div>
@@ -400,10 +400,10 @@ export default function Main() {
                     {Object.keys(graphicCoursesProgress).map((_k) => (
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <div className={`mr-2 min-w-[12px] w-[12px] min-h-[12px] h-[12px] rounded-full`} style={{ backgroundColor: graphicCoursesProgress[_k].color }}></div>
+                          <div className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`} style={{ backgroundColor: graphicCoursesProgress[_k].color }}></div>
                           <p className="text-[11px]">{graphicCoursesProgress[_k].label}</p>
                         </div>
-                        <div className="min-w-[40px] flex justify-center items-center">
+                        <div className="min-w-10 flex justify-center items-center">
                           <p className="text-[11px]">{graphicCoursesProgress[_k].value}</p>
                         </div>
                       </div>

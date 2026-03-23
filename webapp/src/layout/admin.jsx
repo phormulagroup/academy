@@ -32,11 +32,12 @@ import TemplatesIcon from "../assets/Backoffice/Menu/Templates.svg?react";
 import SMTPIcon from "../assets/Backoffice/Menu/SMTP.svg?react";
 import APIsIcon from "../assets/Backoffice/Menu/APIS.svg?react";
 import { RxFile } from "react-icons/rx";
+import NotificationIcon from "../assets/Notifications-off.svg?react";
 
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage } = useContext(Context);
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage, inbox } = useContext(Context);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
@@ -206,6 +207,20 @@ const Main = () => {
                       <p>{selectedLanguage.code.toUpperCase()}</p>
                     </div>
                   </Dropdown>
+
+                  <Link className={`flex items-center`} to={`/admin/inbox`}>
+                    <div className="flex items-center">
+                      <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                        {inbox.filter((n) => n.is_read === 0).length > 0 ? (
+                          <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                            <p className="text-white text-[10px]">{inbox.filter((n) => n.is_read === 0).length}</p>
+                          </div>
+                        ) : (
+                          <NotificationIcon className="mr-2" />
+                        )}
+                      </div>
+                    </div>
+                  </Link>
                   <Avatar icon={<FaRegUser />} />
                   <p className="text-[12px] ml-2">{user.name}</p>
                 </div>

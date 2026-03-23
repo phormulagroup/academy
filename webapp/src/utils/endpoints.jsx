@@ -27,6 +27,9 @@ const endpoints = {
   inbox: {
     read: "/inbox/read",
     readByUser: "/inbox/readByUser",
+    readBySupport: "/inbox/readBySupport",
+    readByThread: "/inbox/readByThread",
+    responsible: "/inbox/responsible",
     create: "/inbox/create",
     update: "/inbox/update",
     delete: "/inbox/create",
