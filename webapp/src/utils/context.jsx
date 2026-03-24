@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { createContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,10 @@ const ContextProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [notifications, setNotifications] = useState([]);
   const [inbox, setInbox] = useState([]);
+  const [selectedInbox, setSelectedInbox] = useState({});
+
+  const inboxRef = useRef(inbox);
+  const selectedInboxRef = useRef(selectedInbox);
 
   const [windowDimension, setWindowDimension] = useState({
     width: window.innerWidth,
@@ -48,13 +52,13 @@ const ContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (Object.keys(user).length === 0) return;
-    else socket.connect();
+    else if (!socket.connected) socket.connect();
 
     socket.on("connect", () => {
       console.log("🟢 Socket ligado", socket.id);
       console.log("User: ", user);
       console.log("socket.connected: ", socket.connected);
-      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country }); // Exemplo
+      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country, id_role: user.id_role }); // Exemplo
     });
 
     socket.on("disconnect", () => {
@@ -67,32 +71,28 @@ const ContextProvider = ({ children }) => {
 
     socket.on("reconnect", () => {
       console.log("🟢 Reconectado com sucesso!");
-      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country }); // Exemplo
+      if (user && user.id) socket.emit("register_user", { userId: user.id, lang: user.id_lang, country: user.country, id_role: user.id_role }); // Exemplo
     });
 
-    socket.on("received", (data) => {
-      console.log("Notificações recebida!");
-      console.log(data);
-      notificationApi.open({
-        type: "info",
-        placement: "top",
-        title: <div dangerouslySetInnerHTML={{ __html: data.title }}></div>,
-        description: <div dangerouslySetInnerHTML={{ __html: data.description }}></div>,
-      });
-
-      const auxNotifications = Object.assign([], notifications);
-      auxNotifications.unshift(data);
-      setNotifications(auxNotifications);
-    });
+    socket.on("received", (data) => receivedNotification(data));
 
     return () => {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("reconnect_attempt");
       socket.off("reconnect");
-      socket.off("receive");
+      socket.off("received");
     };
   }, [user]);
+
+  useEffect(() => {
+    inboxRef.current = inbox;
+  }, [inbox]);
+
+  useEffect(() => {
+    console.log(selectedInbox);
+    selectedInboxRef.current = selectedInbox;
+  }, [selectedInbox]);
 
   useEffect(() => {
     const detectSize = () => {
@@ -107,6 +107,44 @@ const ContextProvider = ({ children }) => {
       window.removeEventListener("resize", detectSize);
     };
   }, [windowDimension]);
+
+  function receivedNotification(d) {
+    console.log("Notificação recebida!");
+    console.log("Mensagem recebida:", d);
+    console.log("Inbox atual dentro do socket:", inboxRef.current);
+
+    notificationApi.open({
+      type: "info",
+      placement: "top",
+      title: <div dangerouslySetInnerHTML={{ __html: d.title }}></div>,
+      description: <div dangerouslySetInnerHTML={{ __html: d.description }}></div>,
+    });
+
+    if (d.type === "message" || d.type === "thread") {
+      if (d.type === "message") {
+        setInbox((prev) =>
+          prev.filter((m) =>
+            m.id === d.meta_data.id_thread
+              ? { ...m, text: d.meta_data.text, from_id_user: d.meta_data.from_id_user, to_id_user: d.meta_data.to_id_user, unread_messages: ++m.unread_messages }
+              : m,
+          ),
+        );
+
+        if (selectedInboxRef.current && selectedInboxRef.current.id === d.meta_data.id_thread)
+          setSelectedInbox((prev) => ({
+            ...prev,
+            text: d.meta_data.text,
+            from_id_user: d.meta_data.from_id_user,
+            to_id_user: d.meta_data.to_id_user,
+            unread_messages: ++prev.unread_messages,
+          }));
+      }
+    } else {
+      const auxNotifications = Object.assign([], notifications);
+      auxNotifications.unshift(d);
+      setNotifications(auxNotifications);
+    }
+  }
 
   async function getLanguages() {
     try {
@@ -323,6 +361,8 @@ const ContextProvider = ({ children }) => {
         setNotifications,
         inbox,
         setInbox,
+        selectedInbox,
+        setSelectedInbox,
       }}
     >
       {contextMessageHolder}

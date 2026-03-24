@@ -1,31 +1,43 @@
-import { useContext, useEffect, useState } from "react";
-import { Button, Col, Row, Modal, Form, Avatar } from "antd";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Button, Col, Row, Modal, Form, Avatar, message } from "antd";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
-import endpoints from "../../../utils/endpoints";
-import { Context } from "../../../utils/context";
-import TipTapFormField from "../tipTap/tipTapFormField";
-import avatarImg from "../../../assets/Female.svg";
-import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
+import endpoints from "../utils/endpoints";
+import { Context } from "../utils/context";
+import TipTapFormField from "./admin/tipTap/tipTapFormField";
+import avatarImg from "../assets/Female.svg";
+import CalendarIcon from "../assets/Backoffice/calendar.svg?react";
 import dayjs from "dayjs";
 
-export default function Message({ data, open, close, submit }) {
-  const { user, update } = useContext(Context);
+export default function Message({ open, close }) {
+  const { user, update, setInbox, selectedInbox } = useContext(Context);
   const { t } = useTranslation();
 
   const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState(false);
 
   const [form] = Form.useForm();
 
+  const messagesEndRef = useRef();
+
   useEffect(() => {
-    console.log(data);
-    if (open && Object.keys(data).length > 0) getData();
-  }, [data]);
+    if (open && Object.keys(selectedInbox).length > 0) getData();
+  }, [open, selectedInbox]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   async function getData() {
+    setIsLoading(true);
     try {
-      const res = await axios.get(endpoints.inbox.readByThread, { params: { id_thread: data.id_thread } });
+      const res = await axios.get(endpoints.inbox.readByThread, { params: { id_thread: selectedInbox.id } });
+      markAsRead();
       setMessages(res.data);
+      setIsLoading(false);
+      setNewMessage(false);
+      scrollToBottom();
     } catch (err) {
       console.log(err);
     }
@@ -33,8 +45,10 @@ export default function Message({ data, open, close, submit }) {
 
   async function takeThread() {
     try {
-      await axios.post(endpoints.inbox.responsible, { data: { id_user_responsible: user.id, id_thread: data.id_thread, id_message: data.id } });
-      data.id_user_responsible = user.id;
+      setIsLoading(true);
+      await axios.post(endpoints.inbox.responsible, { data: { id_user_responsible: user.id, id_thread: selectedInbox.id } });
+      setInbox((prev) => prev.map((m) => (m.id === selectedInbox.id ? { ...data, id_user_responsible: user.id } : data)));
+      selectedInbox.id_user_responsible = user.id;
     } catch (err) {
       console.log(err);
     }
@@ -43,21 +57,43 @@ export default function Message({ data, open, close, submit }) {
   function sendMessage(values) {
     axios
       .post(endpoints.inbox.create, {
-        data: { ...values, id_thread: data.id_thread, to_id_user: data.id_user, from_id_user: user.id },
+        data: {
+          ...values,
+          id_thread: selectedInbox.id,
+          to_id_user: user.id === selectedInbox.id_user_responsible ? selectedInbox.id_user : selectedInbox.id_user_responsible,
+          from_id_user: user.id,
+        },
       })
       .then((res) => {
         console.log(res);
         setMessages((prev) => [
           ...prev,
           {
-            ...data,
+            ...selectedInbox,
             text: values.text,
             from_id_user: user.id,
-            to_id_user: data.id_user,
+            to_id_user: user.id === selectedInbox.id_user_responsible ? selectedInbox.id_user : selectedInbox.id_user_responsible,
             created_at: dayjs().format("YYYY-MM-DD HH:mm"),
           },
         ]);
 
+        setInbox((prev) =>
+          prev.map((m) =>
+            m.id === selectedInbox.id
+              ? {
+                  ...m,
+                  text: values.text,
+                  from_id_user: user.id,
+                  to_id_user: user.id === selectedInbox.id_user_responsible ? selectedInbox.id_user : selectedInbox.id_user_responsible,
+                  created_at: dayjs().format("YYYY-MM-DD HH:mm"),
+                  unread_messages: m.unread_messages + 1,
+                }
+              : m,
+          ),
+        );
+
+        setNewMessage(true);
+        scrollToBottom();
         form.resetFields();
       })
       .catch((err) => {
@@ -65,20 +101,39 @@ export default function Message({ data, open, close, submit }) {
       });
   }
 
+  function markAsRead() {
+    axios
+      .post(endpoints.inbox.update, {
+        data: { id_thread: selectedInbox.id, to_id_user: user.id },
+      })
+      .then((res) => {
+        console.log(res);
+        setInbox((prev) => prev.map((m) => (m.id === selectedInbox.id ? { ...m, unread_messages: 0 } : m)));
+        form.resetFields();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <Modal
       key="modal-message"
       className="modal-message"
       width={600}
       style={{ minHeight: "calc(100vh - 40px)", top: 20, marginRight: 20 }}
-      onCancel={close}
+      onCancel={() => close(newMessage)}
       open={open}
       maskClosable={false}
       footer={[]}
-      title={data.title}
+      title={selectedInbox.title}
     >
-      <div className="flex flex-col w-full h-full">
-        <div className="flex flex-col h-full">
+      <div className="flex flex-col w-full h-[calc(100%-40px)]">
+        <div id="message-container" className="flex flex-col h-full p-4 overflow-auto">
           {messages.map((m) => (
             <div className={`${m.from_id_user === user.id ? "justify-start items-start" : ""} mb-4`}>
               <div className={`${m.from_id_user === user.id ? "flex flex-row-reverse" : "flex"}`}>
@@ -117,10 +172,25 @@ export default function Message({ data, open, close, submit }) {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
-        <div>
-          {!data.id_user_responsible ? (
-            <Button onClick={takeThread}>{t("Take thread")}</Button>
+        <div className="p-4">
+          {user.id_role === 1 ? (
+            !selectedInbox.id_user_responsible ? (
+              <Button onClick={takeThread}>{t("Take thread")}</Button>
+            ) : (
+              <div>
+                <Form form={form} onFinish={sendMessage}>
+                  <Form.Item name="text">
+                    <TipTapFormField />
+                  </Form.Item>
+                </Form>
+                <div className="flex justify-end items-center">
+                  <Button className="mr-2">Cancel</Button>
+                  <Button onClick={form.submit}>Send</Button>
+                </div>
+              </div>
+            )
           ) : (
             <div>
               <Form form={form} onFinish={sendMessage}>

@@ -14,14 +14,13 @@ import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import dayjs from "dayjs";
 import CalendarIcon from "../../assets/Backoffice/calendar.svg?react";
-import Message from "../../components/admin/inbox/message";
+import Message from "../../components/message";
 
 export default function Inbox() {
-  const { user } = useContext(Context);
+  const { user, selectedInbox, setSelectedInbox } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
-  const [selectedData, setSelectedData] = useState({});
 
   const [isOpenDetails, setIsOpenDetails] = useState(false);
 
@@ -45,7 +44,7 @@ export default function Inbox() {
   }
 
   function openDetails(d) {
-    setSelectedData(d);
+    setSelectedInbox(d);
     setIsOpenDetails(true);
   }
 
@@ -54,12 +53,13 @@ export default function Inbox() {
     if (c) {
       getData();
     }
+    setSelectedInbox({});
     setIsOpenDetails(false);
   }
 
   return (
     <div className="p-2">
-      <Message data={selectedData} open={isOpenDetails} close={closeAction} />
+      <Message open={isOpenDetails} close={closeAction} />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Inbox")}</p>
@@ -77,6 +77,9 @@ export default function Inbox() {
                 <p className="font-bold text-[16px]">{m.title}</p>
               </div>
               <div className="flex justify-end items-center">
+                <Tag color={"green"} variant="outlined" className="mr-2!">
+                  {t(`${m.status}`)}
+                </Tag>
                 <Avatar />
                 <p className="ml-2">{m.user_name}</p>
               </div>

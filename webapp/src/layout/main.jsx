@@ -31,8 +31,6 @@ const Main = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  console.log(notifications);
-
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
     navigate(`/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`);
@@ -137,12 +135,12 @@ const Main = () => {
                         {
                           key: "inbox",
                           label: (
-                            <Link className={`flex items-center`} to={`/${i18n.language}/inbox`}>
+                            <Link className={`flex items-center`} to={user.id_role === 1 ? "/admin/inbox" : `/${i18n.language}/inbox`}>
                               <div className="flex items-center">
                                 <div className="w-5 h-5 mr-2 flex justify-center items-center">
-                                  {inbox.filter((n) => n.is_read === 0).length > 0 ? (
+                                  {inbox.filter((n) => n.unread_messages > 0).length > 0 ? (
                                     <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                                      <p className="text-white text-[10px]">{inbox.filter((n) => n.is_read === 0).length}</p>
+                                      <p className="text-white text-[10px]">{inbox.map((n) => n.unread_messages)}</p>
                                     </div>
                                   ) : (
                                     <NotificationIcon className="mr-2" />
