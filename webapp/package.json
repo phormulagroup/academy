@@ -29,6 +29,7 @@
     "classnames": "^2.5.1",
     "compressorjs": "^1.2.1",
     "dayjs": "^1.11.19",
+    "file-saver": "^2.0.5",
     "html-to-react": "^1.7.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",

@@ -17,6 +17,7 @@ import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
 import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
+import i18n from "../../utils/i18n";
 
 export default function Register() {
   const { t } = useTranslation();
@@ -50,7 +51,7 @@ export default function Register() {
       .then((res) => {
         if (res.data.insertId) {
           messageApi.success({
-            type: "error",
+            type: "success",
             content: t("User registered successfully. You're registration is now pending for review."),
           });
           setTimeout(() => {

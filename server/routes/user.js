@@ -38,7 +38,7 @@ router.get("/readById", async (req, res) => {
     const userRow = await query("SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE user.id = ?", [req.query.id]);
     if (userRow.length > 0) {
       const user = userRow[0];
-      console.log(user);
+      console.log("USER ID: ", user);
       const rows = await query(
         "SELECT c.* FROM course_user_activity cua LEFT JOIN course c ON c.id = cua.id_course WHERE cua.id_user = ? AND cua.activity_type = 'enroll'; " +
           "SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ?; " +

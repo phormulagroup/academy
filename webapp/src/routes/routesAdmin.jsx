@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-import MainAdmin from "../pages/admin/inbox";
+import MainAdmin from "../pages/admin/index";
 import AdminLayout from "../layout/admin";
 import User from "../pages/admin/user/index";
 import Language from "../pages/admin/language";
@@ -19,6 +19,7 @@ import CertificateDetails from "../pages/admin/certificate/details";
 import UserDetails from "../pages/admin/user/details";
 import Notification from "../pages/admin/notification";
 import Inbox from "../pages/admin/inbox";
+import Report from "../pages/admin/report";
 
 export const adminRoutes = [
   {
@@ -29,6 +30,7 @@ export const adminRoutes = [
       { path: "courses", element: <Course /> },
       { path: "courses/:id", element: <CourseDetails /> },
       { path: "courses/:id/test/:idTest", element: <Test /> },
+      { path: "reports", element: <Report /> },
       { path: "languages", element: <Language /> },
       { path: "smtp", element: <SMTP /> },
       { path: "templates", element: <Template /> },

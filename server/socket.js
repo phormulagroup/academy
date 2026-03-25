@@ -1,11 +1,12 @@
 const { Server } = require("socket.io");
 
-const connectedUsers = new Map(); // userId → {socketId, id_lang, country}
+const connectedUsers = new Map(); // userId → {socketId, id_lang, id_role, country}
 
 function setupSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: "*", // altera depois para domínio real
+      //origin: "*", // altera depois para domínio real
+      origin: "http://192.168.1.90:5173",
     },
   });
 
@@ -20,8 +21,8 @@ function setupSocket(server) {
     socket.on("disconnect", () => {
       console.log("❌ Cliente desconectado:", socket.id);
 
-      for (const [userId, sId] of connectedUsers.entries()) {
-        if (sId === socket.id) {
+      for (const [userId, user] of connectedUsers.entries()) {
+        if (user.socketId === socket.id) {
           connectedUsers.delete(userId);
           break;
         }
@@ -31,7 +32,8 @@ function setupSocket(server) {
 
   function notifyUser(data, userId) {
     const user = connectedUsers.get(userId);
-    if (user.socketId) {
+    console.log(user);
+    if (user && user.socketId) {
       io.to(user.socketId).emit("received", { ...data, is_read: 0 });
     }
   }

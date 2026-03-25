@@ -74,47 +74,61 @@ const Learning = () => {
     try {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id, id_lang: user.id_lang } });
       if (res.data.course.length > 0) {
-        const auxCourse = res.data.course[0];
+        let auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
-        auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
-        auxCourse.objection = auxCourse.objection ? JSON.parse(auxCourse.objection) : null;
+        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
+        if (auxCourse.settings && auxCourse.settings.course_access_expiration && canAccess(auxCourse.settings)) auxCourse = null;
+        if (auxCourse) {
+          auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
+          auxCourse.objection = auxCourse.objection ? JSON.parse(auxCourse.objection) : null;
 
-        setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
-        let auxAllItems = [];
+          let auxAllItems = [];
 
-        if (res.data.modules.length > 0) {
-          let auxModules = res.data.modules;
-          let newModules = [];
-          for (let i = 0; i < auxModules.length; i++) {
-            auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
-            if (auxModules[i].items) {
-              for (let y = 0; y < auxModules[i].items.length; y++) {
-                if (auxModules[i].items[y].type === "topic")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
-                if (auxModules[i].items[y].type === "test")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+          if (res.data.modules.length > 0) {
+            let auxModules = res.data.modules;
+            let newModules = [];
+            for (let i = 0; i < auxModules.length; i++) {
+              auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
+              if (auxModules[i].items) {
+                for (let y = 0; y < auxModules[i].items.length; y++) {
+                  if (auxModules[i].items[y].type === "topic")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                  if (auxModules[i].items[y].type === "test")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
 
-                auxAllItems.push(auxModules[i].items[y]);
+                  auxAllItems.push(auxModules[i].items[y]);
+                }
+                newModules.push(auxModules[i]);
               }
-              newModules.push(auxModules[i]);
             }
-          }
 
-          if (location.state && location.state.courseItemId && location.state.courseItemType) {
-            if (location.state.courseItemType === "module") selectCourseItem(res.data.modules.filter((item) => item.id === location.state.courseItemId)[0]);
-            else if (location.state.courseItemType === "topic")
-              selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
-            else if (location.state.courseItemType === "test")
-              selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+            if (location.state && location.state.courseItemId && location.state.courseItemType) {
+              if (location.state.courseItemType === "module") selectCourseItem(res.data.modules.filter((item) => item.id === location.state.courseItemId)[0]);
+              else if (location.state.courseItemType === "topic")
+                selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+              else if (location.state.courseItemType === "test")
+                selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+            }
+
+            setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
+            setAllItems(auxAllItems);
+            setModules(newModules);
+            setProgress(res.data.progress);
           }
-          setAllItems(auxAllItems);
-          setModules(newModules);
-          setProgress(res.data.progress);
+        } else {
+          navigate(`/${i18n.language}/courses`, { replace: true });
         }
+      } else {
+        navigate(`/${i18n.language}/courses`, { replace: true });
       }
     } catch (err) {
       console.log(err);
     }
+  }
+
+  function canAccess(obj) {
+    console.log(obj);
+    return false;
   }
 
   function selectCourseItem(item) {

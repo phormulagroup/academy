@@ -32,7 +32,8 @@ const endpoints = {
     responsible: "/inbox/responsible",
     create: "/inbox/create",
     update: "/inbox/update",
-    delete: "/inbox/create",
+    delete: "/inbox/delete",
+    close: "/inbox/close",
   },
   user: {
     read: "/user/read",
@@ -57,6 +58,7 @@ const endpoints = {
     readBySlug: "/course/readBySlug",
     readByTopicId: "/course/readByTopicId",
     readByTestId: "/course/readByTestId",
+    report: "/course/report",
     update: "/course/update",
     updateTopic: "/course/updateTopic",
     updateProgress: "/course/updateProgress",

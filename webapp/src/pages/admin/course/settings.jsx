@@ -19,6 +19,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
 import { CgClose } from "react-icons/cg";
+import dayjs from "dayjs";
 
 export default function Settings({ course }) {
   const { languages, createLog, user, selectedLanguage } = useContext(Context);
@@ -152,10 +153,20 @@ export default function Settings({ course }) {
                 {({ getFieldValue }) =>
                   getFieldValue("settings")?.course_access_expiration ? (
                     <div className="flex flex-col gap-4">
-                      <Form.Item name={["settings", "course_access_expiration_dates", "start_date"]} label={t("Start date")} className="mb-0!">
+                      <Form.Item
+                        name={["settings", "course_access_expiration_dates", "start_date"]}
+                        label={t("Start date")}
+                        className="mb-0!"
+                        getValueProps={(value) => ({ value: value && dayjs(value) })}
+                      >
                         <DatePicker showTime size="large" className="w-full" />
                       </Form.Item>
-                      <Form.Item name={["settings", "course_access_expiration_dates", "end_date"]} label={t("End date")} className="mb-0!">
+                      <Form.Item
+                        name={["settings", "course_access_expiration_dates", "end_date"]}
+                        label={t("End date")}
+                        className="mb-0!"
+                        getValueProps={(value) => ({ value: value && dayjs(value) })}
+                      >
                         <DatePicker showTime size="large" className="w-full" />
                       </Form.Item>
                     </div>
@@ -447,7 +458,6 @@ export default function Settings({ course }) {
 
                 return (
                   <Tabs
-                    destroyInactiveTabPane={false}
                     type="editable-card"
                     activeKey={activeKey}
                     items={items}

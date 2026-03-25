@@ -43,7 +43,10 @@ export default function Settings({ data }) {
           <p className="text-[18px] font-bold">{t("Access")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">{t("Controls the acces settings of the test")}</p>
           <div className="grid grid-cols-3 gap-8">
-            <Form.Item name="access_date" label={t("Access date")} getValueProps={(value) => ({ value: value && dayjs(value) })}>
+            <Form.Item name="start_date" label={t("Access date")} getValueProps={(value) => ({ value: value && dayjs(value) })}>
+              <DatePicker format="YYYY-MM-DD HH:mm" showTime size="large" className="w-full" />
+            </Form.Item>
+            <Form.Item name="end_date" label={t("Access date")} getValueProps={(value) => ({ value: value && dayjs(value) })}>
               <DatePicker format="YYYY-MM-DD HH:mm" showTime size="large" className="w-full" />
             </Form.Item>
           </div>

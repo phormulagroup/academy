@@ -14,10 +14,12 @@ import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import dayjs from "dayjs";
 import CalendarIcon from "../../assets/Backoffice/calendar.svg?react";
+import SettingsIcon from "../../assets/Backoffice/settings.svg?react";
 import Message from "../../components/message";
+import { CgClose } from "react-icons/cg";
 
 export default function Inbox() {
-  const { user, selectedInbox, setSelectedInbox } = useContext(Context);
+  const { user, setSelectedInbox, createLog, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -57,6 +59,18 @@ export default function Inbox() {
     setIsOpenDetails(false);
   }
 
+  async function closeThread(obj) {
+    try {
+      const res = await axios.post(endpoints.inbox.close, { data: obj });
+      if (res.data.affectedRows > 0) {
+        await createLog({ id_user: user.id, action: "status", table_name: "inbox", meta_data: JSON.stringify({ ...obj, status: "closed" }), id_lang: selectedLanguage.id });
+        setData((prev) => prev.map((p) => (p.id === obj.id ? { ...p, status: "closed" } : p)));
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   return (
     <div className="p-2">
       <Message open={isOpenDetails} close={closeAction} />
@@ -71,7 +85,7 @@ export default function Inbox() {
 
       {data.length > 0 ? (
         data.map((m) => (
-          <div className="bg-white p-4 shadow-[0px_3px_6px_#00000029] rounded-[5px] flex flex-col">
+          <div className="bg-white p-4 shadow-[0px_3px_6px_#00000029] rounded-[5px] flex flex-col mb-4">
             <div className="grid grid-cols-4 gap-8 pb-4 border-b border-[#E8E9F3]">
               <div className="col-span-3 flex items-center">
                 <p className="font-bold text-[16px]">{m.title}</p>
@@ -82,6 +96,23 @@ export default function Inbox() {
                 </Tag>
                 <Avatar />
                 <p className="ml-2">{m.user_name}</p>
+
+                <Dropdown
+                  trigger={"click"}
+                  placement="bottomRight"
+                  menu={{
+                    items: [
+                      {
+                        label: t("Close"),
+                        key: `${m.id}-close`,
+                        icon: <CgClose />,
+                        onClick: () => closeThread(m),
+                      },
+                    ],
+                  }}
+                >
+                  <SettingsIcon className="ml-2! max-w-[20px] cursor-pointer" />
+                </Dropdown>
               </div>
             </div>
             <div className="grid grid-cols-4 pt-4 pb-4 border-b border-[#E8E9F3]">

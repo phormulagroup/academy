@@ -8,7 +8,7 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 export default function Status({ data, open, close, status }) {
-  const { createLog, selectedLanguage } = useContext(Context);
+  const { createLog, selectedLanguage, user } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -23,7 +23,7 @@ export default function Status({ data, open, close, status }) {
     setIsButtonLoading(true);
     try {
       const res = await axios.post(endpoints.user.changeStatus, { data: { ...data, status: values.status } });
-      await createLog({ data: { ...data, status: values.status }, table: "user", action: "status", id_lang: selectedLanguage.id });
+      await createLog({ id_user: user.id, action: "status", table_name: "user", meta_data: JSON.stringify({ ...data, status: values.status }), id_lang: selectedLanguage.id });
       console.log(res);
       setIsButtonLoading(false);
       close(true);

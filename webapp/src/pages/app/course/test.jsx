@@ -94,9 +94,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       setCountdown(minutes + ":" + seconds);
     }
 
-    if (aux.settings.access_date) {
+    if (aux.settings.start_date) {
       const date1 = dayjs();
-      const date2 = dayjs(aux.settings.access_date);
+      const date2 = dayjs(aux.settings.start_date);
 
       if (date1.diff(date2) < 0) {
         setIsAvailable(false);
@@ -105,7 +105,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
             <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-20" />
           </div>,
         );
-        startAvailableTimer(aux.settings.access_date);
+        startAvailableTimer(aux.settings.start_date);
       }
     }
 

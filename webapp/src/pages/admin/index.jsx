@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Avatar, Collapse, Divider, Empty, Pagination, Progress, Select, Table, Tag } from "antd";
-import { FaCross, FaRegUser } from "react-icons/fa";
+import { Avatar, Collapse, Divider, Dropdown, Empty, Pagination, Progress, Select, Table, Tag } from "antd";
+import { FaCross, FaRegEdit, FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
 import StudentsIcon from "../../assets/Backoffice/Total-Alunos.svg?react";
 import CoursesIcon from "../../assets/Backoffice/Cursos.svg?react";
@@ -13,11 +13,14 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import UserIcon from "../../assets/Backoffice/User-small.svg?react";
 import EmailIcon from "../../assets/Backoffice/Email-small.svg?react";
+import SettingsIcon from "../../assets/Backoffice/settings.svg?react";
 import { CheckCircle, CircleX } from "lucide-react";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import { RxSwitch } from "react-icons/rx";
+import Status from "../../components/admin/user/status";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -28,6 +31,7 @@ export default function Main() {
   const [courseActivity, setCourseActivity] = useState([]);
   const [logsData, setLogsData] = useState([]);
   const [usersData, setUsersData] = useState([]);
+  const [selectedUser, setSelectedUser] = useState({});
   const [bestStudentsData, setBestStudentsData] = useState([]);
   const [graphicCourses, setGraphicCourses] = useState({
     notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
@@ -43,8 +47,11 @@ export default function Main() {
   });
   const [colors] = useState({ create: "green", logout: "red", update: "blue", login: "green" });
   const [tables] = useState({ course_module: "course module" });
+  const [isOpenStatus, setIsOpenStatus] = useState(false);
 
   const [paginationByTable, setPaginationByTable] = useState({ bestStudents: { currentPage: 1, pageSize: 5 }, logs: { currentPage: 1, pageSize: 5 } });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     getData();
@@ -175,6 +182,32 @@ export default function Main() {
         id: obj.users[u].id,
         date: dayjs(obj.users[u].created_at).format("DD/MM/YYYY"),
         hour: dayjs(obj.users[u].created_at).format("HH:mm"),
+        actions: (
+          <div className="flex justify-end items-center">
+            <Dropdown
+              trigger={"click"}
+              placement="bottomRight"
+              menu={{
+                items: [
+                  {
+                    label: t("Change status"),
+                    key: `${obj.users[u].id}-status`,
+                    icon: <RxSwitch />,
+                    onClick: () => openStatus(obj.users[u]),
+                  },
+                  {
+                    label: t("Update"),
+                    key: `${obj.users[u].id}-udpate`,
+                    icon: <FaRegEdit />,
+                    onClick: () => navigate(`/admin/users/${obj.users[u].id}`),
+                  },
+                ],
+              }}
+            >
+              <SettingsIcon className="max-w-[15px] cursor-pointer" />
+            </Dropdown>
+          </div>
+        ),
         fullData: obj.users[u],
       });
     }
@@ -217,7 +250,23 @@ export default function Main() {
   }
 
   function calcActiveTests(obj) {
-    return 0;
+    let total = 0;
+    if (obj) {
+      for (let i = 0; i < obj.length; i++) {
+        let today = dayjs();
+        if (obj[i].settings.start_date && obj[i].settings.end_date) {
+          if (dayjs(obj[i].settings.start_date).diff(today) >= 0 && today.diff(dayjs(obj[i].settings.end_date)) >= 0) ++total;
+        } else if (obj[i].settings.start_date && !obj[i].settings.end_date) {
+          if (dayjs(obj[i].settings.start_date).diff(today) >= 0) ++total;
+        } else if (!obj[i].settings.start_date && obj[i].settings.end_date) {
+          if (today.diff(dayjs(obj[i].settings.start_date)) >= 0) ++total;
+        } else {
+          ++total;
+        }
+      }
+
+      return total;
+    }
   }
 
   function filterProgressCourses(id_course, users, courseActivity) {
@@ -263,14 +312,27 @@ export default function Main() {
         auxGraphicCoursesProgress["< 20%"].value += 1;
       }
     }
-    console.log("auxGraphicCourses:", auxGraphicCourses);
-    console.log("auxGraphicCoursesProgress:", auxGraphicCoursesProgress);
+
     setGraphicCourses(auxGraphicCourses);
     setGraphicCoursesProgress(auxGraphicCoursesProgress);
   }
 
+  function openStatus(obj) {
+    setSelectedUser(obj);
+    setIsOpenStatus(true);
+  }
+
+  function closeSatus(u) {
+    if (u) {
+      getData();
+    }
+    setSelectedUser({});
+    setIsOpenStatus(false);
+  }
+
   return (
     <div className="p-2">
+      <Status data={selectedUser} open={isOpenStatus} close={closeSatus} />
       <p className="text-[18px] font-bold mb-4">Overview e-Learning</p>
       <div className="grid grid-cols-2 gap-4">
         <div>

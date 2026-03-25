@@ -27,6 +27,7 @@ import i18n from "../../../utils/i18n";
 import certificate from "../../../utils/certificate";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
+import Countdown from "../../../components/countdown";
 
 export default function CourseDetails() {
   const { user, languages, windowDimension } = useContext(Context);
@@ -53,31 +54,37 @@ export default function CourseDetails() {
       });
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
-        let auxObj = {
-          course: res.data.courses[c],
-        };
-        if (res.data.progress.length > 0) auxObj.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id);
-        if (res.data.modules.length > 0) {
-          let auxModules = res.data.modules.filter((m) => m.id_course === res.data.courses[c].id);
-          let newModules = [];
-          for (let i = 0; i < auxModules.length; i++) {
-            auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
-            if (auxModules[i].items) {
-              for (let y = 0; y < auxModules[i].items.length; y++) {
-                if (auxModules[i].items[y].type === "topic")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
-                if (auxModules[i].items[y].type === "test")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+        let auxCourse = res.data.courses[c];
+        auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
+        console.log(auxCourse.settings.country);
+        if (auxCourse.settings.country_limit && auxCourse.settings.country && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
+
+        if (auxCourse) {
+          let auxObj = {
+            course: auxCourse,
+          };
+          if (res.data.progress.length > 0) auxObj.progress = res.data.progress.filter((p) => p.id_course === auxCourse.id);
+          if (res.data.modules.length > 0) {
+            let auxModules = res.data.modules.filter((m) => m.id_course === auxCourse.id);
+            let newModules = [];
+            for (let i = 0; i < auxModules.length; i++) {
+              auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
+              if (auxModules[i].items) {
+                for (let y = 0; y < auxModules[i].items.length; y++) {
+                  if (auxModules[i].items[y].type === "topic")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                  if (auxModules[i].items[y].type === "test")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                }
+                newModules.push(auxModules[i]);
               }
-              newModules.push(auxModules[i]);
             }
+
+            auxObj.modules = newModules;
           }
 
-          auxObj.modules = newModules;
+          auxData.push(auxObj);
         }
-        auxObj.course.settings = auxObj.course.settings ? JSON.parse(auxObj.course.settings) : null;
-
-        auxData.push(auxObj);
       }
 
       setData(auxData);
@@ -87,6 +94,20 @@ export default function CourseDetails() {
     } catch (err) {
       console.log(err);
     }
+  }
+
+  function canAccess(obj) {
+    let settings = obj.settings;
+    if (settings.course_access_expiration_dates && settings.course_access_expiration_dates.start_date) {
+      let today = dayjs();
+      if (settings.course_access_expiration_dates.start_date && dayjs(settings.course_access_expiration_dates.start_date).diff(today) > 0) {
+        return false;
+      } else if (settings.course_access_expiration_dates.end_date && dayjs(settings.course_access_expiration_dates.end_date).diff(today) < 0) {
+        return true;
+      } else if (settings.course_access_expiration_dates.end_date && dayjs(settings.course_access_expiration_dates.end_date).diff(today) >= 0) {
+        return false;
+      }
+    } else return true;
   }
 
   function calcProgress(items, modules) {
@@ -123,6 +144,10 @@ export default function CourseDetails() {
       .catch((err) => {
         console.log(err);
       });
+  }
+
+  function updateCourseAvailable(obj) {
+    setData((prev) => prev.map((item) => (item.course.id === obj.id ? { ...item, is_available: true } : obj)));
   }
 
   return (
@@ -188,14 +213,22 @@ export default function CourseDetails() {
                             <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
                           </>
                         ) : (
-                          <>
-                            <div className="flex items-center justify-center w-full mb-2 min-h-8.25">
-                              <p className="mb-2 uppercase">
-                                {calcProgress(item.progress, item.modules)}% {t("completed")}
-                              </p>
-                            </div>
-                            <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
-                          </>
+                          <div className="flex flex-col w-full mb-2 min-h-10">
+                            {item.progress?.length > 0 ? (
+                              <>
+                                <div className="flex items-center justify-center w-full mb-1">
+                                  <p className="uppercase">
+                                    {calcProgress(item.progress, item.modules)}% {t("completed")}
+                                  </p>
+                                </div>
+                                <Progress percent={calcProgress(item.progress, item.modules)} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" />
+                              </>
+                            ) : (
+                              <div className="flex items-center justify-center w-full mb-1">
+                                <p>{t("Not enrolled")}</p>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -229,17 +262,29 @@ export default function CourseDetails() {
                     </div>
                   </div>
                   <div className="p-8 flex justify-center items-center">
-                    <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
-                      {calcProgress(item.progress, item.modules) === 100 ? (
-                        <Button size="large" color="blue" variant="solid" className="w-full!">
-                          Rever
-                        </Button>
-                      ) : (
-                        <Button size="large" type="primary" className="w-full!">
-                          {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
-                        </Button>
-                      )}
-                    </Link>
+                    {canAccess(item.course) || item.is_available ? (
+                      <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
+                        {calcProgress(item.progress, item.modules) === 100 ? (
+                          <Button size="large" color="blue" variant="solid" className="w-full!">
+                            Rever
+                          </Button>
+                        ) : (
+                          <Button size="large" type="primary" className="w-full!">
+                            {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
+                          </Button>
+                        )}
+                      </Link>
+                    ) : (
+                      <div className="flex flex-col justify-center items-center">
+                        <p className="font-bold">{t("Available in")}</p>
+                        <Countdown
+                          targetDate={item.course.settings.course_access_expiration_dates.start_date}
+                          className="text-[20px]"
+                          countdownType="course"
+                          updateCourseAvailable={() => updateCourseAvailable(item.course)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

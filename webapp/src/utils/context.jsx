@@ -52,7 +52,7 @@ const ContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (Object.keys(user).length === 0) return;
-    else if (!socket.connected) socket.connect();
+    else socket.connect();
 
     socket.on("connect", () => {
       console.log("🟢 Socket ligado", socket.id);
@@ -121,24 +121,26 @@ const ContextProvider = ({ children }) => {
     });
 
     if (d.type === "message" || d.type === "thread") {
-      if (d.type === "message") {
-        setInbox((prev) =>
-          prev.filter((m) =>
-            m.id === d.meta_data.id_thread
-              ? { ...m, text: d.meta_data.text, from_id_user: d.meta_data.from_id_user, to_id_user: d.meta_data.to_id_user, unread_messages: ++m.unread_messages }
-              : m,
-          ),
-        );
+      setInbox((prev) =>
+        prev.filter((m) =>
+          m.id === d.meta_data.id_thread
+            ? prev.filter((m) =>
+                m.id === d.meta_data.id_thread
+                  ? { ...m, text: d.meta_data.text, from_id_user: d.meta_data.from_id_user, to_id_user: d.meta_data.to_id_user, unread_messages: ++m.unread_messages }
+                  : m,
+              )
+            : [...prev, d.meta_data],
+        ),
+      );
 
-        if (selectedInboxRef.current && selectedInboxRef.current.id === d.meta_data.id_thread)
-          setSelectedInbox((prev) => ({
-            ...prev,
-            text: d.meta_data.text,
-            from_id_user: d.meta_data.from_id_user,
-            to_id_user: d.meta_data.to_id_user,
-            unread_messages: ++prev.unread_messages,
-          }));
-      }
+      if (selectedInboxRef.current && selectedInboxRef.current.id === d.meta_data.id_thread)
+        setSelectedInbox((prev) => ({
+          ...prev,
+          text: d.meta_data.text,
+          from_id_user: d.meta_data.from_id_user,
+          to_id_user: d.meta_data.to_id_user,
+          unread_messages: 0,
+        }));
     } else {
       const auxNotifications = Object.assign([], notifications);
       auxNotifications.unshift(d);

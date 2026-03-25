@@ -565,4 +565,37 @@ select {
   height: 100%;
 }
 
+.tabs-report .ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.tabs-report .ant-tabs-tab {
+  background: #c5cee1 !important;
+}
+
+.tabs-report .ant-tabs-tab-active {
+  background: #8b9cc3 !important;
+}
+
+.tabs-report .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 600;
+}
+
+.tabs-report .ant-tabs-tab {
+  border: 0 !important;
+  padding: 15px 20px !important;
+}
+
+.tabs-report .ant-tabs-content-holder {
+  background-color: #8b9cc3 !important;
+  border-top-right-radius: 5px !important;
+  border-bottom-right-radius: 5px !important;
+  border-bottom-left-radius: 5px !important;
+  min-height: 200px !important;
+}
+
+.tabs-report .ant-tabs-tab-btn {
+  color: #000000 !important;
+}
+
 @import "tailwindcss";

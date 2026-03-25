@@ -54,11 +54,11 @@ const Main = () => {
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-full!">
         {windowDimension.width > 1080 ? (
-          <div className="grid grid-cols-6 w-full container mx-auto">
+          <div className="grid grid-cols-5 w-full container mx-auto">
             <Link to={`/${i18n.language}`}>
               <img src={logo} className="max-h-15" />
             </Link>
-            <div className="col-span-4 flex justify-center items-center">
+            <div className="col-span-3 flex justify-center items-center">
               <Link to={`/${i18n.language}/courses`}>Cursos</Link>
               {user && Object.keys(user).length === 0 && (
                 <>

@@ -99,7 +99,7 @@ router.post("/create", (req, res, next) => {
       console.log(data);
 
       if (!data.id_thread) {
-        const insertThread = await query("INSERT INTO thread (`title`, `id_user`) VALUES (?)", [data.title, data.from_id_user]);
+        const insertThread = await query("INSERT INTO thread SET ?", [{ title: data.title, id_user: data.from_id_user }]);
         data.id_thread = insertThread.insertId;
         delete data.title;
 
@@ -120,6 +120,18 @@ router.post("/create", (req, res, next) => {
       throw err;
     }
   });
+});
+
+router.post("/close", async (req, res, next) => {
+  console.log("//// CLOSE THREAD ////");
+  const query = util.promisify(db.query).bind(db);
+  try {
+    console.log(req.body.data);
+    const updatedRow = await query("UPDATE thread SET status = 'closed' WHERE id = ?", [req.body.data.id]);
+    res.send(updatedRow);
+  } catch (err) {
+    throw err;
+  }
 });
 
 router.post("/responsible", (req, res, next) => {

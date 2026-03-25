@@ -91,7 +91,10 @@ router.post("/login", async (req, res, next) => {
     let data = req.body.data;
     const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
     if (user.length > 0) {
+      console.log(data.password);
+      console.log(user);
       const comparePassword = await bcrypt.compare(data.password, user[0].password);
+      console.log(comparePassword);
       if (comparePassword) {
         const token = await createToken(user[0]);
         res.send({ user: user[0], token, message: "Welcome " + user[0].name + "!" });

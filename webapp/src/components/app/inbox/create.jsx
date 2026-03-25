@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { Button, Drawer, Form, Input, Select } from "antd";
+import { Button, Drawer, Form, Input, Modal, Select } from "antd";
 import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
@@ -33,17 +33,21 @@ export default function Create({ open, close, submit }) {
   }
 
   return (
-    <Drawer
+    <Modal
+      key="modal-message"
+      className="modal-message"
+      width={600}
+      style={{ minHeight: "calc(100vh - 40px)", top: 20, marginRight: 20 }}
+      onCancel={() => close()}
       open={open}
-      size={800}
-      onClose={onClose}
       maskClosable={false}
-      title={t("Create thread")}
-      extra={[
-        <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          {t("Create")}
-        </Button>,
+      footer={[
+        <div className="flex justify-end items-center">
+          <Button className="mr-2">Cancel</Button>
+          <Button onClick={form.submit}>Send</Button>
+        </div>,
       ]}
+      title={t("New thread")}
     >
       <Form
         form={form}
@@ -60,6 +64,6 @@ export default function Create({ open, close, submit }) {
           <TipTapFormField />
         </Form.Item>
       </Form>
-    </Drawer>
+    </Modal>
   );
 }

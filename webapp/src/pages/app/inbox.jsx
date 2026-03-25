@@ -75,7 +75,9 @@ export default function Inbox() {
             <p className="text-center font-bold text-2xl mb-4">{t("Inbox")}</p>
             {user.id_role !== 1 && (
               <div className="flex justify-end items-center w-full">
-                <Button size="large">Create thread</Button>
+                <Button size="large" onClick={() => setIsOpenCreate(true)}>
+                  Create thread
+                </Button>
               </div>
             )}
           </div>

@@ -46,30 +46,37 @@ export default function CourseDetails() {
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id, id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } });
+
       if (res.data.course.length > 0) {
-        res.data.course[0].settings = res.data.course[0].settings ? JSON.parse(res.data.course[0].settings) : null;
-        res.data.course[0].material = res.data.course[0].material ? JSON.parse(res.data.course[0].material) : null;
-        res.data.course[0].objection = res.data.course[0].objection ? JSON.parse(res.data.course[0].objection) : null;
-        setData({ course: res.data.course[0], modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
+        let auxCourse = res.data.course[0];
+        auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
+        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
+        if (auxCourse) {
+          auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
+          auxCourse.objection = auxCourse.objection ? JSON.parse(auxCourse.objection) : null;
 
-        if (res.data.modules.length > 0) {
-          let auxModules = res.data.modules;
-          let newModules = [];
-          for (let i = 0; i < auxModules.length; i++) {
-            auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
-            if (auxModules[i].items) {
-              for (let y = 0; y < auxModules[i].items.length; y++) {
-                if (auxModules[i].items[y].type === "topic")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
-                if (auxModules[i].items[y].type === "test")
-                  auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+          if (res.data.modules.length > 0) {
+            let auxModules = res.data.modules;
+            let newModules = [];
+            for (let i = 0; i < auxModules.length; i++) {
+              auxModules[i].items = auxModules[i].items ? JSON.parse(auxModules[i].items) : null;
+              if (auxModules[i].items) {
+                for (let y = 0; y < auxModules[i].items.length; y++) {
+                  if (auxModules[i].items[y].type === "topic")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                  if (auxModules[i].items[y].type === "test")
+                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                }
+                newModules.push(auxModules[i]);
               }
-              newModules.push(auxModules[i]);
             }
-          }
 
-          setModules(newModules);
-          setProgress(res.data.progress);
+            setModules(newModules);
+            setProgress(res.data.progress);
+          }
+          setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
+        } else {
+          navigate(`/${i18n.language}/courses`, { replace: true });
         }
       } else {
         navigate(`/${i18n.language}/courses`, { replace: true });
@@ -108,6 +115,17 @@ export default function CourseDetails() {
       .then((res) => {
         console.log(res);
         setIsEnrolling(false);
+        setProgress((prev) => [
+          ...prev,
+          {
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: "enroll",
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          },
+        ]);
         navigate(`/${i18n.language}/courses/${slug}/learning`);
       })
       .catch((err) => {
@@ -194,33 +212,41 @@ export default function CourseDetails() {
                   style={{ filter: "brightness(0) saturate(100%) invert(12%) sepia(71%) saturate(4132%) hue-rotate(221deg) brightness(84%) contrast(85%)" }}
                 />
               </div>
-              <div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full">
-                <div className="flex flex-col sm:flex-row items-center justify-start mb-2">
-                  <p className="text-[#163986] text-[20px] font-bold uppercase">
-                    {calcCourseProgress(
-                      progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,
-                      data?.topics?.length,
-                      data?.tests?.length,
-                    )}
-                    % {t("Completed")}
-                  </p>
-                  {progress.length > 0 && (
-                    <p className="text-[#163986] text-sm ml-4">
-                      {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
+              {progress.length > 0 ? (
+                <div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full">
+                  <div className="flex flex-col sm:flex-row items-center justify-start mb-2">
+                    <p className="text-[#163986] text-[20px] font-bold uppercase">
+                      {calcCourseProgress(
+                        progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,
+                        data?.topics?.length,
+                        data?.tests?.length,
+                      )}
+                      % {t("Completed")}
                     </p>
-                  )}
+                    {progress.length > 0 && (
+                      <p className="text-[#163986] text-sm ml-4">
+                        {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
+                      </p>
+                    )}
+                  </div>
+                  <Progress
+                    strokeColor={"#2F8351"}
+                    railColor={"#FFF"}
+                    percent={
+                      (100 * progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) /
+                      (data?.topics?.length + data?.tests?.length)
+                    }
+                    className="w-full!"
+                    showInfo={false}
+                  />
                 </div>
-                <Progress
-                  strokeColor={"#2F8351"}
-                  railColor={"#FFF"}
-                  percent={
-                    (100 * progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) /
-                    (data?.topics?.length + data?.tests?.length)
-                  }
-                  className="w-full!"
-                  showInfo={false}
-                />
-              </div>
+              ) : (
+                <div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full justify-center items-start">
+                  <div className="flex items-center justify-start mb-2">
+                    <p className="font-bold text-[20px]">{t("Not enrolled")}</p>
+                  </div>
+                </div>
+              )}
               <div className="p-2 flex justify-center items-center">
                 {calcCourseProgress(
                   progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,

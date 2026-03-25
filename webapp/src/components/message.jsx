@@ -47,7 +47,7 @@ export default function Message({ open, close }) {
     try {
       setIsLoading(true);
       await axios.post(endpoints.inbox.responsible, { data: { id_user_responsible: user.id, id_thread: selectedInbox.id } });
-      setInbox((prev) => prev.map((m) => (m.id === selectedInbox.id ? { ...data, id_user_responsible: user.id } : data)));
+      setInbox((prev) => prev.map((m) => (m.id === selectedInbox.id ? { ...selectedInbox, id_user_responsible: user.id } : data)));
       selectedInbox.id_user_responsible = user.id;
     } catch (err) {
       console.log(err);
