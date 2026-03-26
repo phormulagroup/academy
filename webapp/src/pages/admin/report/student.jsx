@@ -39,10 +39,10 @@ export default function ReportStudent({ data }) {
         </div>
         {data.users &&
           data.users.map((u) => (
-            <Link>
+            <Link to={`/admin/users/${u.id}`}>
               <div className="bg-white border border-solid border-[#707070] rounded-[5px] p-4 flex justify-start items-center">
                 <div
-                  className="w-[40px] h-[40px] min-w-[40px] min-h-[40px] rounded-full bg-center bg-cover flex justify-center items-center mr-2"
+                  className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
                   style={{ backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none", backgroundColor: u.img ? "transparent" : "#ccc" }}
                 >
                   {!u.img && (

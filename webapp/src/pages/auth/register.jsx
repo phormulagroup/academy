@@ -136,12 +136,18 @@ export default function Register() {
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
                     <DatePicker size="large" placeholder="Select birth date" className="w-full" />
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                  <Form.Item label={t("Bial's starting date")} name="bial_starting_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Bial's starting date")}
+                    name="bial_starting_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({ value: value && dayjs(value) })}
+                  >
                     <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
                   </Form.Item>
                 </div>

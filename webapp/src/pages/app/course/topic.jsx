@@ -1,42 +1,63 @@
 import { useTranslation } from "react-i18next";
 import { Render } from "@puckeditor/core";
 import { configRender } from "../../../components/admin/editor";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Player from "@vimeo/player";
 import { RxLockClosed } from "react-icons/rx";
+import PuckRender from "../../../components/app/puckRender";
 
-const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, modules, allItems }) => {
+const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, modules, allItems, collapsed }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const { t } = useTranslation();
 
+  const playerRef = useRef(null);
+
   useEffect(() => {
     setAllowNext(false);
     setIsTopicLocked(false);
+    setIsVideoCompleted(false);
 
-    if (selectedCourseItem.type === "topic") {
-      const iframe = document.querySelector('iframe[src*="player.vimeo.com"]');
-      // If the topic is already completed, allow to go to the next topic/test
-      if (progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === selectedCourseItem.id).length > 0) {
+    if (selectedCourseItem.type !== "topic") return;
+    const iframe = document.querySelector('iframe[src*="player.vimeo.com"]');
+
+    // If the topic is already completed, allow to go to the next topic/test
+    if (progress.filter((p) => p.activity_type === "topic" && p.id_course_topic === selectedCourseItem.id).length > 0) {
+      setAllowNext(true);
+      return;
+    }
+
+    // If the course progress is free, allow to go to the next topic/test
+    if (!course.settings || (course.settings && course.settings.progression_type === "free")) {
+      if (!iframe) {
         setAllowNext(true);
         return;
+      } else {
+        setAllowNext(false);
       }
+    }
 
-      // If the test progress is free, allow to go to the next topic/test
-      if (!course.settings || (course.settings && course.settings.progression_type === "free")) {
+    //If the course progress is linear
+    if (course.settings && course.settings.progression_type === "linear") {
+      let findIndex = allItems.findIndex((i) => i.id === selectedCourseItem.id && i.type === selectedCourseItem.type);
+      if (findIndex === 0) {
         if (!iframe) {
           setAllowNext(true);
           return;
         } else {
           setAllowNext(false);
         }
-      }
+      } else {
+        let previousItem = allItems[findIndex - 1];
+        let previousCompleted = progress.filter(
+          (p) =>
+            p.is_completed === 1 &&
+            ((p.activity_type === "topic" && p.id_course_topic === previousItem.id) || (p.activity_type === "test" && p.id_course_test === previousItem.id)),
+        ).length;
 
-      if (course.settings && course.settings.progression_type === "linear") {
-        let findIndex = allItems.findIndex((i) => i.id === selectedCourseItem.id && i.type === selectedCourseItem.type);
-        if (findIndex === 0) {
+        if (previousCompleted > 0) {
           if (!iframe) {
             setAllowNext(true);
             return;
@@ -44,51 +65,44 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
             setAllowNext(false);
           }
         } else {
-          let previousItem = allItems[findIndex - 1];
-          let previousCompleted = progress.filter(
-            (p) =>
-              p.is_completed === 1 &&
-              ((p.activity_type === "topic" && p.id_course_topic === previousItem.id) || (p.activity_type === "test" && p.id_course_test === previousItem.id)),
-          ).length;
-
-          if (previousCompleted > 0) {
-            if (!iframe) {
-              setAllowNext(true);
-              return;
-            } else {
-              setAllowNext(false);
-            }
-          } else {
-            setAllowNext(false);
-            setIsTopicLocked(true);
-          }
+          setAllowNext(false);
+          setIsTopicLocked(true);
         }
       }
-
-      if (iframe) {
-        const player = new Player(iframe);
-        let curtime = 0;
-
-        player.on("timeupdate", function (data) {
-          if (data.seconds < curtime + 1 && data.seconds > curtime) {
-            curtime = data.seconds;
-          }
-        });
-
-        player.on("seeked", function (data) {
-          if (data.seconds > curtime) {
-            player.setCurrentTime(curtime);
-          }
-        });
-
-        player.on("ended", () => {
-          console.log("ended");
-          setAllowNext(true);
-          setIsVideoCompleted(true);
-        });
-      }
     }
-  });
+
+    if (iframe) {
+      const player = new Player(iframe);
+      //let curtime = videoTimeWatched ?? 0;
+      let curtime = 0;
+      playerRef.current = player;
+
+      /*if (videoTimeWatched > 0) {
+        player.setCurrentTime(videoTimeWatched);
+      }*/
+
+      player.on("timeupdate", function (data) {
+        if (data.seconds < curtime + 1 && data.seconds > curtime) {
+          curtime = data.seconds;
+        }
+      });
+
+      player.on("seeked", function (data) {
+        if (data.seconds > curtime) {
+          player.setCurrentTime(curtime);
+        }
+      });
+
+      player.on("ended", () => {
+        setAllowNext(true);
+        setIsVideoCompleted(true);
+      });
+    }
+  }, [selectedCourseItem]);
+
+  const parsedContent = useMemo(() => {
+    return selectedCourseItem.content ? JSON.parse(selectedCourseItem.content) : {};
+  }, [selectedCourseItem.content]);
 
   useEffect(() => {
     setIsVideoCompleted(false);
@@ -111,7 +125,7 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
               </div>
             </div>
           ) : (
-            <Render key={selectedCourseItem.id} config={configRender} data={selectedCourseItem.content ? JSON.parse(selectedCourseItem.content) : {}} />
+            <PuckRender config={configRender} data={parsedContent} />
           )}
         </div>
       </div>

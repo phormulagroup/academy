@@ -218,6 +218,12 @@ select {
   border: 1px solid #2f8351 !important;
 }
 
+.collapse-result .ant-collapse-body {
+  background-color: #c5cee1;
+  border: 0 !important;
+  padding: 20px !important;
+}
+
 .collapse-result.completed .ant-collapse-body {
   background-color: #eef7f1;
 }
@@ -226,10 +232,35 @@ select {
   margin-left: 0 !important;
 }
 
-.collapse-result .ant-collapse-body {
-  background-color: #eaeaea;
+.result-tab-course-item {
+  border: 1px solid #707070;
+  border-radius: 5px;
+  background-color: #fff;
+  padding: 20px;
+}
+
+.result-tab-course-item .ant-tabs-nav {
+  max-width: 180px;
   border: 0 !important;
-  padding: 20px !important;
+}
+
+.result-tab-course-item .ant-tabs-tab .ant-tabs-tab-btn {
+  text-wrap: wrap;
+  text-align: left;
+  font-size: 14px !important;
+}
+
+.result-tab-course-item .ant-tabs-tab {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.result-tab-course-item .ant-tabs-content-holder {
+  border: 0 !important;
+}
+
+.result-tab-course-item .ant-tabs-ink-bar {
+  display: none !important;
 }
 
 .collapse-result .collapse-course .ant-collapse-header {
@@ -596,6 +627,10 @@ select {
 
 .tabs-report .ant-tabs-tab-btn {
   color: #000000 !important;
+}
+
+iframe {
+  aspect-ratio: 16/9;
 }
 
 @import "tailwindcss";

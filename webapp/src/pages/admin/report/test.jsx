@@ -43,7 +43,7 @@ export default function ReportTest({ data }) {
     console.log(obj);
     let aux = [];
     if (obj.users && obj.activity && obj.activity.length > 0) {
-      let testsActivity = obj.acitivty.filter((a) => a.activity_type === "test");
+      let testsActivity = obj.activity.filter((a) => a.activity_type === "test");
       for (let i = 0; i < testsActivity.length; i++) {
         let item = testsActivity[i];
 

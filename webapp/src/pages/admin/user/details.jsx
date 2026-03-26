@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Collapse, DatePicker, Dropdown, Form, Input, Progress, Select, Tag } from "antd";
+import { Button, Collapse, DatePicker, Dropdown, Form, Input, Progress, Select, Tabs, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -63,6 +63,9 @@ export default function UserDetails() {
               )
               .sort((a, b) => a.label.localeCompare(b.label)),
           );
+
+          delete res.data.user.password;
+          form.setFieldsValue(res.data.user);
 
           prepareData(res);
         }
@@ -145,13 +148,9 @@ export default function UserDetails() {
   function calcCourseProgress(a, b, c) {
     let progressPercentage = (100 * a) / (b + c);
     const isInteger = progressPercentage % 1 === 0;
-    return !isInteger ? (
-      <p className={"text-[12px] text-[#707070] text-nowrap mr-2"}>
-        {(Math.round(progressPercentage * 100) / 100).toFixed(2)}% {t("Completed")}
-      </p>
-    ) : (
+    return (
       <p className={`text-[12px] ${progressPercentage === 100 ? "text-[#2F8351]" : "text-[#707070]"} text-nowrap mr-2`}>
-        {progressPercentage}% {t("Completed")}
+        {!isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage}% {t("Completed")}
       </p>
     );
   }
@@ -238,12 +237,18 @@ export default function UserDetails() {
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
                     <DatePicker size="large" placeholder="Select birth date" className="w-full" />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Bial's starting date")} name="bial_starting_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Bial's starting date")}
+                    name="bial_starting_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({ value: value && dayjs(value) })}
+                  >
                     <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
                   </Form.Item>
                 </div>
@@ -288,136 +293,145 @@ export default function UserDetails() {
       {courseData.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
           <div></div>
-          <div className=" col-span-3 p-10 mt-4">
+          <div className=" col-span-3 mt-10">
             <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
-            {courseData.map((c) => (
-              <Collapse
-                key={`results-collapse-${c.course.id}`}
-                className={`${(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) / (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) === 100 ? "completed" : "ongoing"} collapse-result`}
-                size="large"
-                bordered={false}
-                items={[
-                  {
-                    key: c.course.id,
-                    label: (
-                      <div className="p-2 cursor-pointer flex items-center">
-                        <div className="flex flex-col ml-2 w-full">
-                          <div className="flex mb-4">
-                            <p className={`text-[20px] font-bold`}>{c.course.name}</p>
-                            {data?.course?.settings.progression_type === "linear"
-                              ? mInd > 0 &&
-                                c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
-                                  0 && (
-                                  <div className="flex justify-center items-center ml-4">
-                                    <RxLockClosed className="w-3.75 h-3.75" />
-                                  </div>
-                                )
-                              : null}
-                            {(100 *
-                              c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                .length) /
-                              (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) ===
-                              100 && (
-                              <div className="flex items-center w-full">
-                                <Button className="certificate-button  ml-4" onClick={() => downloadCertificate(c.course, c.progress)}>
-                                  <div className="flex justify-center items-center">
-                                    <DownloadCloudIcon className="mr-2 h-3" />
-                                    <p className="text-[12px]">{t("Certificate")}</p>
-                                  </div>
-                                </Button>
-                                <CertificateIconWhite className="ml-2 h-7" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex w-full gap-8">
-                            <div className="flex items-center">
-                              {c.progress.length > 0 && (
-                                <p className="text-[12px] text-[#707070] text-nowrap">
-                                  {t("Last activity at")} {dayjs(c.progress[c.progress.length - 1].created_at).format("YYYY-MM-DD HH:mm")}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex justify-start items-center w-full">
-                              {calcCourseProgress(
-                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                  .length,
-                                c.allItems.filter((_c) => _c.type === "topic").length,
-                                c.allItems.filter((_c) => _c.type === "test").length,
-                              )}
-                              <Progress
-                                strokeColor={"#2F8351"}
-                                railColor={"#EAEAEA"}
-                                percent={
-                                  (100 *
-                                    c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                      .length) /
-                                  (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length)
-                                }
-                                className="max-w-75"
-                                showInfo={false}
-                              />
-                            </div>
-                          </div>
+            {courseData.map((c) => {
+              const tests = c.allItems
+                .filter((_c) => _c.type === "test")
+                .map((_t, _i) => {
+                  let tries = c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id).length;
+                  let testSettings = _t.settings ? JSON.parse(_t.settings) : null;
+                  let maxTries = 0;
+                  if (testSettings) maxTries = testSettings.retries_allowed;
+                  return {
+                    key: `${_t.id}-test`,
+                    label:
+                      _i === 0 ? (
+                        <div>
+                          <p className="mt-6 text-[12px] mb-2">{t("Tests")}</p>
+                          <p>{_t.title}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p>{_t.title}</p>
+                        </div>
+                      ),
+                    children: (
+                      <div className="grid grid-cols-5">
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <p className="italic text-[11px]">Status</p>
+                          {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed && _p.id_course_test === _t.id).length > 0 ? (
+                            <>
+                              <ThumbsUp className="text-green-400 w-10 h-10" />
+                              <p className="text-sm">{t("Completed")}</p>
+                            </>
+                          ) : (
+                            <>
+                              <ThumbsDown className="text-green-400 w-10 h-10" />
+                              <p className="text-sm">{t("Not started")}</p>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <p className="text-[11px]">{t("Tries")}</p>
+                          <ThumbsUp className="text-[#010202] w-10 h-10" />
+                          <p className="text-sm">
+                            {tries}/{maxTries}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <p className="text-[11px]">{t("Time")}</p>
+                          {tries > 0 ? (
+                            <>
+                              <ThumbsUp className="text-green-400 w-10 h-10" />
+                              <p className="text-sm">{t("Completed")}</p>
+                            </>
+                          ) : (
+                            <>
+                              <ThumbsDown className="text-green-400 w-10 h-10" />
+                              <p className="text-sm">{t("Not started")}</p>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <p className="text-[11px]">Topics</p>
+                          <ThumbsUp
+                            className={`${
+                              c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length
+                                ? "text-green-400"
+                                : "text-[#010202]"
+                            } w-10 h-10`}
+                          />
+                          <p className="text-sm">
+                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "test").length}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <p className="text-[11px]">Data de início</p>
+                          <ThumbsUp className="text-green-400 w-10 h-10" />
+                          <p className="text-sm">{dayjs(c.progress.find((_p) => _p.activity_type === "enroll").created_at).format("DD/MM/YYYY")}</p>
                         </div>
                       </div>
                     ),
-                    children: (
+                  };
+                });
+
+              const tabsInside = [
+                {
+                  key: `${c.course.id}_course`,
+                  label: (
+                    <div>
+                      <p className="text-[12px] mb-2">{t("Course")}</p>
+                      <p>{c.course.name}</p>
+                    </div>
+                  ),
+                  children: (
+                    <div>
                       <div className="grid grid-cols-5">
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="italic text-[11px]">Status</p>
                           {c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
                             <>
                               <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">Passou</p>
+                              <p className="text-sm">{t("Passed")}</p>
                             </>
                           ) : (
                             <>
                               <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">A realizar</p>
+                              <p className="text-sm">{t("In progress")}</p>
                             </>
                           )}
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Teste</p>
-                          {c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">Passou</p>
-                            </>
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">A realizar</p>
-                            </>
-                          )}
+                          <p className="text-[11px]">{t("Modules")}</p>
+                          <ThumbsUp
+                            className={`${c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length === c.modules.length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                          />
+                          <p className="text-sm">
+                            {c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length}/{c.modules.length}
+                          </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Pontos</p>
-                          {c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">Passou</p>
-                            </>
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">A realizar</p>
-                            </>
-                          )}
+                          <p className="text-[11px]">Topics</p>
+                          <ThumbsUp
+                            className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                          />
+                          <p className="text-sm">
+                            {c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "topic").length}
+                          </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Tempo gasto</p>
-                          {c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">Passou</p>
-                            </>
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">A realizar</p>
-                            </>
-                          )}
+                          <p className="text-[11px]">Topics</p>
+                          <ThumbsUp
+                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                          />
+                          <p className="text-sm">
+                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "test").length}
+                          </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">Data de início</p>
@@ -425,22 +439,106 @@ export default function UserDetails() {
                           <p className="text-sm">{dayjs(c.progress.filter((_p) => _p.activity_type === "enroll")[0].created_at).format("DD/MM/YYYY")}</p>
                         </div>
                       </div>
-                    ),
-                  },
-                ]}
-                expandIconPlacement="end"
-                expandIcon={(panelProps) => {
-                  return (
-                    <div className="flex justify-center items-center">
-                      <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
-                      <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                        {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
-                      </div>
                     </div>
-                  );
-                }}
-              />
-            ))}
+                  ),
+                },
+                ...tests,
+              ];
+
+              return (
+                <Collapse
+                  key={`results-collapse-${c.course.id}`}
+                  className={`${c.progress.filter((p) => p.is_completed === 1 && p.activity_type === "course" && p.id_course === c.course.id).length > 0 ? "completed" : "ongoing"} collapse-result`}
+                  size="large"
+                  bordered={false}
+                  items={[
+                    {
+                      key: c.course.id,
+                      label: (
+                        <div className="p-2 cursor-pointer flex items-center w-full!">
+                          <div className="flex flex-col ml-2 w-full">
+                            <div className="flex mb-4">
+                              <p className={`text-[20px] font-bold`}>{c.course.name}</p>
+                              {data?.course?.settings.progression_type === "linear"
+                                ? mInd > 0 &&
+                                  c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
+                                    0 && (
+                                    <div className="flex justify-center items-center ml-4">
+                                      <RxLockClosed className="w-3.75 h-3.75" />
+                                    </div>
+                                  )
+                                : null}
+                              {(100 *
+                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                  .length) /
+                                (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) ===
+                                100 && (
+                                <div className="flex items-center w-full">
+                                  <Button className="certificate-button  ml-4" onClick={() => downloadCertificate(c.course, c.progress)}>
+                                    <div className="flex justify-center items-center">
+                                      <DownloadCloudIcon className="mr-2 h-3" />
+                                      <p className="text-[12px]">{t("Certificate")}</p>
+                                    </div>
+                                  </Button>
+                                  <CertificateIconWhite className="ml-2 h-7" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex w-full gap-8">
+                              <div className="flex items-center">
+                                {c.progress.length > 0 && (
+                                  <p className="text-[12px] text-[#707070] text-nowrap">
+                                    {t("Last activity at")} {dayjs(c.progress[c.progress.length - 1].created_at).format("YYYY-MM-DD HH:mm")}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex justify-start items-center w-full">
+                                {calcCourseProgress(
+                                  c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                    .length,
+                                  c.allItems.filter((_c) => _c.type === "topic").length,
+                                  c.allItems.filter((_c) => _c.type === "test").length,
+                                )}
+                                <Progress
+                                  strokeColor={"#2F8351"}
+                                  railColor={"#EAEAEA"}
+                                  percent={
+                                    (100 *
+                                      c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                        .length) /
+                                    (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length)
+                                  }
+                                  className="max-w-75"
+                                  showInfo={false}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ),
+                      children: (
+                        <div>
+                          <Tabs tabPlacement="start" type="card" items={tabsInside} size="large" className="result-tab-course-item" />
+                        </div>
+                      ),
+                    },
+                  ]}
+                  expandIconPlacement="end"
+                  expandIcon={(panelProps) => {
+                    return (
+                      <div className="flex justify-center items-center">
+                        <div className="mr-2">
+                          {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
+                        </div>
+                        <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                          {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       )}

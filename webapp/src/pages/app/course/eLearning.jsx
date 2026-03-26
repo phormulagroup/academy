@@ -58,13 +58,8 @@ const Learning = () => {
   const { slug } = useParams();
 
   useEffect(() => {
-    console.log("cenas");
     getData();
   }, [slug]);
-
-  useEffect(() => {
-    console.log(location);
-  }, [location]);
 
   useEffect(() => {
     calcProgress();
@@ -277,7 +272,7 @@ const Learning = () => {
   function calcProgress() {
     const completed = progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length;
     const total = data?.topics.length + data?.tests.length;
-    setProgressPercentage((100 * completed) / total);
+    setProgressPercentage(((100 * completed) / total).toFixed(2));
   }
 
   function updateProgress(newObj) {
@@ -567,10 +562,11 @@ const Learning = () => {
               <div className="p-8 lg:pl-12!">
                 {progress?.length > 0 &&
                 progress.filter(
-                  (p) => (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem.id || p.id_course_test === selectedCourseItem.id),
+                  (p) =>
+                    (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem?.id || p.id_course_test === selectedCourseItem?.id),
                 ).length > 0 ? (
                   <div className="p-4 bg-black flex justify-between items-center">
-                    <p className="text-[20px] text-white">{selectedCourseItem.title}</p>
+                    <p className="text-[20px] text-white">{selectedCourseItem?.title}</p>
                     <div className="p-4 bg-[#2F8351]">
                       <p className="text-white text-[16px]">{t("Completed")}</p>
                     </div>
@@ -601,6 +597,7 @@ const Learning = () => {
                               setAllowNext={setAllowNext}
                               modules={modules}
                               allItems={allItems}
+                              collapsed={collapsed}
                             />
                           ) : (
                             <Test

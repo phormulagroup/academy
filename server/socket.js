@@ -5,8 +5,8 @@ const connectedUsers = new Map(); // userId → {socketId, id_lang, id_role, cou
 function setupSocket(server) {
   const io = new Server(server, {
     cors: {
-      //origin: "*", // altera depois para domínio real
-      origin: "http://192.168.1.90:5173",
+      origin: "*", // altera depois para domínio real
+      //origin: "http://192.168.1.90:5173",
     },
   });
 

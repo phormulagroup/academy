@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import avatarImg from "../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
 import UserCard from "../../components/app/userCard";
+import dayjs from "dayjs";
 
 export default function Account() {
   const { user, languages } = useContext(Context);
@@ -104,12 +105,18 @@ export default function Account() {
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
                     <DatePicker size="large" placeholder="Select birth date" className="w-full" />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Bial's starting date")} name="bial_starting_date" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Bial's starting date")}
+                    name="bial_starting_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({ value: value && dayjs(value) })}
+                  >
                     <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
                   </Form.Item>
                 </div>
