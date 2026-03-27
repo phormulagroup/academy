@@ -56,8 +56,8 @@ export default function CourseDetails() {
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxCourse = res.data.courses[c];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
-        console.log(auxCourse.settings.country);
-        if (auxCourse.settings.country_limit && auxCourse.settings.country && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
+
+        if (user.id_role !== 1 && auxCourse.settings.country_limit && auxCourse.settings.country && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
 
         if (auxCourse) {
           let auxObj = {

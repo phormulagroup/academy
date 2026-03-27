@@ -63,16 +63,10 @@ export default function Register() {
             navigate(`/${i18n.language}/login`, { replace: true });
             setIsButtonLoading(false);
           }, 1500);
-        } else if (res.data.message) {
-          messageApi.open({
-            type: "error",
-            content: t(res.data.message),
-          });
-          setIsButtonLoading(false);
         } else {
           messageApi.open({
             type: "error",
-            content: t("Something went wrong, try again later."),
+            content: t(res.data.message ?? "Something went wrong, try again later."),
           });
           setIsButtonLoading(false);
         }

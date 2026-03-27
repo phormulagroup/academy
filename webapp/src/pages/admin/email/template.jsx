@@ -18,7 +18,7 @@ import { RxReload } from "react-icons/rx";
 import { useNavigate } from "react-router-dom";
 
 export default function Template() {
-  const { user } = useContext(Context);
+  const { selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -31,12 +31,12 @@ export default function Template() {
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [selectedLanguage]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.email.read)
+      .get(endpoints.email.readByLang, { params: { id_lang: selectedLanguage.id } })
       .then((res) => {
         setData(res.data);
         prepareData(res.data);

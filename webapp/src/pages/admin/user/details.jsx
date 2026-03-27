@@ -92,7 +92,7 @@ export default function UserDetails() {
 
         if (course.settings && course.settings.country_limit && !course.settings.country.includes(res.data.user.country)) continue;
 
-        let courseModules = res.data.modules.filter((m) => m.id_course === res.data.courses[c].id);
+        let courseModules = res.data.modules.filter((m) => m.id_course === course.id);
         if (courseModules.length > 0) {
           let newModules = [];
           for (let i = 0; i < courseModules.length; i++) {
@@ -110,14 +110,12 @@ export default function UserDetails() {
             }
           }
 
-          aux.course = res.data.courses[c];
+          aux.course = course;
           aux.modules = newModules;
-          aux.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id && p.id_user === parseInt(id));
+          aux.progress = res.data.progress.filter((p) => p.id_course === course.id && p.id_user === parseInt(id));
           aux.allItems = auxAllItems;
           auxCourse.push(aux);
         }
-
-        console.log(auxCourse);
 
         setCourseData(auxCourse);
       }

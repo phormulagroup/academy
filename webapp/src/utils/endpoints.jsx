@@ -72,6 +72,7 @@ const endpoints = {
   email: {
     read: "/email/read",
     readById: "/email/readById",
+    readByLang: "/email/readByLang",
     update: "/email/update",
     create: "/email/create",
     delete: "/email/delete",

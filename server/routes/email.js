@@ -36,6 +36,22 @@ router.get("/read", (req, res, next) => {
   });
 });
 
+router.get("/readByLang", (req, res, next) => {
+  console.log("---- READ EMAIL TEMPLATE ----");
+
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    try {
+      const query = util.promisify(conn.query).bind(conn);
+      const rows = await query("SELECT * FROM email_template WHERE id_lang = ?", req.query.id_lang);
+      res.send(rows);
+      conn.release();
+    } catch (err) {
+      throw err;
+    }
+  });
+});
+
 router.get("/readById", (req, res, next) => {
   console.log("---- READ EMAIL TEMPLATE ----");
 
