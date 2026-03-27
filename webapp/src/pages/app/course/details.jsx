@@ -90,6 +90,10 @@ export default function CourseDetails() {
   }
 
   function calcCourseProgress(a, b, c) {
+    console.log(progress);
+    console.log(a);
+    console.log(b);
+    console.log(c);
     let progressPercentage = (100 * a) / (b + c);
     const isInteger = progressPercentage % 1 === 0;
     return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;

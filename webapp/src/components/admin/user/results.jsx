@@ -1,10 +1,16 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Avatar, Button, Collapse, Divider } from "antd";
+import { FaRegUser } from "react-icons/fa";
+import { useContext } from "react";
+import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
+
+import { Context } from "../../../utils/context";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import avatarImg from "../../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
+import i18n from "../../../utils/i18n";
 
 export default function Card({ user, courses, scrollToResults }) {
   const { t } = useTranslation();
@@ -27,18 +33,18 @@ export default function Card({ user, courses, scrollToResults }) {
       </Button>
       <div className="flex justify-center items-center gap-4 mt-6!">
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.length}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Course(s)")}</p>
+          <p className="text-[40px] font-bold text-center">{courses.length}</p>
+          <p className="text-[#707C87] text-sm text-center">{t("Course(s)")}</p>
         </div>
         <Divider orientation="vertical" className="m-0! h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Completed")}</p>
+          <p className="text-[40px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
+          <p className="text-[#707C87] text-sm text-center">{t("Completed")}</p>
         </div>
         <Divider orientation="vertical" className="m-0!  h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Certificate(s)")}</p>
+          <p className="text-[40px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
+          <p className="text-[#707C87] text-sm text-center">{t("Certificate(s)")}</p>
         </div>
       </div>
     </div>

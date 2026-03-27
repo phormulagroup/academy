@@ -10,7 +10,7 @@ import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { useNavigate } from "react-router-dom";
-import UserCard from "../../components/app/userCard";
+import UserCard from "../../components/app/user/card";
 import i18n from "../../utils/i18n";
 import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineCheck } from "react-icons/ai";
 import { RxCheck, RxChevronDown, RxChevronUp, RxLockClosed } from "react-icons/rx";

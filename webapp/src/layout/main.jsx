@@ -59,11 +59,15 @@ const Main = () => {
               <img src={logo} className="max-h-15" />
             </Link>
             <div className="col-span-3 flex justify-center items-center">
-              <Link to={`/${i18n.language}/courses`}>Cursos</Link>
-              {user && Object.keys(user).length === 0 && (
+              {user && Object.keys(user).length === 0 ? (
                 <>
-                  <span className="mx-2">|</span>
                   <Link to={`/${i18n.language}/login`}>{t("Login")}</Link>
+                  <span className="mx-2">|</span>
+                  <Link to={`/${i18n.language}/register`}>{t("Register")}</Link>
+                </>
+              ) : (
+                <>
+                  <Link to={`/${i18n.language}/courses`}>{t("Courses")}</Link>
                 </>
               )}
             </div>

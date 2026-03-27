@@ -65,6 +65,11 @@ const Learning = () => {
     calcProgress();
   }, [progress]);
 
+  useEffect(() => {
+    console.log(selectedCourseItem);
+    console.log(progress);
+  }, [selectedCourseItem]);
+
   async function getData() {
     try {
       const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id, id_lang: user.id_lang } });
@@ -134,10 +139,9 @@ const Learning = () => {
   function next(changeItem, itemMetaData) {
     let auxData = [];
     const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
-    let findInProgress = progress.filter((p) =>
-      p.activity_type === "topic" ? p.id_course_topic === selectedCourseItem.id : p.id_course_test === selectedCourseItem.id && p.is_completed === 1,
-    );
+    let findInProgress = progress.filter((p) => p[`id_course_${selectedCourseItem.type}`] === selectedCourseItem.id && p.is_completed === 1);
     let goToNextModule = false;
+    console.log(findInProgress);
     if (findInProgress.length === 0) {
       if (
         selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
@@ -152,7 +156,7 @@ const Learning = () => {
             id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
             id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
-            meta_data: selectedCourseItem.type === "test" && itemMetaData ? JSON.stringify(itemMetaData) : null,
+            meta_data: itemMetaData ? JSON.stringify(itemMetaData) : null,
             created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
@@ -194,7 +198,7 @@ const Learning = () => {
             id_course_test: selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
             id_course_module: moduleSelectedCourseItem.id,
             is_completed: 1,
-            meta_data: selectedCourseItem.type === "test" && metaData ? JSON.stringify(metaData) : null,
+            meta_data: itemMetaData ? JSON.stringify(itemMetaData) : null,
             created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
@@ -348,6 +352,7 @@ const Learning = () => {
                       size="large"
                       bordered={false}
                       items={modules.map((item, mInd) => {
+                        console.log(item.items);
                         return {
                           key: item.id,
                           label: (
@@ -376,7 +381,7 @@ const Learning = () => {
                             <div className="flex flex-col">
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
-                                  {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+                                  {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
                                     <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
@@ -562,8 +567,7 @@ const Learning = () => {
               <div className="p-8 lg:pl-12!">
                 {progress?.length > 0 &&
                 progress.filter(
-                  (p) =>
-                    (p.activity_type === "topic" || p.activity_type === "test") && (p.id_course_topic === selectedCourseItem?.id || p.id_course_test === selectedCourseItem?.id),
+                  (p) => p.activity_type === selectedCourseItem?.type && p[`id_course_${selectedCourseItem?.type}`] === selectedCourseItem?.id && p.is_completed === 1,
                 ).length > 0 ? (
                   <div className="p-4 bg-black flex justify-between items-center">
                     <p className="text-[20px] text-white">{selectedCourseItem?.title}</p>

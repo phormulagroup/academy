@@ -5,12 +5,12 @@ import { FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
 import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
 
-import { Context } from "../../utils/context";
+import { Context } from "../../../utils/context";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import avatarImg from "../../assets/Female.svg";
+import avatarImg from "../../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
-import i18n from "../../utils/i18n";
+import i18n from "../../../utils/i18n";
 
 export default function UserCard({ courses }) {
   const { user } = useContext(Context);

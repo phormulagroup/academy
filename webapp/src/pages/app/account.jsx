@@ -12,7 +12,7 @@ import endpoints from "../../utils/endpoints";
 import { useNavigate } from "react-router-dom";
 import avatarImg from "../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
-import UserCard from "../../components/app/userCard";
+import UserCard from "../../components/app/user/card";
 import dayjs from "dayjs";
 
 export default function Account() {

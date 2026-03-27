@@ -89,7 +89,7 @@ export default function ReportCourse({ data }) {
           approved: approved.length,
           repproved: repproved,
           students: students.length,
-          percentage: approved.length > 0 ? (approved.length * 100) / students.length : 0,
+          percentage: parseFloat(approved.length > 0 ? (approved.length * 100) / students.length : 0).toFixed(2) + "%",
           country: course.settings.country_limit ? course.settings.country.join(", ") : t("All"),
         });
       }

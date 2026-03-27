@@ -218,6 +218,11 @@ select {
   border: 1px solid #2f8351 !important;
 }
 
+.ant-collapse-body {
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
 .collapse-result .ant-collapse-body {
   background-color: #c5cee1;
   border: 0 !important;
@@ -239,8 +244,8 @@ select {
   padding: 20px;
 }
 
-.result-tab-course-item .ant-tabs-nav {
-  max-width: 180px;
+.result-tab-course-item > .ant-tabs-nav {
+  max-width: 220px;
   border: 0 !important;
 }
 
@@ -248,6 +253,42 @@ select {
   text-wrap: wrap;
   text-align: left;
   font-size: 14px !important;
+}
+
+.result-tab-course-item .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #000 !important;
+}
+
+.result-tab-course-item .ant-tabs-tab-active .ant-tabs-tab-btn:hover {
+  color: #00b9d6 !important;
+}
+
+.result-tab-course-item .ant-tabs-tab-btn {
+  width: 100%;
+}
+
+.result-tab-course-item .ant-tabs-tab .ant-tabs-tab-btn .course-title {
+  padding: 10px;
+  border: 1px dashed #707070;
+  border-radius: 5px;
+}
+
+.result-tab-course-item .ant-tabs-tab-active .course-title {
+  background: #00b9d6;
+  color: #fff !important;
+  border: 1px solid #00b9d6 !important;
+}
+
+.result-tab-course-item .ant-tabs-tab .ant-tabs-tab-btn .test-title {
+  padding: 10px;
+  border: 1px dashed #707070;
+  border-radius: 5px;
+}
+
+.result-tab-course-item .ant-tabs-tab-active .test-title {
+  background: #00b9d6;
+  color: #fff !important;
+  border: 1px solid #00b9d6 !important;
 }
 
 .result-tab-course-item .ant-tabs-tab {
@@ -293,6 +334,10 @@ select {
 
 .collapse-course .ant-collapse-expand-icon {
   margin-left: 0 !important;
+}
+
+.collapse-result .ant-collapse-panel {
+  border-radius: 5px !important;
 }
 
 .collapse-course .ant-collapse-body {

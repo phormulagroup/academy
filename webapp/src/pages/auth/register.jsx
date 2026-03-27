@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Footer } from "antd/es/layout/layout";
-import { Button, Checkbox, DatePicker, Divider, Form, Input, message, Select } from "antd";
+import { Button, Checkbox, DatePicker, Divider, Dropdown, Form, Input, message, Select } from "antd";
 import { FaChevronRight } from "react-icons/fa";
 import { TfiMicrosoftAlt } from "react-icons/tfi";
 import logoPhormula from "../../assets/logo-phormula.svg";
@@ -21,23 +21,28 @@ import i18n from "../../utils/i18n";
 
 export default function Register() {
   const { t } = useTranslation();
-  const { languages, messageApi } = useContext(Context);
-  const [countries] = useState(
-    languages
-      .flatMap((l) =>
-        JSON.parse(l.country).map((c) => ({
-          value: c,
-          label: t(`${c}`),
-          id_lang: l.id,
-        })),
-      )
-      .sort((a, b) => a.label.localeCompare(b.label)),
-  );
+  const { setIsLoadingLanguage, languages, messageApi } = useContext(Context);
+  const [countries, setCountries] = useState([]);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let auxCountries = JSON.parse(languages.filter((l) => l.code === i18n.language)[0].country);
+    let auxLanguage = languages.filter((l) => l.code === i18n.language)[0];
+    if (auxCountries.length > 0)
+      setCountries(
+        auxCountries
+          .map((c) => ({
+            value: c,
+            label: t(`${c}`),
+            id_lang: auxLanguage.id,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
+      );
+  }, [i18n.language]);
 
   function submit(values) {
     setIsButtonLoading(true);
@@ -83,10 +88,44 @@ export default function Register() {
       });
   }
 
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+    navigate(`/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`);
+    setIsLoadingLanguage(true);
+    setTimeout(() => {
+      setIsLoadingLanguage(false);
+    }, 1500);
+  };
+
   return (
     <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
-        <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15">
+        <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15 relative">
+          <div className="absolute right-[-30px] top-[-18px]">
+            <Dropdown
+              menu={{
+                items: languages.map((item) => ({
+                  key: item.code,
+                  label: (
+                    <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                      <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
+                      <p>{item.name}</p>
+                    </div>
+                  ),
+                })),
+              }}
+              trigger={["click"]}
+              placement="bottomRight"
+            >
+              <div className="flex justify-center items-center cursor-pointer border leading-1 p-2 rounded-full bg-white">
+                <div
+                  className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
+                  style={{ backgroundImage: `url(${languages.filter((l) => l.code === i18n.language)[0].flag})` }}
+                ></div>
+                <p>{i18n.language.toUpperCase()}</p>
+              </div>
+            </Dropdown>
+          </div>
           <div className="flex flex-col p-6">
             <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
             <Form
@@ -105,14 +144,8 @@ export default function Register() {
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                  <Form.Item name="country" label={t("Country")} rules={[{ required: false }]} className="mb-0!">
-                    <Select
-                      size="large"
-                      placeholder={t("Choose a country")}
-                      showSearch={{ optionFilterProp: "label" }}
-                      allowClear
-                      options={countries.map((item) => ({ label: item.label, value: item.value }))}
-                    />
+                  <Form.Item name="country" label={t("Country")} rules={[{ required: true }]} className="mb-0!">
+                    <Select size="large" placeholder={t("Choose a country")} showSearch={{ optionFilterProp: "label" }} allowClear options={countries} />
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">

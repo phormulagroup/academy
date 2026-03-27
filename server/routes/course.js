@@ -174,8 +174,13 @@ router.get("/report", async (req, res) => {
         "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_module.is_deleted = 0 AND course_topic.is_deleted = 0 AND course.is_deleted = 0; " +
         "SELECT course_test.*, course_module.id_course FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
         "LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course.is_deleted = 0; " +
-        "SELECT course_user_activity.*, user.name as `user_name` FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
-        "LEFT JOIN user ON user.id = course_user_activity.id_user WHERE course.id_lang = ? ORDER BY course_user_activity.created_at DESC; ",
+        "SELECT cua.*, course_test.title as `test_title`, user.name as `user_name` FROM course_user_activity cua LEFT JOIN course ON course.id = cua.id_course " +
+        "LEFT JOIN course_module ON cua.id_course_module = course_module.id LEFT JOIN course_topic ON cua.id_course_topic = course_topic.id " +
+        "LEFT JOIN course_test ON cua.id_course_test = course_test.id LEFT JOIN user ON user.id = cua.id_user " +
+        "WHERE course.id_lang = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
+        "AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
+        "AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL) " +
+        "ORDER BY cua.created_at DESC; ",
       [req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang, req.query.id_lang],
     );
 

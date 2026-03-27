@@ -48,18 +48,18 @@ export default function ReportTest({ data }) {
         let item = testsActivity[i];
 
         item.meta_data = item.meta_data && typeof item.meta_data === "string" ? JSON.parse(item.meta_data) : item.meta_data;
-
+        console.log(item);
         aux.push({
           id: item.id,
           id_course: obj.courses.filter((c) => c.id === item.id_course)[0].id,
           course: obj.courses.filter((c) => c.id === item.id_course)[0].name,
-          name: item.name,
-          date: dayjs(item.created_at).form("DD/MM/YYYY"),
+          name: item.test_title,
+          date: item.created_at ? dayjs(item.created_at).format("DD/MM/YYYY") : item.created_at,
           user_name: obj.users.filter((u) => u.id === item.id_user)[0].name,
           user_email: obj.users.filter((u) => u.id === item.id_user)[0].email,
           score: `${item.meta_data.items.filter((q) => q.is_correct).length}/${item.meta_data.items.length}`,
-          percentage: item.meta_data.items.length > 0 ? (item.meta_data.items.filter((q) => q.is_correct).length * 100) / item.meta_data.items.length : 0,
-          time: item.meta_data.time,
+          percentage: item.meta_data.items.length > 0 ? `${(item.meta_data.items.filter((q) => q.is_correct).length * 100) / item.meta_data.items.length}%` : "0%",
+          time: item.meta_data.time >= 60 ? `${Math.floor(item.meta_data.time / 60)} min` : `${item.meta_data.time} s`,
           approved: item.is_completed ? "yes" : "no",
         });
       }
@@ -157,6 +157,7 @@ export default function ReportTest({ data }) {
               title: t("Test"),
               dataIndex: "name",
               key: "name",
+              width: 240,
             },
             {
               title: t("Date"),

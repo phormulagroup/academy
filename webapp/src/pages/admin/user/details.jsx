@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
 import { Button, Collapse, DatePicker, Dropdown, Form, Input, Progress, Select, Tabs, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
@@ -22,6 +22,12 @@ import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import dayjs from "dayjs";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
+import TimeIcon from "../../../assets/Backoffice/Tempo.svg?react";
+import PassedIcon from "../../../assets/Backoffice/Status-01.svg?react";
+import NotPassedIcon from "../../../assets/Backoffice/Status-02.svg?react";
+import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
+import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
+import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
 
 export default function UserDetails() {
   const { user, languages } = useContext(Context);
@@ -31,17 +37,16 @@ export default function UserDetails() {
   const [courseData, setCourseData] = useState([]);
   const [countries, setCountries] = useState([]);
 
+  const resultsRef = useRef();
   const { t } = useTranslation();
-
   const { id } = useParams();
-
   const [form] = Form.useForm();
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user.id_role === 1 || user.id_role === 2) getData();
-  }, [user]);
+    getData();
+  }, [id]);
 
   function getData() {
     setIsLoading(true);
@@ -82,7 +87,10 @@ export default function UserDetails() {
       for (let c = 0; c < res.data.courses.length; c++) {
         let aux = {};
         let auxAllItems = [];
-        aux.settings = aux.settings ? JSON.parse(aux.settings) : null;
+        let course = res.data.courses[c];
+        course.settings = course.settings ? JSON.parse(course.settings) : null;
+
+        if (course.settings && course.settings.country_limit && !course.settings.country.includes(res.data.user.country)) continue;
 
         let courseModules = res.data.modules.filter((m) => m.id_course === res.data.courses[c].id);
         if (courseModules.length > 0) {
@@ -104,7 +112,7 @@ export default function UserDetails() {
 
           aux.course = res.data.courses[c];
           aux.modules = newModules;
-          aux.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id);
+          aux.progress = res.data.progress.filter((p) => p.id_course === res.data.courses[c].id && p.id_user === parseInt(id));
           aux.allItems = auxAllItems;
           auxCourse.push(aux);
         }
@@ -114,35 +122,6 @@ export default function UserDetails() {
         setCourseData(auxCourse);
       }
     }
-  }
-
-  function calcProgress(items, progress) {
-    if (items && items.length > 0) {
-      let completed = items
-        .map(
-          (item) =>
-            progress.filter(
-              (p) =>
-                p.is_completed === 1 &&
-                p.id_course_module === item.id_course_module &&
-                p.activity_type === item.type &&
-                (item.id === p.id_course_topic || item.id === p.id_course_test),
-            ).length,
-        )
-        .reduce((acc, v) => acc + v, 0);
-
-      let progressPercentage = (100 * completed) / items.length;
-      const isInteger = progressPercentage % 1 === 0;
-      return (
-        <p className="text-white">
-          <span className="font-bold uppercase">
-            {!isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage}% {t("Completed")}
-          </span>{" "}
-          | {completed}/{items.length} {t("Steps")}
-        </p>
-      );
-    }
-    return <p></p>;
   }
 
   function calcCourseProgress(a, b, c) {
@@ -156,7 +135,6 @@ export default function UserDetails() {
   }
 
   function downloadCertificate(item, progress) {
-    console.log(item);
     axios
       .get(endpoints.course_certificate.readById, { params: { id: item.id_course_certificate } })
       .then((res) => {
@@ -185,6 +163,11 @@ export default function UserDetails() {
     console.log(values);
   }
 
+  function scrollToResults() {
+    console.log(resultsRef);
+    resultsRef.current.scrollIntoView();
+  }
+
   return (
     <div className="flex flex-col w-full">
       <div className="flex justify-between items-center">
@@ -194,7 +177,7 @@ export default function UserDetails() {
         </p>
       </div>
       <div className="grid grid-cols-4 gap-4 mt-4">
-        <UserCard user={data} courses={courseData} />
+        <UserCard user={data} courses={courseData} scrollToResults={scrollToResults} />
         <div className="col-span-3">
           <div className="bg-[#D0D7E7] p-10 flex flex-col h-full">
             <p className="text-[26px] font-bold text-center mb-6!">{t("Account")}</p>
@@ -291,7 +274,7 @@ export default function UserDetails() {
         </div>
       </div>
       {courseData.length > 0 && (
-        <div className="grid grid-cols-4 gap-4">
+        <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
           <div></div>
           <div className=" col-span-3 mt-10">
             <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
@@ -299,17 +282,25 @@ export default function UserDetails() {
               const tests = c.allItems
                 .filter((_c) => _c.type === "test")
                 .map((_t, _i) => {
-                  let tries = c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id).length;
+                  let tries = c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id);
                   let testSettings = _t.settings ? JSON.parse(_t.settings) : null;
                   let maxTries = 0;
-                  if (testSettings) maxTries = testSettings.retries_allowed;
+                  let time = null;
+                  let questions = [];
+                  if (testSettings) {
+                    time = testSettings.time;
+                    maxTries = testSettings.retries_allowed;
+                  }
+                  if (_t.question) questions = JSON.parse(_t.question);
                   return {
                     key: `${_t.id}-test`,
                     label:
                       _i === 0 ? (
                         <div>
                           <p className="mt-6 text-[12px] mb-2">{t("Tests")}</p>
-                          <p>{_t.title}</p>
+                          <div className="test-title">
+                            <p>{_t.title}</p>
+                          </div>
                         </div>
                       ) : (
                         <div>
@@ -317,63 +308,102 @@ export default function UserDetails() {
                         </div>
                       ),
                     children: (
-                      <div className="grid grid-cols-5">
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="italic text-[11px]">Status</p>
-                          {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed && _p.id_course_test === _t.id).length > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Completed")}</p>
-                            </>
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Not started")}</p>
-                            </>
-                          )}
-                        </div>
+                      <div className="flex flex-col w-full!">
+                        <div className="grid grid-cols-5 mb-6">
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <p className="italic text-[11px]">Status</p>
+                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id).length > 0 ? (
+                              <>
+                                <p className="text-sm">
+                                  {c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id && _p.is_completed).length > 0
+                                    ? t("Completed")
+                                    : c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id && _p.is_completed === 0).length === maxTries
+                                      ? "Not passed"
+                                      : "In progress"}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-sm">{t("Not started")}</p>
+                              </>
+                            )}
+                          </div>
 
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Tries")}</p>
-                          <ThumbsUp className="text-[#010202] w-10 h-10" />
-                          <p className="text-sm">
-                            {tries}/{maxTries}
-                          </p>
-                        </div>
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <p className="text-[11px]">{t("Tries")}</p>
+                            <p className="text-sm">
+                              {tries.length}/{maxTries}
+                            </p>
+                          </div>
 
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Time")}</p>
-                          {tries > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Completed")}</p>
-                            </>
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Not started")}</p>
-                            </>
-                          )}
-                        </div>
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <p className="text-[11px]">{t("Questions")}</p>
+                            <p className="text-sm">{questions.length}</p>
+                          </div>
 
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Topics</p>
-                          <ThumbsUp
-                            className={`${
-                              c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length
-                                ? "text-green-400"
-                                : "text-[#010202]"
-                            } w-10 h-10`}
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <p className="text-[11px]">{t("Time")}</p>
+                            <p className="text-sm">{time} min</p>
+                          </div>
+
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <p className="text-[11px]">{t("Passing score")}</p>
+                            <p className="text-sm">{testSettings.passing_score ?? "80"}%</p>
+                          </div>
+                        </div>
+                        <div className="p-4 border border-dashed rounded-[5px]">
+                          <Tabs
+                            className="tabs-tries"
+                            type="card"
+                            items={tries.map((_try, _tryInd) => {
+                              let meta_data = _try.meta_data ? JSON.parse(_try.meta_data) : {};
+                              let testTime = "";
+                              let answers = [];
+                              if (meta_data) {
+                                testTime = meta_data.time > 60 ? `${Math.floor(meta_data.time / 60)} min` : `${meta_data.time} s`;
+                                answers = meta_data.items;
+                              }
+                              return {
+                                key: `${_try.id}-try`,
+                                label: `${t("Try")} nº${_tryInd + 1}`,
+                                children: (
+                                  <div className="grid grid-cols-5">
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                      <p className="text-[11px]">{t("Status")}</p>
+                                      {_try.is_completed ? <PassedIcon className="text-green-400 w-10 h-10" /> : <NotPassedIcon className="text-green-400 w-10 h-10" />}
+                                      <p className="text-sm">{_try.is_completed ? t("Passed") : t("Not passed")}</p>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                      <p className="text-[11px]">{t("Correct")}</p>
+                                      <CorrectIcon className="text-[#010202] w-10 h-10" />
+                                      <p className="text-sm">
+                                        {answers.filter((_a) => _a.is_correct).length}/{answers.length}
+                                      </p>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                      <p className="text-[11px]">{t("Time")}</p>
+                                      <TimeIcon className="text-[#010202] w-10 h-10" />
+                                      <p className="text-sm">{testTime}</p>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                      <p className="text-[11px]">{t("Date")}</p>
+                                      <CalendarIcon className="text-[#010202] w-10 h-10" />
+                                      <p className="text-sm">{dayjs(_try.created_at).format("DD/MM/YYYY")}</p>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center items-center gap-2">
+                                      <p className="text-[11px]">{t("Hour")}</p>
+                                      <ThumbsUp className="text-[#010202] w-10 h-10" />
+                                      <p className="text-sm">{dayjs(_try.created_at).format("HH:mm")}</p>
+                                    </div>
+                                  </div>
+                                ),
+                              };
+                            })}
                           />
-                          <p className="text-sm">
-                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "test").length}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Data de início</p>
-                          <ThumbsUp className="text-green-400 w-10 h-10" />
-                          <p className="text-sm">{dayjs(c.progress.find((_p) => _p.activity_type === "enroll").created_at).format("DD/MM/YYYY")}</p>
                         </div>
                       </div>
                     ),
@@ -386,23 +416,32 @@ export default function UserDetails() {
                   label: (
                     <div>
                       <p className="text-[12px] mb-2">{t("Course")}</p>
-                      <p>{c.course.name}</p>
+                      <div className="course-title">
+                        <p>{c.course.name}</p>
+                      </div>
                     </div>
                   ),
                   children: (
                     <div>
                       <div className="grid grid-cols-5">
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="italic text-[11px]">Status</p>
-                          {c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
-                            <>
-                              <ThumbsUp className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Passed")}</p>
-                            </>
+                          <p className="text-[11px]">{t("Status")}</p>
+                          {c.progress.length > 0 ? (
+                            c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
+                              <>
+                                <ThumbsUp className="text-green-400 w-10 h-10" />
+                                <p className="text-sm">{t("Passed")}</p>
+                              </>
+                            ) : (
+                              <>
+                                <ThumbsDown className="text-green-400 w-10 h-10" />
+                                <p className="text-sm">{t("In progress")}</p>
+                              </>
+                            )
                           ) : (
                             <>
                               <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("In progress")}</p>
+                              <p className="text-sm">{t("Not started")}</p>
                             </>
                           )}
                         </div>
@@ -416,7 +455,7 @@ export default function UserDetails() {
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Topics</p>
+                          <p className="text-[11px]">{t("Topics")}</p>
                           <ThumbsUp
                             className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
                           />
@@ -425,8 +464,8 @@ export default function UserDetails() {
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Topics</p>
-                          <ThumbsUp
+                          <p className="text-[11px]">{t("Tests")}</p>
+                          <TestIcon
                             className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
                           />
                           <p className="text-sm">
@@ -434,9 +473,13 @@ export default function UserDetails() {
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">Data de início</p>
-                          <ThumbsUp className="text-green-400 w-10 h-10" />
-                          <p className="text-sm">{dayjs(c.progress.filter((_p) => _p.activity_type === "enroll")[0].created_at).format("DD/MM/YYYY")}</p>
+                          <p className="text-[11px]">{t("Start Date")}</p>
+                          <CalendarIcon className="text-green-400 w-10 h-10" />
+                          <p className="text-sm">
+                            {c.progress.filter((_p) => _p.activity_type === "enroll").length > 0
+                              ? dayjs(c.progress.filter((_p) => _p.activity_type === "enroll")[0].created_at).format("DD/MM/YYYY")
+                              : t("Not started")}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -486,10 +529,12 @@ export default function UserDetails() {
                             </div>
                             <div className="flex w-full gap-8">
                               <div className="flex items-center">
-                                {c.progress.length > 0 && (
+                                {c.progress.length > 0 ? (
                                   <p className="text-[12px] text-[#707070] text-nowrap">
                                     {t("Last activity at")} {dayjs(c.progress[c.progress.length - 1].created_at).format("YYYY-MM-DD HH:mm")}
                                   </p>
+                                ) : (
+                                  <p className="text-[12px] text-[#707070] text-nowrap">{t("Not started")}</p>
                                 )}
                               </div>
                               <div className="flex justify-start items-center w-full">

@@ -116,7 +116,7 @@ export default function CourseDetails() {
       let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length;
 
       let progressPercentage = (100 * completed) / steps;
-      return progressPercentage;
+      return parseFloat(progressPercentage).toFixed(2);
     }
     return 0;
   }

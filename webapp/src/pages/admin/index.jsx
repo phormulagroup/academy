@@ -79,21 +79,19 @@ export default function Main() {
     for (let i = 0; i < obj.activity.length; i++) {
       let percentageProgress = 0;
       let topics = obj.topics.filter((t) => t.id_course === obj.activity[i].id_course);
-      let modules = obj.topics.filter((t) => t.id_module === obj.activity[i].id_module);
       let tests = obj.tests.filter((t) => t.id_course === obj.activity[i].id_course);
+
       let progressCompleted = obj.activity.filter(
-        (a) =>
-          obj.activity[i].activity_type !== "enroll" &&
-          obj.activity[i].activity_type !== "course" &&
-          a.id_user === obj.activity[i].id_user &&
-          obj.activity[i].id_course === a.id_course,
+        (a) => a.activity_type !== "enroll" && a.activity_type !== "course" && a.activity_type !== "module" && a.id_user === obj.activity[i].id_user && a.id_course === a.id_course,
       );
-      if (obj.activity[i].activity_type !== "enroll" && obj.activity[i].is_completed === 1) {
-        percentageProgress = calcCourseProgress(
-          progressCompleted.slice(i, progressCompleted.length).length,
-          topics.length + tests.length + modules.length,
-          obj.activity[i].is_completed,
-        );
+
+      if (
+        obj.activity[i].activity_type !== "enroll" &&
+        obj.activity[i].activity_type !== "course" &&
+        obj.activity[i].activity_type !== "module" &&
+        obj.activity[i].is_completed === 1
+      ) {
+        percentageProgress = calcCourseProgress(progressCompleted, topics.length + tests.length, obj.activity[i].id);
       }
 
       auxActivity.push({
@@ -109,12 +107,14 @@ export default function Main() {
             </div>
           </div>
         ),
+        course: obj.courses.filter((c) => c.id === obj.activity[i].id_course)[0].name,
         progress: (
           <div>
             <p className="text-[12px] font-bold">{obj.courses.filter((c) => c.id === obj.activity[i].id_course)[0].name}</p>
-            {obj.activity[i].activity_type !== "enroll" && obj.activity[i].activity_type !== "course" && obj.activity[i].is_completed === 1 && (
-              <Progress percent={percentageProgress} size="small" showInfo={percentageProgress === 100 ? false : true} />
-            )}
+            {obj.activity[i].activity_type !== "enroll" &&
+              obj.activity[i].activity_type !== "course" &&
+              obj.activity[i].activity_type !== "module" &&
+              obj.activity[i].is_completed === 1 && <Progress percent={percentageProgress} size="small" showInfo={percentageProgress === 100 ? false : true} />}
             <p className="text-[12px] line-clamp-1">
               {obj.activity[i].activity_type === "test"
                 ? obj.tests.filter((_t) => _t.id === obj.activity[i].id_course_test)[0].title
@@ -219,14 +219,11 @@ export default function Main() {
     setLogsData(obj.logs);
   }
 
-  function calcCourseProgress(a, b, is_completed) {
-    if (a > 0) {
-      let progressPercentage = (100 * (is_completed ? a : a - 1)) / b;
-      const isInteger = progressPercentage % 1 === 0;
-      return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;
-    } else {
-      return 0;
-    }
+  function calcCourseProgress(a, b, idActivity) {
+    let findIndex = a.findIndex((_a) => _a.id === idActivity);
+    let progressPercentage = (100 * a.slice(findIndex, a.length).length) / b;
+    const isInteger = progressPercentage % 1 === 0;
+    return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;
   }
 
   function changePage(tableKey, page, pageSize) {
@@ -338,7 +335,7 @@ export default function Main() {
         <div>
           <div className="flex justify-between items-center bg-[#FFF]">
             <div className="grid grid-cols-3 w-full">
-              <div className="flex flex-col justify-center items-center border-l border-t border-b border-r border-[#C0C0C0] p-6 bg-[#EAEAEA] rounded-l-[5px]">
+              <div className="flex flex-col justify-center items-center border-l border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-l-[5px]">
                 <StudentsIcon className="w-17.5 h-17.5" />
                 <p className="mt-4">{t("Total of students")}</p>
                 <p className="mt-1 font-bold text-[30px]">{data.users?.length}</p>
@@ -348,7 +345,7 @@ export default function Main() {
                 <p className="mt-4">{t("Total of courses")}</p>
                 <p className="mt-1 font-bold text-[30px] ">{data.courses?.length}</p>
               </div>
-              <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6 rounded-r-[5px]">
+              <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-r-[5px]">
                 <CoursesIcon className="w-17.5 h-17.5" />
                 <p className="mt-4">{t("Active tests")}</p>
                 <p className="mt-1 font-bold text-[30px] ">{calcActiveTests(data.tests)}</p>
@@ -489,7 +486,7 @@ export default function Main() {
                 title: t("User"),
                 dataIndex: "user",
                 key: "user",
-                width: "300px",
+                width: 240,
               },
               {
                 title: "Progress",
@@ -592,27 +589,27 @@ export default function Main() {
                   (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize,
                   (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize + paginationByTable.bestStudents?.pageSize,
                 )
-                .map((l) => (
-                  <div className="flex justify-between items-center mt-4">
-                    <div>
-                      <p>
-                        {dayjs(l.created_at).format("DD MMM, YYYY")} | {dayjs(l.created_at).format("HH:mm")}
-                      </p>
-                      <p className="font-bold">ID: {l.id_user}</p>
-                      <p className="underline">{l.user_name}</p>
+                .map((u) => (
+                  <Link to={`/admin/users/${u.id}`}>
+                    <div className="flex justify-start items-center">
+                      <div
+                        className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
+                        style={{ backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none", backgroundColor: u.img ? "transparent" : "#ccc" }}
+                      >
+                        {!u.img && (
+                          <p className="text-black">
+                            {u.user_name.split(" ")[0][0]}
+                            {u.user_name.split(" ")[1][0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <p className="text-black">{u.user_name}</p>
+                        <p className="text-[11px] text-black underline">{u.user_email}</p>
+                        <p className="text-[11px] text-black mt-1">ID: {u.id}</p>
+                      </div>
                     </div>
-                    <div className="flex flex-col justify-end items-end">
-                      <Tag color={colors[l.action]} variant="outlined">
-                        {l.action}
-                      </Tag>
-                      {l.table_name && l.meta_data ? (
-                        <Tag color={"grey"} variant="outlined" className="mt-2!">
-                          {tables[l.table_name] ?? l.table_name}
-                          {l.table_name.includes("course") && l.meta_data.name ? `: ${l.meta_data.name}` : null}
-                        </Tag>
-                      ) : null}
-                    </div>
-                  </div>
+                  </Link>
                 ))
             )}
 
@@ -622,9 +619,10 @@ export default function Main() {
                   defaultPageSize={5}
                   pageSizeOptions={[5, 10, 20]}
                   simple
-                  onShowSizeChange={(page, pageSize) => pageSizeChange("logs", page, pageSize)}
+                  align="center"
+                  onShowSizeChange={(page, pageSize) => pageSizeChange("bestStudents", page, pageSize)}
                   className="mt-8! w-full!"
-                  total={logsData.length}
+                  total={bestStudentsData.length}
                   current={paginationByTable.bestStudents?.currentPage}
                   onChange={(page, pageSize) => changePage("logs", page, pageSize)}
                   pageSize={paginationByTable.bestStudents?.pageSize}
@@ -683,6 +681,7 @@ export default function Main() {
                   defaultPageSize={5}
                   pageSizeOptions={[5, 10, 20]}
                   simple
+                  align="center"
                   onShowSizeChange={pageSizeChange}
                   className="mt-8! w-full!"
                   total={logsData.length}

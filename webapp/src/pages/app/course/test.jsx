@@ -36,19 +36,22 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   const timerAvailableRef = useRef(null);
 
   useEffect(() => {
+    if (selectedCourseItem.type !== "test") return;
     setAllowNext(false);
     setMetaData(null);
     let aux = Object.assign({}, selectedCourseItem);
 
     if (selectedCourseItem && selectedCourseItem.type === "test") prepareData();
 
+    console.log(course);
     // If the topic is already completed, allow to go to the next topic/test
     if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 1 && p.id_course_test === selectedCourseItem.id).length > 0) {
       setAllowNext(true);
       setIsTopicLocked(false);
     }
 
-    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id).length === (aux.settings?.retries_allowed ?? 5)) {
+    let testSettings = aux.settings && typeof aux.settings === "string" ? JSON.parse(aux.settings) : aux.settings;
+    if (progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id).length === (testSettings?.retries_allowed ?? 5)) {
       setIsAllowStart(false);
     }
 
@@ -108,7 +111,6 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
         startAvailableTimer(aux.settings.start_date);
       }
     }
-
     setData(aux);
   }
 
@@ -127,7 +129,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
       setCountdown(minutes + ":" + seconds);
       setTimePercentage((timer * 100) / (duration ?? 60 * 45));
-      setTimePassed(timer);
+      setTimePassed(duration - timer);
 
       if (--timer < 0) {
         setTimerEnded(true);
@@ -276,7 +278,6 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
           } else {
             createActivity({ items: auxResult, time: timePassed });
           }
-          console.log("Terminou!");
         }
       }, 100);
     }
@@ -355,7 +356,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                       <b>{t("Time")}:</b> {data.settings.time} minutes
                     </p>
                     <p className="text-[16px]">
-                      <b>{t("Your tries")}:</b> {progress.filter((p) => p.activity_type === "test" && p.id_course_test === course.id).length} / {data.settings.retries_allowed}
+                      <b>{t("Your tries")}:</b>{" "}
+                      {progress.filter((p) => p.activity_type === "test" && p.id_course === course.id && p.id_course_test === selectedCourseItem.id).length} /{" "}
+                      {data.settings.retries_allowed}
                     </p>
                     <Button onClick={startTest} className="mt-4" type="primary" size="large">
                       {t("Start test")}
