@@ -204,7 +204,7 @@ export default function Main() {
                 ],
               }}
             >
-              <SettingsIcon className="max-w-[15px] cursor-pointer" />
+              <SettingsIcon className="max-w-3.75 cursor-pointer" />
             </Dropdown>
           </div>
         ),
@@ -212,7 +212,7 @@ export default function Main() {
       });
     }
 
-    filterProgressCourses(null, obj.users, obj.activity);
+    filterProgressCourses(null, obj.users, obj.activity, obj.courses);
     setCourseActivity(auxActivity);
     setBestStudentsData(auxBestStudents);
     setUsersData(auxUsers);
@@ -266,7 +266,7 @@ export default function Main() {
     }
   }
 
-  function filterProgressCourses(id_course, users, courseActivity) {
+  function filterProgressCourses(id_course, users, courseActivity, courses) {
     let auxGraphicCourses = {
       notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
       inProgress: { value: 0, label: t("In progress"), color: "#80DCEB" },
@@ -305,8 +305,21 @@ export default function Main() {
           auxGraphicCourses.inProgress.value += 1;
         }
       } else {
-        auxGraphicCourses.notStarted.value += 1;
-        auxGraphicCoursesProgress["< 20%"].value += 1;
+        let findCourseAvailableToUser = courses.filter((c) => {
+          if (!c.settings) return true;
+
+          const settings = JSON.parse(c.settings);
+          if (settings.country_limit) {
+            return settings.country.includes(users[u].country);
+          }
+
+          return true;
+        });
+
+        if (findCourseAvailableToUser && findCourseAvailableToUser.length > 0) {
+          if (courses) auxGraphicCourses.notStarted.value += 1;
+          auxGraphicCoursesProgress["< 20%"].value += 1;
+        }
       }
     }
 

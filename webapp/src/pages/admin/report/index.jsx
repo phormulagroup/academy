@@ -89,13 +89,13 @@ export default function Report() {
           items={[
             {
               key: "3",
-              label: t("Students reports"),
+              label: t("Students progress"),
               forceRender: true,
               children: <ReportStudent data={data} />,
             },
             {
               key: "4",
-              label: t("Acitivity reports"),
+              label: t("Tests progress"),
               forceRender: true,
               children: <ReportTest data={data} />,
             },

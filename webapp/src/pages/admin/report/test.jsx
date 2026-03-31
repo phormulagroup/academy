@@ -13,24 +13,38 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
+import { Doughnut } from "react-chartjs-2";
 
 export default function ReportTest({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
+  const { t } = useTranslation();
+
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [courses, setCourses] = useState([]);
+  const [tests, setTests] = useState([]);
   const [activity, setActivity] = useState([]);
   const [countries, setCountries] = useState([]);
   const [isOpenExport, setIsOpenExport] = useState(false);
 
-  const { t } = useTranslation();
+  const [graphicGlobal, setGraphicGlobal] = useState({
+    notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
+    inProgress: { value: 0, label: t("In progress"), color: "#80DCEB" },
+    completed: { value: 0, label: t("Completed"), color: "#00B9D6" },
+  });
+  const [graphicProgress, setGraphicProgress] = useState({
+    "< 100%": { value: 0, label: "< 100%", color: "#0397AE" },
+    "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
+    "< 60%": { value: 0, label: "< 60%", color: "#40CBE0" },
+    "< 40%": { value: 0, label: "< 40%", color: "#9BE3EF" },
+    "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
+  });
 
   const [form] = Form.useForm();
 
   useEffect(() => {
     if (data && Object.keys(data).length > 0) {
       prepareData(data);
-      setCourses(data.courses);
+      setTests(data.tests);
       setActivity(data.acitivty);
     }
   }, [data]);
@@ -40,59 +54,76 @@ export default function ReportTest({ data }) {
   }, [selectedLanguage]);
 
   function prepareData(obj) {
-    console.log(obj);
-    let aux = [];
-    if (obj.users && obj.activity && obj.activity.length > 0) {
-      let testsActivity = obj.activity.filter((a) => a.activity_type === "test");
-      for (let i = 0; i < testsActivity.length; i++) {
-        let item = testsActivity[i];
+    if (obj.courses.length > 0) {
+      filterProgressCourses(null, obj.users, obj.activity, obj.courses);
+    }
+  }
 
-        item.meta_data = item.meta_data && typeof item.meta_data === "string" ? JSON.parse(item.meta_data) : item.meta_data;
-        console.log(item);
-        aux.push({
-          id: item.id,
-          id_course: obj.courses.filter((c) => c.id === item.id_course)[0].id,
-          course: obj.courses.filter((c) => c.id === item.id_course)[0].name,
-          name: item.test_title,
-          date: item.created_at ? dayjs(item.created_at).format("DD/MM/YYYY") : item.created_at,
-          user_name: obj.users.filter((u) => u.id === item.id_user)[0].name,
-          user_email: obj.users.filter((u) => u.id === item.id_user)[0].email,
-          score: `${item.meta_data.items.filter((q) => q.is_correct).length}/${item.meta_data.items.length}`,
-          percentage: item.meta_data.items.length > 0 ? `${(item.meta_data.items.filter((q) => q.is_correct).length * 100) / item.meta_data.items.length}%` : "0%",
-          time: item.meta_data.time >= 60 ? `${Math.floor(item.meta_data.time / 60)} min` : `${item.meta_data.time} s`,
-          approved: item.is_completed ? "yes" : "no",
+  function filterProgressCourses(id_course, users, courseActivity, courses) {
+    let auxGraphicGlobal = {
+      notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
+      inProgress: { value: 0, label: t("In progress"), color: "#80DCEB" },
+      completed: { value: 0, label: t("Completed"), color: "#00B9D6" },
+    };
+
+    let auxGraphicProgress = {
+      "< 100%": { value: 0, label: "< 100%", color: "#0397AE" },
+      "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
+      "< 60%": { value: 0, label: "< 60%", color: "#40CBE0" },
+      "< 40%": { value: 0, label: "< 40%", color: "#9BE3EF" },
+      "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
+    };
+
+    for (let u = 0; u < users.length; u++) {
+      let findActivity = courseActivity.filter((_a) => _a.id_user === users[u].id);
+      if (findActivity.length > 0) {
+        if (id_course) findActivity.filter((_a) => _a.id_course === id_course);
+        if (findActivity.filter((_f) => _f.activity_type === "test" && _f.is_completed === 1).length > 0) {
+          auxGraphicGlobal.completed.value += 1;
+        } else {
+          let totalSteps = findActivity.filter((_f) => _f.activity_type === "topic" || _f.activity_type === "test");
+          let percentage = (totalSteps.filter((_t) => _t.is_completed).length * 100) / totalSteps.length;
+          if (totalSteps > 0) {
+            if (percentage >= 0) {
+              if (percentage < 20) auxGraphicProgress["< 20%"].value += 1;
+              else if (percentage < 40) auxGraphicProgress["< 40%"].value += 1;
+              else if (percentage < 60) auxGraphicProgress["< 60%"].value += 1;
+              else if (percentage < 80) auxGraphicProgress["< 80%"].value += 1;
+              else if (percentage < 100) auxGraphicProgress["< 100%"].value += 1;
+            }
+          } else {
+            auxGraphicProgress["< 20%"].value += 1;
+          }
+
+          auxGraphicGlobal.inProgress.value += 1;
+        }
+      } else {
+        let findCourseAvailableToUser = courses.filter((c) => {
+          if (!c.settings) return true;
+
+          console.log(c.settings);
+          if (c.settings.country_limit) {
+            return c.settings.country.includes(users[u].country);
+          }
+
+          return true;
         });
+
+        if (findCourseAvailableToUser && findCourseAvailableToUser.length > 0) {
+          if (courses) auxGraphicGlobal.notStarted.value += 1;
+        }
       }
     }
-    setTableData(aux);
-    setFilteredData(aux);
+
+    setGraphicGlobal(auxGraphicGlobal);
   }
 
   function filterData(values) {
     let newData = Object.assign([], activity);
 
-    if (values.test) newData = newData.filter((n) => n.id_course_test === values.test);
-    if (values.country && values.country.length > 0) {
-      let coursesOfCountry = courses
-        .filter((n) => {
-          const matches = n.settings.country.some((item) => values.country.includes(item));
-          return n.settings.country_limit ? matches : true;
-        })
-        .map((c) => c.id);
+    if (values.course) newData = newData.filter((n) => n.id_course === values.course);
 
-      console.log(coursesOfCountry);
-
-      newData = newData.filter((n) => {
-        const matches = coursesOfCountry.includes(n.id_course);
-        return matches;
-      });
-    }
-
-    prepareData({ ...data, activity: newData });
-  }
-
-  function onChange(pagination, filters, sorter, extra) {
-    setFilteredData(extra.currentDataSource);
+    filterProgressCourses({ ...data, activity: newData });
   }
 
   function closeExport() {
@@ -118,23 +149,7 @@ export default function ReportTest({ data }) {
               showSearch={{
                 optionFilterProp: ["label"],
               }}
-              options={courses.map((c) => ({ label: c.name, value: c.id }))}
-            />
-          </Form.Item>
-          <Form.Item name="country" label={t("Country")} className="mb-0!">
-            <Select
-              mode="multiple"
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select country")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={countries.map((c) => ({
-                label: c,
-                value: c,
-              }))}
+              options={data.courses?.map((c) => ({ label: c.name, value: c.id }))}
             />
           </Form.Item>
           <div className="flex justify-center items-end">
@@ -145,62 +160,98 @@ export default function ReportTest({ data }) {
         </div>
       </Form>
       <div className="p-4 bg-white rounded-[5px]">
-        <Table
-          onChange={onChange}
-          dataSource={tableData}
-          pagination={{
-            pageSize: 5, // máximo 5 por página
-            placement: ["bottomCenter"], // paginação ao centro
-          }}
-          columns={[
-            {
-              title: t("Test"),
-              dataIndex: "name",
-              key: "name",
-              width: 240,
-            },
-            {
-              title: t("Date"),
-              dataIndex: "date",
-              key: "date",
-            },
-            {
-              title: t("Name"),
-              dataIndex: "user_name",
-              key: "user_name",
-            },
-            {
-              title: t("E-mail"),
-              dataIndex: "user_email",
-              key: "user_email",
-            },
-            {
-              title: t("Course"),
-              dataIndex: "course",
-              key: "course",
-            },
-            {
-              title: t("Score"),
-              dataIndex: "score",
-              key: "score",
-            },
-            {
-              title: t("Percentage"),
-              dataIndex: "percentage",
-              key: "percentage",
-            },
-            {
-              title: t("Time"),
-              dataIndex: "time",
-              key: "time",
-            },
-            {
-              title: t("Approved"),
-              dataIndex: "approved",
-              key: "approved",
-            },
-          ]}
-        />
+        <p className="font-bold">Progresso teste</p>
+        <div className="grid grid-cols-2 gap-16 mt-4">
+          <div>
+            <p className="font-bold mb-2">Global</p>
+            <div className="p-4 border border-[#C0C0C0] rounded-[5px] flex flex-col">
+              <div className="grid grid-cols-2 gap-10 w-full">
+                <div className="flex flex-col">
+                  <div className="flex justify-between items-center gap-4 w-full!">
+                    <div className="w-1/2">
+                      <Doughnut
+                        className="w-full! h-full!"
+                        data={{
+                          labels: [graphicGlobal.notStarted?.label, graphicGlobal.inProgress?.label, graphicGlobal.completed?.label],
+                          datasets: [
+                            {
+                              data: [graphicGlobal.notStarted.value, graphicGlobal.inProgress.value, graphicGlobal.completed.value],
+                              backgroundColor: [graphicGlobal.notStarted.color, graphicGlobal.inProgress.color, graphicGlobal.completed.color],
+                              borderWidth: 1,
+                            },
+                          ],
+                        }}
+                        options={{
+                          plugins: {
+                            legend: {
+                              display: false,
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                    <div className="w-1/2">
+                      {Object.keys(graphicGlobal).map((_k) => (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`} style={{ backgroundColor: graphicGlobal[_k].color }}></div>
+                            <p className="text-[11px]">{graphicGlobal[_k].label}</p>
+                          </div>
+                          <div className="min-w-10 flex justify-center items-center">
+                            <p className="text-[11px]">{graphicGlobal[_k].value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex justify-between items-center gap-4 w-full!">
+                    <div className="w-1/2">
+                      <Doughnut
+                        className="w-full! h-full!"
+                        data={{
+                          labels: [graphicGlobal.notStarted?.label, graphicGlobal.inProgress?.label, graphicGlobal.completed?.label],
+                          datasets: [
+                            {
+                              data: [graphicGlobal.notStarted.value, graphicGlobal.inProgress.value, graphicGlobal.completed.value],
+                              backgroundColor: [graphicGlobal.notStarted.color, graphicGlobal.inProgress.color, graphicGlobal.completed.color],
+                              borderWidth: 1,
+                            },
+                          ],
+                        }}
+                        options={{
+                          plugins: {
+                            legend: {
+                              display: false,
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                    <div className="w-1/2">
+                      {Object.keys(graphicGlobal).map((_k) => (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`} style={{ backgroundColor: graphicGlobal[_k].color }}></div>
+                            <p className="text-[11px]">{graphicGlobal[_k].label}</p>
+                          </div>
+                          <div className="min-w-10 flex justify-center items-center">
+                            <p className="text-[11px]">{graphicGlobal[_k].value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="font-bold mb-2">Score médio por idioma</p>
+            <div className="p-4 border border-[#C0C0C0] rounded-[5px]"></div>
+          </div>
+        </div>
       </div>
     </div>
   );

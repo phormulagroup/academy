@@ -162,7 +162,7 @@ export default function CourseDetails() {
             <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
           </div>
         ) : data.length > 0 ? (
-          <div className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-3"} gap-8`}>
+          <div className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"} gap-0 gap-y-8 sm:gap-8`}>
             <div className="col-span-3 flex justify-end items-center gap-4 mb-4">
               <GridIcon className="cursor-pointer" onClick={() => setViewType("grid")} />
               <ListIcon className="cursor-pointer" onClick={() => setViewType("list")} />

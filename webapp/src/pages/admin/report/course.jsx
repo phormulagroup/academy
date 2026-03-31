@@ -40,7 +40,6 @@ export default function ReportCourse({ data }) {
   function prepareData(obj) {
     console.log(obj);
     let aux = [];
-    let auxCourses = [];
     if (obj.users && obj.courses && obj.courses.length > 0) {
       for (let i = 0; i < obj.courses.length; i++) {
         let course = obj.courses[i];

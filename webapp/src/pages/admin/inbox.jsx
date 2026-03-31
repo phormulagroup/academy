@@ -111,7 +111,7 @@ export default function Inbox() {
                     ],
                   }}
                 >
-                  <SettingsIcon className="ml-2! max-w-[20px] cursor-pointer" />
+                  <SettingsIcon className="ml-2! max-w-5 cursor-pointer" />
                 </Dropdown>
               </div>
             </div>
