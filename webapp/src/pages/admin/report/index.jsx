@@ -49,6 +49,9 @@ export default function Report() {
         <div>
           <p className="text-xl font-bold">{t("Reports")}</p>
         </div>
+        <div>
+          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
+        </div>
       </div>
       <div>
         <Tabs

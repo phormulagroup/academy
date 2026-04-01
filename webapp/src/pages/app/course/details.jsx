@@ -26,9 +26,11 @@ import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
 import CourseObjection from "./objection";
+import { computeClosable } from "antd/es/_util/hooks";
 
 export default function CourseDetails() {
-  const { user, languages } = useContext(Context);
+  const { user, languages, messageApi } = useContext(Context);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [data, setData] = useState({});
@@ -50,7 +52,8 @@ export default function CourseDetails() {
       if (res.data.course.length > 0) {
         let auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
-        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
+        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country) && user.id_role !== 1) auxCourse = null;
+        if (!canAccess(auxCourse)) auxCourse = null;
         if (auxCourse) {
           auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
           auxCourse.objection = auxCourse.objection ? JSON.parse(auxCourse.objection) : null;
@@ -76,6 +79,10 @@ export default function CourseDetails() {
           }
           setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
         } else {
+          messageApi.open({
+            type: "info",
+            content: t("This course is not available in your country or your access period has expired."),
+          });
           navigate(`/${i18n.language}/courses`, { replace: true });
         }
       } else {
@@ -90,10 +97,6 @@ export default function CourseDetails() {
   }
 
   function calcCourseProgress(a, b, c) {
-    console.log(progress);
-    console.log(a);
-    console.log(b);
-    console.log(c);
     let progressPercentage = (100 * a) / (b + c);
     const isInteger = progressPercentage % 1 === 0;
     return !isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage;
@@ -136,6 +139,20 @@ export default function CourseDetails() {
         console.log(err);
         setIsEnrolling(false);
       });
+  }
+
+  function canAccess(obj) {
+    let settings = obj.settings;
+    console.log(user);
+    if (user.id_role === 1) return true;
+    if (settings.course_access_expiration) {
+      let today = dayjs();
+      if (today.diff(dayjs(settings.course_access_expiration_dates.start_date).diff(today)) > 0 && today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else return true;
   }
 
   return (

@@ -16,14 +16,7 @@ import ExportTable from "../../../components/admin/export/export";
 import { Doughnut } from "react-chartjs-2";
 
 export default function TestProgress({ data }) {
-  const { user, selectedLanguage, languages } = useContext(Context);
   const { t } = useTranslation();
-
-  const [tableData, setTableData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-  const [tests, setTests] = useState([]);
-  const [activity, setActivity] = useState([]);
-  const [isOpenExport, setIsOpenExport] = useState(false);
 
   const [graphicGlobal, setGraphicGlobal] = useState({
     notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
@@ -41,12 +34,8 @@ export default function TestProgress({ data }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      setTests(data.tests);
-      setActivity(data.acitivty);
-      if (data.courses.length > 0) {
-        filterProgressCourses(null, data);
-      }
+    if (data && Object.keys(data).length > 0 && data.courses.length > 0) {
+      filterProgressCourses(null, data);
     }
   }, [data]);
 
@@ -132,27 +121,14 @@ export default function TestProgress({ data }) {
   }
 
   function filterData(values) {
-    let newData = Object.assign([], activity);
-
-    if (values.course) newData = newData.filter((n) => n.id_course === values.course);
-
-    filterProgressCourses(values.course, { ...data, activity: newData });
-  }
-
-  function closeExport() {
-    setIsOpenExport(false);
+    filterProgressCourses(values.course, data);
   }
 
   return (
     <div className="p-4">
-      <ExportTable open={isOpenExport} close={closeExport} data={filteredData.length > 0 ? filteredData : tableData} table={"CoursesReport"} />
       <Form form={form} layout="vertical" onFinish={filterData}>
         <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
-          <div className="flex justify-end items-end">
-            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => setIsOpenExport(true)}>
-              {t("Export excel")}
-            </Button>
-          </div>
+          <div className="col-span-2"></div>
           <Form.Item name="course" label={t("Course")} className="mb-0!">
             <Select
               allowClear

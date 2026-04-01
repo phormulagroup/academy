@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button, Col, Row, Modal, Drawer, Form, Input, Select, DatePicker } from "antd";
 import axios from "axios";
 
@@ -10,8 +10,8 @@ import { AiOutlineFile } from "react-icons/ai";
 import i18n from "../../../utils/i18n";
 import { useNavigate } from "react-router-dom";
 
-export default function Create({ open, close, submit }) {
-  const { create, t, selectedLanguage } = useContext(Context);
+export default function Duplicate({ data, open, close, submit }) {
+  const { create, t, selectedLanguage, languages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [isOpenMedia, setIsOpenMedia] = useState(false);
@@ -28,7 +28,7 @@ export default function Create({ open, close, submit }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      const res = await create({ data: { ...values, id_lang: selectedLanguage.id }, table: "course" });
+      const res = await axios.post(endpoints.course.duplicate, { data: { id_lang: values.id_lang, id: data.id } });
       navigate(`/admin/courses/${res.data.insertId}`);
       setIsButtonLoading(false);
       close(true);
@@ -68,7 +68,11 @@ export default function Create({ open, close, submit }) {
       ]}
     >
       <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
-      <p className="text-[16px] font-bold mb-4">{t("Create Course")}</p>
+      <p className="text-[16px] font-bold mb-4">{t("Duplicate Course")}</p>
+      <p>{t("Are you sure you want to duplicate this course?")}</p>
+      <p className="mb-4">
+        {t("Selected course")}: {data.internal_name}
+      </p>
       <Form
         form={form}
         onFinish={submit}
@@ -77,11 +81,30 @@ export default function Create({ open, close, submit }) {
           required: "Este campo é obrigatório!",
         }}
       >
-        <Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
+        <Form.Item name="name" label={t("New name")} rules={[{ required: true }]}>
           <Input size="large" placeholder={t("Enter course name")} />
         </Form.Item>
-        <Form.Item name="internal_name" label={t("Internal name")} rules={[{ required: true }]}>
+        <Form.Item name="internal_name" label={t("New internal name")} rules={[{ required: true }]}>
           <Input size="large" placeholder={t("Enter internal course name")} />
+        </Form.Item>
+        <Form.Item name="id_lang" label={t("New language")} rules={[{ required: true }]}>
+          <Select
+            size="large"
+            className="w-full"
+            placeholder="Selecione..."
+            showSearch={{
+              optionFilterProp: ["label"],
+            }}
+            options={languages.map((item) => ({
+              label: (
+                <div className={`flex items-center`}>
+                  <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
+                  <p>{item.name}</p>
+                </div>
+              ),
+              value: item.id,
+            }))}
+          />
         </Form.Item>
       </Form>
     </Modal>

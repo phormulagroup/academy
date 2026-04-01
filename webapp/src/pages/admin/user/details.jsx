@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
-import { Button, Collapse, DatePicker, Dropdown, Form, Input, Progress, Select, Tabs, Tag } from "antd";
+import { Button, Collapse, DatePicker, Divider, Dropdown, Form, Input, Progress, Select, Tabs, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -28,6 +28,7 @@ import NotPassedIcon from "../../../assets/Backoffice/Status-02.svg?react";
 import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
 import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
 import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
+import CourseProgress from "./progress";
 
 export default function UserDetails() {
   const { user, languages } = useContext(Context);
@@ -349,7 +350,9 @@ export default function UserDetails() {
                             <p className="text-sm">{testSettings.passing_score ?? "80"}%</p>
                           </div>
                         </div>
-                        <div className="p-4 border border-dashed rounded-[5px]">
+                        <div className="p-4">
+                          <Divider dashed className="mb-4! mt-6!" />
+                          <p className="text-center font-bold">{t("Tries")}</p>
                           <Tabs
                             className="tabs-tries"
                             type="card"
@@ -480,6 +483,7 @@ export default function UserDetails() {
                           </p>
                         </div>
                       </div>
+                      {c.progress.length > 0 && <CourseProgress data={c} />}
                     </div>
                   ),
                 },

@@ -65,6 +65,7 @@ const endpoints = {
     module: "/course/module",
     create: "/course/create",
     delete: "/course/delete",
+    duplicate: "/course/duplicate",
   },
   test: {
     update: "/course/updateTest",

@@ -18,6 +18,7 @@ export default function CourseReport({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+  const [dataToExport, setDataToExport] = useState([]);
   const [courses, setCourses] = useState([]);
   const [countries, setCountries] = useState([]);
   const [isOpenExport, setIsOpenExport] = useState(false);
@@ -38,7 +39,6 @@ export default function CourseReport({ data }) {
   }, [selectedLanguage]);
 
   function prepareData(obj) {
-    console.log(obj);
     let aux = [];
     if (obj.users && obj.courses && obj.courses.length > 0) {
       for (let i = 0; i < obj.courses.length; i++) {
@@ -115,17 +115,145 @@ export default function CourseReport({ data }) {
     setFilteredData(extra.currentDataSource);
   }
 
+  function openExport(data) {
+    setDataToExport(data);
+    setIsOpenExport(true);
+  }
+
   function closeExport() {
     setIsOpenExport(false);
   }
 
+  const expandedRowRender = (e) => {
+    const columnsExpanded = [
+      {
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
+      },
+      {
+        title: t("Name"),
+        dataIndex: "name",
+        key: "name",
+      },
+      {
+        title: t("E-mail"),
+        dataIndex: "email",
+        key: "email",
+      },
+      {
+        title: t("Country"),
+        dataIndex: "country",
+        key: "country",
+      },
+      {
+        title: t("Start date"),
+        dataIndex: "start_date",
+        key: "start_date",
+      },
+      {
+        title: t("End date"),
+        dataIndex: "end_date",
+        key: "end_date",
+      },
+      {
+        title: t("Modules"),
+        dataIndex: "nr_modules",
+        key: "nr_modules",
+      },
+      {
+        title: t("Topics"),
+        dataIndex: "nr_topics",
+        key: "nr_topics",
+      },
+      {
+        title: t("Tests"),
+        dataIndex: "nr_tests",
+        key: "nr_tests",
+      },
+      {
+        title: t("Status"),
+        dataIndex: "status",
+        key: "status",
+      },
+    ];
+
+    let course = data.courses.filter((c) => c.id === e.id)[0];
+    let students = data.users.filter((u) => (course.settings.country_limit ? course.settings.country.includes(u.country) : u.id_lang === course.id_lang));
+    let activity = data.activity.filter((a) => a.id_course === e.id);
+
+    const dataExpanded = [];
+
+    for (let i = 0; i < students.length; i++) {
+      let student = students[i];
+      let studentActivity = activity.filter((a) => a.id_user === student.id);
+      if (studentActivity.length === 0) {
+        dataExpanded.push({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          start_date: null,
+          end_date: null,
+          lang: languages.filter((l) => l.id === course.id_lang)[0].code.toUpperCase(),
+          nr_modules: null,
+          nr_topics: null,
+          nr_tests: null,
+          status: t("Not started"),
+          percentage: null,
+          country: student.country,
+        });
+      } else {
+        let approved = studentActivity.filter((a) => a.is_completed && a.activity_type === "course").length > 0;
+        let startDate = studentActivity.filter((a) => a.activity_type === "enroll")[0]?.created_at;
+        let endDate = studentActivity.filter((a) => a.activity_type === "course" && a.is_completed === 1)[0]?.created_at;
+        let tests = data.tests.filter((t) => t.id_course === course.id);
+        let repproved = false;
+        for (let t = 0; t < tests.length; t++) {
+          let testSettings = tests[t].settings ? JSON.parse(tests[t].settings) : tests[t].settings;
+          if (testSettings && testSettings.retries_allowed >= 0) {
+            let tries = studentActivity.filter((a) => a.activity_type === "test" && a.id_course_test === tests[t].id && a.is_completed === 0);
+            if (tries.length >= testSettings.retries_allowed) {
+              repproved = true;
+            }
+          }
+        }
+
+        dataExpanded.push({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          start_date: dayjs(startDate).format("DD MMM, YYYY"),
+          end_date: endDate ? dayjs(endDate).format("DD MMM, YYYY") : null,
+          lang: languages.filter((l) => l.id === course.id_lang)[0].code.toUpperCase(),
+          nr_modules: `${studentActivity.filter((a) => a.activity_type === "module" && a.is_completed === 1).length}/${e.nr_modules}`,
+          nr_topics: `${studentActivity.filter((a) => a.activity_type === "topic" && a.is_completed === 1).length}/${e.nr_topics}`,
+          nr_tests: `${studentActivity.filter((a) => a.activity_type === "test" && a.is_completed === 1).length}/${e.nr_tests}`,
+          status: repproved ? t("Failed") : approved ? t("Approved") : t("In progress"),
+          country: course.settings.country_limit ? course.settings.country.join(", ") : t("All"),
+        });
+      }
+    }
+
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <p className="font-bold mb-2 mt-4">{t("Students")}</p>
+          <Button className="min-w-[200px]" size="large" variant="solid" color="blue" onClick={() => openExport(dataExpanded)}>
+            {t("Export excel")}
+          </Button>
+        </div>
+        <Table className="expanded_table" columns={columnsExpanded} dataSource={dataExpanded} pagination={false} />
+      </div>
+    );
+  };
+
   return (
     <div className="p-4">
-      <ExportTable open={isOpenExport} close={closeExport} data={filteredData.length > 0 ? filteredData : tableData} table={"CoursesReport"} />
+      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={"CoursesReport"} />
       <Form form={form} layout="vertical" onFinish={filterData}>
         <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
           <div className="flex justify-end items-end">
-            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => setIsOpenExport(true)}>
+            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData)}>
               {t("Export excel")}
             </Button>
           </div>
@@ -167,6 +295,9 @@ export default function CourseReport({ data }) {
       <div className="p-4 bg-white rounded-[5px]">
         <Table
           onChange={onChange}
+          expandable={{
+            expandedRowRender,
+          }}
           dataSource={tableData}
           pagination={{
             pageSize: 5, // máximo 5 por página

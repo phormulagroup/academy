@@ -102,8 +102,6 @@ export default function TestReport({ data }) {
         })
         .map((c) => c.id);
 
-      console.log(coursesOfCountry);
-
       newData = newData.filter((n) => {
         const matches = coursesOfCountry.includes(n.id_course);
         return matches;

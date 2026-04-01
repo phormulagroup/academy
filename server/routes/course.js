@@ -377,6 +377,69 @@ router.post("/module", async (req, res, next) => {
   });
 });
 
+router.post("/duplicate", async (req, res, next) => {
+  console.log("//// DUPLICATE COURSE ////");
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+      console.log(data);
+      let course = await query("SELECT * FROM course WHERE id = ?", data.id);
+      course = course[0];
+      delete course.id;
+      course.name = data.new_name || course.name + " (copy)";
+      course.internal_name = data.new_internal_name || course.internal_name + " (copy)";
+      course.id_lang = data.id_lang || course.id_lang;
+      course.id_certificate = null;
+      course.status = "draft";
+      const insertedCourse = await query("INSERT INTO course SET ?", course);
+
+      let modules = await query("SELECT * FROM course_module WHERE id_course = ? AND is_deleted = 0", data.id);
+      for (let i = 0; i < modules.length; i++) {
+        let module = modules[i];
+        delete module.id;
+        module.id_course = insertedCourse.insertId;
+        let moduleItems = module.items ? JSON.parse(module.items) : null;
+        delete module.items;
+        const insertedModule = await query("INSERT INTO course_module SET ?", module);
+        if (moduleItems.length > 0) {
+          let newItems = [];
+
+          for (let z = 0; z < moduleItems.length; z++) {
+            const item = moduleItems[z];
+            const rowItem = item.type === "test" ? await query("SELECT * FROM course_test WHERE id = ?", item.id) : await query("SELECT * FROM course_topic WHERE id = ?", item.id);
+            const rowItemData = rowItem[0];
+            delete rowItemData.id;
+            rowItemData.id_course_module = insertedModule.insertId;
+            const insertedItem = await query(`INSERT INTO ${item.type === "test" ? "course_test" : "course_topic"} SET ?`, rowItemData);
+
+            newItems.push({
+              id: insertedItem.insertId,
+              type: item.type,
+            });
+          }
+
+          await query("UPDATE course_module SET items = ? WHERE id = ?", [JSON.stringify(newItems), insertedModule.insertId]);
+        }
+      }
+
+      await commit();
+      conn.release();
+      res.send(data);
+    } catch (err) {
+      console.log(err);
+      await rollback();
+      conn.release();
+      throw err;
+    }
+  });
+});
+
 router.post("/delete", async (req, res, next) => {
   console.log("//// DELETE COURSE ////");
   try {

@@ -55,7 +55,9 @@ export default function CourseDetails() {
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxCourse = res.data.courses[c];
+        if (auxCourse.status === "draft" && user.id_role !== 1) continue;
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
+        if (!canAccess(auxCourse)) continue;
 
         if (user.id_role !== 1 && auxCourse.settings.country_limit && auxCourse.settings.country && !auxCourse.settings.country.includes(user.country)) auxCourse = null;
 
@@ -98,13 +100,12 @@ export default function CourseDetails() {
 
   function canAccess(obj) {
     let settings = obj.settings;
-    if (settings.course_access_expiration_dates && settings.course_access_expiration_dates.start_date) {
+    if (user.id_role === 1) return true;
+    if (settings.course_access_expiration) {
       let today = dayjs();
-      if (settings.course_access_expiration_dates.start_date && dayjs(settings.course_access_expiration_dates.start_date).diff(today) > 0) {
-        return false;
-      } else if (settings.course_access_expiration_dates.end_date && dayjs(settings.course_access_expiration_dates.end_date).diff(today) < 0) {
+      if (today.diff(dayjs(settings.course_access_expiration_dates.start_date).diff(today)) > 0 && today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0) {
         return true;
-      } else if (settings.course_access_expiration_dates.end_date && dayjs(settings.course_access_expiration_dates.end_date).diff(today) >= 0) {
+      } else {
         return false;
       }
     } else return true;
@@ -116,7 +117,7 @@ export default function CourseDetails() {
       let completed = items.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length;
 
       let progressPercentage = (100 * completed) / steps;
-      return parseFloat(progressPercentage).toFixed(2);
+      return progressPercentage === 100 ? 100 : parseFloat(progressPercentage).toFixed(2);
     }
     return 0;
   }
@@ -168,9 +169,11 @@ export default function CourseDetails() {
               <ListIcon className="cursor-pointer" onClick={() => setViewType("list")} />
             </div>
             {data.map((item) => (
-              <div className={`shadow-[0px_3px_6px_#00000029] ${viewType === "list" ? "flex" : "flex flex-col"} ${viewType === "list" ? "col-span-3" : "col-span-1"}`}>
+              <div
+                className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" ? "flex" : "flex flex-col"} ${viewType === "list" ? "col-span-3" : "col-span-1"}`}
+              >
                 <div
-                  className={`${viewType === "grid" ? "h-75" : "h-full w-50"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
+                  className={`${viewType === "grid" ? "h-75" : "h-full w-50"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative rounded-tl-[5px] rounded-tr-[5px]`}
                   style={{ backgroundImage: item.course?.thumbnail ? `url(${config.server_ip}/media/${item.course?.thumbnail})` : "none" }}
                 >
                   <div className="p-[8px_20px_8px_20px] bg-white rounded-[40px]">
@@ -292,7 +295,7 @@ export default function CourseDetails() {
           </div>
         ) : (
           <div className="col-span-3 flex flex-col justify-center items-center">
-            <p>{t("No courses enrolled yet")}</p>
+            <p>{t("No courses available")}</p>
           </div>
         )}
       </div>

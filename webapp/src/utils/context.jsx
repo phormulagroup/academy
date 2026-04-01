@@ -90,7 +90,6 @@ const ContextProvider = ({ children }) => {
   }, [inbox]);
 
   useEffect(() => {
-    console.log(selectedInbox);
     selectedInboxRef.current = selectedInbox;
   }, [selectedInbox]);
 
@@ -109,10 +108,6 @@ const ContextProvider = ({ children }) => {
   }, [windowDimension]);
 
   function receivedNotification(d) {
-    console.log("Notificação recebida!");
-    console.log("Mensagem recebida:", d);
-    console.log("Inbox atual dentro do socket:", inboxRef.current);
-
     notificationApi.open({
       type: "info",
       placement: "top",
@@ -166,7 +161,6 @@ const ContextProvider = ({ children }) => {
       }
 
       const idLangStorage = localStorage.getItem("id_lang");
-      console.log(idLangStorage);
 
       setSelectedLanguage(res.data.filter((_l) => (idLangStorage ? _l.id === parseInt(idLangStorage) : _l.is_default === 1))[0]);
     } catch (err) {
@@ -186,7 +180,6 @@ const ContextProvider = ({ children }) => {
   async function getNotifications(auxUser) {
     try {
       const res = await axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser ? auxUser.id : user.id } });
-      console.log(res);
       setNotifications(res.data);
     } catch (err) {
       console.log(err);
@@ -272,7 +265,6 @@ const ContextProvider = ({ children }) => {
       const res = await axios.post(endpoints.logs.create, {
         data: obj,
       });
-      console.log(res);
     } catch (err) {
       console.log(err);
     }
@@ -280,7 +272,6 @@ const ContextProvider = ({ children }) => {
 
   function create(obj) {
     return new Promise(async (resolve, reject) => {
-      console.log(obj);
       try {
         const res = await axios.post(endpoints[obj.table].create, { data: obj.data });
         createLog({
@@ -313,7 +304,7 @@ const ContextProvider = ({ children }) => {
           id_user: user.id,
           action: "update",
           table_name: obj.table,
-          meta_data: obj.data,
+          meta_data: JSON.stringify(obj.data),
           id_lang: selectedLanguage.id,
         });
         messageApi.open({

@@ -1,19 +1,28 @@
-import { useState } from "react";
-import { Button, Col, Row, Modal, Drawer, Form, Input, Alert, InputNumber } from "antd";
+import { useContext, useEffect, useState } from "react";
+import { Button, Col, Row, Modal, Drawer, Form, Input, Select, DatePicker } from "antd";
+import axios from "axios";
 
-import { useContext } from "react";
+import Media from "../media/media";
 import { Context } from "../../../utils/context";
-import { useEffect } from "react";
+import endpoints from "../../../utils/endpoints";
+import config from "../../../utils/config";
+import { AiOutlineFile } from "react-icons/ai";
+import i18n from "../../../utils/i18n";
+import { useNavigate } from "react-router-dom";
 
 export default function Update({ data, open, close, submit }) {
-  const { update } = useContext(Context);
+  const { update, t, selectedLanguage } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [mediaKey, setMediaKey] = useState(null);
+  const [isOpenMedia, setIsOpenMedia] = useState(false);
 
   const [form] = Form.useForm();
 
+  const navigate = useNavigate();
+
   useEffect(() => {
-    form.setFieldsValue(data);
-  }, [data, open === true]);
+    if (open) form.setFieldsValue(data);
+  }, [data, open]);
 
   function onClose() {
     form.resetFields();
@@ -23,7 +32,7 @@ export default function Update({ data, open, close, submit }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await update({ data: values, table: "course" });
+      const res = await update({ data: { ...values, id_lang: selectedLanguage.id }, table: "course" });
       setIsButtonLoading(false);
       close(true);
     } catch (err) {
@@ -32,19 +41,37 @@ export default function Update({ data, open, close, submit }) {
     }
   }
 
+  function openMedia(key) {
+    setMediaKey(key);
+    setIsOpenMedia(true);
+  }
+
+  function closeMedia(res) {
+    if (res) {
+      form.setFieldValue(mediaKey, res[mediaKey]);
+    }
+
+    setMediaKey(null);
+    setIsOpenMedia(false);
+  }
+
   return (
-    <Drawer
+    <Modal
+      key="modal-logout"
+      width={500}
+      style={{ top: 20 }}
+      onCancel={close}
       open={open}
-      size={800}
-      onClose={onClose}
       maskClosable={false}
-      title="Editar cliente"
-      extra={[
-        <Button loading={isButtonLoading} onClick={form.submit}>
-          Guardar
+      footer={[
+        <Button onClick={close}>{t("Cancel")}</Button>,
+        <Button type="primary" loading={isButtonLoading} onClick={form.submit}>
+          {t("Create")}
         </Button>,
       ]}
     >
+      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
+      <p className="text-[16px] font-bold mb-4">{t("Update Course")}</p>
       <Form
         form={form}
         onFinish={submit}
@@ -54,49 +81,29 @@ export default function Update({ data, open, close, submit }) {
         }}
       >
         <Form.Item name="id" hidden>
-          <Input size="large" />
+          <Input />
         </Form.Item>
-        <Form.Item name="is_deleted" hidden>
-          <InputNumber size="large" />
+        <Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
+          <Input size="large" placeholder={t("Enter course name")} />
         </Form.Item>
-        {data.is_deleted ? (
-          <div className="mb-4">
-            <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.is_deleted !== currentValues.is_deleted}>
-              {({ getFieldValue }) =>
-                getFieldValue("is_deleted") ? (
-                  <Alert
-                    title="Cliente inativo"
-                    showIcon
-                    description={
-                      <div className="flex flex-col justify-start items-start">
-                        <p>Este cliente encontra-se inativo, se desejar ativar novamente basta clicar em ativar, e após isso terá de guardar!</p>
-                        <Button className="mt-2" onClick={() => form.setFieldValue("is_deleted", 0)}>
-                          Ativar
-                        </Button>
-                      </div>
-                    }
-                    type="info"
-                  />
-                ) : (
-                  <Alert
-                    title="Cliente ativo"
-                    showIcon
-                    description={
-                      <div className="flex flex-col justify-start items-start">
-                        <p>Este cliente encontra-se ativo, mas para efetuar as alterações terá de guardar!</p>
-                      </div>
-                    }
-                    type="success"
-                  />
-                )
-              }
-            </Form.Item>
-          </div>
-        ) : null}
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-          <Input size="large" />
+        <Form.Item name="internal_name" label={t("Internal name")} rules={[{ required: true }]}>
+          <Input size="large" placeholder={t("Enter internal course name")} />
+        </Form.Item>
+        <Form.Item name="status" label={t("Status")} rules={[{ required: true }]}>
+          <Select
+            size="large"
+            className="w-full"
+            placeholder="Selecione..."
+            showSearch={{
+              optionFilterProp: ["label"],
+            }}
+            options={["draft", "published"].map((item) => ({
+              label: item,
+              value: item,
+            }))}
+          />
         </Form.Item>
       </Form>
-    </Drawer>
+    </Modal>
   );
 }

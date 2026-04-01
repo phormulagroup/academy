@@ -3,11 +3,13 @@ import { Button, Col, Row, Modal } from "antd";
 import axios from "axios";
 import endpoints from "../../utils/endpoints";
 import { Context } from "../../utils/context";
+import { useTranslation } from "react-i18next";
 
 export default function Delete({ open, close, data, table }) {
   const { messageApi, createLog, user, selectedLanguage } = useContext(Context);
+  const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [tablesName] = useState({ account: "Conta", course: "Cliente", project: "Project" });
+  const [tablesName] = useState({ account: t("Account"), course: t("Course"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer") });
 
   function onClose() {
     close();
@@ -52,11 +54,13 @@ export default function Delete({ open, close, data, table }) {
       ]}
     >
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">Tem que a certeza que quer apagar?</p>
+        <p className="text-[16px] font-bold">{t("Are you sure you want to delete this item?")}</p>
         <div className="flex flex-col mt-4">
           <p className="font-semibold">{tablesName[table]}</p>
           <p>ID: {data.id}</p>
-          <p>Nome: {data.name}</p>
+          <p>
+            {t("Name")}/{t("Title")}: <b>{data.name}</b>
+          </p>
         </div>
       </div>
     </Modal>

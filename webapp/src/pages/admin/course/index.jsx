@@ -3,7 +3,7 @@ import { useContext, useEffect } from "react";
 import { useState } from "react";
 import { Button, Dropdown, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
+import { FaCopy, FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
 import Create from "../../../components/admin/course/create";
@@ -16,7 +16,9 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { RxReload } from "react-icons/rx";
+import { RxCopy, RxReload } from "react-icons/rx";
+import { Copy } from "lucide-react";
+import Duplicate from "../../../components/admin/course/duplicate";
 
 export default function Course() {
   const { user, selectedLanguage } = useContext(Context);
@@ -28,8 +30,7 @@ export default function Course() {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenLogs, setIsOpenLogs] = useState(false);
-
+  const [isOpenDuplicate, setIsOpenDuplicate] = useState(false);
   const { t } = useTranslation();
 
   const navigate = useNavigate();
@@ -40,13 +41,11 @@ export default function Course() {
 
   function getData() {
     setIsLoading(true);
-    console.log(user);
     axios
       .get(endpoints.course.readByLang, {
         params: { id_lang: selectedLanguage.id },
       })
       .then((res) => {
-        console.log(res.data);
         setData(res.data.courses);
         prepareData(res.data.courses);
         setIsLoading(false);
@@ -93,6 +92,12 @@ export default function Course() {
                     onClick: () => openUpdate(array[i]),
                   },
                   {
+                    label: t("Duplicate"),
+                    key: `${array[i].id}-duplicate`,
+                    icon: <FaCopy />,
+                    onClick: () => openDuplicate(array[i]),
+                  },
+                  {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
@@ -118,14 +123,14 @@ export default function Course() {
     setIsOpenUpdate(true);
   }
 
-  function openLogs(obj) {
-    setSelectedData(obj);
-    setIsOpenLogs(true);
-  }
-
   function openDelete(obj) {
     setSelectedData(obj);
     setIsOpenDelete(true);
+  }
+
+  function openDuplicate(obj) {
+    setSelectedData(obj);
+    setIsOpenDuplicate(true);
   }
 
   function closeAction(c) {
@@ -133,6 +138,7 @@ export default function Course() {
       getData();
     }
     setIsOpenUpdate(false);
+    setIsOpenDuplicate(false);
     setIsOpenCreate(false);
     setIsOpenDelete(false);
   }
@@ -142,12 +148,12 @@ export default function Course() {
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="course" />
-      <Logs table={"course"} id_client={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
+      <Duplicate data={selectedData} open={isOpenDuplicate} close={closeAction} />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Courses")}</p>
         </div>
-        <div>
+        <div className="flex justify-center">
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
           <Button size="large" onClick={() => setIsOpenCreate(true)}>
             Adicionar
