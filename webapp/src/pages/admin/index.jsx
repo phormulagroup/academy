@@ -284,7 +284,7 @@ export default function Main() {
     for (let u = 0; u < users.length; u++) {
       let findActivity = courseActivity.filter((_a) => _a.id_user === users[u].id);
       if (findActivity.length > 0) {
-        if (id_course) findActivity.filter((_a) => _a.id_course === id_course);
+        if (id_course) findActivity = findActivity.filter((_a) => _a.id_course === id_course);
         if (findActivity.filter((_f) => _f.activity_type === "course" && _f.is_completed === 1).length > 0) {
           auxGraphicCourses.completed.value += 1;
         } else {

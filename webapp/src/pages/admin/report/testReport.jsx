@@ -14,11 +14,12 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
 
-export default function ReportCourse({ data }) {
+export default function TestReport({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [countries, setCountries] = useState([]);
   const [isOpenExport, setIsOpenExport] = useState(false);
 
@@ -30,6 +31,7 @@ export default function ReportCourse({ data }) {
     if (data && Object.keys(data).length > 0) {
       prepareData(data);
       setCourses(data.courses);
+      setActivity(data.acitivty);
     }
   }, [data]);
 
@@ -40,57 +42,48 @@ export default function ReportCourse({ data }) {
   function prepareData(obj) {
     console.log(obj);
     let aux = [];
-    if (obj.users && obj.courses && obj.courses.length > 0) {
-      for (let i = 0; i < obj.courses.length; i++) {
-        let course = obj.courses[i];
-        course.settings = course.settings && typeof course.settings === "string" ? JSON.parse(course.settings) : course.settings;
-        let modules = obj.modules.filter((t) => t.id_course === course.id);
-        let topics = obj.topics.filter((t) => t.id_course === course.id);
-        let tests = obj.tests.filter((t) => t.id_course === course.id);
-        let approved = obj.activity.filter((a) => a.activity_type === "course" && a.is_completed);
-        let repproved = 0;
-        let students = obj.users.filter((u) => (course.settings.country_limit ? course.settings.country.includes(u.country) : u.id_lang === course.id_lang));
+    if (obj.users && obj.activity && obj.activity.length > 0) {
+      let testsActivity = obj.activity.filter((a) => a.activity_type === "test");
+      for (let i = 0; i < testsActivity.length; i++) {
+        let item = testsActivity[i];
 
-        for (let t = 0; t < tests.length; t++) {
-          let testSettings = tests[t].settings ? JSON.parse(tests[t].settings) : tests[t].settings;
-          if (testSettings && testSettings.retries_allowed >= 0) {
-            let tries = obj.activity.filter((a) => a.activity_type === "test" && a.id_course_test === tests[t].id && a.is_completed === 0);
+        item.meta_data = item.meta_data && typeof item.meta_data === "string" ? JSON.parse(item.meta_data) : item.meta_data;
+        let test = obj.tests.filter((t) => t.id === item.id_course_test)[0];
+        let testQuestions = test.question && typeof test.question === "string" ? JSON.parse(test.question) : test.question;
+        const titlesOrder = testQuestions.map((item) => item.title);
 
-            let triesByUser = tries.reduce((acc, attempt) => {
-              if (!acc[attempt.id_user]) acc[attempt.id_user] = 0;
-              acc[attempt.id_user]++;
-              return acc;
-            }, {});
+        let resTestOrdered = item.meta_data.items.sort(function (a, b) {
+          return titlesOrder.indexOf(a.title) - titlesOrder.indexOf(b.title);
+        });
 
-            for (let userId in triesByUser) {
-              if (triesByUser[userId] >= testSettings.retries_allowed) {
-                ++repproved;
-              }
-            }
+        let auxAnswers = resTestOrdered.map((a, ind) => ({
+          [`${t("Question")} ${ind + 1}: ${a.title}`]: a.is_correct ? t("Correct") : t("Incorrect"),
+        }));
+
+        let auxObj = {
+          id: item.id,
+          id_course: obj.courses.filter((c) => c.id === item.id_course)[0].id,
+          course: obj.courses.filter((c) => c.id === item.id_course)[0].name,
+          name: item.test_title,
+          date: item.created_at ? dayjs(item.created_at).format("DD/MM/YYYY") : item.created_at,
+          user_name: obj.users.filter((u) => u.id === item.id_user)[0].name,
+          user_email: obj.users.filter((u) => u.id === item.id_user)[0].email,
+          user_country: obj.users.filter((u) => u.id === item.id_user)[0].country,
+          score: `${item.meta_data.items.filter((q) => q.is_correct).length}/${item.meta_data.items.length}`,
+          percentage: item.meta_data.items.length > 0 ? `${(item.meta_data.items.filter((q) => q.is_correct).length * 100) / item.meta_data.items.length}%` : "0%",
+          time: item.meta_data.time >= 60 ? `${Math.floor(item.meta_data.time / 60)} min` : `${item.meta_data.time} s`,
+          approved: item.is_completed ? "yes" : "no",
+        };
+
+        for (const key in auxAnswers) {
+          if (!isNaN(key)) {
+            Object.assign(auxObj, auxAnswers[key]);
+          } else {
+            auxObj[key] = original[key];
           }
         }
 
-        aux.push({
-          id: course.id,
-          name: course.name,
-          start_date:
-            course.settings.course_access_expiration && course.settings.course_access_expiration_dates.start_date
-              ? dayjs(course.settings.course_access_expiration_dates.start_date).format("DD MMM, YYYY")
-              : null,
-          end_date:
-            course.settings.course_access_expiration && course.settings.course_access_expiration_dates.end_date
-              ? dayjs(course.settings.course_access_expiration_dates.end_date).format("DD MMM, YYYY")
-              : null,
-          lang: languages.filter((l) => l.id === course.id_lang)[0].code.toUpperCase(),
-          nr_modules: modules.length,
-          nr_topics: topics.length,
-          nr_tests: tests.length,
-          approved: approved.length,
-          repproved: repproved,
-          students: students.length,
-          percentage: parseFloat(approved.length > 0 ? (approved.length * 100) / students.length : 0).toFixed(2) + "%",
-          country: course.settings.country_limit ? course.settings.country.join(", ") : t("All"),
-        });
+        aux.push(auxObj);
       }
     }
     setTableData(aux);
@@ -98,17 +91,26 @@ export default function ReportCourse({ data }) {
   }
 
   function filterData(values) {
-    let newData = Object.assign([], courses);
+    let newData = Object.assign([], activity);
 
-    if (values.course) newData = newData.filter((n) => n.id === values.course);
+    if (values.test) newData = newData.filter((n) => n.id_course_test === values.test);
     if (values.country && values.country.length > 0) {
+      let coursesOfCountry = courses
+        .filter((n) => {
+          const matches = n.settings.country.some((item) => values.country.includes(item));
+          return n.settings.country_limit ? matches : true;
+        })
+        .map((c) => c.id);
+
+      console.log(coursesOfCountry);
+
       newData = newData.filter((n) => {
-        const matches = n.settings.country.some((item) => values.country.includes(item));
-        return n.settings.country_limit ? matches : true;
+        const matches = coursesOfCountry.includes(n.id_course);
+        return matches;
       });
     }
 
-    prepareData({ ...data, courses: newData });
+    prepareData({ ...data, activity: newData });
   }
 
   function onChange(pagination, filters, sorter, extra) {
@@ -174,45 +176,35 @@ export default function ReportCourse({ data }) {
           }}
           columns={[
             {
-              title: t("Course"),
+              title: t("Test"),
               dataIndex: "name",
               key: "name",
-              width: "300px",
+              width: 240,
             },
             {
-              title: t("Date start"),
-              dataIndex: "start_date",
-              key: "start_date",
+              title: t("Date"),
+              dataIndex: "date",
+              key: "date",
             },
             {
-              title: t("Date end"),
-              dataIndex: "end_date",
-              key: "end_date",
+              title: t("Name"),
+              dataIndex: "user_name",
+              key: "user_name",
             },
             {
-              title: t("Modules"),
-              dataIndex: "nr_modules",
-              key: "nr_modules",
+              title: t("E-mail"),
+              dataIndex: "user_email",
+              key: "user_email",
             },
             {
-              title: t("Topics"),
-              dataIndex: "nr_topics",
-              key: "nr_topics",
+              title: t("Course"),
+              dataIndex: "course",
+              key: "course",
             },
             {
-              title: t("Tests"),
-              dataIndex: "nr_tests",
-              key: "nr_tests",
-            },
-            {
-              title: t("Approved"),
-              dataIndex: "approved",
-              key: "approved",
-            },
-            {
-              title: t("Repproved"),
-              dataIndex: "repproved",
-              key: "repproved",
+              title: t("Score"),
+              dataIndex: "score",
+              key: "score",
             },
             {
               title: t("Percentage"),
@@ -220,14 +212,14 @@ export default function ReportCourse({ data }) {
               key: "percentage",
             },
             {
-              title: t("Students"),
-              dataIndex: "students",
-              key: "students",
+              title: t("Time"),
+              dataIndex: "time",
+              key: "time",
             },
             {
-              title: t("Country"),
-              dataIndex: "country",
-              key: "country",
+              title: t("Approved"),
+              dataIndex: "approved",
+              key: "approved",
             },
           ]}
         />

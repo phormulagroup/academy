@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
 
-export default function ReportStudent({ data }) {
+export default function StudentProgress({ data }) {
   const { user, selectedLanguage } = useContext(Context);
 
   const { t } = useTranslation();

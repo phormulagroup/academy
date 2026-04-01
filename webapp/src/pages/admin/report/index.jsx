@@ -5,31 +5,21 @@ import { Button, Dropdown, Tabs, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 import { RxReload } from "react-icons/rx";
-
-import Table from "../../../components/admin/table";
-import Delete from "../../../components/admin/delete";
-import Create from "../../../components/admin/certificate/create";
-import Logs from "../../../components/admin/logs";
-
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import ReportCourse from "./course";
-import ReportTest from "./test";
-import ReportStudent from "./student";
+
+import CourseReport from "./courseReport";
+import TestReport from "./testReport";
+import StudentProgress from "./studentProgress";
+import TestProgress from "./testProgress";
 
 export default function Report() {
   const { user, selectedLanguage } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
-  const [tableData, setTableData] = useState([]);
-  const [selectedData, setSelectedData] = useState({});
-
-  const [isOpenCreate, setIsOpenCreate] = useState(false);
-  const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenLogs, setIsOpenLogs] = useState(false);
 
   const { t } = useTranslation();
 
@@ -70,13 +60,13 @@ export default function Report() {
               key: "1",
               label: t("Course reports"),
               forceRender: true,
-              children: <ReportCourse data={data} />,
+              children: <CourseReport data={data} />,
             },
             {
               key: "2",
               label: t("Test reports"),
               forceRender: true,
-              children: <ReportTest data={data} />,
+              children: <TestReport data={data} />,
             },
           ]}
         />
@@ -91,13 +81,13 @@ export default function Report() {
               key: "3",
               label: t("Students progress"),
               forceRender: true,
-              children: <ReportStudent data={data} />,
+              children: <StudentProgress data={data} />,
             },
             {
               key: "4",
               label: t("Tests progress"),
               forceRender: true,
-              children: <ReportTest data={data} />,
+              children: <TestProgress data={data} />,
             },
           ]}
         />
