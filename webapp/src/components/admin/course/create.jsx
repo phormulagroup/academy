@@ -83,6 +83,27 @@ export default function Create({ open, close, submit }) {
         <Form.Item name="internal_name" label={t("Internal name")} rules={[{ required: true }]}>
           <Input size="large" placeholder={t("Enter internal course name")} />
         </Form.Item>
+        <Form.Item name="status" label={t("Status")} rules={[{ required: true }]}>
+          <Select
+            size="large"
+            className="w-full"
+            placeholder="Selecione..."
+            showSearch={{
+              optionFilterProp: ["label"],
+            }}
+            defaultValue={"draft"}
+            options={[
+              {
+                label: "Draft",
+                value: "draft",
+              },
+              {
+                label: "Published",
+                value: "published",
+              },
+            ]}
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );

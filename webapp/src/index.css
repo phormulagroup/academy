@@ -678,4 +678,17 @@ iframe {
   aspect-ratio: 16/9;
 }
 
+.tabs-tries .ant-tabs-tab-active {
+  background: #00b9d6 !important;
+  color: #fff !important;
+}
+
+.tabs-tries .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #fff !important;
+}
+
+.tabs-tries .ant-tabs-tab-active:hover .ant-tabs-tab-btn {
+  color: #fff !important;
+}
+
 @import "tailwindcss";

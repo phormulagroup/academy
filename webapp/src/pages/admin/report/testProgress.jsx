@@ -14,6 +14,8 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
 import { Doughnut } from "react-chartjs-2";
+import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
+import SearchIcon from "../../../assets/Backoffice/search.svg?react";
 
 export default function TestProgress({ data }) {
   const { t } = useTranslation();
@@ -142,7 +144,7 @@ export default function TestProgress({ data }) {
             />
           </Form.Item>
           <div className="flex justify-center items-end">
-            <Button className="w-full" size="large" onClick={form.submit} type="primary">
+            <Button className="w-full" size="large" onClick={form.submit} type="primary" icon={<SearchIcon />}>
               {t("Search")}
             </Button>
           </div>

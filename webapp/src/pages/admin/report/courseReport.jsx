@@ -13,6 +13,8 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
+import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
+import SearchIcon from "../../../assets/Backoffice/search.svg?react";
 
 export default function CourseReport({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
@@ -238,7 +240,7 @@ export default function CourseReport({ data }) {
       <div>
         <div className="flex justify-between items-center mb-4">
           <p className="font-bold mb-2 mt-4">{t("Students")}</p>
-          <Button className="min-w-[200px]" size="large" variant="solid" color="blue" onClick={() => openExport(dataExpanded)}>
+          <Button className="min-w-50" size="large" variant="solid" color="blue" onClick={() => openExport(dataExpanded)} icon={<DownloadIcon />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -253,7 +255,14 @@ export default function CourseReport({ data }) {
       <Form form={form} layout="vertical" onFinish={filterData}>
         <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
           <div className="flex justify-end items-end">
-            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData)}>
+            <Button
+              className="w-full!"
+              size="large"
+              variant="solid"
+              color="blue"
+              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData)}
+              icon={<DownloadIcon />}
+            >
               {t("Export excel")}
             </Button>
           </div>
@@ -286,7 +295,7 @@ export default function CourseReport({ data }) {
             />
           </Form.Item>
           <div className="flex justify-center items-end">
-            <Button className="w-full" size="large" onClick={form.submit} type="primary">
+            <Button className="w-full" size="large" onClick={form.submit} type="primary" icon={<SearchIcon />}>
               {t("Search")}
             </Button>
           </div>

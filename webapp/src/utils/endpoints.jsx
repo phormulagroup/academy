@@ -62,6 +62,7 @@ const endpoints = {
     update: "/course/update",
     updateTopic: "/course/updateTopic",
     updateProgress: "/course/updateProgress",
+    resetProgress: "/course/resetProgress",
     module: "/course/module",
     create: "/course/create",
     delete: "/course/delete",

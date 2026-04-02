@@ -97,10 +97,16 @@ export default function Update({ data, open, close, submit }) {
             showSearch={{
               optionFilterProp: ["label"],
             }}
-            options={["draft", "published"].map((item) => ({
-              label: item,
-              value: item,
-            }))}
+            options={[
+              {
+                label: "Draft",
+                value: "draft",
+              },
+              {
+                label: "Published",
+                value: "published",
+              },
+            ]}
           />
         </Form.Item>
       </Form>

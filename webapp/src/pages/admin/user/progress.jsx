@@ -32,49 +32,31 @@ import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
 export default function CourseProgress({ data }) {
   const { messageApi } = useContext(Context);
   const { t } = useTranslation();
-  const [progressData, setProgressData] = useState([]);
 
-  useEffect(() => {
-    console.log(data);
-    if (data.progress.length > 0) {
-      let aux = data.progress.map((p) => {
-        console.log(data.allItems.filter((item) => item.id === p.id_course_topic && item.type === "topic"));
-        return {
-          ...p,
-          course_name: data.course.name,
-          topic_name: data.allItems.filter((item) => item.id === p.id_course_topic && item.type === "topic")[0]?.title,
-          module_name: data.modules.filter((item) => item.id === p.id_course_module && item.type === "module")[0]?.title,
-        };
-      });
-      console.log(aux);
-      setProgressData(aux);
-    }
-  }, [data]);
-
-  function prepareData(arr) {
-    let aux = [];
-    for (let i = 0; i < arr.length; i++) {
-      let item = arr[i];
-      let topic = data.allItems.filter((it) => it.id === item.id_course_topic && it.type === "topic")[0];
-      let module = data.modules.filter((m) => m.id === item.id_course_module)[0];
-      aux.push({
-        ...item,
-        topic_name: topic ? topic.title : "",
-        module_name: module ? module.title : "",
-        course_name: data.course.name,
-      });
-    }
-    setProgressData(aux);
+  function confirm(module, item) {
+    removeProgress(module, item);
   }
 
-  const confirm = (e) => {
-    console.log(e);
-    messageApi.success("Click on Yes");
-  };
-  const cancel = (e) => {
-    console.log(e);
-    messageApi.error("Click on No");
-  };
+  function removeProgress(module, item) {
+    console.log(module);
+    console.log(item);
+
+    console.log(data.allItems);
+    let findIndexAllItems = data.allItems.findIndex((c) => c.id === item.id && c.type === item.type);
+    console.log(findIndexAllItems);
+    try {
+      /*axios
+        .post(endpoints.course.resetProgress, { data: { module, item } })
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((err) => {
+          console.log(err);
+        });*/
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   return (
     <div className="flex flex-col w-full">
@@ -128,7 +110,7 @@ export default function CourseProgress({ data }) {
                           <p className="text-sm ml-2">{_t.title}</p>
                         </div>
                         <div>
-                          <Popconfirm title="Delete the task" description="Are you sure to delete this task?" onConfirm={confirm} onCancel={cancel} okText="Yes" cancelText="No">
+                          <Popconfirm title="Delete the task" description="Are you sure to delete this task?" onConfirm={() => confirm(item, _t)} okText="Yes" cancelText="No">
                             <IoMdClose className="cursor-pointer" />
                           </Popconfirm>
                         </div>

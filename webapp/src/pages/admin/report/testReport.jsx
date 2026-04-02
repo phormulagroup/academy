@@ -13,6 +13,8 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
+import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
+import SearchIcon from "../../../assets/Backoffice/search.svg?react";
 
 export default function TestReport({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
@@ -125,7 +127,7 @@ export default function TestReport({ data }) {
       <Form form={form} layout="vertical" onFinish={filterData}>
         <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
           <div className="flex justify-end items-end">
-            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => setIsOpenExport(true)}>
+            <Button className="w-full!" size="large" variant="solid" color="blue" onClick={() => setIsOpenExport(true)} icon={<DownloadIcon />}>
               {t("Export excel")}
             </Button>
           </div>
@@ -158,7 +160,7 @@ export default function TestReport({ data }) {
             />
           </Form.Item>
           <div className="flex justify-center items-end">
-            <Button className="w-full" size="large" onClick={form.submit} type="primary">
+            <Button className="w-full" size="large" onClick={form.submit} type="primary" icon={<SearchIcon />}>
               {t("Search")}
             </Button>
           </div>

@@ -17,6 +17,8 @@ import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
+import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
+import SearchIcon from "../../../assets/Backoffice/search.svg?react";
 
 export default function StudentProgress({ data }) {
   const { languages, selectedLanguage } = useContext(Context);
@@ -78,7 +80,7 @@ export default function StudentProgress({ data }) {
             <Input size="large" placeholder={t("Search for name, ID or e-mail")} allowClear />
           </Form.Item>
           <div className="flex justify-center items-end">
-            <Button className="w-full" size="large" onClick={form.submit} type="primary">
+            <Button className="w-full" size="large" onClick={form.submit} type="primary" icon={<SearchIcon />}>
               {t("Search")}
             </Button>
           </div>
