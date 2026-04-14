@@ -292,6 +292,17 @@ router.post("/updateProgress", async (req, res, next) => {
   }
 });
 
+router.post("/resetProgress", async (req, res, next) => {
+  console.log("//// UPDATE COURSE PROGRESS ////");
+  try {
+    let data = req.body.data;
+    console.log(data);
+    res.send(data);
+  } catch (err) {
+    throw err;
+  }
+});
+
 router.post("/module", async (req, res, next) => {
   console.log("//// UPDATE COURSE MODULE ////");
   db.getConnection(async (error, conn) => {

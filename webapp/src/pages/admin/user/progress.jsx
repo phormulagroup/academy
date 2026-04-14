@@ -38,21 +38,19 @@ export default function CourseProgress({ data }) {
   }
 
   function removeProgress(module, item) {
-    console.log(module);
-    console.log(item);
-
-    console.log(data.allItems);
     let findIndexAllItems = data.allItems.findIndex((c) => c.id === item.id && c.type === item.type);
-    console.log(findIndexAllItems);
+    let itemsToRemove = data.allItems.slice(findIndexAllItems, data.allItems.length);
+    let findIndexModulesToRemove = data.modules.findIndex((c) => c.id === module.id);
+    let modulesToRemove = data.modules.slice(findIndexModulesToRemove, data.modules.length);
     try {
-      /*axios
-        .post(endpoints.course.resetProgress, { data: { module, item } })
+      axios
+        .post(endpoints.course.resetProgress, { data: { module: modulesToRemove, items: itemsToRemove, course: data.course } })
         .then((res) => {
           console.log(res);
         })
         .catch((err) => {
           console.log(err);
-        });*/
+        });
     } catch (err) {
       console.log(err);
     }
@@ -110,7 +108,13 @@ export default function CourseProgress({ data }) {
                           <p className="text-sm ml-2">{_t.title}</p>
                         </div>
                         <div>
-                          <Popconfirm title="Delete the task" description="Are you sure to delete this task?" onConfirm={() => confirm(item, _t)} okText="Yes" cancelText="No">
+                          <Popconfirm
+                            title="Delete the task"
+                            description="Are you sure to delete this task?"
+                            onConfirm={() => confirm(item, _t, data.course)}
+                            okText="Yes"
+                            cancelText="No"
+                          >
                             <IoMdClose className="cursor-pointer" />
                           </Popconfirm>
                         </div>
