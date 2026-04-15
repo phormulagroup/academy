@@ -17,10 +17,10 @@ import Lottie from "lottie-react";
 
 import avatarImg from "../../../assets/Female.svg";
 import config from "../../../utils/config";
-import DurationIcon from "../../../assets/Duracao.svg?react";
-import CertificateIcon from "../../../assets/Certificado.svg?react";
-import TrainerIcon from "../../../assets/Formador.svg?react";
-import VideosIcon from "../../../assets/Videos.svg?react";
+import DurationIcon from "../../../assets/Duracao.svg";
+import CertificateIcon from "../../../assets/Certificado.svg";
+import TrainerIcon from "../../../assets/Formador.svg";
+import VideosIcon from "../../../assets/Videos.svg";
 import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import i18n from "../../../utils/i18n";
@@ -28,6 +28,7 @@ import certificate from "../../../utils/certificate";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
 import Countdown from "../../../components/countdown";
+import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
   const { user, languages, windowDimension } = useContext(Context);
@@ -153,6 +154,13 @@ export default function CourseDetails() {
 
   return (
     <div className="bg-[#FFFFFF] relative">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>{t("Courses")}</title>
+        <meta name="description" content={t("Courses")} />
+        <meta property="og:title" content={t("Courses")} />
+        <meta property="og:description" content={t("Courses")} />
+      </Helmet>
       <div className="container mx-auto p-6 mt-10">
         <div className="col-span-3 flex flex-col justify-center items-center mb-10">
           <p className="text-[30px] font-bold text-center">{t("Online Courses - Bial Academy")}</p>
@@ -238,13 +246,13 @@ export default function CourseDetails() {
                     <div className={`col-span-2 grid ${viewType === "list" ? "grid-cols-4" : "grid-cols-2"} gap-4`}>
                       {item.course.id_course_certificate && (
                         <div className="flex items-center">
-                          <CertificateIcon className="mr-1" />
+                          <img src={CertificateIcon} className="mr-1 max-w-[25px]" />
                           <p className="text-[16px]">{t("Certificate")}</p>
                         </div>
                       )}
                       {(item.course.settings?.duration_hours || item.course.settings?.duration_minutes) && (
                         <div className="flex items-center">
-                          <DurationIcon className="mr-1" />
+                          <img src={DurationIcon} className="mr-1 max-w-[25px]" />
                           <p className="text-[16px]">
                             {item.course.settings.duration_hours} h {item.course.settings.duration_minutes ? `${item.course.settings.duration_minutes}m` : ""}
                           </p>
@@ -252,13 +260,13 @@ export default function CourseDetails() {
                       )}
                       {item.course.settings?.video && (
                         <div className="flex items-center">
-                          <VideosIcon className="mr-1" />
+                          <img src={VideosIcon} className="mr-1 max-w-[25px]" />
                           <p className="text-[16px]">{item.course.settings.video} videos</p>
                         </div>
                       )}
                       {item.course.settings?.trainer && (
                         <div className="flex items-center">
-                          <TrainerIcon className="mr-1" />
+                          <img src={TrainerIcon} className="mr-1 max-w-[25px]" />
                           <p className="text-[16px]">{item.course.settings.trainer}</p>
                         </div>
                       )}

@@ -27,6 +27,7 @@ import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
 import CourseObjection from "./objection";
 import { computeClosable } from "antd/es/_util/hooks";
+import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
   const { user, languages, messageApi } = useContext(Context);
@@ -157,6 +158,15 @@ export default function CourseDetails() {
 
   return (
     <div className="bg-[#FFFFFF] relative">
+      {data.course && (
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>{data.course.name}</title>
+          <meta name="description" content={data.course.name} />
+          <meta property="og:title" content={data.course.name} />
+          <meta property="og:description" content={data.course.name} />
+        </Helmet>
+      )}
       {isLoading ? (
         <div className="flex justify-center items-center w-full min-h-75 col-span-3">
           <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />

@@ -30,6 +30,7 @@ import CourseObjection from "./objection";
 import CourseIcon from "../../../assets/Curso.svg?react";
 import MaterialIcon from "../../../assets/Materiais.svg?react";
 import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
+import { Helmet } from "react-helmet";
 
 const { confirm } = Modal;
 
@@ -64,11 +65,6 @@ const Learning = () => {
   useEffect(() => {
     calcProgress();
   }, [progress]);
-
-  useEffect(() => {
-    console.log(selectedCourseItem);
-    console.log(progress);
-  }, [selectedCourseItem]);
 
   async function getData() {
     try {
@@ -127,7 +123,6 @@ const Learning = () => {
   }
 
   function canAccess(obj) {
-    console.log(obj);
     return false;
   }
 
@@ -141,7 +136,7 @@ const Learning = () => {
     const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
     let findInProgress = progress.filter((p) => p[`id_course_${selectedCourseItem.type}`] === selectedCourseItem.id && p.is_completed === 1);
     let goToNextModule = false;
-    console.log(findInProgress);
+    let courseCompleted = false;
     if (findInProgress.length === 0) {
       if (
         selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
@@ -174,7 +169,7 @@ const Learning = () => {
         ];
 
         //Falta saber se é o último tópico ou teste que pode fazer se o curso não for do tipo linear
-        if (moduleSelectedCourseItem.id === modules[modules.length - 1].id)
+        if (moduleSelectedCourseItem.id === modules[modules.length - 1].id || progress.filter((p) => p.activity_type !== "module").length === allItems.length - 1) {
           auxData.push({
             id_course: data.course.id,
             id_user: user.id,
@@ -186,6 +181,9 @@ const Learning = () => {
             created_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
             modified_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
           });
+
+          courseCompleted = true;
+        }
 
         goToNextModule = true;
       } else {
@@ -216,7 +214,9 @@ const Learning = () => {
             if (goToNextModule) {
               const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
               if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
-              else console.log("último módulo");
+              else {
+                if (courseCompleted) navigate(`/${i18n.language}/courses/${slug}`, { replace: true });
+              }
             } else {
               let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex((m) => m.id === selectedCourseItem.id);
               setSelectedCourseItem(moduleSelectedCourseItem.items[indexOfSelectedItem + 1]);
@@ -289,6 +289,15 @@ const Learning = () => {
 
   return (
     <Layout>
+      {!selectedCourseItem && data.course && (
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>{data.course.name}</title>
+          <meta name="description" content={data.course.name} />
+          <meta property="og:title" content={data.course.name} />
+          <meta property="og:description" content={data.course.name} />
+        </Helmet>
+      )}
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center h-25!">
         <div className="flex justify-center items-center w-full">
@@ -352,7 +361,6 @@ const Learning = () => {
                       size="large"
                       bordered={false}
                       items={modules.map((item, mInd) => {
-                        console.log(item.items);
                         return {
                           key: item.id,
                           label: (
@@ -422,7 +430,8 @@ const Learning = () => {
                               {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
                             </div>
                             <p>
-                              {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""} {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                              {topics && topics.length > 0 ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""}{" "}
+                              {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
                             </p>
                           </div>
                         );

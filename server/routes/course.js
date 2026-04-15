@@ -294,13 +294,53 @@ router.post("/updateProgress", async (req, res, next) => {
 
 router.post("/resetProgress", async (req, res, next) => {
   console.log("//// UPDATE COURSE PROGRESS ////");
-  try {
-    let data = req.body.data;
-    console.log(data);
-    res.send(data);
-  } catch (err) {
-    throw err;
-  }
+  db.getConnection(async (error, conn) => {
+    if (error) throw error;
+    const query = util.promisify(conn.query).bind(conn);
+    const transaction = util.promisify(conn.beginTransaction).bind(conn);
+    const commit = util.promisify(conn.commit).bind(conn);
+    const rollback = util.promisify(conn.rollback).bind(conn);
+    try {
+      await transaction();
+      let data = req.body.data;
+      let course = data.course;
+      let modules = data.module;
+      let items = data.items;
+      let tests = data.tests;
+      let topicsToDelete = [];
+      let testsToDelete = [];
+      let modulesToDelete = [];
+
+      if (course.settings && course.settings.progression_type === "linear") {
+        topicsToDelete = items.map((i) => (i.type === "topic" ? i.id : null)).filter((i) => i !== null);
+        testsToDelete = tests.map((i) => i.id);
+        modulesToDelete = modules.map((m) => m.id);
+      } else if (course.settings.progression_type === "free") {
+        topicsToDelete = items[0].type === "topic" ? items[0].id : [];
+        testsToDelete = tests.map((i) => i.id);
+        modulesToDelete = modules[0].id;
+      }
+
+      const resp = await query(
+        `DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_module IN (?) AND activity_type = 'module'; ` +
+          `DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_topic IN (?) AND activity_type = 'topic'; ` +
+          `DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_test IN (?) AND activity_type = 'test' ` +
+          `DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND activity_type = 'course'`,
+        [modulesToDelete, topicsToDelete, testsToDelete],
+      );
+
+      console.log(resp);
+
+      await commit();
+      conn.release();
+      res.send(data);
+    } catch (err) {
+      console.log(err);
+      await rollback();
+      conn.release();
+      throw err;
+    }
+  });
 });
 
 router.post("/module", async (req, res, next) => {
@@ -456,6 +496,18 @@ router.post("/delete", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE course SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    res.send(deletedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/deleteTry", async (req, res, next) => {
+  console.log("//// DELETE TRY ////");
+  try {
+    console.log();
+    const query = util.promisify(db.query).bind(db);
+    const deletedRow = await query("DELETE FROM course_user_activity WHERE id = " + req.body.data.id);
     res.send(deletedRow);
   } catch (err) {
     throw err;

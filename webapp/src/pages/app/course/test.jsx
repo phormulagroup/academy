@@ -10,6 +10,7 @@ import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import dayjs from "dayjs";
 import { PiWarning } from "react-icons/pi";
 import Lottie from "lottie-react";
+import { Helmet } from "react-helmet";
 
 const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, setMetaData, modules, updateProgress, next }) => {
   const { user, messageApi } = useContext(Context);
@@ -324,6 +325,13 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
   return (
     <div>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>{selectedCourseItem.title}</title>
+        <meta name="description" content={selectedCourseItem.title} />
+        <meta property="og:title" content={selectedCourseItem.title} />
+        <meta property="og:description" content={selectedCourseItem.title} />
+      </Helmet>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
           {isTopicLocked ? (

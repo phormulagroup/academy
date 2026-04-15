@@ -6,11 +6,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Player from "@vimeo/player";
 import { RxLockClosed } from "react-icons/rx";
 import PuckRender from "../../../components/app/puckRender";
+import { Helmet } from "react-helmet";
 
 const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAllowNext, modules, allItems, collapsed }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isVideoCompleted, setIsVideoCompleted] = useState(false);
+  const [seo, setSeo] = useState({});
   const { t } = useTranslation();
 
   const playerRef = useRef(null);
@@ -101,7 +103,9 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
   }, [selectedCourseItem]);
 
   const parsedContent = useMemo(() => {
-    return selectedCourseItem.content ? JSON.parse(selectedCourseItem.content) : {};
+    const resp = selectedCourseItem.content ? JSON.parse(selectedCourseItem.content) : {};
+    setSeo({ title: resp?.root?.props?.title || null, description: resp?.root?.props?.description || null, heroImage: resp?.root?.props?.heroImage?.url || null });
+    return resp;
   }, [selectedCourseItem.content]);
 
   useEffect(() => {
@@ -109,11 +113,23 @@ const Topic = ({ course, selectedCourseItem, progress, progressPercentage, setAl
   }, [selectedCourseItem]);
 
   useEffect(() => {
+    console.log(seo);
+  }, [seo]);
+
+  useEffect(() => {
     if (isVideoCompleted) setAllowNext(true);
   }, [isVideoCompleted]);
 
   return (
     <div>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>{seo.title ?? selectedCourseItem.title}</title>
+        <meta name="description" content={seo.description ?? selectedCourseItem.title} />
+        <meta property="og:title" content={seo.title ?? selectedCourseItem.title} />
+        <meta property="og:description" content={seo.description ?? selectedCourseItem.title} />
+        {seo.heroImage?.url && <meta property="og:image" content={seo.heroImage?.url} />}
+      </Helmet>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
           {isTopicLocked ? (

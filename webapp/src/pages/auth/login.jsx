@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 
 export default function Login() {
-  const { setIsLoadingLanguage, login, messageApi, languages } = useContext(Context);
+  const { setIsLoadingLanguage, login, messageApi, languages, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
@@ -57,7 +57,7 @@ export default function Login() {
         } else {
           messageApi.open({
             type: "error",
-            content: res.data.message,
+            content: t(`${res.data.message}`),
           });
         }
         setIsButtonLoading(false);

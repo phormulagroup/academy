@@ -5,6 +5,7 @@
   --text-xs--line-height: 1.25rem;
   --ant-blue-6: #00b9d6 !important;
   --ant-blue: #00b9d6 !important;
+  --ant-color-link: #00b9d6 !important;
 }
 
 #root {

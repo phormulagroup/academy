@@ -4,7 +4,12 @@ const upload = {
   compress: (file) => {
     return new Promise((resolve, reject) => {
       console.log(file);
-      if (file.type.includes("image/svg") || file.type.includes("application/pdf") || file.type.includes("gif")) {
+      if (
+        file.type.includes("image/svg") ||
+        file.type.includes("application/pdf") ||
+        file.type.includes("gif") ||
+        file.type.includes("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+      ) {
         resolve(file);
       } else {
         new Compressor(file, {

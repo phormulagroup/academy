@@ -18,6 +18,7 @@ import Certificate from "../pages/admin/certificate";
 import CertificateDetails from "../pages/admin/certificate/details";
 import UserDetails from "../pages/admin/user/details";
 import Notification from "../pages/admin/notification";
+import Document from "../pages/admin/document";
 import Inbox from "../pages/admin/inbox";
 import Report from "../pages/admin/report";
 
@@ -37,6 +38,7 @@ export const adminRoutes = [
       { path: "templates/:id", element: <TemplateDetails /> },
       { path: "users", element: <User /> },
       { path: "users/:id", element: <UserDetails /> },
+      { path: "documents", element: <Document /> },
       { path: "media", element: <Media /> },
       { path: "certificate", element: <Certificate /> },
       { path: "certificate/:id", element: <CertificateDetails /> },

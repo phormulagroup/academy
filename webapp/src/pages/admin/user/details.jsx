@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
-import { Button, Collapse, DatePicker, Divider, Dropdown, Form, Input, Progress, Select, Tabs, Tag } from "antd";
+import { Button, Collapse, DatePicker, Divider, Dropdown, Empty, Form, Input, Progress, Select, Tabs, Tag } from "antd";
 import { IoMdMore, IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -48,6 +48,10 @@ export default function UserDetails() {
   useEffect(() => {
     getData();
   }, [id]);
+
+  useEffect(() => {
+    console.log(courseData);
+  }, [courseData]);
 
   function getData() {
     setIsLoading(true);
@@ -165,6 +169,32 @@ export default function UserDetails() {
   function scrollToResults() {
     console.log(resultsRef);
     resultsRef.current.scrollIntoView();
+  }
+
+  async function deleteTry(_try) {
+    console.log(_try);
+    try {
+      const res = await axios.post(endpoints.course.deleteTry, { data: { id: _try.id } });
+      console.log(res.data.affectedRows);
+      if (res.data.affectedRows > 0) {
+        // Update the course data
+        const updatedCourseData = courseData.map((c) => {
+          console.log(c);
+          if (c.course.id === _try.id_course) {
+            console.log(c.progress.filter((t) => t.id !== _try.id));
+            return {
+              ...c,
+              progress: c.progress.filter((t) => t.id !== _try.id),
+            };
+          }
+          return course;
+        });
+
+        setCourseData(updatedCourseData);
+      }
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   return (
@@ -353,58 +383,67 @@ export default function UserDetails() {
                         <div className="p-4">
                           <Divider dashed className="mb-4! mt-6!" />
                           <p className="text-center font-bold">{t("Tries")}</p>
-                          <Tabs
-                            className="tabs-tries"
-                            type="card"
-                            items={tries.map((_try, _tryInd) => {
-                              let meta_data = _try.meta_data ? JSON.parse(_try.meta_data) : {};
-                              let testTime = "";
-                              let answers = [];
-                              if (meta_data) {
-                                testTime = meta_data.time > 60 ? `${Math.floor(meta_data.time / 60)} min` : `${meta_data.time} s`;
-                                answers = meta_data.items;
-                              }
-                              return {
-                                key: `${_try.id}-try`,
-                                label: `${t("Try")} nº${_tryInd + 1}`,
-                                children: (
-                                  <div className="grid grid-cols-5">
-                                    <div className="flex flex-col justify-center items-center gap-2">
-                                      <p className="text-[11px]">{t("Status")}</p>
-                                      {_try.is_completed ? <PassedIcon className="text-green-400 w-10 h-10" /> : <NotPassedIcon className="text-green-400 w-10 h-10" />}
-                                      <p className="text-sm">{_try.is_completed ? t("Passed") : t("Not passed")}</p>
-                                    </div>
+                          {tries.length > 0 ? (
+                            <Tabs
+                              className="tabs-tries"
+                              type="card"
+                              items={tries.map((_try, _tryInd) => {
+                                let meta_data = _try.meta_data ? JSON.parse(_try.meta_data) : {};
+                                let testTime = "";
+                                let answers = [];
+                                if (meta_data) {
+                                  testTime = meta_data.time > 60 ? `${Math.floor(meta_data.time / 60)} min` : `${meta_data.time} s`;
+                                  answers = meta_data.items;
+                                }
+                                return {
+                                  key: `${_try.id}-try`,
+                                  label: `${t("Try")} nº${_tryInd + 1}`,
+                                  children: (
+                                    <div className="grid grid-cols-5">
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">{t("Status")}</p>
+                                        {_try.is_completed ? <PassedIcon className="text-green-400 w-10 h-10" /> : <NotPassedIcon className="text-green-400 w-10 h-10" />}
+                                        <p className="text-sm">{_try.is_completed ? t("Passed") : t("Not passed")}</p>
+                                      </div>
 
-                                    <div className="flex flex-col justify-center items-center gap-2">
-                                      <p className="text-[11px]">{t("Correct")}</p>
-                                      <CorrectIcon className="text-[#010202] w-10 h-10" />
-                                      <p className="text-sm">
-                                        {answers.filter((_a) => _a.is_correct).length}/{answers.length}
-                                      </p>
-                                    </div>
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">{t("Correct")}</p>
+                                        <CorrectIcon className="text-[#010202] w-10 h-10" />
+                                        <p className="text-sm">
+                                          {answers.filter((_a) => _a.is_correct).length}/{answers.length}
+                                        </p>
+                                      </div>
 
-                                    <div className="flex flex-col justify-center items-center gap-2">
-                                      <p className="text-[11px]">{t("Time")}</p>
-                                      <TimeIcon className="text-[#010202] w-10 h-10" />
-                                      <p className="text-sm">{testTime}</p>
-                                    </div>
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">{t("Time")}</p>
+                                        <TimeIcon className="text-[#010202] w-10 h-10" />
+                                        <p className="text-sm">{testTime}</p>
+                                      </div>
 
-                                    <div className="flex flex-col justify-center items-center gap-2">
-                                      <p className="text-[11px]">{t("Date")}</p>
-                                      <CalendarIcon className="text-[#010202] w-10 h-10" />
-                                      <p className="text-sm">{dayjs(_try.created_at).format("DD/MM/YYYY")}</p>
-                                    </div>
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">{t("Date")}</p>
+                                        <CalendarIcon className="text-[#010202] w-10 h-10" />
+                                        <p className="text-sm">{dayjs(_try.created_at).format("DD/MM/YYYY")}</p>
+                                      </div>
 
-                                    <div className="flex flex-col justify-center items-center gap-2">
-                                      <p className="text-[11px]">{t("Hour")}</p>
-                                      <ThumbsUp className="text-[#010202] w-10 h-10" />
-                                      <p className="text-sm">{dayjs(_try.created_at).format("HH:mm")}</p>
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">{t("Hour")}</p>
+                                        <ThumbsUp className="text-[#010202] w-10 h-10" />
+                                        <p className="text-sm">{dayjs(_try.created_at).format("HH:mm")}</p>
+                                      </div>
+                                      <div className="col-span-5">
+                                        <Button dashed onClick={() => deleteTry(_try)}>
+                                          {t("Delete try")}
+                                        </Button>
+                                      </div>
                                     </div>
-                                  </div>
-                                ),
-                              };
-                            })}
-                          />
+                                  ),
+                                };
+                              })}
+                            />
+                          ) : (
+                            <Empty description={t("No tries made yet")} />
+                          )}
                         </div>
                       </div>
                     ),
@@ -483,7 +522,7 @@ export default function UserDetails() {
                           </p>
                         </div>
                       </div>
-                      {c.progress.length > 0 && <CourseProgress data={c} />}
+                      {c.progress.length > 0 && <CourseProgress data={c} user={data} />}
                     </div>
                   ),
                 },

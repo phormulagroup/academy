@@ -546,16 +546,16 @@ export default function Main() {
               }}
               columns={[
                 {
+                  title: t("ID"),
+                  dataIndex: "id",
+                  key: "id",
+                  width: "60px",
+                },
+                {
                   title: t("User"),
                   dataIndex: "name",
                   key: "name",
                   width: "200px",
-                },
-                {
-                  title: t("Nr. Rep."),
-                  dataIndex: "id",
-                  key: "id",
-                  width: "120px",
                 },
                 {
                   title: "Satus",
@@ -603,7 +603,7 @@ export default function Main() {
                   (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize + paginationByTable.bestStudents?.pageSize,
                 )
                 .map((u) => (
-                  <Link to={`/admin/users/${u.id}`}>
+                  <Link to={`/admin/users/${u.id_user}`}>
                     <div className="flex justify-start items-center">
                       <div
                         className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
@@ -619,7 +619,7 @@ export default function Main() {
                       <div className="flex flex-col">
                         <p className="text-black">{u.user_name}</p>
                         <p className="text-[11px] text-black underline">{u.user_email}</p>
-                        <p className="text-[11px] text-black mt-1">ID: {u.id}</p>
+                        <p className="text-[11px] text-black mt-1">ID: {u.id_user}</p>
                       </div>
                     </div>
                   </Link>

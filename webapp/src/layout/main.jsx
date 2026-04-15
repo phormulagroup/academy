@@ -67,7 +67,12 @@ const Main = () => {
                 </>
               ) : (
                 <>
-                  <Link to={`/${i18n.language}/courses`}>{t("Courses")}</Link>
+                  <Link className="mx-2" to={`/${i18n.language}/courses`}>
+                    {t("Courses")}
+                  </Link>
+                  <Link className="mx-2" to={`/${i18n.language}/documents`}>
+                    {t("Documents")}
+                  </Link>
                 </>
               )}
             </div>

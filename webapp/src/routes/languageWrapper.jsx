@@ -31,7 +31,8 @@ export default function LanguageWrapper() {
     if (user && Object.keys(user).length > 0) {
       const userLang = languages.filter((l) => l.id === user.id_lang)[0]?.code || "en";
       if (lang !== userLang && user.id_role !== 1) {
-        const to = `/${userLang}${location.pathname.split("/").slice(2).join("/")}${location.search}${location.hash}`;
+        const to = `/${userLang}/${location.pathname.split("/").slice(2).join("/")}${location.search}${location.hash}`;
+        i18n.changeLanguage(userLang);
         window.history.replaceState(null, "", to); // muda o URL sem recarregar
       }
     }

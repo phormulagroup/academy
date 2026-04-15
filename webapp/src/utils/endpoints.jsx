@@ -66,6 +66,7 @@ const endpoints = {
     module: "/course/module",
     create: "/course/create",
     delete: "/course/delete",
+    deleteTry: "/course/deleteTry",
     duplicate: "/course/duplicate",
   },
   test: {
@@ -115,6 +116,14 @@ const endpoints = {
     create: "/notification/create",
     send: "/notification/send",
     delete: "/notification/delete",
+  },
+  document: {
+    read: "/document/read",
+    readByLang: "/document/readByLang",
+    readBySlug: "/document/readBySlug",
+    update: "/document/update",
+    create: "/document/create",
+    delete: "/document/delete",
   },
 };
 

@@ -1,5 +1,6 @@
 import { Header } from "./components/header";
 import { Footer } from "./components/footer";
+import ImagePickerField from "./blocks/image/ImagePickerField";
 
 export const Root = {
   fields: {
@@ -11,15 +12,12 @@ export const Root = {
       type: "textarea",
       label: "Page Description",
     },
-    heroImage: {
-      type: "text",
-      label: "Image",
-    },
+    heroImage: { type: "custom", label: "Imagem", render: (props) => <ImagePickerField {...props} /> },
   },
   defaultProps: {
-    title: "My Page",
-    description: "This is a dynamic page powered by Puck.",
-    heroImage: "https://picsum.photos/1200/400",
+    title: "",
+    description: "",
+    heroImage: "",
   },
   render: ({ puck: { isEditing, renderDropZone: DropZone } }) => {
     return (

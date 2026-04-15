@@ -29,7 +29,7 @@ import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
 import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
 import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
 
-export default function CourseProgress({ data }) {
+export default function CourseProgress({ data, user }) {
   const { messageApi } = useContext(Context);
   const { t } = useTranslation();
 
@@ -42,9 +42,11 @@ export default function CourseProgress({ data }) {
     let itemsToRemove = data.allItems.slice(findIndexAllItems, data.allItems.length);
     let findIndexModulesToRemove = data.modules.findIndex((c) => c.id === module.id);
     let modulesToRemove = data.modules.slice(findIndexModulesToRemove, data.modules.length);
+    let tests = data.allItems.filter((c) => c.type === "test");
+    console.log(data.course);
     try {
       axios
-        .post(endpoints.course.resetProgress, { data: { module: modulesToRemove, items: itemsToRemove, course: data.course } })
+        .post(endpoints.course.resetProgress, { data: { user: user, module: modulesToRemove, items: itemsToRemove, course: data.course, tests } })
         .then((res) => {
           console.log(res);
         })

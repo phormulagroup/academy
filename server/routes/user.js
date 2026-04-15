@@ -64,9 +64,9 @@ router.get("/readById", async (req, res) => {
       let tests = rows[3];
       let progress = rows[4];
 
-      res.send({ user, courses, modules, topics, tests, progress });
+      res.send({ user: userRow[0], courses, modules, topics, tests, progress });
     } else {
-      res.send({ user });
+      res.send({ user: userRow[0] });
     }
   } catch (e) {
     throw e;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Player from "@vimeo/player";
 import { RxLockClosed } from "react-icons/rx";
 import { AiOutlineCheck } from "react-icons/ai";
+import { Helmet } from "react-helmet";
 
 const Module = ({ selectedCourseItem, progress, selectCourseItem, modules, allItems }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,6 +18,13 @@ const Module = ({ selectedCourseItem, progress, selectCourseItem, modules, allIt
 
   return (
     <div>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>{selectedCourseItem.title}</title>
+        <meta name="description" content={selectedCourseItem.title} />
+        <meta property="og:title" content={selectedCourseItem.title} />
+        <meta property="og:description" content={selectedCourseItem.title} />
+      </Helmet>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
           {isTopicLocked ? (
@@ -35,7 +43,7 @@ const Module = ({ selectedCourseItem, progress, selectCourseItem, modules, allIt
                   console.log(item);
                   return (
                     <div className="p-4 border-solid border border-black mt-4 flex items-center cursor-pointer" onClick={() => selectCourseItem(item)}>
-                      {progress.length > 0 && progress.filter((p) => (p.id_course_topic === item.id || p.id_course_test === item.id) && p.is_completed).length > 0 ? (
+                      {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${item.type}`] === item.id).length > 0 ? (
                         <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                           <AiOutlineCheck className="text-white" />
                         </div>

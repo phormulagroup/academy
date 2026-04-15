@@ -22,7 +22,7 @@ import { CgClose } from "react-icons/cg";
 import dayjs from "dayjs";
 
 export default function Settings({ course }) {
-  const { languages, createLog, user, selectedLanguage } = useContext(Context);
+  const { languages, createLog, user, selectedLanguage, messageApi } = useContext(Context);
   const [isOpenMedia, setIsOpenMedia] = useState(false);
   const [mediaKey, setMediaKey] = useState(null);
   const [mediaKeyInd, setMediaKeyInd] = useState(null);
@@ -92,8 +92,10 @@ export default function Settings({ course }) {
       });
 
       console.log(res);
+      messageApi.open({ type: "success", content: t("Course settings updated successfully") });
     } catch (err) {
       console.log(err);
+      messageApi.open({ type: "error", content: t("Failed to update course settings") });
     }
   }
 

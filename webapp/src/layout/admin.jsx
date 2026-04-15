@@ -77,6 +77,7 @@ const Main = () => {
         { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
         { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
         { key: "/admin/orders", label: t("Orders"), icon: <OrdersIcon /> },
+        { key: "/admin/documents", label: t("Documents"), icon: <OrdersIcon /> },
       ],
     },
     {
