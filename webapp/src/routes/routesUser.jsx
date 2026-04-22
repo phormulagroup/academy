@@ -11,6 +11,7 @@ import Notifications from "../pages/app/notification";
 import Inbox from "../pages/app/inbox";
 import Document from "../pages/app/document";
 import DocumentDetails from "../pages/app/document/details";
+import Error404 from "../pages/app/404";
 
 export const userRoutes = [
   // Com layout principal
@@ -27,10 +28,9 @@ export const userRoutes = [
       { path: "notifications", element: <Notifications /> }, // "/:lang/notifications"
       { path: "inbox", element: <Inbox /> }, // "/:lang/inbox"
       { path: "courses/:slug", element: <CourseDetails /> }, // "/:lang/courses/:slug"
-      // { path: "*", element: <Navigate to="." replace /> },  // opcional
+      { path: "*", element: <Error404 /> }, // Errro 404 para rotas não encontradas dentro do layout, mantendo :lang
     ],
   },
-
   // Fora do MainLayout, mas ainda dentro de :lang
   { path: "courses/:slug/learning", element: <Learning /> }, // "/:lang/courses/:slug/learning"
 ];

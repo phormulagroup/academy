@@ -58,7 +58,7 @@ export default function Settings({ course }) {
 
   function openMedia(k, i) {
     setMediaKey(k);
-    if (i !== null || i !== undefined) setMediaKeyInd(i);
+    if (i !== null && i !== undefined) setMediaKeyInd(i);
     setIsOpenMedia(true);
   }
 

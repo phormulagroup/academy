@@ -21,4 +21,5 @@ export const publicRoutes = [
   { path: "recover", element: <Recover /> },
   { path: "register", element: <Register /> },
   { path: "gerar-password", element: <GeneratePassword /> },
+  { path: "*", element: <Error404 /> },
 ];

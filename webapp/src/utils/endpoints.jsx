@@ -125,6 +125,15 @@ const endpoints = {
     create: "/document/create",
     delete: "/document/delete",
   },
+  download: {
+    read: "/download/read",
+    readById: "/download/readById",
+    readByLang: "/download/readByLang",
+    readBySlug: "/download/readBySlug",
+    update: "/download/update",
+    create: "/download/create",
+    delete: "/download/delete",
+  },
 };
 
 export default endpoints;

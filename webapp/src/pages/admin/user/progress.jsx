@@ -1,33 +1,12 @@
 import axios from "axios";
-import { useContext, useEffect, useRef } from "react";
-import { useState } from "react";
-import { Button, Collapse, DatePicker, Divider, Dropdown, Form, Input, Popconfirm, Progress, Select, Tabs, Tag, Tooltip } from "antd";
-import { IoMdClose, IoMdMore, IoMdRefresh } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-import Table from "../../../components/admin/table";
-import Create from "../../../components/admin/user/create";
-import Update from "../../../components/admin/user/update";
-import Logs from "../../../components/admin/logs";
-
-import { Context } from "../../../utils/context";
-
-import endpoints from "../../../utils/endpoints";
+import { useContext } from "react";
+import { Collapse, Divider, Popconfirm } from "antd";
+import { IoMdClose } from "react-icons/io";
 import { RxCheck, RxChevronDown, RxChevronUp, RxSwitch } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
-import Status from "../../../components/admin/user/status";
-import { useNavigate, useParams } from "react-router-dom";
-import UserCard from "../../../components/admin/user/card";
-import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
-import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
-import dayjs from "dayjs";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
-import TimeIcon from "../../../assets/Backoffice/Tempo.svg?react";
-import PassedIcon from "../../../assets/Backoffice/Status-01.svg?react";
-import NotPassedIcon from "../../../assets/Backoffice/Status-02.svg?react";
-import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
-import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
-import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
+
+import { Context } from "../../../utils/context";
+import endpoints from "../../../utils/endpoints";
 
 export default function CourseProgress({ data, user }) {
   const { messageApi } = useContext(Context);

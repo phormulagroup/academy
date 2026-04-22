@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Footer } from "antd/es/layout/layout";
 import { Button, Checkbox, DatePicker, Divider, Dropdown, Form, Input, message, Select } from "antd";
 import { FaChevronRight } from "react-icons/fa";
@@ -121,7 +121,9 @@ export default function Register() {
             </Dropdown>
           </div>
           <div className="flex flex-col p-6">
-            <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <Link to={`/${i18n.language}`}>
+              <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            </Link>
             <Form
               form={form}
               layout="vertical"

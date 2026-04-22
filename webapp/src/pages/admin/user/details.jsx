@@ -2,20 +2,13 @@ import axios from "axios";
 import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
 import { Button, Collapse, DatePicker, Divider, Dropdown, Empty, Form, Input, Progress, Select, Tabs, Tag } from "antd";
-import { IoMdMore, IoMdRefresh } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-import Table from "../../../components/admin/table";
-import Create from "../../../components/admin/user/create";
-import Update from "../../../components/admin/user/update";
-import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { RxCheck, RxChevronDown, RxChevronUp, RxSwitch } from "react-icons/rx";
+import { RxChevronDown, RxChevronUp } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
-import Status from "../../../components/admin/user/status";
+
 import { useNavigate, useParams } from "react-router-dom";
 import UserCard from "../../../components/admin/user/card";
 import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
@@ -431,7 +424,7 @@ export default function UserDetails() {
                                         <ThumbsUp className="text-[#010202] w-10 h-10" />
                                         <p className="text-sm">{dayjs(_try.created_at).format("HH:mm")}</p>
                                       </div>
-                                      <div className="col-span-5">
+                                      <div className="col-span-5 flex flex-col justify-center items-center mt-6">
                                         <Button dashed onClick={() => deleteTry(_try)}>
                                           {t("Delete try")}
                                         </Button>
@@ -442,7 +435,7 @@ export default function UserDetails() {
                               })}
                             />
                           ) : (
-                            <Empty description={t("No tries made yet")} />
+                            <Empty className="mt-6" description={t("No tries made yet")} />
                           )}
                         </div>
                       </div>

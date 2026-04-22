@@ -7,7 +7,6 @@ import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
 import Create from "../../../components/admin/user/create";
-import Update from "../../../components/admin/user/update";
 import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
@@ -124,11 +123,6 @@ export default function User() {
     setTableData(aux);
   }
 
-  function openUpdate(obj) {
-    setSelectedData(obj);
-    setIsOpenUpdate(true);
-  }
-
   function openStatus(obj) {
     setSelectedData(obj);
     setIsOpenStatus(true);
@@ -157,7 +151,6 @@ export default function User() {
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
-      <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
       <Status data={selectedData} open={isOpenStatus} close={closeAction} />
       <Logs table={"project"} id_project={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
       <div className="flex justify-between items-center mb-4">

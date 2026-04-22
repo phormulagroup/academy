@@ -25,6 +25,11 @@
   --bt-count: 8;
 }
 
+div[data-epdf-i="divider-1"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 ol,
 ul {
   list-style: disc;

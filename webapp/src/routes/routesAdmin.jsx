@@ -21,6 +21,7 @@ import Notification from "../pages/admin/notification";
 import Document from "../pages/admin/document";
 import Inbox from "../pages/admin/inbox";
 import Report from "../pages/admin/report";
+import Download from "../pages/admin/download";
 
 export const adminRoutes = [
   {
@@ -39,6 +40,7 @@ export const adminRoutes = [
       { path: "users", element: <User /> },
       { path: "users/:id", element: <UserDetails /> },
       { path: "documents", element: <Document /> },
+      { path: "downloads", element: <Download /> },
       { path: "media", element: <Media /> },
       { path: "certificate", element: <Certificate /> },
       { path: "certificate/:id", element: <CertificateDetails /> },

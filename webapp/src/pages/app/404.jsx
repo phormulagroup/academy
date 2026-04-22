@@ -15,10 +15,9 @@ export default function Error404() {
   }, [courses]);
 
   return (
-    <div className="p-2">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">404</div>
-      </div>
+    <div className="container mx-auto p-6 mt-10">
+      <p className="text-[60px] font-[600] text-center">404</p>
+      <p className="text-center">Page not found</p>
     </div>
   );
 }

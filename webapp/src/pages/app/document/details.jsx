@@ -14,12 +14,14 @@ import { useRef } from "react";
 import config from "../../../utils/config";
 import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
+import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
+import { PDFViewer, ScrollStrategy, ZoomMode } from "@embedpdf/react-pdf-viewer";
 
-export default function DocumentDetails() {
+export default function DocumentDetails({ themePreference = "light" }) {
   const { user, courses, languages } = useContext(Context);
   const [data, setData] = useState(null);
 
-  const containerRef = useRef(null);
+  const viewerRef = useRef(null);
 
   const navigate = useNavigate();
   const { slug } = useParams();
@@ -28,6 +30,11 @@ export default function DocumentDetails() {
   useEffect(() => {
     getData();
   }, []);
+
+  // Update theme when preference changes
+  useEffect(() => {
+    viewerRef.current?.container?.setTheme({ preference: themePreference });
+  }, [themePreference]);
 
   function getData() {
     axios
@@ -53,12 +60,30 @@ export default function DocumentDetails() {
               {t("Back to documents")}
             </Button>
           </div>
-          <iframe
-            title="PowerPoint"
-            src={`https://view.officeapps.live.com/op/embed.aspx?src=https://geccpapi.phormuladev.com/media/Presentation1.pptx`}
-            className="w-full h-[500px]"
-            frameBorder="0"
-          />
+          <div className="max-w-[1200px] h-[700px] w-full overflow-hidden mx-auto" ref={viewerRef}>
+            <PDFViewer
+              key={data?.file}
+              config={{
+                //src: `${config.server_ip}/media/${data?.file}`,
+                src: `${config.server_ip}/media/${data?.file}`,
+                zoom: {
+                  defaultZoomLevel: ZoomMode.FitWidth, // or a number like 1.5
+                },
+                scroll: {
+                  defaultStrategy: ScrollStrategy.Horizontal, // or ScrollStrategy.Horizontal
+                  defaultPageGap: 5,
+                },
+
+                // Esconder TODA a UI
+                disabledCategories: ["annotation", "panel-search", "panel-comment", "document", "form", "insert", "redaction"],
+
+                theme: {
+                  preference: "light",
+                },
+              }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
         </div>
       ) : (
         <p>{t("Document not found")}</p>

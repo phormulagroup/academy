@@ -57,14 +57,11 @@ const Main = () => {
       label: "Website",
       type: "group",
       children: [
-        { key: "/admin/pages", label: t("Pages"), icon: <PagesIcon /> },
-        { key: "/admin/articles", label: t("Articles"), icon: <ArticlesIcon /> },
         { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
         { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
         { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
         { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
         { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
-        { key: "/admin/settings", label: t("Settings"), icon: <SettingsIcon /> },
       ],
     },
     {
@@ -73,11 +70,10 @@ const Main = () => {
       type: "group",
       children: [
         { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
-        { key: "/admin/quizzes", label: t("Quizzes"), icon: <TestsIcon /> },
         { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
         { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
-        { key: "/admin/orders", label: t("Orders"), icon: <OrdersIcon /> },
         { key: "/admin/documents", label: t("Documents"), icon: <OrdersIcon /> },
+        { key: "/admin/downloads", label: t("Downloads"), icon: <OrdersIcon /> },
       ],
     },
     {

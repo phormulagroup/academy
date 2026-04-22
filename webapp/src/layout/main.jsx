@@ -61,17 +61,32 @@ const Main = () => {
             <div className="col-span-3 flex justify-center items-center">
               {user && Object.keys(user).length === 0 ? (
                 <>
-                  <Link to={`/${i18n.language}/login`}>{t("Login")}</Link>
-                  <span className="mx-2">|</span>
-                  <Link to={`/${i18n.language}/register`}>{t("Register")}</Link>
+                  <Link className="mx-2" to={`/${i18n.language}`}>
+                    {t("About")}
+                  </Link>
+                  <Link className="mx-2" to={`/${i18n.language}/login`}>
+                    {t("Login")}
+                  </Link>
+                  <Link className="mx-2" to={`/${i18n.language}/register`}>
+                    {t("Register")}
+                  </Link>
+                  <Link className="mx-2" to={`/${i18n.language}/faqs`}>
+                    {t("Faqs")}
+                  </Link>
                 </>
               ) : (
                 <>
+                  <Link className="mx-2" to={`/${i18n.language}`}>
+                    {t("About")}
+                  </Link>
                   <Link className="mx-2" to={`/${i18n.language}/courses`}>
                     {t("Courses")}
                   </Link>
                   <Link className="mx-2" to={`/${i18n.language}/documents`}>
                     {t("Documents")}
+                  </Link>
+                  <Link className="mx-2" to={`/${i18n.language}/faqs`}>
+                    {t("Faqs")}
                   </Link>
                 </>
               )}

@@ -107,7 +107,9 @@ export default function Login() {
             </Dropdown>
           </div>
           <div className="flex flex-col p-6">
-            <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <Link to={`/${i18n.language}`}>
+              <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            </Link>
             <p className="text-center text-sm mb-6">
               Bem vind@ à <b>BIAL Regional Academy</b>,
               <br /> a plataforma de e-learning!

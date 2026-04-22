@@ -102,7 +102,9 @@ export default function Recover() {
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
         <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15">
           <div className="flex flex-col p-6">
-            <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <Link to={`/${i18n.language}`}>
+              <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            </Link>
             {currentStep === 0 ? (
               <div>
                 <p className="text-center text-sm mb-6">

@@ -44,24 +44,27 @@ export default function Document() {
   }
 
   return (
-    <div className="container mx-auto p-6 flex flex-col justify-start items-center gap-6 mt-10">
-      <p className="text-[30px] font-bold text-center">{t("Library of documents")}</p>
+    <div className="container mx-auto p-6 flex flex-col justify-start items-center mt-10">
+      <div className="flex flex-col mb-10">
+        <p className="text-[30px] font-bold text-center">{t("Library of documents")}</p>
+        <p className="italic text-center">Keeping training in mind</p>
+      </div>
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
           <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
         </div>
       ) : data && data.length > 0 ? (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 w-full">
           {data.map((d) => (
-            <Link className="flex flex-col gap-2 border border-[#000] rounded cursor-pointer" to={`/${i18n.language}/documents/${d.slug}`}>
-              <div>
-                <div className="bg-center bg-cover h-[200px] w-full" style={{ backgroundImage: `url(${config.server_ip}/media/${d.img})` }}></div>
-                <div className="p-4 flex flex-col gap-2 justify-between items-center">
-                  <p className="text-lg font-bold">{d.name}</p>
-                  <Button className="mt-2" size="large" type="primary">
-                    Read more
-                  </Button>
-                </div>
+            <Link className="flex flex-col shadow-[0px_3px_6px_#00000029] rounded-[5px] cursor-pointer" to={`/${i18n.language}/documents/${d.slug}`}>
+              <div className="bg-center bg-cover h-[200px] w-full" style={{ backgroundImage: `url(${config.server_ip}/media/${d.img})` }}></div>
+              <div className="p-6 min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
+                <p className="text-lg font-[600] text-[#163986] text-center">{d.name}</p>
+              </div>
+              <div className="p-6 flex flex-col gap-2 justify-between items-center">
+                <Button size="large" type="primary" className="w-full">
+                  Read more
+                </Button>
               </div>
             </Link>
           ))}
