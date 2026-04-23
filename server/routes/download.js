@@ -28,7 +28,10 @@ router.get("/readByLang", async (req, res) => {
   console.log("//// READ DOWNLOAD ////");
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("SELECT * FROM download WHERE id_lang = ?; SELECT * FROM download_item WHERE id_lang = ?", [req.query.id_lang, req.query.id_lang]);
+    const rows = await query("SELECT * FROM download WHERE id_lang = ?; SELECT * FROM download_item WHERE id_download IN (SELECT id FROM download WHERE id_lang = ?)", [
+      req.query.id_lang,
+      req.query.id_lang,
+    ]);
     res.send(rows);
   } catch (e) {
     throw e;
@@ -53,12 +56,18 @@ router.post("/create", async (req, res, next) => {
   console.log("//// CREATE DOWNLOAD ////");
   try {
     const query = util.promisify(db.query).bind(db);
-    const data = req.body.data;
+    let data = req.body.data;
     let items = data.items;
     delete data.items;
 
     data.slug = slugify(data.name, { lower: true, strict: true });
     const insertedRow = await query("INSERT INTO download SET ?", data);
+    let dataInsert = [];
+
+    for (let i = 0; i < items.length; i++) {
+      dataInsert.push([insertedRow.insertId, items[i].name, items[i].file, data.id_lang]);
+    }
+    const insertedItemsRow = await query("INSERT INTO download_item (id_download, name, filem, id_lang) VALUES ?", [dataInsert]);
     res.send(insertedRow);
   } catch (err) {
     throw err;

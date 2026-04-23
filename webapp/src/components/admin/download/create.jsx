@@ -28,10 +28,10 @@ export default function Create({ open, close, submit }) {
     setIsButtonLoading(true);
     console.log(values);
     try {
-      //await create({ data: { ...values, id_lang: selectedLanguage.id }, table: "document" });
+      await create({ data: { ...values, id_lang: selectedLanguage.id }, table: "download" });
       setIsButtonLoading(false);
-      //close(true);
-      //form.resetFields();
+      close(true);
+      form.resetFields();
     } catch (err) {
       console.log(err);
       setIsButtonLoading(false);

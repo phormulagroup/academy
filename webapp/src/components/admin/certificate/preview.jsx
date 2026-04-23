@@ -9,7 +9,7 @@ export default function CertificatePreview({ data }) {
   }, [data]);
   return (
     <div>
-      <PDFViewer key={Date.now()} width="100%" height="100%" className="min-h-[500px]">
+      <PDFViewer key={Date.now()} width="100%" height="100%" className="min-h-125">
         <Document>
           <Page
             orientation="landscape"

@@ -17,12 +17,14 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import config from "../../utils/config";
+import { Link } from "react-router-dom";
 
 export default function Download() {
   const { user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
 
@@ -40,8 +42,21 @@ export default function Download() {
     axios
       .get(endpoints.download.readByLang, { params: { id_lang: selectedLanguage.id } })
       .then((res) => {
-        setData(res.data);
-        prepareData(res.data);
+        let downloads = res.data[0];
+        let downloadItems = res.data[1];
+        let aux = [];
+
+        for (let i = 0; i < downloads.length; i++) {
+          aux.push({
+            name: downloads[i].name,
+            thumbnail: downloads[i].thumbnail,
+            banner: downloads[i].banner,
+            files: downloadItems.filter((d) => d.id_download === downloads[i].id).length,
+          });
+        }
+        setData(downloads);
+        setItems(downloadItems);
+        prepareData(downloads, downloadItems);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -50,18 +65,28 @@ export default function Download() {
       });
   }
 
-  function prepareData(array) {
+  function prepareData(array, items) {
     const aux = [];
     for (let i = 0; i < array.length; i++) {
+      let downloadItems = items.filter((d) => d.id_download === array[i].id);
       aux.push({
         ...array[i],
         key: i + 1,
-        name: array[i].name,
-        img: (
+        thumbnail: (
           <div className="flex justify-start items-center">
-            <img src={`${config.server_ip}/media/${array[i].img}`} className="max-w-[100px] h-auto" />
+            <img src={`${config.server_ip}/media/${array[i].thumbnail}`} className="max-w-25 h-auto" />
           </div>
         ),
+        files:
+          downloadItems.length > 0
+            ? downloadItems.map((f, i) => (
+                <div>
+                  <Link to={`${config.server_ip}/media/${f.file}`} target="_blank">
+                    <p>{f.name}</p>
+                  </Link>
+                </div>
+              ))
+            : 0,
         is_deleted: array[i].is_deleted ? (
           <Tag variant="outlined" color={"red"}>
             Inativo
@@ -83,7 +108,7 @@ export default function Download() {
                     label: "Update",
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
-                    onClick: () => openUpdate(array[i]),
+                    onClick: () => openUpdate({ ...array[i], items: downloadItems }),
                   },
                   {
                     label: "Delete",
@@ -162,8 +187,8 @@ export default function Download() {
           },
           {
             title: "File",
-            dataIndex: "file",
-            key: "file",
+            dataIndex: "files",
+            key: "files",
             width: "50%",
           },
           {
