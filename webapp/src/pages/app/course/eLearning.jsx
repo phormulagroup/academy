@@ -289,7 +289,7 @@ const Learning = () => {
 
   return (
     <Layout>
-      {!selectedCourseItem && data.course && (
+      {!selectedCourseItem && data?.course && (
         <Helmet>
           <meta charSet="utf-8" />
           <title>{data.course.name}</title>
@@ -367,11 +367,13 @@ const Learning = () => {
                             <div className="flex flex-col">
                               <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
                                 {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                  <div
+                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                  >
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
-                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p className={`text-sm ml-2`}>{item.title}</p>
                                 {data?.course?.settings.progression_type === "linear"
@@ -390,11 +392,13 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
                                   {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
-                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <div
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                    >
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
-                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                   )}
                                   <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
                                   {data?.course?.settings.progression_type === "linear"
@@ -476,11 +480,11 @@ const Learning = () => {
                             <div className="flex flex-col">
                               <div className="p-2 cursor-pointer flex items-center">
                                 {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p className={`text-sm ml-2`} onClick={() => selectCourseItem(item)}>
                                   {item.title}
@@ -501,11 +505,11 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
                                   {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
-                                    <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
-                                    <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                   )}
                                   <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
                                   {data?.course?.settings.progression_type === "linear"
@@ -592,12 +596,13 @@ const Learning = () => {
                 (selectedCourseItem.type === "topic" || selectedCourseItem.type === "test") &&
                 (data.course.material || data.course.objection) ? (
                   <Tabs
+                    centered={windowDimension.width < 768}
                     items={[
                       {
                         key: "1",
                         label: (
-                          <div className="flex p-2 justify-center items-center">
-                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Content")}</p>
+                          <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
                           </div>
                         ),
                         forceRender: true,
@@ -630,8 +635,8 @@ const Learning = () => {
                       data.course.material && {
                         key: "2",
                         label: (
-                          <div className="flex p-2 justify-center items-center">
-                            <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Materials")}</p>
+                          <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                            <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
                           </div>
                         ),
                         children: <CourseMaterial data={data.course} />,
@@ -639,8 +644,8 @@ const Learning = () => {
                       data.course.objection && {
                         key: "3",
                         label: (
-                          <div className="flex p-2 justify-center items-center">
-                            <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-sm sm:text-[20px]">{t("Objection books")}</p>
+                          <div className="flex flex-col lg:flex-row  p-2 justify-center items-center">
+                            <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
                           </div>
                         ),
                         children: <CourseObjection data={data.course} />,

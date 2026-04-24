@@ -29,6 +29,8 @@ const notificationRouter = require("./routes/notification");
 const inboxRouter = require("./routes/inbox");
 const documentRouter = require("./routes/document");
 const downloadRouter = require("./routes/download");
+const faqsRouter = require("./routes/faqs");
+const formRouter = require("./routes/form");
 
 /* Socket imports */
 const setupSocket = require("./socket");
@@ -108,5 +110,7 @@ app.use("/notification", middleware, notificationRouter);
 app.use("/inbox", middleware, inboxRouter);
 app.use("/document", middleware, documentRouter);
 app.use("/download", middleware, downloadRouter);
+app.use("/faqs", faqsRouter);
+app.use("/form", formRouter);
 
 module.exports = app;

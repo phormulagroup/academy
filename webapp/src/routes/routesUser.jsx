@@ -12,6 +12,10 @@ import Inbox from "../pages/app/inbox";
 import Document from "../pages/app/document";
 import DocumentDetails from "../pages/app/document/details";
 import Error404 from "../pages/app/404";
+import Download from "../pages/app/download";
+import DownloadDetails from "../pages/app/download/details";
+import Faqs from "../pages/app/faqs";
+import Contact from "../pages/app/contact";
 
 export const userRoutes = [
   // Com layout principal
@@ -25,8 +29,12 @@ export const userRoutes = [
       { path: "courses", element: <Course /> }, // "/:lang/courses"
       { path: "documents", element: <Document /> }, // "/:lang/courses"
       { path: "documents/:slug", element: <DocumentDetails /> }, // "/:lang/courses"
+      { path: "downloads", element: <Download /> }, // "/:lang/courses"
+      { path: "downloads/:slug", element: <DownloadDetails /> }, // "/:lang/courses"
+      { path: "faqs", element: <Faqs /> }, // "/:lang/faqs"
       { path: "notifications", element: <Notifications /> }, // "/:lang/notifications"
       { path: "inbox", element: <Inbox /> }, // "/:lang/inbox"
+      { path: "contact", element: <Contact /> }, // "/:lang/contact"
       { path: "courses/:slug", element: <CourseDetails /> }, // "/:lang/courses/:slug"
       { path: "*", element: <Error404 /> }, // Errro 404 para rotas não encontradas dentro do layout, mantendo :lang
     ],

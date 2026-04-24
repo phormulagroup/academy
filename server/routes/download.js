@@ -46,7 +46,7 @@ router.get("/readBySlug", async (req, res) => {
       "SELECT * FROM download WHERE slug = ? AND id_lang = ?; SELECT * FROM download_item WHERE id_download IN (SELECT id FROM download WHERE slug = ? AND id_lang = ?)",
       [req.query.slug, req.query.id_lang, req.query.slug, req.query.id_lang],
     );
-    res.send(rows);
+    res.send({ download: rows[0][0], items: rows[1] });
   } catch (e) {
     throw e;
   }
@@ -90,6 +90,28 @@ router.post("/update", async (req, res, next) => {
     const updatedRow = await query("UPDATE download SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
 
     res.send(updatedRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/preview", async (req, res, next) => {
+  console.log("//// PREVIEW DOWNLOAD ////");
+  try {
+    const query = util.promisify(db.query).bind(db);
+    const previewRow = await query("UPDATE download_item SET view = view + 1 WHERE id = " + req.body.data.id);
+    res.send(previewRow);
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.post("/download", async (req, res, next) => {
+  console.log("//// DOWNLOAD DOWNLOAD ////");
+  try {
+    const query = util.promisify(db.query).bind(db);
+    const downloadRow = await query("UPDATE download_item SET download = download + 1 WHERE id = " + req.body.data.id);
+    res.send(downloadRow);
   } catch (err) {
     throw err;
   }

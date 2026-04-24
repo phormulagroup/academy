@@ -30,7 +30,7 @@ import { computeClosable } from "antd/es/_util/hooks";
 import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
-  const { user, languages, messageApi } = useContext(Context);
+  const { user, languages, messageApi, windowDimension } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -315,12 +315,13 @@ export default function CourseDetails() {
           <div className="container m-auto p-2 sm:p-0">
             <Tabs
               defaultActiveKey="1"
+              centered={windowDimension.width < 768}
               items={[
                 {
                   key: "1",
                   label: (
-                    <div className="flex p-2 justify-center items-center">
-                      <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Course")}</p>
+                    <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                      <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
                     </div>
                   ),
                   children: <CourseContent modules={modules} progress={progress} data={data} />,
@@ -328,8 +329,8 @@ export default function CourseDetails() {
                 data.course.material && {
                   key: "2",
                   label: (
-                    <div className="flex p-2 justify-center items-center">
-                      <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-lg sm:text-[20px]">{t("Materials")}</p>
+                    <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                      <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
                     </div>
                   ),
                   children: <CourseMaterial data={data.course} />,
@@ -337,8 +338,8 @@ export default function CourseDetails() {
                 data.course.objection && {
                   key: "3",
                   label: (
-                    <div className="flex p-2 justify-center items-center">
-                      <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 mr-2" /> <p className="font-bold text-sm sm:text-[20px]">{t("Objection books")}</p>
+                    <div className="flex flex-col lg:flex-row  p-2 justify-center items-center">
+                      <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
                     </div>
                   ),
                   children: <CourseObjection data={data.course} />,

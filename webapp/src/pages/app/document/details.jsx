@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
 import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 import { PDFViewer, ScrollStrategy, ZoomMode } from "@embedpdf/react-pdf-viewer";
+import { Helmet } from "react-helmet";
 
 export default function DocumentDetails({ themePreference = "light" }) {
   const { user, courses, languages } = useContext(Context);
@@ -54,9 +55,16 @@ export default function DocumentDetails({ themePreference = "light" }) {
     <div className="container mx-auto p-6">
       {data ? (
         <div>
+          <Helmet>
+            <meta charSet="utf-8" />
+            <title>{data.name} - Bial Regional Academy</title>
+            <meta name="description" content={`${data.name} - Bial Regional Academy`} />
+            <meta property="og:title" content={`${data.name} - Bial Regional Academy`} />
+            <meta property="og:description" content={`${data.name} - Bial Regional Academy`} />
+          </Helmet>
           <div className="flex justify-between items-center mb-4">
             <p className="text-[24px] font-bold">{data?.name}</p>
-            <Button type="text" icon={<AiOutlineArrowLeft />} onClick={() => navigate(`/${i18n.language}/documents`)}>
+            <Button size="large" type="text" icon={<AiOutlineArrowLeft />} onClick={() => navigate(`/${i18n.language}/documents`, { replace: true })}>
               {t("Back to documents")}
             </Button>
           </div>
@@ -86,7 +94,16 @@ export default function DocumentDetails({ themePreference = "light" }) {
           </div>
         </div>
       ) : (
-        <p>{t("Document not found")}</p>
+        <div>
+          <Helmet>
+            <meta charSet="utf-8" />
+            <title>Document not found - Bial Regional Academy</title>
+            <meta name="description" content={`Document not found - Bial Regional Academy`} />
+            <meta property="og:title" content={`Document not found} - Bial Regional Academy`} />
+            <meta property="og:description" content={`Document not found - Bial Regional Academy`} />
+          </Helmet>
+          <p>{t("Document not found")}</p>
+        </div>
       )}
     </div>
   );

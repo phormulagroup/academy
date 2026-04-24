@@ -80,11 +80,11 @@ export default function CourseContent({ modules, progress, data }) {
                 }
               >
                 {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                     <RxCheck className="text-white" />
                   </div>
                 ) : (
-                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                 )}
                 <div className="flex flex-col ml-4">
                   <p className={`text-[16px]`}>{item.title}</p>
@@ -119,11 +119,11 @@ export default function CourseContent({ modules, progress, data }) {
                     className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}
                   >
                     {progress.length > 0 && progress.filter((p) => p.is_completed === 1 && p.activity_type === _t.type && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
-                      <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                      <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                         <RxCheck className="text-white" />
                       </div>
                     ) : (
-                      <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                      <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                     )}
                     <p className="text-sm ml-2">{_t.title}</p>
                   </div>

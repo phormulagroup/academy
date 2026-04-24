@@ -8,12 +8,16 @@ import Register from "../pages/auth/register";
 import Main from "../pages/app";
 import Error404 from "../pages/app/404";
 import Recover from "../pages/auth/recover";
+import Faqs from "../pages/app/faqs";
+import Contact from "../pages/app/contact";
 
 export const publicRoutes = [
   {
     element: <MainLayout />,
     children: [
       { index: true, element: <Main /> },
+      { path: "faqs", element: <Faqs /> },
+      { path: "contact", element: <Contact /> },
       { path: "*", element: <Error404 /> },
     ],
   },

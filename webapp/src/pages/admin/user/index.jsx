@@ -18,7 +18,7 @@ import Status from "../../../components/admin/user/status";
 import { useNavigate } from "react-router-dom";
 
 export default function User() {
-  const { user, languages } = useContext(Context);
+  const { user, languages, selectedLanguage } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -36,8 +36,8 @@ export default function User() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (user.id_role === 1 || user.id_role === 2) getData();
-  }, [user]);
+    getData();
+  }, [selectedLanguage]);
 
   function getData() {
     setIsLoading(true);

@@ -247,11 +247,11 @@ export default function Result() {
                               <div className="p-2 cursor-pointer flex">
                                 {c.progress.length > 0 &&
                                 c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <RxCheck className="text-white" />
                                   </div>
                                 ) : (
-                                  <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <div className="flex flex-col ml-4">
                                   <p className={`text-[16px]`}>{item.title}</p>
@@ -278,11 +278,11 @@ export default function Result() {
                                     {c.progress.length > 0 &&
                                     c.progress.filter((p) => p.is_completed === 1 && p.id_course === c.course.id && (p.id_course_topic === _t.id || p.id_course_test === _t.id))
                                       .length > 0 ? (
-                                      <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                         <RxCheck className="text-white" />
                                       </div>
                                     ) : (
-                                      <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                      <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                     )}
                                     <p className="text-sm ml-2">{_t.title}</p>
                                   </div>

@@ -22,6 +22,8 @@ import Document from "../pages/admin/document";
 import Inbox from "../pages/admin/inbox";
 import Report from "../pages/admin/report";
 import Download from "../pages/admin/download";
+import Faqs from "../pages/admin/faqs";
+import FormSubmission from "../pages/admin/formSubmission";
 
 export const adminRoutes = [
   {
@@ -46,6 +48,8 @@ export const adminRoutes = [
       { path: "certificate/:id", element: <CertificateDetails /> },
       { path: "notification", element: <Notification /> },
       { path: "inbox", element: <Inbox /> },
+      { path: "faqs", element: <Faqs /> },
+      { path: "answers", element: <FormSubmission /> },
       { path: "*", element: <Navigate to="/admin/" replace /> },
     ],
   },

@@ -1,13 +1,13 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
+import { Button, Dropdown, Image, Tag } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
-import Create from "../../components/admin/download/create";
-import Update from "../../components/admin/download/update";
+import Create from "../../components/admin/faqs/create";
+import Update from "../../components/admin/faqs/update";
 import Delete from "../../components/admin/delete";
 
 import { Context } from "../../utils/context";
@@ -17,14 +17,13 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import config from "../../utils/config";
-import { Link } from "react-router-dom";
+import i18n from "../../utils/i18n";
 
-export default function Download() {
+export default function Faqs() {
   const { user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
-  const [items, setItems] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
 
@@ -35,28 +34,15 @@ export default function Download() {
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [selectedLanguage]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.download.readByLang, { params: { id_lang: selectedLanguage.id } })
+      .get(endpoints.faqs.readByLang, { params: { id_lang: selectedLanguage.id } })
       .then((res) => {
-        let downloads = res.data[0];
-        let downloadItems = res.data[1];
-        let aux = [];
-
-        for (let i = 0; i < downloads.length; i++) {
-          aux.push({
-            name: downloads[i].name,
-            thumbnail: downloads[i].thumbnail,
-            banner: downloads[i].banner,
-            files: downloadItems.filter((d) => d.id_download === downloads[i].id).length,
-          });
-        }
-        setData(downloads);
-        setItems(downloadItems);
-        prepareData(downloads, downloadItems);
+        setData(res.data);
+        prepareData(res.data);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -65,45 +51,30 @@ export default function Download() {
       });
   }
 
-  function prepareData(array, items) {
+  function prepareData(array) {
     const aux = [];
     for (let i = 0; i < array.length; i++) {
-      let downloadItems = items.filter((d) => d.id_download === array[i].id);
+      let images = array[i].images ? JSON.parse(array[i].images) : [];
+
       aux.push({
         ...array[i],
         key: i + 1,
-        thumbnail: (
-          <div className="flex justify-start items-center">
-            <img src={`${config.server_ip}/media/${array[i].thumbnail}`} className="max-w-25 h-auto" />
-          </div>
-        ),
-        files:
-          downloadItems.length > 0
-            ? downloadItems.map((f, i) => (
-                <div className="flex flex-col justify-center items-start gap-2">
-                  <Link to={`${config.server_ip}/media/${f.file}`} target="_blank" className="underline!">
-                    <p>{f.name}</p>
-                  </Link>
-                  <div className="mb-4">
-                    <p className="text-[12px]">
-                      {t("Views")}: {f.view}
-                    </p>
-                    <p className="text-[12px]">
-                      {t("Downloads")}: {f.download}
-                    </p>
-                  </div>
-                </div>
-              ))
-            : 0,
-        is_deleted: array[i].is_deleted ? (
-          <Tag variant="outlined" color={"red"}>
-            Inativo
-          </Tag>
-        ) : (
-          <Tag variant="outlined" color={"green"}>
-            Ativo
-          </Tag>
-        ),
+        description: <div dangerouslySetInnerHTML={{ __html: array[i].description }} />,
+        images:
+          images.length > 0 ? (
+            <div className="flex justify-start items-center gap-4">
+              {images.map((item) => (
+                <Image
+                  width={100}
+                  alt={item.img}
+                  src={`${config.server_ip}/media/${item.img}`}
+                  preview={{
+                    mask: { blur: true },
+                  }}
+                />
+              ))}
+            </div>
+          ) : null,
         full_data: array[i],
         actions: (
           <div className="flex justify-end items-center">
@@ -116,7 +87,7 @@ export default function Download() {
                     label: "Update",
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
-                    onClick: () => openUpdate({ ...array[i], items: downloadItems }),
+                    onClick: () => openUpdate(array[i]),
                   },
                   {
                     label: "Delete",
@@ -162,15 +133,15 @@ export default function Download() {
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
-      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="document" />
+      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="faqs" />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Downloads")}</p>
+          <p className="text-xl font-bold">{t("Faqs")}</p>
         </div>
         <div>
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
           <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
-            {t("Add download")}
+            {t("Add faq")}
           </Button>
         </div>
       </div>
@@ -179,25 +150,23 @@ export default function Download() {
         loading={isLoading}
         columns={[
           {
-            title: "",
-            dataIndex: "thumbnail",
-            key: "thumbnail",
-            width: "100px",
-          },
-          {
-            title: "Nome",
-            dataIndex: "name",
-            key: "name",
+            title: "Title",
+            dataIndex: "title",
+            key: "title",
             sort: true,
             sortType: "text",
-            search: "name",
-            width: "50%",
+            search: "title",
+            width: "400px",
           },
           {
-            title: "File",
-            dataIndex: "files",
-            key: "files",
-            width: "50%",
+            title: "Description",
+            dataIndex: "description",
+            key: "description",
+          },
+          {
+            title: "Images",
+            dataIndex: "images",
+            key: "images",
           },
           {
             title: "",

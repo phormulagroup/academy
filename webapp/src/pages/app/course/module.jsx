@@ -44,11 +44,11 @@ const Module = ({ selectedCourseItem, progress, selectCourseItem, modules, allIt
                   return (
                     <div className="p-4 border-solid border border-black mt-4 flex items-center cursor-pointer" onClick={() => selectCourseItem(item)}>
                       {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${item.type}`] === item.id).length > 0 ? (
-                        <div className={`w-6.25 h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                        <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                           <AiOutlineCheck className="text-white" />
                         </div>
                       ) : (
-                        <div className={`w-6.25 h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                        <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                       )}
                       <p className="text-sm ml-2">{item.title}</p>
                     </div>

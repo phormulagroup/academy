@@ -8,6 +8,10 @@
   --ant-color-link: #00b9d6 !important;
 }
 
+a {
+  color: unset !important;
+}
+
 #root {
   width: 100vw;
   height: 100vh;
@@ -25,9 +29,45 @@
   --bt-count: 8;
 }
 
-div[data-epdf-i="divider-1"] {
-  visibility: hidden;
-  pointer-events: none;
+.nav-link {
+  line-height: 1.4;
+  position: relative;
+  margin: 0.5rem;
+  text-align: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background-color: #3b82f6; /* azul (ajusta se quiseres) */
+  transition:
+    width 0.3s ease,
+    left 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #3b82f6 !important;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+  left: 0;
+}
+
+.nav-link.active {
+  color: #3b82f6 !important;
+}
+
+.nav-link.active::after {
+  width: 100%;
+  left: 0;
 }
 
 ol,
@@ -35,6 +75,10 @@ ul {
   list-style: disc;
   padding: 0 1rem;
   margin: 1.25rem 1rem 1.25rem 0.4rem;
+}
+
+.ant-input-data-count {
+  font-size: 12px !important;
 }
 
 input,

@@ -156,13 +156,13 @@ export default function CourseDetails() {
     <div className="bg-[#FFFFFF] relative">
       <Helmet>
         <meta charSet="utf-8" />
-        <title>{t("Courses")}</title>
-        <meta name="description" content={t("Courses")} />
-        <meta property="og:title" content={t("Courses")} />
-        <meta property="og:description" content={t("Courses")} />
+        <title>{t("Courses")} - Bial Regional Academy</title>
+        <meta name="description" content={`${t("Courses")} - Bial Regional Academy`} />
+        <meta property="og:title" content={`${t("Courses")} - Bial Regional Academy`} />
+        <meta property="og:description" content={`${t("Courses")} - Bial Regional Academy`} />
       </Helmet>
       <div className="container mx-auto p-6 mt-10">
-        <div className="col-span-3 flex flex-col justify-center items-center mb-10">
+        <div className="flex flex-col justify-center items-center mb-10">
           <p className="text-[30px] font-bold text-center">{t("Online Courses - Bial Academy")}</p>
           <p className="italic text-center">Keeping training in mind</p>
         </div>

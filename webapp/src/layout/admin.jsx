@@ -33,6 +33,7 @@ import SMTPIcon from "../assets/Backoffice/Menu/SMTP.svg?react";
 import APIsIcon from "../assets/Backoffice/Menu/APIS.svg?react";
 import { RxFile } from "react-icons/rx";
 import NotificationIcon from "../assets/Notifications-off.svg?react";
+import { Helmet } from "react-helmet";
 
 const { Header, Content, Sider } = Layout;
 
@@ -62,6 +63,7 @@ const Main = () => {
         { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
         { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
         { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
+        { key: "/admin/faqs", label: t("FAQs"), icon: <SettingsIcon /> },
       ],
     },
     {
@@ -83,7 +85,7 @@ const Main = () => {
       children: [
         { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
         { key: "/admin/permissions", label: t("Permissions"), icon: <PermissionsIcon /> },
-        { key: "/admin/account", label: t("My Account"), icon: <AccountIcon /> },
+        { key: `/admin/users/${user.id}`, label: t("My Account"), icon: <AccountIcon /> },
       ],
     },
     {
@@ -139,6 +141,9 @@ const Main = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <title>{t("Admin Dashboard")} | BIAL Regional Academy</title>
+      </Helmet>
       <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
       <Layout>
         {windowDimension.width > 1080 ? (

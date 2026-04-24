@@ -15,6 +15,7 @@ import config from "../../../utils/config";
 import Lottie from "lottie-react";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { useTranslation } from "react-i18next";
+import { Helmet } from "react-helmet";
 
 export default function Document() {
   const { user, courses, languages } = useContext(Context);
@@ -45,6 +46,13 @@ export default function Document() {
 
   return (
     <div className="container mx-auto p-6 flex flex-col justify-start items-center mt-10">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>{t("Documents")} - Bial Regional Academy</title>
+        <meta name="description" content={`${t("Documents")} - Bial Regional Academy`} />
+        <meta property="og:title" content={`${t("Documents")} - Bial Regional Academy`} />
+        <meta property="og:description" content={`${t("Documents")} - Bial Regional Academy`} />
+      </Helmet>
       <div className="flex flex-col mb-10">
         <p className="text-[30px] font-bold text-center">{t("Library of documents")}</p>
         <p className="italic text-center">Keeping training in mind</p>
@@ -54,10 +62,10 @@ export default function Document() {
           <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
         </div>
       ) : data && data.length > 0 ? (
-        <div className="grid grid-cols-4 gap-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full">
           {data.map((d) => (
             <Link className="flex flex-col shadow-[0px_3px_6px_#00000029] rounded-[5px] cursor-pointer" to={`/${i18n.language}/documents/${d.slug}`}>
-              <div className="bg-center bg-cover h-[200px] w-full" style={{ backgroundImage: `url(${config.server_ip}/media/${d.img})` }}></div>
+              <div className="bg-center bg-cover h-[200px] w-full rounded-t-[5px]" style={{ backgroundImage: `url(${config.server_ip}/media/${d.img})` }}></div>
               <div className="p-6 min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
                 <p className="text-lg font-[600] text-[#163986] text-center">{d.name}</p>
               </div>

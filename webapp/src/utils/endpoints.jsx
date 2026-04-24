@@ -125,6 +125,13 @@ const endpoints = {
     create: "/document/create",
     delete: "/document/delete",
   },
+  faqs: {
+    read: "/faqs/read",
+    readByLang: "/faqs/readByLang",
+    update: "/faqs/update",
+    create: "/faqs/create",
+    delete: "/faqs/delete",
+  },
   download: {
     read: "/download/read",
     readById: "/download/readById",
@@ -132,7 +139,16 @@ const endpoints = {
     readBySlug: "/download/readBySlug",
     update: "/download/update",
     create: "/download/create",
+    preview: "/download/preview",
+    download: "/download/download",
     delete: "/download/delete",
+  },
+  form: {
+    read: "/form/read",
+    readByLang: "/form/readByLang",
+    update: "/form/update",
+    create: "/form/create",
+    delete: "/form/delete",
   },
 };
 

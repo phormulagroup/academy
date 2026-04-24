@@ -7,11 +7,14 @@ import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRe
 
 import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
+import bialLogoAnimation from "../../assets/Bial-Academy-Logo-Animated.json";
 
 import endpoints from "../../utils/endpoints";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
+import { Helmet } from "react-helmet";
+import Lottie from "lottie-react";
 
 export default function Main() {
   const { user } = useContext(Context);
@@ -20,7 +23,14 @@ export default function Main() {
 
   return (
     <div className="container mx-auto p-6 h-full">
-      <div className="grid grid-cols-2 gap-4 h-full">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Bial Regional Academy</title>
+        <meta name="description" content={`Bial Regional Academy`} />
+        <meta property="og:title" content={`Bial Regional Academy`} />
+        <meta property="og:description" content={`Bial Regional Academy`} />
+      </Helmet>
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 h-full">
         <div className="flex flex-col justify-center h-full">
           <p className="text-[30px] font-bold">{t("Sobre Bial Regional Academy")}</p>
           <p className="italic">{t("Keeping training in mind")}</p>
@@ -29,12 +39,18 @@ export default function Main() {
           <br />
           <p>
             BIAL é uma empresa farmacêutica de inovação. Dedicados à investigação, desenvolvimento e comercialização de medicamentos, estamos empenhados em contribuir para a
-            melhoria da qualidade de vida das pessoas em todo o mundo. BIAL rege-se por diversos valores: ao serviço da saúde, aposta na qualidade e na inovação, excelência da
-            investigação científica, rigor, responsabilidade e trabalho em Equipa. Nesse sentido, apresentamos este site, acessível a colaboradores BIAL e aos seus profissionais de
-            saúde, com a missão de proporcionar informação relevante dos produtos BIAL disponíveis em cada região. O objetivo do e-learning é permitir aos colaboradores BIAL o
-            acesso fácil, conveniente, cómodo e direto aos conteúdos de Formação comercial e sobre os produtos BIAL. Desta forma, acreditamos que estamos a contribuir para a
-            formação de equipas de excelência, bem preparadas, dotadas dos conhecimentos e das ferramentas certas para proporcionar mais e melhor informação aos profissionais de
-            saúde e à comunidade em geral.
+            melhoria da qualidade de vida das pessoas em todo o mundo. <br />
+            <br />
+            BIAL rege-se por diversos valores: ao serviço da saúde, aposta na qualidade e na inovação, excelência da investigação científica, rigor, responsabilidade e trabalho em
+            Equipa. <br />
+            <br />
+            Nesse sentido, apresentamos este site, acessível a colaboradores BIAL e aos seus profissionais de saúde, com a missão de proporcionar informação relevante dos produtos
+            BIAL disponíveis em cada região. <br />
+            <br />O objetivo do e-learning é permitir aos colaboradores BIAL o acesso fácil, conveniente, cómodo e direto aos conteúdos de Formação comercial e sobre os produtos
+            BIAL. <br />
+            <br />
+            Desta forma, acreditamos que estamos a contribuir para a formação de equipas de excelência, bem preparadas, dotadas dos conhecimentos e das ferramentas certas para
+            proporcionar mais e melhor informação aos profissionais de saúde e à comunidade em geral.
           </p>
           {Object.keys(user || {}).length === 0 && (
             <div className="flex items-center">
@@ -50,6 +66,10 @@ export default function Main() {
               </Link>
             </div>
           )}
+        </div>
+
+        <div className="flex justify-center items-center">
+          <Lottie animationData={bialLogoAnimation} loop={true} className="max-w-150" />
         </div>
       </div>
     </div>

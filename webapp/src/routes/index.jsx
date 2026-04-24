@@ -66,7 +66,7 @@ export default function AppRoutes() {
   const element = finalRoutes ? useRoutes(finalRoutes) : null;
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: "#163986", fontFamily: "Poppins", blue: "#00b9d6" } }}>
+    <ConfigProvider theme={{ token: { colorPrimary: "#163986", fontFamily: "Poppins", blue: "#00b9d6", controlInteractiveSize: 20 } }}>
       {isLoading ? <Loading /> : isLoadingLanguage ? <LoadingLanguage /> : element}
     </ConfigProvider>
   );
