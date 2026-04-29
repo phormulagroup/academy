@@ -17,9 +17,17 @@ import { Helmet } from "react-helmet";
 import Lottie from "lottie-react";
 
 export default function Main() {
-  const { user } = useContext(Context);
+  const { user, personalization } = useContext(Context);
+  const [data, setData] = useState(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    console.log(personalization);
+    if (personalization?.json) {
+      setData(JSON.parse(personalization.json));
+    } else setData({});
+  }, [personalization]);
 
   return (
     <div className="container mx-auto p-6 h-full">
@@ -34,24 +42,13 @@ export default function Main() {
         <div className="flex flex-col justify-center h-full">
           <p className="text-[30px] font-bold">{t("Sobre Bial Regional Academy")}</p>
           <p className="italic">{t("Keeping training in mind")}</p>
-          <br />
-          <p>Bem vindo à BIAL Regional Academy, a plataforma de e-learning!</p>
-          <br />
-          <p>
-            BIAL é uma empresa farmacêutica de inovação. Dedicados à investigação, desenvolvimento e comercialização de medicamentos, estamos empenhados em contribuir para a
-            melhoria da qualidade de vida das pessoas em todo o mundo. <br />
-            <br />
-            BIAL rege-se por diversos valores: ao serviço da saúde, aposta na qualidade e na inovação, excelência da investigação científica, rigor, responsabilidade e trabalho em
-            Equipa. <br />
-            <br />
-            Nesse sentido, apresentamos este site, acessível a colaboradores BIAL e aos seus profissionais de saúde, com a missão de proporcionar informação relevante dos produtos
-            BIAL disponíveis em cada região. <br />
-            <br />O objetivo do e-learning é permitir aos colaboradores BIAL o acesso fácil, conveniente, cómodo e direto aos conteúdos de Formação comercial e sobre os produtos
-            BIAL. <br />
-            <br />
-            Desta forma, acreditamos que estamos a contribuir para a formação de equipas de excelência, bem preparadas, dotadas dos conhecimentos e das ferramentas certas para
-            proporcionar mais e melhor informação aos profissionais de saúde e à comunidade em geral.
-          </p>
+          {data?.text ? (
+            <div className="homepage_text" dangerouslySetInnerHTML={{ __html: data.text }} />
+          ) : (
+            <div className="mt-4">
+              <p>{t("Welcome to BIAL Regional Academy, the e-learning platform!")}</p>
+            </div>
+          )}
           {Object.keys(user || {}).length === 0 && (
             <div className="flex items-center">
               <Link to={`/${i18n.language}/login`}>
@@ -69,7 +66,7 @@ export default function Main() {
         </div>
 
         <div className="flex justify-center items-center">
-          <Lottie animationData={bialLogoAnimation} loop={true} className="max-w-150" />
+          <Lottie animationData={bialLogoAnimation} loop={true} className="max-w-150 flex justify-center items-center" />
         </div>
       </div>
     </div>

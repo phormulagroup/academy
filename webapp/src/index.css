@@ -104,6 +104,14 @@ select,
   justify-content: center !important;
 }
 
+.homepage_text {
+  margin-top: 20px;
+}
+
+.homepage_text p {
+  margin: 10px 0 10px 0 !important;
+}
+
 .auth-form .ant-form-item-label {
   display: flex;
   justify-content: center;
@@ -739,6 +747,10 @@ iframe {
 
 .tabs-tries .ant-tabs-tab-active:hover .ant-tabs-tab-btn {
   color: #fff !important;
+}
+
+.icon-blue {
+  filter: brightness(0) saturate(100%) invert(13%) sepia(96%) saturate(2090%) hue-rotate(215deg) brightness(96%) contrast(93%);
 }
 
 @import "tailwindcss";

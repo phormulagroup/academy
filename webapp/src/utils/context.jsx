@@ -27,6 +27,7 @@ const ContextProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [selectedInbox, setSelectedInbox] = useState({});
+  const [personalization, setPersonalization] = useState({});
 
   const inboxRef = useRef(inbox);
   const selectedInboxRef = useRef(selectedInbox);
@@ -38,7 +39,7 @@ const ContextProvider = ({ children }) => {
 
   const { t } = useTranslation();
 
-  const [tablesName] = useState({ user: "Utilizador", course: "Curso", test: "Test" });
+  const [tablesName] = useState({ user: t("User"), course: t("Course"), test: t("Test"), language: t("Language") });
 
   const [messageApi, contextMessageHolder] = message.useMessage();
   const [notificationApi, contextNotificationHolder] = notification.useNotification();
@@ -49,6 +50,10 @@ const ContextProvider = ({ children }) => {
     getData();
     getLanguages();
   }, []);
+
+  useEffect(() => {
+    getPersonalization(languages);
+  }, [i18n.language]);
 
   useEffect(() => {
     if (Object.keys(user).length === 0) return;
@@ -147,6 +152,7 @@ const ContextProvider = ({ children }) => {
     try {
       const res = await axios.get(endpoints.language.read);
       setLanguages(res.data);
+      getPersonalization(res.data);
 
       const auxLanguages = res.data;
       for (let i = 0; i < auxLanguages.length; i++) {
@@ -229,6 +235,19 @@ const ContextProvider = ({ children }) => {
       setCourses(coursesList.data);
       const rolesList = await axios.get(endpoints.role.read, { headers: { Authorization: token } });
       setRoles(rolesList.data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function getPersonalization(languagesData) {
+    if (languagesData.length === 0) return;
+    try {
+      const langStorage = localStorage.getItem("i18nextLng");
+      const auxLanguage = languagesData.filter((_l) => (langStorage ? _l.code === langStorage : _l.is_default === 1))[0];
+
+      const res = await axios.get(endpoints.personalization.readByLang, { params: { id_lang: auxLanguage.id } });
+      setPersonalization(res.data.filter((s) => s.name === "homepage_text")[0] ?? {});
     } catch (err) {
       console.log(err);
     }
@@ -356,6 +375,7 @@ const ContextProvider = ({ children }) => {
         setInbox,
         selectedInbox,
         setSelectedInbox,
+        personalization,
       }}
     >
       {contextMessageHolder}

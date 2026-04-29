@@ -87,11 +87,6 @@ export default function FormSubmission() {
     setTableData(aux);
   }
 
-  function openUpdate(obj) {
-    setSelectedData(obj);
-    setIsOpenUpdate(true);
-  }
-
   function openDelete(obj) {
     setSelectedData(obj);
     setIsOpenDelete(true);
@@ -101,14 +96,12 @@ export default function FormSubmission() {
     if (c) {
       getData();
     }
-    setIsOpenUpdate(false);
-    setIsOpenCreate(false);
     setIsOpenDelete(false);
   }
 
   return (
     <div className="p-2">
-      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="form_submission" />
+      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="form" />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Form Submissions")}</p>

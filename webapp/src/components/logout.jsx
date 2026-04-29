@@ -20,7 +20,7 @@ function Logout({ open, close, submit }) {
       ]}
     >
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">Tem que a certeza que quer fazer logout?</p>
+        <p className="text-[16px] font-bold">{t("Are you sure you want to log out?")}</p>
       </div>
     </Modal>
   );

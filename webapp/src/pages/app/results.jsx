@@ -296,7 +296,7 @@ export default function Result() {
                           return (
                             <div className="flex justify-center items-center">
                               <div className="mr-2">
-                                {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
+                                {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapse")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
                               </div>
                               <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                                 {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
@@ -312,7 +312,7 @@ export default function Result() {
                 expandIcon={(panelProps) => {
                   return (
                     <div className="flex justify-center items-center">
-                      <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapase")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
+                      <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapse")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
                       <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                         {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
                       </div>

@@ -84,7 +84,7 @@ export default function Download() {
         </div>
       ) : (
         <div className="mb-4">
-          <Empty description="No downloads found" />
+          <Empty description={t("No downloads found")} />
         </div>
       )}
     </div>

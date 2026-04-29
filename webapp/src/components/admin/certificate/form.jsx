@@ -43,14 +43,14 @@ export default function CertificateForm({ form, data, submit, preview }) {
         onFinish={submit}
         layout="vertical"
         validateMessages={{
-          required: "Este campo é obrigatório!",
+          required: t("This field is required"),
         }}
         onValuesChange={preview}
       >
         <Form.Item name="id" hidden>
           <Input size="large" />
         </Form.Item>
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
+        <Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
           <Input size="large" />
         </Form.Item>
         <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.background !== currentValues.background}>

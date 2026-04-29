@@ -27,7 +27,7 @@ import Lottie from "lottie-react";
 import { Helmet } from "react-helmet";
 
 export default function Contact() {
-  const { languages, user } = useContext(Context);
+  const { languages, user, messageApi } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,16 +36,27 @@ export default function Contact() {
 
   const { t } = useTranslation();
 
-  function submit() {
+  const [form] = Form.useForm();
+
+  function submit(values) {
     setIsButtonLoading(true);
     axios
-      .get(endpoints.form.create, { params: { id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } })
+      .post(endpoints.form.create, { data: { ...values, id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } })
       .then((res) => {
         console.log(res);
         setIsButtonLoading(false);
+        messageApi.open({
+          type: "success",
+          content: t("You message was sent successfully! We will reply as soon as possible."),
+        });
+        form.resetFields();
       })
       .catch((err) => {
         console.log(err);
+        messageApi.open({
+          type: "error",
+          content: t("An error occurred while sending your message, try again later."),
+        });
         setIsButtonLoading(false);
       });
   }
@@ -65,7 +76,7 @@ export default function Contact() {
         <p className="mt-6 text-[16px]">{t("For any questions or clarifications, please send us a message through this Contact Form.")}</p>
       </div>
       <div className="w-full flex flex-col justify-center items-center">
-        <Form onFinish={submit} className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-[1200px]" layout="vertical">
+        <Form form={form} onFinish={submit} className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-[1200px]" layout="vertical">
           <Form.Item name="subject" label={t("Subject")} className="col-span-3 md:col-span-1">
             <Select
               size="large"
@@ -77,19 +88,19 @@ export default function Contact() {
               options={[
                 {
                   label: t("Medical and scientific information"),
-                  value: t("Medical and scientific information"),
+                  value: "Medical and scientific information",
                 },
                 {
                   label: t("Courses"),
-                  value: t("Courses"),
+                  value: "Courses",
                 },
                 {
                   label: t("Technical support"),
-                  value: t("Technical support"),
+                  value: "Technical support",
                 },
                 {
                   label: t("Other subjects"),
-                  value: t("Other subjects"),
+                  value: "Other subjects",
                 },
               ]}
             />
@@ -107,7 +118,7 @@ export default function Contact() {
             <p className="text-[12px] text-[#707070]">{t("Fields marked with * are required.")}</p>
           </div>
           <div className="flex col-span-1 md:col-span-3">
-            <Form.Item name="remember" valuePropName="checked" className="mb-0!">
+            <Form.Item name="acceptance" valuePropName="checked" className="mb-0!">
               <Checkbox size="large">
                 <p className="text-[#707070] text-[12px]">
                   {t("By submitting this Contact Form, I declare that I am familiar with this website's Privacy Policy, as well as the Terms and Conditions, available below.")}

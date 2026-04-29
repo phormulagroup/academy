@@ -163,7 +163,7 @@ export default function CourseDetails() {
       </Helmet>
       <div className="container mx-auto p-6 mt-10">
         <div className="flex flex-col justify-center items-center mb-10">
-          <p className="text-[30px] font-bold text-center">{t("Online Courses - Bial Academy")}</p>
+          <p className="text-[30px] font-bold text-center">{t("Online Courses")} - Bial Academy</p>
           <p className="italic text-center">Keeping training in mind</p>
         </div>
         {isLoading ? (
@@ -277,11 +277,11 @@ export default function CourseDetails() {
                       <Link to={`/${i18n.language}/courses/${item.course.slug}`} className="w-full!">
                         {calcProgress(item.progress, item.modules) === 100 ? (
                           <Button size="large" color="blue" variant="solid" className="w-full!">
-                            Rever
+                            {t("Review")}
                           </Button>
                         ) : (
                           <Button size="large" type="primary" className="w-full!">
-                            {calcProgress(item.progress, item.modules) === 0 ? "Iniciar" : "Entrar"}
+                            {calcProgress(item.progress, item.modules) === 0 ? t("Start") : t("Enter")}
                           </Button>
                         )}
                       </Link>

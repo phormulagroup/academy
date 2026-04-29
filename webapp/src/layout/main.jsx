@@ -200,12 +200,12 @@ const Main = () => {
                 isLoggedIn
                   ? !item.hideOnLoggedIn && (
                       <Link key={item.path} className={`nav-link ${window.location.pathname === item.path ? "active" : ""}`} to={item.path} onClick={() => closeDrawer()}>
-                        {item.label}
+                        {t(item.label)}
                       </Link>
                     )
                   : !item.loggedIn && (
                       <Link key={item.path} className="nav-link" to={item.path} onClick={() => closeDrawer()}>
-                        {item.label}
+                        {t(item.label)}
                       </Link>
                     ),
               )}
@@ -379,12 +379,12 @@ const Main = () => {
             </div>
             <div className="flex justify-center md:justify-start items-center gap-4">
               <Link to={`/${i18n.language}/contact`}>
-                <p className="text-white text-sm underline text-center md:text-left">Formulário de contacto</p>
+                <p className="text-white text-sm underline text-center md:text-left">{t("Contact Form")}</p>
               </Link>
               <p className="text-white">|</p>
-              <p className="text-white text-sm underline text-center md:text-left">Termos e condições</p>
+              <p className="text-white text-sm underline text-center md:text-left">{t("Terms and conditions")}</p>
               <p className="text-white">|</p>
-              <p className="text-white text-sm underline text-center md:text-left">Política de Privacidade</p>
+              <p className="text-white text-sm underline text-center md:text-left">{t("Privacy policy")}</p>
             </div>
           </div>
           <div className="flex flex-col justify-center items-center md:items-end w-full">

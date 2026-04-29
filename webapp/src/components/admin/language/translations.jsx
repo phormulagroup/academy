@@ -40,7 +40,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
 
   async function submit(values) {
     try {
-      await update({ data: { id: data.id, translation: JSON.stringify(values.translations) }, table: "language" });
+      await update({ data: { id: data.id, country: data.country, translation: JSON.stringify(values.translations) }, table: "language" });
       setIsButtonLoading(false);
       close(true);
       form.resetFields();

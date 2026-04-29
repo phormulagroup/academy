@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Avatar, Button, Divider, Empty, Progress, Tabs } from "antd";
+import { Avatar, Button, Divider, Empty, Image, Progress, Skeleton, Tabs } from "antd";
 import { useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -37,6 +37,7 @@ export default function CourseDetails() {
   const [data, setData] = useState({});
   const [modules, setModules] = useState([]);
   const [progress, setProgress] = useState([]);
+  const [activeKey, setActiveKey] = useState("1");
 
   let { slug } = useParams();
   const { t } = useTranslation();
@@ -232,7 +233,13 @@ export default function CourseDetails() {
           <div className="hidden xl:grid grid-cols-8 max-h-150">
             <div className="col-span-3"></div>
             <div className="col-span-5 pl-10 flex justify-center items-center">
-              <img src={`${config.server_ip}/media/${data.course?.img}`} className="h-full!" />
+              <Image
+                src={`${config.server_ip}/media/${data.course?.img}`}
+                loading="lazy"
+                preview={false}
+                placeholder={<Skeleton.Image active style={{ width: "100%", height: "100%" }} />}
+                style={{ width: "100%", height: "100%" }}
+              />
             </div>
           </div>
           <div className="container m-auto xl:-mt-10 relative z-10">
@@ -314,14 +321,15 @@ export default function CourseDetails() {
 
           <div className="container m-auto p-2 sm:p-0">
             <Tabs
-              defaultActiveKey="1"
+              defaultActiveKey={activeKey}
               centered={windowDimension.width < 768}
               items={[
                 {
                   key: "1",
                   label: (
                     <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                      <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
+                      <CourseIcon className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "1" ? "icon-blue" : "filter-none"}`} />
+                      <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
                     </div>
                   ),
                   children: <CourseContent modules={modules} progress={progress} data={data} />,
@@ -330,7 +338,8 @@ export default function CourseDetails() {
                   key: "2",
                   label: (
                     <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                      <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
+                      <MaterialIcon className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "2" ? "icon-blue" : "filter-none"}`} />
+                      <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
                     </div>
                   ),
                   children: <CourseMaterial data={data.course} />,
@@ -338,14 +347,15 @@ export default function CourseDetails() {
                 data.course.objection && {
                   key: "3",
                   label: (
-                    <div className="flex flex-col lg:flex-row  p-2 justify-center items-center">
-                      <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
+                    <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                      <ObjectionIcon className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "3" ? "icon-blue" : "filter-none"}`} />
+                      <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
                     </div>
                   ),
                   children: <CourseObjection data={data.course} />,
                 },
               ]}
-              onChange={(key) => console.log(key)}
+              onChange={(key) => setActiveKey(key)}
               indicator={{ size: (origin) => origin - 20, align: "center" }}
             />
           </div>

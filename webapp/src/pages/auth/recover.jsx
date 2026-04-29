@@ -108,21 +108,21 @@ export default function Recover() {
             {currentStep === 0 ? (
               <div>
                 <p className="text-center text-sm mb-6">
-                  <b>Recuperação de Password</b>
+                  <b>{t("Password Recovery")}</b>
                   <br />
-                  Insira o seu email e receberá instruções para recuperar a sua password.
+                  {t("Enter your email and you will receive instructions to recover your password.")}
                 </p>
                 <Form form={form} layout="vertical" onFinish={sendCode} className="auth-form">
-                  <p className="pb-2 text-center text-sm">E-mail</p>
-                  <Form.Item name="email" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
-                    <Input size="large" placeholder="nome.apelido@phormulagroup.com" />
+                  <p className="pb-2 text-center text-sm">{t("E-mail")}</p>
+                  <Form.Item name="email" rules={[{ required: true }]}>
+                    <Input size="large" placeholder={t("youremail@domain.com")} />
                   </Form.Item>
                   <Button htmlType="submit" type="primary" size="large" className="w-full" loading={isButtonLoading}>
                     {t("Send code")}
                   </Button>
                   <p className="text-center mt-4">
                     <Link to={`/${i18n.language}/login`} className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
-                      « Login
+                      « {t("Login")}
                     </Link>
                   </p>
                 </Form>
@@ -130,16 +130,16 @@ export default function Recover() {
             ) : currentStep === 1 ? (
               <div>
                 <p className="text-center text-sm mb-6">
-                  <b>Recuperação de Password</b>
+                  <b>{t("Password Recovery")}</b>
                   <br />
-                  Insira o código que recebeu no seu e-mail para recuperar a sua password.
+                  {t("Enter the code you received in your email to recover your password.")}
                 </p>
                 <Form form={formCode} layout="vertical" onFinish={verify} className="auth-form">
                   <Form.Item name="email" hidden>
                     <Input />
                   </Form.Item>
-                  <p className="pb-2 text-center text-sm">Code</p>
-                  <Form.Item name="code" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
+                  <p className="pb-2 text-center text-sm">{t("Code")}</p>
+                  <Form.Item name="code" rules={[{ required: true }]}>
                     <Input.OTP size="large" />
                   </Form.Item>
                   <Button htmlType="submit" type="primary" size="large" className="w-full" loading={isButtonLoading}>

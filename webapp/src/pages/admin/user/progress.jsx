@@ -110,7 +110,7 @@ export default function CourseProgress({ data, user }) {
               return (
                 <div className="flex justify-center items-center">
                   <div className="mr-2">
-                    {panelProps.isActive ? <p className="font-bold text-[12px]">{t("Collapase")}</p> : <p className="font-bold text-[12px]">{t("Expand")}</p>}
+                    {panelProps.isActive ? <p className="font-bold text-[12px]">{t("Collapse")}</p> : <p className="font-bold text-[12px]">{t("Expand")}</p>}
                   </div>
                   <div className="w-4 h-4 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                     {panelProps.isActive ? <RxChevronUp className="w-3 h-3 text-white" /> : <RxChevronDown className="w-3 h-3 text-white" />}

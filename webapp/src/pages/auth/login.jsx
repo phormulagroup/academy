@@ -107,32 +107,39 @@ export default function Login() {
             </Dropdown>
           </div>
           <div className="flex flex-col p-6">
-            <Link to={`/${i18n.language}`}>
-              <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <Link to={`/${i18n.language}`} className="max-w-75 h-auto mx-auto mb-6">
+              <img src={logo} alt="Phormula Logo" />
             </Link>
-            <p className="text-center text-sm mb-6">
-              Bem vind@ à <b>BIAL Regional Academy</b>,
-              <br /> a plataforma de e-learning!
-            </p>
-            <Form form={form} layout="vertical" onFinish={submit} className="auth-form">
-              <p className="pb-2 text-center text-sm">E-mail</p>
-              <Form.Item name="email" rules={[{ required: true, message: "Este campo é obrigatório" }]}>
-                <Input size="large" placeholder="nome.apelido@phormulagroup.com" />
+            <div className="flex justify-center items-center mx-auto max-w-[300px]">
+              <p className="text-center text-sm mb-6 font-[600]">{t("Welcome to the BIAL Regional Academy e-Learning platform")}</p>
+            </div>
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={submit}
+              className="auth-form"
+              validateMessages={{
+                required: t("This field is required"),
+              }}
+            >
+              <p className="pb-2 text-center text-sm">{t("E-mail")}</p>
+              <Form.Item name="email" rules={[{ required: true }]}>
+                <Input size="large" placeholder={t("youremail@domain.com")} />
               </Form.Item>
-              <p className="pb-2 text-center text-sm">Password</p>
-              <Form.Item name="password" rules={[{ required: true, message: "Este campo é obrigatório" }]} className="mb-2!">
+              <p className="pb-2 text-center text-sm">{t("Password")}</p>
+              <Form.Item name="password" rules={[{ required: true }]} className="mb-2!">
                 <Input.Password size="large" placeholder="●●●●●●●" />
               </Form.Item>
               <div className="flex justify-between mb-4">
                 <Form.Item name="remember" valuePropName="checked" className="mb-0!">
                   <Checkbox size="large">
-                    <p className="text-[#707070] text-[12px]">Lembrar-me</p>
+                    <p className="text-[#707070] text-[12px]">{t("Remember me")}</p>
                   </Checkbox>
                 </Form.Item>
                 <div className="flex justify-end items-center">
                   <Link to={`/${i18n.language}/recover`} className="text-[#000]! hover:text-[#FFC600]! underline!">
                     <p className="text-[12px]">
-                      <u>Esqueceu-se da password?</u>
+                      <u>{t("Forgot your password?")}</u>
                     </p>
                   </Link>
                 </div>
@@ -148,7 +155,7 @@ export default function Login() {
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
-              Caso esteja com problemas de acesso por favor entre em contacto com o nosso suporte <u className="text-black">help@bial-academy.pt</u>
+              {t("If you are having trouble accessing your account, please contact our support team at")} <u className="text-black">help@bial-academy.pt</u>
             </p>
           </div>
         </div>
@@ -160,13 +167,15 @@ export default function Login() {
         <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
           <div className="flex">
             <div className="pr-3">
-              <p className="text-sm text-center text-[#163986]">Formulário de contacto</p>
+              <Link to={`/${i18n.language}/contact`}>
+                <p className="text-sm text-center text-[#163986]">{t("Contact Form")}</p>
+              </Link>
             </div>
             <div className="border-r border-l border-[#163986] pl-3 pr-3">
-              <p className="text-sm text-center text-[#163986]">Termos e condições</p>
+              <p className="text-sm text-center text-[#163986]">{t("Terms and conditions")}</p>
             </div>
             <div className="pl-3">
-              <p className="text-sm text-center text-[#163986]">Política de Privacidade</p>
+              <p className="text-sm text-center text-[#163986]">{t("Privacy policy")}</p>
             </div>
           </div>
           <p className="text-sm mt-4 text-[#163986]">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>

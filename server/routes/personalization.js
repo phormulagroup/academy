@@ -14,10 +14,21 @@ router.use((req, res, next) => {
 });
 
 router.get("/read", async (req, res) => {
-  console.log("//// READ SETTINGS ////");
+  console.log("//// READ PERSONALIZATION ////");
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("SELECT * FROM settings");
+    const rows = await query("SELECT * FROM personalization");
+    res.send(rows);
+  } catch (e) {
+    throw e;
+  }
+});
+
+router.get("/readByLang", async (req, res) => {
+  console.log("//// READ PERSONALIZATION BY LANG ////");
+  const query = util.promisify(db.query).bind(db);
+  try {
+    const rows = await query("SELECT * FROM personalization WHERE id_lang = ?", [req.query.id_lang]);
     res.send(rows);
   } catch (e) {
     throw e;
@@ -25,12 +36,12 @@ router.get("/read", async (req, res) => {
 });
 
 router.post("/create", middleware, async (req, res, next) => {
-  console.log("//// CREATE SETTINGS ////");
+  console.log("//// CREATE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
 
-    const insertedRow = await query("INSERT INTO settings SET ?", data);
+    const insertedRow = await query("INSERT INTO personalization SET ?", data);
     res.send(insertedRow);
   } catch (err) {
     throw err;
@@ -38,17 +49,18 @@ router.post("/create", middleware, async (req, res, next) => {
 });
 
 router.post("/update", middleware, async (req, res, next) => {
-  console.log("//// UPDATE SETTINGS ////");
+  console.log("//// UPDATE PERSONALIZATION ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
+
     delete data.id;
 
     const columns = Object.keys(data);
     const values = Object.values(data);
 
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE settings SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const updatedRow = await query("UPDATE personalization SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
 
     res.send(updatedRow);
   } catch (err) {
@@ -57,10 +69,10 @@ router.post("/update", middleware, async (req, res, next) => {
 });
 
 router.post("/delete", middleware, async (req, res, next) => {
-  console.log("//// DELETE SETTINGS ////");
+  console.log("//// DELETE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE settings SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    const deletedRow = await query("UPDATE personalization SET is_deleted = 1 WHERE id = " + req.body.data.id);
     res.send(deletedRow);
   } catch (err) {
     throw err;

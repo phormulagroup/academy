@@ -28,8 +28,7 @@ router.post("/create", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
-    data.country = data.country ? JSON.stringify(data.country) : null;
-    console.log(data);
+    data.country = data.country ? JSON.stringify(data.country) : data.country;
     const insertedRow = await query("INSERT INTO language SET ?", data);
     res.send(insertedRow);
   } catch (err) {
@@ -42,7 +41,7 @@ router.post("/update", async (req, res, next) => {
   try {
     let data = req.body.data;
     let whereId = data.id;
-    data.country = data.country ? JSON.stringify(data.country) : null;
+    data.country = data.country ? JSON.stringify(data.country) : data.country;
     delete data.id;
 
     const columns = Object.keys(data);

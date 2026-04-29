@@ -127,13 +127,13 @@ export default function Language() {
   }
 
   function closeAction(c) {
-    console.log(c);
     if (c) {
       getData();
     }
     setIsOpenUpdate(false);
     setIsOpenCreate(false);
     setIsOpenDelete(false);
+    setIsOpenTranslations(false);
   }
 
   return (
@@ -141,7 +141,7 @@ export default function Language() {
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
-      <Translations data={selectedData} defaultLanguage={data.filter((item) => item.is_default === 1)[0]} open={isOpenTranslations} close={() => setIsOpenTranslations(false)} />
+      <Translations data={selectedData} defaultLanguage={data.filter((item) => item.is_default === 1)[0]} open={isOpenTranslations} close={closeAction} />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Translations")}</p>

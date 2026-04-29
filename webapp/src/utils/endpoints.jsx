@@ -150,6 +150,13 @@ const endpoints = {
     create: "/form/create",
     delete: "/form/delete",
   },
+  personalization: {
+    read: "/personalization/read",
+    readByLang: "/personalization/readByLang",
+    update: "/personalization/update",
+    create: "/personalization/create",
+    delete: "/personalization/delete",
+  },
 };
 
 export default endpoints;

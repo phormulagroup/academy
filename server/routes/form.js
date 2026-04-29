@@ -29,7 +29,7 @@ router.get("/readByLang", middleware, async (req, res) => {
   console.log("//// READ FORM ////");
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("SELECT * FROM form_submission WHERE id_lang = ?", [req.query.id_lang]);
+    const rows = await query("SELECT * FROM form_submission WHERE id_lang = ? AND is_deleted = 0", [req.query.id_lang]);
     res.send(rows);
   } catch (e) {
     throw e;

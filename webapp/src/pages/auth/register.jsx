@@ -32,7 +32,8 @@ export default function Register() {
   useEffect(() => {
     let auxCountries = JSON.parse(languages.filter((l) => l.code === i18n.language)[0].country);
     let auxLanguage = languages.filter((l) => l.code === i18n.language)[0];
-    if (auxCountries.length > 0)
+
+    if (auxCountries && auxCountries.length > 0)
       setCountries(
         auxCountries
           .map((c) => ({
@@ -42,7 +43,7 @@ export default function Register() {
           }))
           .sort((a, b) => a.label.localeCompare(b.label)),
       );
-  }, [i18n.language]);
+  }, [i18n.language, languages]);
 
   function submit(values) {
     setIsButtonLoading(true);
@@ -121,8 +122,8 @@ export default function Register() {
             </Dropdown>
           </div>
           <div className="flex flex-col p-6">
-            <Link to={`/${i18n.language}`}>
-              <img src={logo} alt="Phormula Logo" className="max-w-75 h-auto mx-auto mb-6" />
+            <Link to={`/${i18n.language}`} className="max-w-75 h-auto mx-auto mb-6">
+              <img src={logo} alt="Phormula Logo" />
             </Link>
             <Form
               form={form}
@@ -152,9 +153,9 @@ export default function Register() {
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
                       options={[
-                        { label: "Secondary School", value: "Secondary School" },
-                        { label: "University Degree", value: "University Degree" },
-                        { label: "PhD", value: "PhD" },
+                        { label: t("Secondary School"), value: "Secondary School" },
+                        { label: t("University Degree"), value: "University Degree" },
+                        { label: t("PhD"), value: "PhD" },
                       ]}
                     />
                   </Form.Item>
@@ -166,7 +167,7 @@ export default function Register() {
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
-                    <DatePicker size="large" placeholder="Select birth date" className="w-full" />
+                    <DatePicker size="large" placeholder={t("Select birth date")} className="w-full" />
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
@@ -177,7 +178,7 @@ export default function Register() {
                     className="mb-0!"
                     getValueProps={(value) => ({ value: value && dayjs(value) })}
                   >
-                    <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
+                    <DatePicker size="large" placeholder={t("Select Bial's starting date")} className="w-full" />
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
@@ -225,7 +226,7 @@ export default function Register() {
                     ]}
                   >
                     <Checkbox size="large">
-                      <p className="text-[#707070] text-[12px]">Declaro que tomei conhecimento da Política de Privacidade deste site, bem como dos seus Termos de Utilização.</p>
+                      <p className="text-[#707070] text-[12px]">{t("I declare that I have read the Privacy Policy of this site, as well as its Terms of Use.")}</p>
                     </Checkbox>
                   </Form.Item>
                 </div>
@@ -238,7 +239,7 @@ export default function Register() {
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
-              Caso esteja com problemas de acesso por favor entre em contacto com o nosso suporte <u className="text-black">help@bial-academy.pt</u>
+              {t("If you are having trouble accessing your account, please contact our support team at")} <u className="text-black">help@bial-academy.pt</u>
             </p>
           </div>
         </div>
@@ -250,13 +251,15 @@ export default function Register() {
         <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
           <div className="flex">
             <div className="pr-3">
-              <p className="text-sm text-center text-[#163986]">Formulário de contacto</p>
+              <Link to={`/${i18n.language}/contact`}>
+                <p className="text-sm text-center text-[#163986]">{t("Contact Form")}</p>
+              </Link>
             </div>
             <div className="border-r border-l border-[#163986] pl-3 pr-3">
-              <p className="text-sm text-center text-[#163986]">Termos e condições</p>
+              <p className="text-sm text-center text-[#163986]">{t("Terms and conditions")}</p>
             </div>
             <div className="pl-3">
-              <p className="text-sm text-center text-[#163986]">Política de Privacidade</p>
+              <p className="text-sm text-center text-[#163986]">{t("Privacy policy")}</p>
             </div>
           </div>
           <p className="text-sm mt-4 text-[#163986]">{dayjs().format("YYYY")} Bial Portugal. All rights reserved</p>

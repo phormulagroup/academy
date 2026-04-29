@@ -309,11 +309,11 @@ const Learning = () => {
               <div className="flex flex-col justify-center items-center">
                 <div className="w-full flex justify-between items-center mb-2">
                   <p className="leading-[1em] text-[24px] font-bold uppercase">
-                    {progressPercentage}% {t("Complete")}
+                    {progressPercentage}% {t("Completed")}
                   </p>
                   <p className="leading-1">
                     {progress?.filter((p) => (p.activity_type === "topic" || p.activity_type === "test") && p.is_completed === 1).length} /{" "}
-                    {data?.topics.length + data?.tests.length} {t("steps")}
+                    {data?.topics.length + data?.tests.length} {t("Steps")}
                   </p>
                 </div>
                 <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />

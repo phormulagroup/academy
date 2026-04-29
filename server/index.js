@@ -31,6 +31,7 @@ const documentRouter = require("./routes/document");
 const downloadRouter = require("./routes/download");
 const faqsRouter = require("./routes/faqs");
 const formRouter = require("./routes/form");
+const personalizationRouter = require("./routes/personalization");
 
 /* Socket imports */
 const setupSocket = require("./socket");
@@ -103,7 +104,7 @@ app.use("/language", languageRouter);
 app.use("/role", middleware, roleRouter);
 app.use("/media", mediaRouter);
 app.use("/import", middleware, importRouter);
-app.use("/settings", middleware, settingsRouter);
+app.use("/settings", settingsRouter);
 app.use("/email", middleware, emailRouter);
 app.use("/certificate", middleware, certificateRouter);
 app.use("/notification", middleware, notificationRouter);
@@ -112,5 +113,6 @@ app.use("/document", middleware, documentRouter);
 app.use("/download", middleware, downloadRouter);
 app.use("/faqs", faqsRouter);
 app.use("/form", formRouter);
+app.use("/personalization", personalizationRouter);
 
 module.exports = app;

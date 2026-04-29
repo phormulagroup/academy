@@ -24,7 +24,7 @@ export default function Delete({ open, close, data, table }) {
       createLog({
         id_user: user.id,
         action: "delete",
-        table: table,
+        table_name: table,
         meta_data: JSON.stringify(data),
         id_lang: selectedLanguage.id,
       });
