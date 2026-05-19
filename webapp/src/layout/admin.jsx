@@ -9,7 +9,7 @@ import { TbWorld } from "react-icons/tb";
 import { Context } from "../utils/context";
 import Logout from "../components/logout";
 
-import logo from "../assets/BIAL-Regional-Academy.svg";
+import logo from "../assets/BIAL-Regional-Academy.png";
 import DashboardIcon from "../assets/Backoffice/Menu/Dashboard.svg?react";
 import PagesIcon from "../assets/Backoffice/Menu/Paginas.svg?react";
 import ArticlesIcon from "../assets/Backoffice/Menu/Artigos.svg?react";

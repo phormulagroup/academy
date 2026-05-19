@@ -3,7 +3,7 @@ import { CloseOutlined, DashboardOutlined, DashOutlined, DownOutlined, LoginOutl
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import logo from "../assets/BIAL-Regional-Academy.svg";
+import logo from "../assets/BIAL-Regional-Academy.png";
 
 import endpoints from "../utils/endpoints";
 import config from "../utils/config";
@@ -17,7 +17,11 @@ import { TbWorld } from "react-icons/tb";
 import { Footer } from "antd/es/layout/layout";
 
 import bialLogo from "../assets/BIAL-logo-footer.svg";
+import bialFooterBg from "../assets/Footer.png";
+import bialFooterMobileBg from "../assets/Footer-mobile.png";
 import NotificationIcon from "../assets/Notifications-off.svg?react";
+import FacebookIcon from "../assets/facebook.svg?react";
+import LinkedInIcon from "../assets/Linkedin.svg?react";
 import { AiFillCloseCircle } from "react-icons/ai";
 import dayjs from "dayjs";
 
@@ -124,7 +128,7 @@ const Main = () => {
                   <div className="bg-[#c1c1c1] p-6 pt-16">
                     <div className="flex justify-start items-center cursor-pointer">
                       <Link to={`/${i18n.language}/account`} className="flex justify-center items-center" onClick={() => closeDrawer()}>
-                        <Avatar className="w-[40px]! h-[40px]!" icon={<FaRegUser />} />
+                        <Avatar className="w-10! h-10!" icon={<FaRegUser />} />
                         <p className="text-[16px] ml-2">
                           {user.name.split(" ")[0]} {user.name.split(" ")[1]}
                         </p>
@@ -371,11 +375,17 @@ const Main = () => {
       <Content className="bg-white min-h-[unset]!">
         <Outlet />
       </Content>
-      <Footer className="bg-[#163986]!">
-        <div className="container flex flex-col md:flex-row justify-between items-end m-auto pt-4 pb-4 gap-8">
+      <Footer className="bg-center! bg-cover!" style={{ background: windowDimension < 768 ? `url(${bialFooterMobileBg})` : `url(${bialFooterBg})` }}>
+        <div className="container flex flex-col md:flex-row justify-between items-end m-auto gap-8">
           <div className="w-full">
-            <div className="mb-4 flex flex-col items-center md:items-start">
-              <p className="text-white">{t("Follow us")}</p>
+            <div className="mb-4 flex justify-center md:justify-start items-center">
+              <p className="text-white mr-4">{t("Follow us")}</p>
+              <Link to={"https://facebook.com/"} target="_blank" className="mr-2">
+                <FacebookIcon className="max-w-7.5" />
+              </Link>
+              <Link to={"https://linkedin.com/"} target="_blank">
+                <LinkedInIcon className="max-w-7.5" />
+              </Link>
             </div>
             <div className="flex justify-center md:justify-start items-center gap-4">
               <Link to={`/${i18n.language}/contact`}>

@@ -2,6 +2,7 @@ var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
+var slugify = require("slugify");
 
 var db = require("../utils/database");
 const { read } = require("fs");
@@ -203,6 +204,7 @@ router.post("/create", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
+    data.slug = slugify(data.name, { lower: true, strict: true });
     const insertedRow = await query("INSERT INTO course SET ?", data);
     res.send(insertedRow);
   } catch (err) {
@@ -215,6 +217,7 @@ router.post("/update", async (req, res, next) => {
   try {
     let data = req.body.data;
     let whereId = data.id;
+    data.slug = slugify(data.name, { lower: true, strict: true });
     delete data.id;
 
     const columns = Object.keys(data);

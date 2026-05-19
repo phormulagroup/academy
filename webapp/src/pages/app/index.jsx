@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import { Helmet } from "react-helmet";
 import Lottie from "lottie-react";
+import mutedVideo from "../../assets/260518-BialAcademyLogo-Animated-Paths.mp4";
 
 export default function Main() {
   const { user, personalization } = useContext(Context);
@@ -38,8 +39,8 @@ export default function Main() {
         <meta property="og:title" content={`Bial Regional Academy`} />
         <meta property="og:description" content={`Bial Regional Academy`} />
       </Helmet>
-      <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 h-full">
-        <div className="flex flex-col justify-center h-full">
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4 h-full">
+        <div className="flex flex-col justify-center h-full col-span-2">
           <p className="text-[30px] font-bold">{t("Sobre Bial Regional Academy")}</p>
           <p className="italic">{t("Keeping training in mind")}</p>
           {data?.text ? (
@@ -52,12 +53,12 @@ export default function Main() {
           {Object.keys(user || {}).length === 0 && (
             <div className="flex items-center">
               <Link to={`/${i18n.language}/login`}>
-                <Button type="primary" className="mt-6 min-w-[120px]" size="large">
+                <Button type="primary" className="mt-6 min-w-30" size="large">
                   {t("Login")}
                 </Button>
               </Link>
               <Link to={`/${i18n.language}/register`}>
-                <Button className="ml-2 mt-6 min-w-[120px]" size="large">
+                <Button className="ml-2 mt-6 min-w-30" size="large">
                   {t("Register")}
                 </Button>
               </Link>
@@ -66,7 +67,9 @@ export default function Main() {
         </div>
 
         <div className="flex justify-center items-center">
-          <Lottie animationData={bialLogoAnimation} loop={true} className="max-w-150 flex justify-center items-center" />
+          <video autoPlay muted loop>
+            <source src={mutedVideo} />
+          </video>
         </div>
       </div>
     </div>

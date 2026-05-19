@@ -51,6 +51,7 @@
     "react-pdf-html": "^2.1.5",
     "react-router-dom": "^7.10.1",
     "socket.io-client": "^4.8.3",
+    "swiper": "^12.1.4",
     "tailwindcss": "^4.1.18",
     "vite-plugin-svgr": "^4.5.0",
     "xlsx": "^0.18.5"

@@ -3,6 +3,7 @@ import Lottie from "lottie-react";
 import bialLogoAnimation from "../assets/Bial-Academy-Logo-Animated.json";
 import trailLoadingAnimation from "../assets/Trail-loading.json";
 import { Context } from "../utils/context";
+import mutedVideo from "../assets/260518-BialAcademyLogo-Animated-Paths.mp4";
 
 import { Spin } from "antd";
 
@@ -12,7 +13,9 @@ const Loading = () => {
   return (
     <div className={`flex flex-col justify-center items-center w-full h-full bg-cover bg-center`}>
       <div className="max-w-150 h-[75%]">
-        <Lottie animationData={bialLogoAnimation} loop={true} />
+        <video autoPlay muted loop>
+          <source src={mutedVideo} />
+        </video>
       </div>
       <div className="max-h-10!">
         <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />

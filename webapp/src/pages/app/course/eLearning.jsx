@@ -20,7 +20,7 @@ import dayjs from "dayjs";
 import Topic from "./topic";
 import Test from "./test";
 
-import logo from "../../../assets/BIAL-Regional-Academy.svg";
+import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -367,13 +367,11 @@ const Learning = () => {
                             <div className="flex flex-col">
                               <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
                                 {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
-                                  >
+                                  <div className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
-                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p className={`text-sm ml-2`}>{item.title}</p>
                                 {data?.course?.settings.progression_type === "linear"
@@ -392,13 +390,11 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
                                   {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
-                                    <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
-                                    >
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
-                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                   )}
                                   <p className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>{_t.title}</p>
                                   {data?.course?.settings.progression_type === "linear"

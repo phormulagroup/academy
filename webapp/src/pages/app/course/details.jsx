@@ -162,7 +162,7 @@ export default function CourseDetails() {
       {data.course && (
         <Helmet>
           <meta charSet="utf-8" />
-          <title>{data.course.name}</title>
+          <title>{data.course.name} - Bial Regional Academy</title>
           <meta name="description" content={data.course.name} />
           <meta property="og:title" content={data.course.name} />
           <meta property="og:description" content={data.course.name} />

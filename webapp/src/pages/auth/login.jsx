@@ -12,7 +12,7 @@ import dayjs from "dayjs";
 import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
-import logo from "../../assets/BIAL-Regional-Academy.svg";
+import logo from "../../assets/BIAL-Regional-Academy.png";
 import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
 import bgLogin from "../../assets/Background-login.png";
 

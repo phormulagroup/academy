@@ -18,6 +18,7 @@ import { Space } from "./blocks/space";
 import RichText from "./blocks/richText";
 import Video from "./blocks/video";
 import Image from "./blocks/image";
+import ImageCarousel from "./blocks/imageCarousel";
 import { PageComponent } from "./pageComponent";
 import { AiOutlineDrag, AiOutlineFile, AiOutlineFileImage } from "react-icons/ai";
 import { CiVideoOn, CiGrid41, CiText, CiTextAlignLeft, CiImageOn } from "react-icons/ci";
@@ -58,6 +59,7 @@ export const configRender = {
     Video,
     Stats,
     Image,
+    ImageCarousel,
   },
 };
 
@@ -89,6 +91,7 @@ export const config = {
     Video,
     Stats,
     Image,
+    ImageCarousel,
   },
 };
 
@@ -122,6 +125,7 @@ export function Editor({ data, submit }) {
     Button: <RxButton />,
     Space: <CgSpaceBetweenV />,
     Image: <CiImageOn />,
+    ImageCarousel: <CiImageOn />,
   };
 
   function DrawerItemOverride({ name, children, ...rest }) {
