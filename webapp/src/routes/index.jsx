@@ -23,6 +23,10 @@ export default function AppRoutes() {
     if (!isLoggedIn || !user) {
       return [
         {
+          path: "/",
+          element: <Navigate to={`/${i18n.language ?? "en"}`} replace />,
+        },
+        {
           path: ":lang",
           element: <LanguageWrapper />,
           children: publicRoutes,
@@ -43,6 +47,10 @@ export default function AppRoutes() {
           element: <Navigate to={`/${i18n.language}`} replace />,
         },
         {
+          path: "/",
+          element: <Navigate to={`/${i18n.language}`} replace />,
+        },
+        {
           path: ":lang",
           element: <LanguageWrapper />,
           children: userRoutes,
@@ -53,6 +61,10 @@ export default function AppRoutes() {
       return [
         {
           path: ":lang/login",
+          element: <Navigate to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`} replace />,
+        },
+        {
+          path: "/",
           element: <Navigate to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`} replace />,
         },
         {
