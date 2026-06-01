@@ -7,7 +7,6 @@ import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRe
 
 import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
-import bialLogoAnimation from "../../assets/Bial-Academy-Logo-Animated.json";
 
 import endpoints from "../../utils/endpoints";
 import { Link, useNavigate } from "react-router-dom";
@@ -16,6 +15,7 @@ import i18n from "../../utils/i18n";
 import { Helmet } from "react-helmet";
 import Lottie from "lottie-react";
 import mutedVideo from "../../assets/260518-BialAcademyLogo-Animated-Paths.mp4";
+import LottieAnim from "../../components/lottieAnimations";
 
 export default function Main() {
   const { user, personalization } = useContext(Context);
@@ -39,7 +39,7 @@ export default function Main() {
         <meta property="og:title" content={`Bial Regional Academy`} />
         <meta property="og:description" content={`Bial Regional Academy`} />
       </Helmet>
-      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-4 h-full">
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-10 h-full">
         <div className="flex flex-col justify-center h-full col-span-2">
           <p className="text-[30px] font-bold">{t("Sobre Bial Regional Academy")}</p>
           <p className="italic">{t("Keeping training in mind")}</p>
@@ -67,9 +67,7 @@ export default function Main() {
         </div>
 
         <div className="flex justify-center items-center">
-          <video autoPlay muted loop>
-            <source src={mutedVideo} />
-          </video>
+          <LottieAnim />
         </div>
       </div>
     </div>
