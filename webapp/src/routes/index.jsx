@@ -10,6 +10,7 @@ import { adminRoutes } from "./routesAdmin";
 import { userRoutes } from "./routesUser";
 import { publicRoutes } from "./routesPublic";
 import LanguageWrapper from "./languageWrapper";
+import i18n from "../utils/i18n";
 
 export default function AppRoutes() {
   const { isLoggedIn, isLoading, isLoadingLanguage, user, languages } = useContext(Context);
@@ -38,7 +39,20 @@ export default function AppRoutes() {
       return [
         ...adminRoutes,
         {
-          index: true,
+          path: ":lang/login",
+          element: <Navigate to={`/${i18n.language}`} replace />,
+        },
+        {
+          path: ":lang",
+          element: <LanguageWrapper />,
+          children: userRoutes,
+        },
+      ];
+    } else {
+      // USER NORMAL
+      return [
+        {
+          path: ":lang/login",
           element: <Navigate to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`} replace />,
         },
         {
@@ -48,19 +62,6 @@ export default function AppRoutes() {
         },
       ];
     }
-
-    // USER NORMAL
-    return [
-      {
-        path: "/",
-        element: <Navigate to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`} replace />,
-      },
-      {
-        path: ":lang",
-        element: <LanguageWrapper />,
-        children: userRoutes,
-      },
-    ];
   })();
 
   const element = finalRoutes ? useRoutes(finalRoutes) : null;

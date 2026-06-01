@@ -24,7 +24,6 @@ export default function Main() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    console.log(personalization);
     if (personalization?.json) {
       setData(JSON.parse(personalization.json));
     } else setData({});

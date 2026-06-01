@@ -49,7 +49,10 @@ export default function Main() {
   const [tables] = useState({ course_module: "course module" });
   const [isOpenStatus, setIsOpenStatus] = useState(false);
 
-  const [paginationByTable, setPaginationByTable] = useState({ bestStudents: { currentPage: 1, pageSize: 5 }, logs: { currentPage: 1, pageSize: 5 } });
+  const [paginationByTable, setPaginationByTable] = useState({
+    bestStudents: { currentPage: 1, pageSize: 5 },
+    logs: { currentPage: 1, pageSize: 5 },
+  });
 
   const navigate = useNavigate();
 
@@ -82,7 +85,12 @@ export default function Main() {
       let tests = obj.tests.filter((t) => t.id_course === obj.activity[i].id_course);
 
       let progressCompleted = obj.activity.filter(
-        (a) => a.activity_type !== "enroll" && a.activity_type !== "course" && a.activity_type !== "module" && a.id_user === obj.activity[i].id_user && a.id_course === a.id_course,
+        (a) =>
+          a.activity_type !== "enroll" &&
+          a.activity_type !== "course" &&
+          a.activity_type !== "module" &&
+          a.id_user === obj.activity[i].id_user &&
+          a.id_course === a.id_course,
       );
 
       if (
@@ -114,7 +122,9 @@ export default function Main() {
             {obj.activity[i].activity_type !== "enroll" &&
               obj.activity[i].activity_type !== "course" &&
               obj.activity[i].activity_type !== "module" &&
-              obj.activity[i].is_completed === 1 && <Progress percent={percentageProgress} size="small" showInfo={percentageProgress === 100 ? false : true} />}
+              obj.activity[i].is_completed === 1 && (
+                <Progress percent={percentageProgress} size="small" showInfo={percentageProgress === 100 ? false : true} />
+              )}
             <p className="text-[12px] line-clamp-1">
               {obj.activity[i].activity_type === "test"
                 ? obj.tests.filter((_t) => _t.id === obj.activity[i].id_course_test)[0].title
@@ -124,7 +134,9 @@ export default function Main() {
                     ? obj.modules.filter((_t) => _t.id === obj.activity[i].id_course_module)[0].title
                     : t(`${obj.activity[i].activity_type}`)}
             </p>
-            {obj.activity[i].activity_type !== "enroll" && obj.activity[i].activity_type !== "course" && <p className="text-[10px]">{t(`${obj.activity[i].activity_type}`)}</p>}
+            {obj.activity[i].activity_type !== "enroll" && obj.activity[i].activity_type !== "course" && (
+              <p className="text-[10px]">{t(`${obj.activity[i].activity_type}`)}</p>
+            )}
           </div>
         ),
         status: obj.activity[i].is_completed ? <CheckCircle className="text-green-500 w-5 h-5" /> : <CircleX className="text-red-500 w-5 h-5" />,
@@ -251,14 +263,16 @@ export default function Main() {
     if (obj) {
       for (let i = 0; i < obj.length; i++) {
         let today = dayjs();
-        if (obj[i].settings.start_date && obj[i].settings.end_date) {
-          if (dayjs(obj[i].settings.start_date).diff(today) >= 0 && today.diff(dayjs(obj[i].settings.end_date)) >= 0) ++total;
-        } else if (obj[i].settings.start_date && !obj[i].settings.end_date) {
-          if (dayjs(obj[i].settings.start_date).diff(today) >= 0) ++total;
-        } else if (!obj[i].settings.start_date && obj[i].settings.end_date) {
-          if (today.diff(dayjs(obj[i].settings.start_date)) >= 0) ++total;
-        } else {
-          ++total;
+        if (obj[i].settings) {
+          if (obj[i].settings.start_date && obj[i].settings.end_date) {
+            if (dayjs(obj[i].settings.start_date).diff(today) >= 0 && today.diff(dayjs(obj[i].settings.end_date)) >= 0) ++total;
+          } else if (obj[i].settings.start_date && !obj[i].settings.end_date) {
+            if (dayjs(obj[i].settings.start_date).diff(today) >= 0) ++total;
+          } else if (!obj[i].settings.start_date && obj[i].settings.end_date) {
+            if (today.diff(dayjs(obj[i].settings.start_date)) >= 0) ++total;
+          } else {
+            ++total;
+          }
         }
       }
 
@@ -472,7 +486,10 @@ export default function Main() {
                     {Object.keys(graphicCoursesProgress).map((_k) => (
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <div className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`} style={{ backgroundColor: graphicCoursesProgress[_k].color }}></div>
+                          <div
+                            className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`}
+                            style={{ backgroundColor: graphicCoursesProgress[_k].color }}
+                          ></div>
                           <p className="text-[11px]">{graphicCoursesProgress[_k].label}</p>
                         </div>
                         <div className="min-w-10 flex justify-center items-center">
@@ -600,14 +617,18 @@ export default function Main() {
               bestStudentsData
                 .slice(
                   (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize,
-                  (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize + paginationByTable.bestStudents?.pageSize,
+                  (paginationByTable.bestStudents?.currentPage - 1) * paginationByTable.bestStudents?.pageSize +
+                    paginationByTable.bestStudents?.pageSize,
                 )
                 .map((u) => (
                   <Link to={`/admin/users/${u.id_user}`}>
                     <div className="flex justify-start items-center">
                       <div
                         className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
-                        style={{ backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none", backgroundColor: u.img ? "transparent" : "#ccc" }}
+                        style={{
+                          backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none",
+                          backgroundColor: u.img ? "transparent" : "#ccc",
+                        }}
                       >
                         {!u.img && (
                           <p className="text-black">

@@ -126,7 +126,13 @@ const ContextProvider = ({ children }) => {
           m.id === d.meta_data.id_thread
             ? prev.filter((m) =>
                 m.id === d.meta_data.id_thread
-                  ? { ...m, text: d.meta_data.text, from_id_user: d.meta_data.from_id_user, to_id_user: d.meta_data.to_id_user, unread_messages: ++m.unread_messages }
+                  ? {
+                      ...m,
+                      text: d.meta_data.text,
+                      from_id_user: d.meta_data.from_id_user,
+                      to_id_user: d.meta_data.to_id_user,
+                      unread_messages: ++m.unread_messages,
+                    }
                   : m,
               )
             : [...prev, d.meta_data],
@@ -194,7 +200,9 @@ const ContextProvider = ({ children }) => {
 
   async function getMessages(auxUser) {
     try {
-      const res = await axios.get(auxUser.id_role === 1 ? endpoints.inbox.readBySupport : endpoints.inbox.readByUser, { params: { id_user: auxUser.id } });
+      const res = await axios.get(auxUser.id_role === 1 ? endpoints.inbox.readBySupport : endpoints.inbox.readByUser, {
+        params: { id_user: auxUser.id },
+      });
       setInbox(res.data);
     } catch (err) {
       console.log(err);
@@ -260,7 +268,11 @@ const ContextProvider = ({ children }) => {
     setIsLoading(true);
     setUser({});
     navigate(`/${i18n.language}/login`);
-    createLog({ id_user: auxUser.id, action: "logout", id_lang: auxUser.id_role !== 1 ? languages.filter((l) => l.code === i18n.language)[0].id : selectedLanguage.id });
+    createLog({
+      id_user: auxUser.id,
+      action: "logout",
+      id_lang: auxUser.id_role !== 1 ? languages.filter((l) => l.code === i18n.language)[0].id : selectedLanguage.id,
+    });
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
@@ -271,12 +283,10 @@ const ContextProvider = ({ children }) => {
     api.token(res.token);
     getInfoData(res.token);
     setUser(res.user);
-    setIsLoggedIn(true);
 
-    if (window.location.href.includes("login"))
-      if (res.user.id_role === 1) navigate("/admin");
-      else navigate(`/${i18n.language}/`);
-    else navigate(window.location.pathname);
+    console.log(window.location.pathname);
+
+    setIsLoggedIn(true);
   }
 
   async function createLog(obj) {

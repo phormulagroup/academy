@@ -22,7 +22,6 @@ export const userRoutes = [
   {
     element: <MainLayout />,
     children: [
-      { path: "login", element: <Navigate to="." replace /> }, // mantém :lang
       { index: true, element: <Main /> }, // "/:lang"
       { path: "account", element: <Account /> }, // "/:lang/courses"
       { path: "result", element: <Result /> }, // "/:lang/courses"

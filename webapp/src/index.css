@@ -37,6 +37,8 @@ a {
   font-size: 16px;
   cursor: pointer;
   transition: color 0.3s ease;
+  color: #707070 !important;
+  font-weight: 600;
 }
 
 .nav-link::after {
@@ -46,14 +48,14 @@ a {
   bottom: -4px;
   width: 0;
   height: 2px;
-  background-color: #3b82f6; /* azul (ajusta se quiseres) */
+  background-color: #000; /* azul (ajusta se quiseres) */
   transition:
     width 0.3s ease,
     left 0.3s ease;
 }
 
 .nav-link:hover {
-  color: #3b82f6 !important;
+  color: #000 !important;
 }
 
 .nav-link:hover::after {
@@ -62,12 +64,13 @@ a {
 }
 
 .nav-link.active {
-  color: #3b82f6 !important;
+  color: #000 !important;
 }
 
 .nav-link.active::after {
   width: 100%;
   left: 0;
+  background-color: #000;
 }
 
 ol,

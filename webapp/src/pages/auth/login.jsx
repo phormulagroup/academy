@@ -35,7 +35,6 @@ export default function Login() {
     axios
       .post(endpoints.auth.login, { data: values })
       .then((res) => {
-        console.log(res);
         if (res.data.user) {
           if (res.data.user.status === "approved") {
             login({ user: res.data.user, token: res.data.token });
@@ -78,7 +77,10 @@ export default function Login() {
   };
 
   return (
-    <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
+    <div
+      className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`}
+      style={{ backgroundImage: `url(${bgLogin})` }}
+    >
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
         <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15 relative">
           <div className="absolute right-[-30px] top-[-18px]">
@@ -87,7 +89,10 @@ export default function Login() {
                 items: languages.map((item) => ({
                   key: item.code,
                   label: (
-                    <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                    <div
+                      className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+                      onClick={() => changeLanguage(item.code)}
+                    >
                       <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                       <p>{item.name}</p>
                     </div>
@@ -155,7 +160,8 @@ export default function Login() {
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
-              {t("If you are having trouble accessing your account, please contact our support team at")} <u className="text-black">help@bial-academy.pt</u>
+              {t("If you are having trouble accessing your account, please contact our support team at")}{" "}
+              <u className="text-black">help@bial-academy.pt</u>
             </p>
           </div>
         </div>
