@@ -50,7 +50,6 @@ const ImageCarousel = {
         { label: "End", value: "end" },
       ],
     },
-    maxWidth: { type: "text" },
   },
   defaultProps: {
     images: [],
