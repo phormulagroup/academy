@@ -1,5 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
-import { CloseOutlined, DashboardOutlined, DashOutlined, DownOutlined, LoginOutlined, LogoutOutlined, MenuOutlined, ProfileOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  CloseOutlined,
+  DashboardOutlined,
+  DashOutlined,
+  DownOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  ProfileOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -94,11 +104,17 @@ const Main = () => {
   useEffect(() => {
     let pathname = location.pathname.split("/");
     if (pathname.length > 2) {
-      setCurrent(`/${pathname[1]}/${pathname[2]}`);
+      console.log(pathname[2]);
+      setCurrent(`/${i18n.language}/${pathname[2]}`);
     } else {
-      setCurrent(`/${pathname[pathname.length - 1]}`);
+      setCurrent(`/${i18n.language}/${pathname[pathname.length - 1]}`);
     }
   }, [location]);
+
+  useEffect(() => {
+    console.log(user.name.split(" ")[0]);
+    console.log(user.name.split(" ")[user.name.split(" ").length - 1]);
+  }, []);
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -130,7 +146,7 @@ const Main = () => {
                       <Link to={`/${i18n.language}/account`} className="flex justify-center items-center" onClick={() => closeDrawer()}>
                         <Avatar className="w-10! h-10!" icon={<FaRegUser />} />
                         <p className="text-[16px] ml-2">
-                          {user.name.split(" ")[0]} {user.name.split(" ")[1]}
+                          {user.name.split(" ")[0]} {user.name.split(" ")[user.name.split(" ").length - 1]}
                         </p>
                       </Link>
                     </div>
@@ -174,7 +190,11 @@ const Main = () => {
                     ) : null}
                     <p>{t("Notifications")}</p>
                   </Link>
-                  <Link className={`m-2 text-center text-[16px]`} to={user.id_role === 1 ? "/admin/inbox" : `/${i18n.language}/inbox`} onClick={() => closeDrawer()}>
+                  <Link
+                    className={`m-2 text-center text-[16px]`}
+                    to={user.id_role === 1 ? "/admin/inbox" : `/${i18n.language}/inbox`}
+                    onClick={() => closeDrawer()}
+                  >
                     {inbox.filter((n) => n.unread_messages > 0).length > 0 ? (
                       <div className="w-5 h-5 mr-2 flex justify-center items-center">
                         <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
@@ -203,7 +223,12 @@ const Main = () => {
               {menuItems.map((item) =>
                 isLoggedIn
                   ? !item.hideOnLoggedIn && (
-                      <Link key={item.path} className={`nav-link ${window.location.pathname === item.path ? "active" : ""}`} to={item.path} onClick={() => closeDrawer()}>
+                      <Link
+                        key={item.path}
+                        className={`nav-link ${current === item.path ? "active" : ""}`}
+                        to={item.path}
+                        onClick={() => closeDrawer()}
+                      >
                         {t(item.label)}
                       </Link>
                     )
@@ -221,7 +246,10 @@ const Main = () => {
                     items: languages.map((item) => ({
                       key: item.code,
                       label: (
-                        <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                        <div
+                          className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+                          onClick={() => changeLanguage(item.code)}
+                        >
                           <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                           <p>{item.name}</p>
                         </div>
@@ -325,7 +353,7 @@ const Main = () => {
                     <div className="flex justify-center items-center cursor-pointer">
                       <Avatar icon={<FaRegUser />} />
                       <p className="text-[12px] ml-2">
-                        {user.name.split(" ")[0]} {user.name.split(" ")[1]}
+                        {user.name.split(" ")[0]} {user.name.split(" ")[user.name.split(" ").length - 1]}
                       </p>
                     </div>
                   </Dropdown>
@@ -348,7 +376,10 @@ const Main = () => {
                     items: languages.map((item) => ({
                       key: item.code,
                       label: (
-                        <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                        <div
+                          className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+                          onClick={() => changeLanguage(item.code)}
+                        >
                           <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                           <p>{item.name}</p>
                         </div>

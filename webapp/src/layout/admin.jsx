@@ -9,7 +9,7 @@ import { TbWorld } from "react-icons/tb";
 import { Context } from "../utils/context";
 import Logout from "../components/logout";
 
-import logo from "../assets/BIAL-Regional-Academy.png";
+import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
 import DashboardIcon from "../assets/Backoffice/Menu/Dashboard.svg?react";
 import PagesIcon from "../assets/Backoffice/Menu/Paginas.svg?react";
 import ArticlesIcon from "../assets/Backoffice/Menu/Artigos.svg?react";
@@ -38,7 +38,8 @@ import { Helmet } from "react-helmet";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage, inbox } = useContext(Context);
+  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage, inbox } =
+    useContext(Context);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
@@ -49,7 +50,7 @@ const Main = () => {
   const [items, setItems] = useState([
     {
       key: "grp-admin",
-      label: "Amin",
+      label: "Admin",
       type: "group",
       children: [{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> }],
     },
@@ -149,18 +150,32 @@ const Main = () => {
         {windowDimension.width > 1080 ? (
           <Sider width={250} className="bg-[#163986]! overflow-auto">
             <div className="flex flex-col justify-between items-start h-full p-4">
-              <Link to="/">
-                <img src={logo} alt="Bial Academy Logo" className="max-h-17.5 mb-2 pl-4" style={{ filter: "brightness(0) invert(1)" }} />
+              <Link to="/" className="min-h-20">
+                <img src={logo} alt="Bial Academy Logo" className="h-full mb-2 pl-4 pr-4" />
               </Link>
               <div className="flex flex-col items-center justify-start w-full menu-scroll-div">
                 <div className="mt-2.5 w-full">
-                  <Menu data-tour-id="menu" className="principal-menu" selectedKeys={[current]} mode="inline" items={items} onClick={handleClickMenu} />
+                  <Menu
+                    data-tour-id="menu"
+                    className="principal-menu"
+                    selectedKeys={[current]}
+                    mode="inline"
+                    items={items}
+                    onClick={handleClickMenu}
+                  />
                 </div>
               </div>
             </div>
           </Sider>
         ) : (
-          <Drawer className="menu-drawer" size={400} open={isOpenDrawerMenu} onClose={() => setIsOpenDrawerMenu(false)} maskClosable={true} closable={false}>
+          <Drawer
+            className="menu-drawer"
+            size={400}
+            open={isOpenDrawerMenu}
+            onClose={() => setIsOpenDrawerMenu(false)}
+            maskClosable={true}
+            closable={false}
+          >
             <Button type="text" className="absolute right-5 top-5 font-bold" onClick={() => setIsOpenDrawerMenu(false)}>
               <CloseOutlined className="text-[#0c3c61]" />
             </Button>
@@ -191,7 +206,10 @@ const Main = () => {
                       items: languages.map((item) => ({
                         key: item.code,
                         label: (
-                          <div className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`} onClick={() => selectLanguage(item)}>
+                          <div
+                            className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`}
+                            onClick={() => selectLanguage(item)}
+                          >
                             <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                             <p>{item.name}</p>
                           </div>

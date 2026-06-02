@@ -16,7 +16,7 @@ import UserCard from "../../components/app/user/card";
 import dayjs from "dayjs";
 
 export default function Account() {
-  const { user, languages } = useContext(Context);
+  const { user, setUser, languages, messageApi } = useContext(Context);
 
   const { t } = useTranslation();
   const [countries] = useState(
@@ -47,15 +47,33 @@ export default function Account() {
       delete values.confirm_password;
     }
 
+    console.log(values);
+
     axios
       .post(endpoints.user.update, {
         data: values,
       })
       .then((res) => {
-        console.log(res);
+        if (res.data.user && res.data.token) {
+          setUser(res.data.user);
+          localStorage.setItem("token", res.data.token);
+          messageApi.open({
+            type: "success",
+            content: t("Account updated successfully!"),
+          });
+        } else {
+          messageApi.open({
+            type: "error",
+            content: t("Something wrong happened, try again please."),
+          });
+        }
       })
       .catch((err) => {
         console.log(err);
+        messageApi.open({
+          type: "error",
+          content: t("Something wrong happened, try again please."),
+        });
       });
   }
 
@@ -67,6 +85,9 @@ export default function Account() {
           <div className="bg-[#F7F7F7] col-span-3 p-10">
             <p className="text-[26px] font-bold text-center mb-6!">{t("My account")}</p>
             <Form form={form} onFinish={submit} layout="vertical" className="auth-form">
+              <Form.Item name="id" hidden>
+                <Input />
+              </Form.Item>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                   <Form.Item name="name" label={t("Name")} rules={[{ required: true }]} className="mb-0!">
@@ -105,7 +126,13 @@ export default function Account() {
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
+                  <Form.Item
+                    label={t("Birth date")}
+                    name="birth_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({ value: value && dayjs(value) })}
+                  >
                     <DatePicker size="large" placeholder="Select birth date" className="w-full" />
                   </Form.Item>
                 </div>
@@ -149,7 +176,7 @@ export default function Account() {
                   </Form.Item>
                 </div>
                 <div className="flex justify-end items-end">
-                  <Button className="w-full" size="large" variant="solid" color="blue">
+                  <Button className="w-full" size="large" variant="solid" color="blue" onClick={form.submit}>
                     {t("Save")}
                   </Button>
                 </div>

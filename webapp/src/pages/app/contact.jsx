@@ -76,8 +76,16 @@ export default function Contact() {
         <p className="mt-6 text-[16px]">{t("For any questions or clarifications, please send us a message through this Contact Form.")}</p>
       </div>
       <div className="w-full flex flex-col justify-center items-center">
-        <Form form={form} onFinish={submit} className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-[1200px]" layout="vertical">
-          <Form.Item name="subject" label={t("Subject")} className="col-span-3 md:col-span-1">
+        <Form
+          form={form}
+          onFinish={submit}
+          className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-300"
+          layout="vertical"
+          validateMessages={{
+            required: t("This field is required."),
+          }}
+        >
+          <Form.Item name="subject" label={t("Subject")} className="col-span-3 md:col-span-1" required>
             <Select
               size="large"
               className="w-full"
@@ -105,13 +113,13 @@ export default function Contact() {
               ]}
             />
           </Form.Item>
-          <Form.Item name="name" label={t("Name")} className="col-span-3 md:col-span-1">
+          <Form.Item name="name" label={t("Name")} className="col-span-3 md:col-span-1" required>
             <Input size="large" placeholder={t("Your name")} />
           </Form.Item>
-          <Form.Item name="email" label={t("Email")} className="col-span-3 md:col-span-1">
+          <Form.Item name="email" label={t("Email")} className="col-span-3 md:col-span-1" required>
             <Input size="large" placeholder={t("Your email")} />
           </Form.Item>
-          <Form.Item name="message" label={t("Message")} className="col-span-1 md:col-span-3">
+          <Form.Item name="message" label={t("Message")} className="col-span-1 md:col-span-3" required>
             <Input.TextArea maxLength={200} showCount size="large" placeholder={t("Your message")} rows={6} />
           </Form.Item>
           <div className="flex col-span-1 md:col-span-3">
@@ -119,15 +127,17 @@ export default function Contact() {
           </div>
           <div className="flex col-span-1 md:col-span-3">
             <Form.Item name="acceptance" valuePropName="checked" className="mb-0!">
-              <Checkbox size="large">
+              <Checkbox size="large" required>
                 <p className="text-[#707070] text-[12px]">
-                  {t("By submitting this Contact Form, I declare that I am familiar with this website's Privacy Policy, as well as the Terms and Conditions, available below.")}
+                  {t(
+                    "By submitting this Contact Form, I declare that I am familiar with this website's Privacy Policy, as well as the Terms and Conditions, available below.",
+                  )}
                 </p>
               </Checkbox>
             </Form.Item>
           </div>
           <div className="flex justify-center items-center col-span-1 md:col-span-3 mt-4 mb-6">
-            <Button size="large" type="primary" htmlType="submit" className="min-w-[120px]" loading={isButtonLoading}>
+            <Button size="large" type="primary" htmlType="submit" className="min-w-30" loading={isButtonLoading}>
               {t("Send")}
             </Button>
           </div>

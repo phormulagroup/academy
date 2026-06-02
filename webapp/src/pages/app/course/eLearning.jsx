@@ -120,6 +120,8 @@ const Learning = () => {
                 selectCourseItem(
                   auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0],
                 );
+            } else {
+              selectCourseItem(auxAllItems[0]);
             }
 
             setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
@@ -325,7 +327,11 @@ const Learning = () => {
           {windowDimension.width > 1080 ? (
             <div className="grid grid-cols-3 gap-4 w-full">
               <div>
-                <img src={logo} className="max-h-17.5" />
+                <img
+                  src={logo}
+                  className="max-h-17.5 cursor-pointer"
+                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`, { replace: true })}
+                />
               </div>
               <div className="flex flex-col justify-center items-center">
                 <div className="w-full flex justify-between items-center mb-2">
@@ -396,7 +402,6 @@ const Learning = () => {
                       defaultActiveKey={activeModule}
                       activeKey={activeModule}
                       items={modules.map((item, mInd) => {
-                        console.log(selectedCourseItem);
                         return {
                           key: item.id,
                           label: (
@@ -413,7 +418,7 @@ const Learning = () => {
                                   <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p
-                                  className={`text-sm ml-2 ${selectedCourseItem.type && selectedCourseItem.id_course_module === item.id ? "font-bold" : "font-normal"}`}
+                                  className={`text-sm ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-normal"}`}
                                   onClick={() => selectCourseItem(item)}
                                 >
                                   {item.title}
@@ -520,7 +525,7 @@ const Learning = () => {
                       className="collapse-learning"
                       size="large"
                       bordered={false}
-                      defaultActiveKey={[selectedCourseItem.type === "module" ? selectedCourseItem.id : selectedCourseItem.id_course_module]}
+                      defaultActiveKey={[selectedCourseItem?.type === "module" ? selectedCourseItem?.id : selectedCourseItem?.id_course_module]}
                       items={modules.map((item, mInd) => {
                         return {
                           key: item.id,

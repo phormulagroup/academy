@@ -88,6 +88,8 @@ export default function CourseDetails() {
             setModules(newModules);
             setProgress(res.data.progress);
           }
+
+          console.log(auxCourse);
           setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
         } else {
           messageApi.open({
@@ -357,27 +359,33 @@ export default function CourseDetails() {
                   ),
                   children: <CourseContent modules={modules} progress={progress} data={data} />,
                 },
-                data.course.material && {
-                  key: "2",
-                  label: (
-                    <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                      <MaterialIcon className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "2" ? "icon-blue" : "filter-none"}`} />
-                      <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
-                    </div>
-                  ),
-                  children: <CourseMaterial data={data.course} />,
-                },
-                data.course.objection && {
-                  key: "3",
-                  label: (
-                    <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                      <ObjectionIcon className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "3" ? "icon-blue" : "filter-none"}`} />
-                      <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
-                    </div>
-                  ),
-                  children: <CourseObjection data={data.course} />,
-                },
-              ]}
+                data.course.material &&
+                  data.course.material.length > 0 && {
+                    key: "2",
+                    label: (
+                      <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                        <MaterialIcon
+                          className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "2" ? "icon-blue" : "filter-none"}`}
+                        />
+                        <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
+                      </div>
+                    ),
+                    children: <CourseMaterial data={data.course} />,
+                  },
+                data.course.objection.tabs &&
+                  data.course.objection.tabs?.length > 0 && {
+                    key: "3",
+                    label: (
+                      <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
+                        <ObjectionIcon
+                          className={`w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 hover:icon-blue ${activeKey === "3" ? "icon-blue" : "filter-none"}`}
+                        />
+                        <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
+                      </div>
+                    ),
+                    children: <CourseObjection data={data.course} />,
+                  },
+              ].filter(Boolean)}
               onChange={(key) => setActiveKey(key)}
               indicator={{ size: (origin) => origin - 20, align: "center" }}
             />
