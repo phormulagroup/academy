@@ -35,7 +35,9 @@ router.get("/readById", async (req, res) => {
   console.log("//// READ USER BY ID ////");
   const query = util.promisify(db.query).bind(db);
   try {
-    const userRow = await query("SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE user.id = ?", [req.query.id]);
+    const userRow = await query("SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE user.id = ?", [
+      req.query.id,
+    ]);
     if (userRow.length > 0) {
       const user = userRow[0];
       const rows = await query(
@@ -52,10 +54,10 @@ router.get("/readById", async (req, res) => {
           "LEFT JOIN course_module ON course_module.id = cua.id_course_module " +
           "LEFT JOIN course_topic ON course_topic.id = cua.id_course_topic " +
           "LEFT JOIN course_test ON course_test.id = cua.id_course_test " +
-          "WHERE cua.id_user = 11 AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
+          "WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
           "AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
           "AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-        [user.id_lang, user.id_lang, user.id_lang, user.id_lang, user.id, user.id_lang],
+        [user.id_lang, user.id_lang, user.id_lang, user.id_lang, user.id],
       );
 
       let courses = rows[0];

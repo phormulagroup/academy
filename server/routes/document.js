@@ -46,6 +46,20 @@ router.get("/readBySlug", async (req, res) => {
   }
 });
 
+router.get("/readFile", async (req, res) => {
+  const response = await fetch("https://academyapi.phormuladev.com/media/" + req.query.file);
+  console.log(response);
+  const buffer = await response.arrayBuffer();
+  console.log(buffer);
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range");
+  res.setHeader("Accept-Ranges", "bytes");
+
+  res.send(Buffer.from(buffer));
+});
+
 router.post("/create", async (req, res, next) => {
   console.log("//// CREATE DOCUMENT ////");
   try {

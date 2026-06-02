@@ -21,6 +21,7 @@ import { Helmet } from "react-helmet";
 export default function DocumentDetails({ themePreference = "light" }) {
   const { user, courses, languages } = useContext(Context);
   const [data, setData] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
 
   const viewerRef = useRef(null);
 
@@ -42,9 +43,16 @@ export default function DocumentDetails({ themePreference = "light" }) {
       .get(endpoints.document.readBySlug, {
         params: { slug, id_lang: languages.filter((l) => l.code === i18n.language)[0].id },
       })
-      .then((res) => {
-        console.log(res);
+      .then(async (res) => {
+        const file = await axios.get(endpoints.document.readFile, {
+          params: { file: res.data[0]?.file },
+          responseType: "blob", // 👈 MUITO IMPORTANTE
+        });
+
+        const blobUrl = URL.createObjectURL(file.data);
+
         setData(res.data[0] || null);
+        setPdfUrl(blobUrl);
       })
       .catch((err) => {
         console.log(err);
@@ -68,12 +76,11 @@ export default function DocumentDetails({ themePreference = "light" }) {
               {t("Back to documents")}
             </Button>
           </div>
-          <div className="max-w-[1200px] h-[700px] w-full overflow-hidden mx-auto" ref={viewerRef}>
+          <div className="max-w-300 h-175 w-full overflow-hidden mx-auto" ref={viewerRef}>
             <PDFViewer
-              key={data?.file}
+              key={data.id}
               config={{
-                //src: `${config.server_ip}/media/${data?.file}`,
-                src: `${config.server_ip}/media/${data?.file}`,
+                src: pdfUrl,
                 zoom: {
                   defaultZoomLevel: ZoomMode.FitWidth, // or a number like 1.5
                 },

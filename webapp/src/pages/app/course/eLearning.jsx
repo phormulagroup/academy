@@ -49,6 +49,7 @@ const Learning = () => {
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
   const [metaData, setMetaData] = useState(null);
+  const [activeModule, setActiveModule] = useState([]);
 
   const { t, i18n } = useTranslation();
 
@@ -65,6 +66,10 @@ const Learning = () => {
   useEffect(() => {
     calcProgress();
   }, [progress]);
+
+  useEffect(() => {
+    if (selectedCourseItem) setActiveModule([selectedCourseItem?.type ? selectedCourseItem.id_course_module : selectedCourseItem.id]);
+  }, [selectedCourseItem]);
 
   async function getData() {
     try {
@@ -88,9 +93,15 @@ const Learning = () => {
               if (auxModules[i].items) {
                 for (let y = 0; y < auxModules[i].items.length; y++) {
                   if (auxModules[i].items[y].type === "topic")
-                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                    auxModules[i].items[y] = {
+                      type: auxModules[i].items[y].type,
+                      ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0],
+                    };
                   if (auxModules[i].items[y].type === "test")
-                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                    auxModules[i].items[y] = {
+                      type: auxModules[i].items[y].type,
+                      ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0],
+                    };
 
                   auxAllItems.push(auxModules[i].items[y]);
                 }
@@ -99,11 +110,16 @@ const Learning = () => {
             }
 
             if (location.state && location.state.courseItemId && location.state.courseItemType) {
-              if (location.state.courseItemType === "module") selectCourseItem(res.data.modules.filter((item) => item.id === location.state.courseItemId)[0]);
+              if (location.state.courseItemType === "module")
+                selectCourseItem(res.data.modules.filter((item) => item.id === location.state.courseItemId)[0]);
               else if (location.state.courseItemType === "topic")
-                selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+                selectCourseItem(
+                  auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0],
+                );
               else if (location.state.courseItemType === "test")
-                selectCourseItem(auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0]);
+                selectCourseItem(
+                  auxAllItems.filter((item) => item.id === location.state.courseItemId && item.type === location.state.courseItemType)[0],
+                );
             }
 
             setData({ course: auxCourse, modules: res.data.modules, topics: res.data.topics, tests: res.data.tests });
@@ -140,7 +156,8 @@ const Learning = () => {
     if (findInProgress.length === 0) {
       if (
         selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
-        moduleSelectedCourseItem.items.length === progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
+        moduleSelectedCourseItem.items.length ===
+          progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
       ) {
         auxData = [
           {
@@ -169,7 +186,10 @@ const Learning = () => {
         ];
 
         //Falta saber se é o último tópico ou teste que pode fazer se o curso não for do tipo linear
-        if (moduleSelectedCourseItem.id === modules[modules.length - 1].id || progress.filter((p) => p.activity_type !== "module").length === allItems.length - 1) {
+        if (
+          moduleSelectedCourseItem.id === modules[modules.length - 1].id ||
+          progress.filter((p) => p.activity_type !== "module").length === allItems.length - 1
+        ) {
           auxData.push({
             id_course: data.course.id,
             id_user: user.id,
@@ -230,7 +250,8 @@ const Learning = () => {
     } else {
       if (
         selectedCourseItem.id === moduleSelectedCourseItem.items[moduleSelectedCourseItem.items.length - 1].id ||
-        moduleSelectedCourseItem.items.length === progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
+        moduleSelectedCourseItem.items.length ===
+          progress.filter((p) => p.id_course_module === moduleSelectedCourseItem.id && p.activity_type !== "module").length + 1
       ) {
         const indexOfSelectedItem = modules.findIndex((m) => m.id === selectedCourseItem.id_course_module);
         if (modules[indexOfSelectedItem + 1]) setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
@@ -319,7 +340,12 @@ const Learning = () => {
                 <Progress strokeColor={"#2F8351"} percent={progressPercentage} className="w-full" showInfo={false} />
               </div>
               <div className="flex justify-end items-center">
-                <Button size="large" icon={<RxChevronLeft />} className="button-back-learning-header mr-4" onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
+                <Button
+                  size="large"
+                  icon={<RxChevronLeft />}
+                  className="button-back-learning-header mr-4"
+                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}
+                >
                   {t("Back to course")}
                 </Button>
                 {selectedCourseItem?.type && (
@@ -329,7 +355,14 @@ const Learning = () => {
                         {t("Previous")}
                       </Button>
                     )}
-                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}>
+                    <Button
+                      size="large"
+                      icon={<RxChevronRight />}
+                      iconPlacement="end"
+                      className="button-learning-header"
+                      onClick={() => next()}
+                      disabled={!allowNext}
+                    >
                       {t("Next")}
                     </Button>
                   </>
@@ -360,23 +393,35 @@ const Learning = () => {
                       className="collapse-learning"
                       size="large"
                       bordered={false}
+                      defaultActiveKey={activeModule}
+                      activeKey={activeModule}
                       items={modules.map((item, mInd) => {
+                        console.log(selectedCourseItem);
                         return {
                           key: item.id,
                           label: (
                             <div className="flex flex-col">
-                              <div onClick={() => selectCourseItem(item)} className="p-2 cursor-pointer flex items-center">
-                                {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                              <div className="p-2 cursor-pointer flex items-center">
+                                {progress.length > 0 &&
+                                progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
+                                  <div
+                                    className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                  >
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
                                   <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
-                                <p className={`text-sm ml-2`}>{item.title}</p>
+                                <p
+                                  className={`text-sm ml-2 ${selectedCourseItem.type && selectedCourseItem.id_course_module === item.id ? "font-bold" : "font-normal"}`}
+                                  onClick={() => selectCourseItem(item)}
+                                >
+                                  {item.title}
+                                </p>
                                 {data?.course?.settings.progression_type === "linear"
                                   ? mInd > 0 &&
-                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
+                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
+                                      0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
                                       </div>
@@ -390,7 +435,9 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
                                   {progress.length > 0 && progress.filter((p) => p.is_completed && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
-                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    <div
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                    >
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
@@ -425,9 +472,13 @@ const Learning = () => {
                         let topics = content.items?.filter((_t) => _t.type === "topic");
                         let tests = content.items?.filter((_t) => _t.type === "test");
                         return (
-                          <div className="flex justify-center items-center">
+                          <div className="flex justify-center items-center" onClick={() => setActiveModule(content.id)}>
                             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                              {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
+                              {panelProps.isActive ? (
+                                <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" />
+                              ) : (
+                                <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />
+                              )}
                             </div>
                             <p>
                               {topics && topics.length > 0 ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""}{" "}
@@ -469,14 +520,18 @@ const Learning = () => {
                       className="collapse-learning"
                       size="large"
                       bordered={false}
+                      defaultActiveKey={[selectedCourseItem.type === "module" ? selectedCourseItem.id : selectedCourseItem.id_course_module]}
                       items={modules.map((item, mInd) => {
                         return {
                           key: item.id,
                           label: (
-                            <div className="flex flex-col">
+                            <div className="flex flex-col" onClick={() => setActiveModule(item.id)}>
                               <div className="p-2 cursor-pointer flex items-center">
-                                {progress.length > 0 && progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                {progress.length > 0 &&
+                                progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
+                                  <div
+                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                  >
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
@@ -487,7 +542,8 @@ const Learning = () => {
                                 </p>
                                 {data?.course?.settings.progression_type === "linear"
                                   ? mInd > 0 &&
-                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length === 0 && (
+                                    progress.filter((p) => p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
+                                      0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
                                       </div>
@@ -500,8 +556,11 @@ const Learning = () => {
                             <div className="flex flex-col">
                               {item.items.map((_t, _i) => (
                                 <div onClick={() => selectCourseItem(_t)} className="p-2 pl-6 cursor-pointer flex items-center">
-                                  {progress.length > 0 && progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
-                                    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                  {progress.length > 0 &&
+                                  progress.filter((p) => p.is_completed && (p.id_course_topic === _t.id || p.id_course_test === _t.id)).length > 0 ? (
+                                    <div
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                    >
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
@@ -538,10 +597,15 @@ const Learning = () => {
                         return (
                           <div className="flex justify-center items-center">
                             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                              {panelProps.isActive ? <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" /> : <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />}
+                              {panelProps.isActive ? (
+                                <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" />
+                              ) : (
+                                <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />
+                              )}
                             </div>
                             <p>
-                              {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""} {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                              {topics ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}` : ""}{" "}
+                              {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
                             </p>
                           </div>
                         );
@@ -569,14 +633,24 @@ const Learning = () => {
 
                 {selectedCourseItem?.type && (
                   <>
-                    <Button size="large" icon={<RxChevronRight />} iconPlacement="end" className="button-learning-header" onClick={() => next()} disabled={!allowNext}></Button>
+                    <Button
+                      size="large"
+                      icon={<RxChevronRight />}
+                      iconPlacement="end"
+                      className="button-learning-header"
+                      onClick={() => next()}
+                      disabled={!allowNext}
+                    ></Button>
                   </>
                 )}
               </div>
               <div className="p-8 lg:pl-12!">
                 {progress?.length > 0 &&
                 progress.filter(
-                  (p) => p.activity_type === selectedCourseItem?.type && p[`id_course_${selectedCourseItem?.type}`] === selectedCourseItem?.id && p.is_completed === 1,
+                  (p) =>
+                    p.activity_type === selectedCourseItem?.type &&
+                    p[`id_course_${selectedCourseItem?.type}`] === selectedCourseItem?.id &&
+                    p.is_completed === 1,
                 ).length > 0 ? (
                   <div className="p-4 bg-black flex justify-between items-center">
                     <p className="text-[20px] text-white">{selectedCourseItem?.title}</p>
@@ -598,7 +672,8 @@ const Learning = () => {
                         key: "1",
                         label: (
                           <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
+                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
+                            <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Course")}</p>
                           </div>
                         ),
                         forceRender: true,
@@ -632,7 +707,8 @@ const Learning = () => {
                         key: "2",
                         label: (
                           <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                            <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
+                            <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
+                            <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Materials")}</p>
                           </div>
                         ),
                         children: <CourseMaterial data={data.course} />,
@@ -641,7 +717,8 @@ const Learning = () => {
                         key: "3",
                         label: (
                           <div className="flex flex-col lg:flex-row  p-2 justify-center items-center">
-                            <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" /> <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
+                            <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
+                            <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">{t("Objection books")}</p>
                           </div>
                         ),
                         children: <CourseObjection data={data.course} />,
@@ -649,7 +726,14 @@ const Learning = () => {
                     ]}
                   />
                 ) : selectedCourseItem?.type === "topic" ? (
-                  <Topic course={data.course} progress={progress} selectedCourseItem={selectedCourseItem} setAllowNext={setAllowNext} modules={modules} allItems={allItems} />
+                  <Topic
+                    course={data.course}
+                    progress={progress}
+                    selectedCourseItem={selectedCourseItem}
+                    setAllowNext={setAllowNext}
+                    modules={modules}
+                    allItems={allItems}
+                  />
                 ) : selectedCourseItem?.type === "test" ? (
                   <Test
                     course={data?.course}

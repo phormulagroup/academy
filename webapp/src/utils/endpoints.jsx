@@ -5,7 +5,6 @@ const endpoints = {
   auth: {
     login: "/auth/login",
     validateEmail: "/auth/validateEmail",
-    generatePassword: "/auth/generatePassword",
     register: "/auth/register",
     verifyToken: "/auth/verifyToken",
     verifyTokenGeneratePassword: "/auth/verifyTokenGeneratePassword",
@@ -43,7 +42,6 @@ const endpoints = {
     changeStatus: "/user/changeStatus",
     create: "/user/create",
     delete: "/user/delete",
-    generatePassword: "/user/generatePassword",
   },
   role: {
     read: "/role/read",
@@ -121,6 +119,7 @@ const endpoints = {
     read: "/document/read",
     readByLang: "/document/readByLang",
     readBySlug: "/document/readBySlug",
+    readFile: "/document/readFile",
     update: "/document/update",
     create: "/document/create",
     delete: "/document/delete",

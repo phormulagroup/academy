@@ -49,12 +49,15 @@ export default function CourseDetails() {
 
   async function getData() {
     try {
-      const res = await axios.get(endpoints.course.readBySlug, { params: { slug, id_user: user.id, id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } });
+      const res = await axios.get(endpoints.course.readBySlug, {
+        params: { slug, id_user: user.id, id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id },
+      });
 
       if (res.data.course.length > 0) {
         let auxCourse = res.data.course[0];
         auxCourse.settings = auxCourse.settings ? JSON.parse(auxCourse.settings) : null;
-        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country) && user.id_role !== 1) auxCourse = null;
+        if (auxCourse.settings && auxCourse.settings.country_limit && !auxCourse.settings.country.includes(user.country) && user.id_role !== 1)
+          auxCourse = null;
         if (!canAccess(auxCourse)) auxCourse = null;
         if (auxCourse) {
           auxCourse.material = auxCourse.material ? JSON.parse(auxCourse.material) : null;
@@ -68,9 +71,15 @@ export default function CourseDetails() {
               if (auxModules[i].items) {
                 for (let y = 0; y < auxModules[i].items.length; y++) {
                   if (auxModules[i].items[y].type === "topic")
-                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                    auxModules[i].items[y] = {
+                      type: auxModules[i].items[y].type,
+                      ...res.data.topics.filter((_t) => _t.id === auxModules[i].items[y].id)[0],
+                    };
                   if (auxModules[i].items[y].type === "test")
-                    auxModules[i].items[y] = { type: auxModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0] };
+                    auxModules[i].items[y] = {
+                      type: auxModules[i].items[y].type,
+                      ...res.data.tests.filter((_t) => _t.id === auxModules[i].items[y].id)[0],
+                    };
                 }
                 newModules.push(auxModules[i]);
               }
@@ -149,7 +158,10 @@ export default function CourseDetails() {
     if (user.id_role === 1) return true;
     if (settings.course_access_expiration) {
       let today = dayjs();
-      if (today.diff(dayjs(settings.course_access_expiration_dates.start_date).diff(today)) > 0 && today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0) {
+      if (
+        today.diff(dayjs(settings.course_access_expiration_dates.start_date).diff(today)) > 0 &&
+        today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0
+      ) {
         return true;
       } else {
         return false;
@@ -209,7 +221,8 @@ export default function CourseDetails() {
                       <div className="flex items-center col-span-2 sm:col-span-1">
                         <DurationIcon className="mr-1 brightness-[0] invert-[1]" />
                         <p className="text-[16px] text-white">
-                          {data.course.settings.duration_hours} h {data.course.settings.duration_minutes ? `${data.course.settings.duration_minutes}m` : ""}
+                          {data.course.settings.duration_hours} h{" "}
+                          {data.course.settings.duration_minutes ? `${data.course.settings.duration_minutes}m` : ""}
                         </p>
                       </div>
                     )}
@@ -230,24 +243,21 @@ export default function CourseDetails() {
               </div>
             </div>
           </div>
-          <div className="hidden xl:grid grid-cols-8 max-h-150">
-            <div className="col-span-3"></div>
-            <div className="col-span-5 pl-10 flex justify-center items-center">
-              <Image
-                src={`${config.server_ip}/media/${data.course?.img}`}
-                loading="lazy"
-                preview={false}
-                placeholder={<Skeleton.Image active style={{ width: "100%", height: "100%" }} />}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
+          <div className="hidden xl:grid grid-cols-8 max-h-150 min-h-150">
+            <div className="col-span-4"></div>
+            <div
+              className="col-span-4 pl-10 flex justify-center items-center bg-center bg-cover"
+              style={{ backgroundImage: `url(${config.server_ip}/media/${data.course?.img})` }}
+            ></div>
           </div>
           <div className="container m-auto xl:-mt-10 relative z-10">
             <div className="bg-[#C5CEE1] p-6 flex flex-col sm:flex-row gap-8 mb-5">
               <div className="hidden sm:flex p-2 pr-0">
                 <FlagIcon
                   className="max-w-12.5"
-                  style={{ filter: "brightness(0) saturate(100%) invert(12%) sepia(71%) saturate(4132%) hue-rotate(221deg) brightness(84%) contrast(85%)" }}
+                  style={{
+                    filter: "brightness(0) saturate(100%) invert(12%) sepia(71%) saturate(4132%) hue-rotate(221deg) brightness(84%) contrast(85%)",
+                  }}
                 />
               </div>
               {progress.length > 0 ? (
@@ -255,7 +265,9 @@ export default function CourseDetails() {
                   <div className="flex flex-col sm:flex-row items-center justify-start mb-2">
                     <p className="text-[#163986] text-[20px] font-bold uppercase">
                       {calcCourseProgress(
-                        progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,
+                        progress.filter(
+                          (p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll",
+                        ).length,
                         data?.topics?.length,
                         data?.tests?.length,
                       )}
@@ -263,7 +275,8 @@ export default function CourseDetails() {
                     </p>
                     {progress.length > 0 && (
                       <p className="text-[#163986] text-sm ml-4">
-                        {t("Last activity at")} {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
+                        {t("Last activity at")}{" "}
+                        {progress[progress.length - 1] ? dayjs(progress[progress.length - 1].created_at).format("DD/MM/YYYY HH:mm") : ""}
                       </p>
                     )}
                   </div>
@@ -271,7 +284,10 @@ export default function CourseDetails() {
                     strokeColor={"#2F8351"}
                     railColor={"#FFF"}
                     percent={
-                      (100 * progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) /
+                      (100 *
+                        progress.filter(
+                          (p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll",
+                        ).length) /
                       (data?.topics?.length + data?.tests?.length)
                     }
                     className="w-full!"
@@ -287,7 +303,9 @@ export default function CourseDetails() {
               )}
               <div className="p-2 flex justify-center items-center">
                 {calcCourseProgress(
-                  progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length,
+                  progress.filter(
+                    (p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll",
+                  ).length,
                   data?.topics?.length,
                   data?.tests?.length,
                 ) === 100 ? (
@@ -301,7 +319,12 @@ export default function CourseDetails() {
                     {t("Review")}
                   </Button>
                 ) : progress.filter((p) => p.activity_type === "enroll").length === 0 ? (
-                  <Button className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!" variant="solid" size="large" onClick={() => enroll()}>
+                  <Button
+                    className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
+                    variant="solid"
+                    size="large"
+                    onClick={() => enroll()}
+                  >
                     {t("Initiate")}
                   </Button>
                 ) : (

@@ -13,7 +13,7 @@ import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
 import logo from "../../assets/BIAL-Regional-Academy.png";
-import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
+import logoBialFooter from "../../assets/BIAL-logo-footer-Login.svg";
 import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
@@ -83,7 +83,7 @@ export default function Login() {
     >
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
         <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15 relative">
-          <div className="absolute right-[-30px] top-[-18px]">
+          <div className="absolute -right-7.5 -top-4.5">
             <Dropdown
               menu={{
                 items: languages.map((item) => ({
@@ -115,8 +115,8 @@ export default function Login() {
             <Link to={`/${i18n.language}`} className="max-w-75 h-auto mx-auto mb-6">
               <img src={logo} alt="Phormula Logo" />
             </Link>
-            <div className="flex justify-center items-center mx-auto max-w-[300px]">
-              <p className="text-center text-sm mb-6 font-[600]">{t("Welcome to the BIAL Regional Academy e-Learning platform")}</p>
+            <div className="flex justify-center items-center mx-auto max-w-75">
+              <p className="text-center text-sm mb-6 font-semibold">{t("Welcome to the BIAL Regional Academy e-Learning platform")}</p>
             </div>
             <Form
               form={form}
@@ -142,7 +142,7 @@ export default function Login() {
                   </Checkbox>
                 </Form.Item>
                 <div className="flex justify-end items-center">
-                  <Link to={`/${i18n.language}/recover`} className="text-[#000]! hover:text-[#FFC600]! underline!">
+                  <Link to={`/${i18n.language}/recover`} className="text-black! hover:text-[#FFC600]! underline!">
                     <p className="text-[12px]">
                       <u>{t("Forgot your password?")}</u>
                     </p>

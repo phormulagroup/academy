@@ -13,7 +13,7 @@ import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
 import logo from "../../assets/BIAL-Regional-Academy.png";
-import logoBialFooter from "../../assets/BIAL-logo-footer.svg";
+import logoBialFooter from "../../assets/BIAL-logo-footer-Login.svg";
 import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
@@ -93,16 +93,22 @@ export default function Register() {
   };
 
   return (
-    <div className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`} style={{ backgroundImage: `url(${bgLogin})` }}>
+    <div
+      className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`}
+      style={{ backgroundImage: `url(${bgLogin})` }}
+    >
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
         <div className="max-w-200 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15 relative">
-          <div className="absolute right-[-30px] top-[-18px]">
+          <div className="absolute -right-7.5 -top-4.5">
             <Dropdown
               menu={{
                 items: languages.map((item) => ({
                   key: item.code,
                   label: (
-                    <div className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`} onClick={() => changeLanguage(item.code)}>
+                    <div
+                      className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+                      onClick={() => changeLanguage(item.code)}
+                    >
                       <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
                       <p>{item.name}</p>
                     </div>
@@ -142,7 +148,13 @@ export default function Register() {
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <Form.Item name="country" label={t("Country")} rules={[{ required: true }]} className="mb-0!">
-                    <Select size="large" placeholder={t("Choose a country")} showSearch={{ optionFilterProp: "label" }} allowClear options={countries} />
+                    <Select
+                      size="large"
+                      placeholder={t("Choose a country")}
+                      showSearch={{ optionFilterProp: "label" }}
+                      allowClear
+                      options={countries}
+                    />
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
@@ -166,7 +178,13 @@ export default function Register() {
                   </Form.Item>
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
+                  <Form.Item
+                    label={t("Birth date")}
+                    name="birth_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({ value: value && dayjs(value) })}
+                  >
                     <DatePicker size="large" placeholder={t("Select birth date")} className="w-full" />
                   </Form.Item>
                 </div>
@@ -226,7 +244,9 @@ export default function Register() {
                     ]}
                   >
                     <Checkbox size="large">
-                      <p className="text-[#707070] text-[12px]">{t("I declare that I have read the Privacy Policy of this site, as well as its Terms of Use.")}</p>
+                      <p className="text-[#707070] text-[12px]">
+                        {t("I declare that I have read the Privacy Policy of this site, as well as its Terms of Use.")}
+                      </p>
                     </Checkbox>
                   </Form.Item>
                 </div>
@@ -239,7 +259,8 @@ export default function Register() {
             </Form>
 
             <p className="text-center text-xs mt-6 text-[#707070]">
-              {t("If you are having trouble accessing your account, please contact our support team at")} <u className="text-black">help@bial-academy.pt</u>
+              {t("If you are having trouble accessing your account, please contact our support team at")}{" "}
+              <u className="text-black">help@bial-academy.pt</u>
             </p>
           </div>
         </div>

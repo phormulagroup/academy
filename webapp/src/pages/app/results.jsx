@@ -66,9 +66,15 @@ export default function Result() {
             if (courseModules[i].items) {
               for (let y = 0; y < courseModules[i].items.length; y++) {
                 if (courseModules[i].items[y].type === "topic")
-                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+                  courseModules[i].items[y] = {
+                    type: courseModules[i].items[y].type,
+                    ...res.data.topics.filter((_t) => _t.id === courseModules[i].items[y].id)[0],
+                  };
                 if (courseModules[i].items[y].type === "test")
-                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+                  courseModules[i].items[y] = {
+                    type: courseModules[i].items[y].type,
+                    ...res.data.tests.filter((_t) => _t.id === courseModules[i].items[y].id)[0],
+                  };
 
                 auxAllItems.push(courseModules[i].items[y]);
               }
@@ -132,7 +138,6 @@ export default function Result() {
   }
 
   function downloadCertificate(item, progress) {
-    console.log(item);
     axios
       .get(endpoints.course_certificate.readById, { params: { id: item.id_course_certificate } })
       .then((res) => {
@@ -180,16 +185,22 @@ export default function Result() {
                             <p className={`text-[20px] font-bold`}>{c.course.name}</p>
                             {data?.course?.settings.progression_type === "linear"
                               ? mInd > 0 &&
-                                c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
-                                  0 && (
+                                c.progress.filter(
+                                  (p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id,
+                                ).length === 0 && (
                                   <div className="flex justify-center items-center ml-4">
                                     <RxLockClosed className="w-3.75 h-3.75" />
                                   </div>
                                 )
                               : null}
                             {(100 *
-                              c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                .length) /
+                              c.progress.filter(
+                                (p) =>
+                                  p.is_completed === 1 &&
+                                  p.activity_type !== "module" &&
+                                  p.activity_type !== "course" &&
+                                  p.activity_type !== "enroll",
+                              ).length) /
                               (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) ===
                               100 && (
                               <div className="flex items-center w-full">
@@ -213,8 +224,13 @@ export default function Result() {
                             </div>
                             <div className="flex justify-start items-center w-full">
                               {calcCourseProgress(
-                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                  .length,
+                                c.progress.filter(
+                                  (p) =>
+                                    p.is_completed === 1 &&
+                                    p.activity_type !== "module" &&
+                                    p.activity_type !== "course" &&
+                                    p.activity_type !== "enroll",
+                                ).length,
                                 c.allItems.filter((_c) => _c.type === "topic").length,
                                 c.allItems.filter((_c) => _c.type === "test").length,
                               )}
@@ -223,8 +239,13 @@ export default function Result() {
                                 railColor={"#EAEAEA"}
                                 percent={
                                   (100 *
-                                    c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                      .length) /
+                                    c.progress.filter(
+                                      (p) =>
+                                        p.is_completed === 1 &&
+                                        p.activity_type !== "module" &&
+                                        p.activity_type !== "course" &&
+                                        p.activity_type !== "enroll",
+                                    ).length) /
                                   (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length)
                                 }
                                 className="max-w-75"
@@ -246,8 +267,12 @@ export default function Result() {
                             <div className="flex flex-col">
                               <div className="p-2 cursor-pointer flex">
                                 {c.progress.length > 0 &&
-                                c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                                  <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                c.progress.filter(
+                                  (p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === item.id,
+                                ).length > 0 ? (
+                                  <div
+                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                  >
                                     <RxCheck className="text-white" />
                                   </div>
                                 ) : (
@@ -274,11 +299,19 @@ export default function Result() {
                               </div>
                               <div className="p-4">
                                 {item.items.map((_t, i) => (
-                                  <div className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
+                                  <div
+                                    className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}
+                                  >
                                     {c.progress.length > 0 &&
-                                    c.progress.filter((p) => p.is_completed === 1 && p.id_course === c.course.id && (p.id_course_topic === _t.id || p.id_course_test === _t.id))
-                                      .length > 0 ? (
-                                      <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    c.progress.filter(
+                                      (p) =>
+                                        p.is_completed === 1 &&
+                                        p.id_course === c.course.id &&
+                                        (p.id_course_topic === _t.id || p.id_course_test === _t.id),
+                                    ).length > 0 ? (
+                                      <div
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                      >
                                         <RxCheck className="text-white" />
                                       </div>
                                     ) : (
@@ -296,10 +329,18 @@ export default function Result() {
                           return (
                             <div className="flex justify-center items-center">
                               <div className="mr-2">
-                                {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapse")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
+                                {panelProps.isActive ? (
+                                  <p className="font-bold text-sm">{t("Collapse")}</p>
+                                ) : (
+                                  <p className="font-bold text-sm">{t("Expand")}</p>
+                                )}
                               </div>
                               <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                                {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
+                                {panelProps.isActive ? (
+                                  <RxChevronUp className="w-3.75 h-3.75 text-white" />
+                                ) : (
+                                  <RxChevronDown className="w-3.75 h-3.75 text-white" />
+                                )}
                               </div>
                             </div>
                           );
@@ -312,9 +353,19 @@ export default function Result() {
                 expandIcon={(panelProps) => {
                   return (
                     <div className="flex justify-center items-center">
-                      <div className="mr-2">{panelProps.isActive ? <p className="font-bold text-sm">{t("Collapse")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}</div>
+                      <div className="mr-2">
+                        {panelProps.isActive ? (
+                          <p className="font-bold text-sm">{t("Collapse")}</p>
+                        ) : (
+                          <p className="font-bold text-sm">{t("Expand")}</p>
+                        )}
+                      </div>
                       <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                        {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
+                        {panelProps.isActive ? (
+                          <RxChevronUp className="w-3.75 h-3.75 text-white" />
+                        ) : (
+                          <RxChevronDown className="w-3.75 h-3.75 text-white" />
+                        )}
                       </div>
                     </div>
                   );
