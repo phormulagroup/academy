@@ -111,11 +111,6 @@ const Main = () => {
     }
   }, [location]);
 
-  useEffect(() => {
-    console.log(user.name.split(" ")[0]);
-    console.log(user.name.split(" ")[user.name.split(" ").length - 1]);
-  }, []);
-
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
   }

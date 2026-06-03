@@ -312,13 +312,13 @@ const ContextProvider = ({ children }) => {
         });
         messageApi.open({
           type: "success",
-          content: `${obj.table.charAt(0).toUpperCase() + obj.table.slice(1)} criado com sucesso!`,
+          content: `${tablesName[obj.table]} ${t("was successfully created")}.`,
         });
         resolve(res);
       } catch (err) {
         messageApi.open({
           type: "error",
-          content: `Algo correu mal ao editar o ${obj.table}.`,
+          content: t(`Somethins went wrong, please try again.`),
         });
         reject(err);
       }
@@ -338,13 +338,13 @@ const ContextProvider = ({ children }) => {
         });
         messageApi.open({
           type: "success",
-          content: `${tablesName[obj.table]} foi editado com sucesso.`,
+          content: `${tablesName[obj.table]} ${t("was successfully updated")}.`,
         });
         resolve(res);
       } catch (err) {
         messageApi.open({
           type: "error",
-          content: `Algo correu mal ao editar o ${obj.table}.`,
+          content: t(`Somethins went wrong, please try again.`),
         });
         reject(err);
       }

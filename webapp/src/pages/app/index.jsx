@@ -51,22 +51,22 @@ export default function Main() {
               <p>{t("Welcome to BIAL Regional Academy, the e-learning platform!")}</p>
             </div>
           )}
-          <div className="flex justify-between items-center mt-4">
+          <div className="flex justify-between items-center mt-6 w-full!">
             {Object.keys(user || {}).length === 0 && (
               <div className="flex items-center">
                 <Link to={`/${i18n.language}/login`}>
-                  <Button type="primary" className="mt-6 min-w-30" size="large">
+                  <Button type="primary" className="min-w-30" size="large">
                     {t("Login")}
                   </Button>
                 </Link>
                 <Link to={`/${i18n.language}/register`}>
-                  <Button className="ml-2 mt-6 min-w-30" size="large">
+                  <Button className="ml-2 min-w-30" size="large">
                     {t("Register")}
                   </Button>
                 </Link>
               </div>
             )}
-            <div className="flex justify-start items-center w-full">
+            <div className={`flex ${Object.keys(user || {}).length === 0 ? "justify-end" : "justify-start"} items-center w-full`}>
               <img src={emergingMarket} className="max-w-50" />
             </div>
           </div>

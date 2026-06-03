@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { CloseOutlined, LoginOutlined, MenuOutlined } from "@ant-design/icons";
 import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -47,76 +47,80 @@ const Main = () => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
-  const [items, setItems] = useState([
-    {
-      key: "grp-admin",
-      label: "Admin",
-      type: "group",
-      children: [{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> }],
-    },
-    {
-      key: "grp-web",
-      label: "Website",
-      type: "group",
-      children: [
-        { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
-        { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
-        { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
-        { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
-        { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
-        { key: "/admin/faqs", label: t("FAQs"), icon: <SettingsIcon /> },
-      ],
-    },
-    {
-      key: "grp-learning",
-      label: "e-Learning",
-      type: "group",
-      children: [
-        { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
-        { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
-        { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
-        { key: "/admin/documents", label: t("Documents"), icon: <OrdersIcon /> },
-        { key: "/admin/downloads", label: t("Downloads"), icon: <OrdersIcon /> },
-      ],
-    },
-    {
-      key: "grp-manage",
-      label: "Gestão",
-      type: "group",
-      children: [
-        { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
-        { key: "/admin/permissions", label: t("Permissions"), icon: <PermissionsIcon /> },
-        { key: `/admin/users/${user.id}`, label: t("My Account"), icon: <AccountIcon /> },
-      ],
-    },
-    {
-      key: "grp-forms",
-      label: "Gestão",
-      type: "group",
-      children: [
-        { key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
-        { key: "/admin/answers", label: t("Answers"), icon: <AnswersIcon /> },
-      ],
-    },
-    {
-      key: "grp-email",
-      label: "E-mail",
-      type: "group",
-      children: [
-        { key: "/admin/templates", label: t("Templates"), icon: <TemplatesIcon /> },
-        { key: "/admin/smtp", label: t("SMTP"), icon: <SMTPIcon /> },
-      ],
-    },
-    {
-      key: "grp-option",
-      label: "Opções",
-      type: "group",
-      children: [{ key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> }],
-    },
-  ]);
+  const items = useMemo(
+    () => [
+      {
+        key: "grp-admin",
+        label: "Admin",
+        type: "group",
+        children: [{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> }],
+      },
+      {
+        key: "grp-web",
+        label: "Website",
+        type: "group",
+        children: [
+          { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
+          { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
+          { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
+          { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
+          { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
+          { key: "/admin/faqs", label: t("FAQs"), icon: <SettingsIcon /> },
+        ],
+      },
+      {
+        key: "grp-learning",
+        label: "e-Learning",
+        type: "group",
+        children: [
+          { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
+          { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
+          { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
+          { key: "/admin/documents", label: t("Documents"), icon: <OrdersIcon /> },
+          { key: "/admin/downloads", label: t("Downloads"), icon: <OrdersIcon /> },
+        ],
+      },
+      {
+        key: "grp-manage",
+        label: "Gestão",
+        type: "group",
+        children: [
+          { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
+          { key: "/admin/permissions", label: t("Permissions"), icon: <PermissionsIcon /> },
+          { key: `/admin/users/${user.id}`, label: t("My Account"), icon: <AccountIcon /> },
+        ],
+      },
+      {
+        key: "grp-forms",
+        label: "Gestão",
+        type: "group",
+        children: [
+          { key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
+          { key: "/admin/answers", label: t("Answers"), icon: <AnswersIcon /> },
+        ],
+      },
+      {
+        key: "grp-email",
+        label: "E-mail",
+        type: "group",
+        children: [
+          { key: "/admin/templates", label: t("Templates"), icon: <TemplatesIcon /> },
+          { key: "/admin/smtp", label: t("SMTP"), icon: <SMTPIcon /> },
+        ],
+      },
+      {
+        key: "grp-option",
+        label: "Opções",
+        type: "group",
+        children: [{ key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> }],
+      },
+    ],
+    [selectedLanguage],
+  );
 
   const selectLanguage = (lang) => {
     localStorage.setItem("id_lang", lang.id);
+    i18n.changeLanguage(lang.code);
     setSelectedLanguage(lang);
   };
 

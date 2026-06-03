@@ -20,7 +20,7 @@ import { RxReload } from "react-icons/rx";
 import TipTapFormField from "../../components/admin/tipTap/tipTapFormField";
 
 export default function Personalization() {
-  const { user, selectedLanguage, update } = useContext(Context);
+  const { user, selectedLanguage, update, create } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -39,8 +39,9 @@ export default function Personalization() {
     axios
       .get(endpoints.personalization.readByLang, { params: { id_lang: selectedLanguage.id } })
       .then((res) => {
-        setData(res.data.filter((s) => s.name === "homepage_text")[0]);
-        if (res.data.filter((s) => s.name === "homepage_text")[0]) form.setFieldsValue(JSON.parse(res.data.filter((s) => s.name === "homepage_text")[0]?.json));
+        let auxData = res.data.filter((s) => s.name === "homepage_text")[0];
+        setData(auxData);
+        if (auxData) form.setFieldsValue({ ...JSON.parse(auxData?.json) });
         else form.setFieldsValue({ text: "" });
         setIsLoading(false);
       })
@@ -53,7 +54,8 @@ export default function Personalization() {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await update({ data: { id: data.id, json: JSON.stringify(values) }, table: "personalization" });
+      if (data?.id) await update({ data: { id: data?.id, json: JSON.stringify(values) }, table: "personalization" });
+      else await create({ data: { json: JSON.stringify(values), name: "homepage_text", id_lang: selectedLanguage.id }, table: "personalization" });
       setIsButtonLoading(false);
     } catch (err) {
       console.log(err);

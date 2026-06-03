@@ -13,7 +13,7 @@ const Loading = () => {
 
   return (
     <div className={`flex flex-col justify-center items-center w-full h-full bg-cover bg-center`}>
-      <div className="max-w-150 h-[75%]">
+      <div className="max-w-150 h-40 mb-10">
         <LottieAnim />
       </div>
       <div className="max-h-10!">
