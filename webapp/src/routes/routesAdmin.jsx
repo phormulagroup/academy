@@ -25,38 +25,40 @@ import Download from "../pages/admin/download";
 import Faqs from "../pages/admin/faqs";
 import FormSubmission from "../pages/admin/formSubmission";
 import Personalization from "../pages/admin/personalization";
+import Product from "../pages/admin/product";
 
 export const adminRoutes = [
-  {
-    path: "/admin/",
-    element: <AdminLayout />,
-    children: [
-      { index: true, element: <MainAdmin /> },
-      { path: "courses", element: <Course /> },
-      { path: "courses/:id", element: <CourseDetails /> },
-      { path: "courses/:id/test/:idTest", element: <Test /> },
-      { path: "reports", element: <Report /> },
-      { path: "languages", element: <Language /> },
-      { path: "smtp", element: <SMTP /> },
-      { path: "templates", element: <Template /> },
-      { path: "templates/:id", element: <TemplateDetails /> },
-      { path: "users", element: <User /> },
-      { path: "users/:id", element: <UserDetails /> },
-      { path: "documents", element: <Document /> },
-      { path: "downloads", element: <Download /> },
-      { path: "media", element: <Media /> },
-      { path: "certificate", element: <Certificate /> },
-      { path: "certificate/:id", element: <CertificateDetails /> },
-      { path: "notification", element: <Notification /> },
-      { path: "inbox", element: <Inbox /> },
-      { path: "faqs", element: <Faqs /> },
-      { path: "answers", element: <FormSubmission /> },
-      { path: "personalization", element: <Personalization /> },
-      { path: "*", element: <Navigate to="/admin/" replace /> },
-    ],
-  },
-  {
-    path: "/admin/courses/:id/topic/:idTopic",
-    element: <Topic />,
-  },
+	{
+		path: "/admin/",
+		element: <AdminLayout />,
+		children: [
+			{ index: true, element: <MainAdmin /> },
+			{ path: "courses", element: <Course /> },
+			{ path: "courses/:id", element: <CourseDetails /> },
+			{ path: "courses/:id/test/:idTest", element: <Test /> },
+			{ path: "reports", element: <Report /> },
+			{ path: "languages", element: <Language /> },
+			{ path: "smtp", element: <SMTP /> },
+			{ path: "templates", element: <Template /> },
+			{ path: "templates/:id", element: <TemplateDetails /> },
+			{ path: "users", element: <User /> },
+			{ path: "users/:id", element: <UserDetails /> },
+			{ path: "documents", element: <Document /> },
+			{ path: "downloads", element: <Download /> },
+			{ path: "media", element: <Media /> },
+			{ path: "certificate", element: <Certificate /> },
+			{ path: "certificate/:id", element: <CertificateDetails /> },
+			{ path: "notification", element: <Notification /> },
+			{ path: "inbox", element: <Inbox /> },
+			{ path: "faqs", element: <Faqs /> },
+			{ path: "answers", element: <FormSubmission /> },
+			{ path: "personalization", element: <Personalization /> },
+			{ path: "products", element: <Product /> },
+			{ path: "*", element: <Navigate to="/admin/" replace /> },
+		],
+	},
+	{
+		path: "/admin/courses/:id/topic/:idTopic",
+		element: <Topic />,
+	},
 ];

@@ -38,227 +38,314 @@ import { Helmet } from "react-helmet";
 const { Header, Content, Sider } = Layout;
 
 const Main = () => {
-  const { user, logout, isLoggedIn, languages, setIsLoadingLanguage, windowDimension, selectedLanguage, setSelectedLanguage, inbox } =
-    useContext(Context);
-  const [current, setCurrent] = useState("/admin/");
-  const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
-  const [isOpenLogout, setIsOpenLogout] = useState(false);
+	const {
+		user,
+		logout,
+		isLoggedIn,
+		languages,
+		setIsLoadingLanguage,
+		windowDimension,
+		selectedLanguage,
+		setSelectedLanguage,
+		inbox,
+	} = useContext(Context);
+	const [current, setCurrent] = useState("/admin/");
+	const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
+	const [isOpenLogout, setIsOpenLogout] = useState(false);
 
-  const location = useLocation();
-  const { t, i18n } = useTranslation();
+	const location = useLocation();
+	const { t, i18n } = useTranslation();
 
-  const items = useMemo(
-    () => [
-      {
-        key: "grp-admin",
-        label: "Admin",
-        type: "group",
-        children: [{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> }],
-      },
-      {
-        key: "grp-web",
-        label: "Website",
-        type: "group",
-        children: [
-          { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
-          { key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
-          { key: "/admin/personalization", label: t("Personalization"), icon: <PersonalizationIcon /> },
-          { key: "/admin/languages", label: t("Languages"), icon: <LangIcon /> },
-          { key: "/admin/notification", label: t("Notification"), icon: <SettingsIcon /> },
-          { key: "/admin/faqs", label: t("FAQs"), icon: <SettingsIcon /> },
-        ],
-      },
-      {
-        key: "grp-learning",
-        label: "e-Learning",
-        type: "group",
-        children: [
-          { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
-          { key: "/admin/certificate", label: t("Certificates"), icon: <CertificatesIcon /> },
-          { key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
-          { key: "/admin/documents", label: t("Documents"), icon: <OrdersIcon /> },
-          { key: "/admin/downloads", label: t("Downloads"), icon: <OrdersIcon /> },
-        ],
-      },
-      {
-        key: "grp-manage",
-        label: "Gestão",
-        type: "group",
-        children: [
-          { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
-          { key: "/admin/permissions", label: t("Permissions"), icon: <PermissionsIcon /> },
-          { key: `/admin/users/${user.id}`, label: t("My Account"), icon: <AccountIcon /> },
-        ],
-      },
-      {
-        key: "grp-forms",
-        label: "Gestão",
-        type: "group",
-        children: [
-          { key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
-          { key: "/admin/answers", label: t("Answers"), icon: <AnswersIcon /> },
-        ],
-      },
-      {
-        key: "grp-email",
-        label: "E-mail",
-        type: "group",
-        children: [
-          { key: "/admin/templates", label: t("Templates"), icon: <TemplatesIcon /> },
-          { key: "/admin/smtp", label: t("SMTP"), icon: <SMTPIcon /> },
-        ],
-      },
-      {
-        key: "grp-option",
-        label: "Opções",
-        type: "group",
-        children: [{ key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> }],
-      },
-    ],
-    [selectedLanguage],
-  );
+	const items = useMemo(
+		() => [
+			{
+				key: "grp-admin",
+				label: "Admin",
+				type: "group",
+				children: [
+					{ key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> },
+				],
+			},
+			{
+				key: "grp-web",
+				label: "Website",
+				type: "group",
+				children: [
+					{ key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
+					{ key: "/admin/media", label: t("Multimedia"), icon: <MediaIcon /> },
+					{
+						key: "/admin/personalization",
+						label: t("Personalization"),
+						icon: <PersonalizationIcon />,
+					},
+					{
+						key: "/admin/languages",
+						label: t("Languages"),
+						icon: <LangIcon />,
+					},
+					{
+						key: "/admin/notification",
+						label: t("Notification"),
+						icon: <SettingsIcon />,
+					},
+					{ key: "/admin/faqs", label: t("FAQs"), icon: <SettingsIcon /> },
+				],
+			},
+			{
+				key: "grp-learning",
+				label: "e-Learning",
+				type: "group",
+				children: [
+					{ key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
+					{
+						key: "/admin/certificate",
+						label: t("Certificates"),
+						icon: <CertificatesIcon />,
+					},
+					{ key: "/admin/reports", label: t("Reports"), icon: <ReportsIcon /> },
+					{
+						key: "/admin/documents",
+						label: t("Documents"),
+						icon: <OrdersIcon />,
+					},
+					{
+						key: "/admin/downloads",
+						label: t("Downloads"),
+						icon: <OrdersIcon />,
+					},
+					{
+						key: "/admin/products",
+						label: t("Products"),
+						icon: <OrdersIcon />,
+					},
+				],
+			},
+			{
+				key: "grp-manage",
+				label: "Gestão",
+				type: "group",
+				children: [
+					{ key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
+					{
+						key: "/admin/permissions",
+						label: t("Permissions"),
+						icon: <PermissionsIcon />,
+					},
+					{
+						key: `/admin/users/${user.id}`,
+						label: t("My Account"),
+						icon: <AccountIcon />,
+					},
+				],
+			},
+			{
+				key: "grp-forms",
+				label: "Gestão",
+				type: "group",
+				children: [
+					{ key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
+					{ key: "/admin/answers", label: t("Answers"), icon: <AnswersIcon /> },
+				],
+			},
+			{
+				key: "grp-email",
+				label: "E-mail",
+				type: "group",
+				children: [
+					{
+						key: "/admin/templates",
+						label: t("Templates"),
+						icon: <TemplatesIcon />,
+					},
+					{ key: "/admin/smtp", label: t("SMTP"), icon: <SMTPIcon /> },
+				],
+			},
+			{
+				key: "grp-option",
+				label: "Opções",
+				type: "group",
+				children: [
+					{ key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> },
+				],
+			},
+		],
+		[selectedLanguage],
+	);
 
-  const selectLanguage = (lang) => {
-    localStorage.setItem("id_lang", lang.id);
-    i18n.changeLanguage(lang.code);
-    setSelectedLanguage(lang);
-  };
+	const selectLanguage = (lang) => {
+		localStorage.setItem("id_lang", lang.id);
+		i18n.changeLanguage(lang.code);
+		setSelectedLanguage(lang);
+	};
 
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  useEffect(() => {
-    let pathname = location.pathname.split("/");
-    if (pathname.length > 2) {
-      setCurrent(`/${pathname[1]}/${pathname[2]}`);
-    } else {
-      setCurrent(`/${pathname[pathname.length - 1]}`);
-    }
-  }, [location]);
+	useEffect(() => {
+		let pathname = location.pathname.split("/");
+		if (pathname.length > 2) {
+			setCurrent(`/${pathname[1]}/${pathname[2]}`);
+		} else {
+			setCurrent(`/${pathname[pathname.length - 1]}`);
+		}
+	}, [location]);
 
-  function handleClickMenu(e) {
-    if (e.key === "logout") {
-      logout();
-    } else {
-      navigate(e.key);
-      setIsOpenDrawerMenu(false);
-    }
-  }
+	function handleClickMenu(e) {
+		if (e.key === "logout") {
+			logout();
+		} else {
+			navigate(e.key);
+			setIsOpenDrawerMenu(false);
+		}
+	}
 
-  return (
-    <Layout>
-      <Helmet>
-        <title>{t("Admin Dashboard")} | BIAL Regional Academy</title>
-      </Helmet>
-      <Logout open={isOpenLogout} close={() => setIsOpenLogout(false)} submit={logout} />
-      <Layout>
-        {windowDimension.width > 1080 ? (
-          <Sider width={250} className="bg-[#163986]! overflow-auto">
-            <div className="flex flex-col justify-between items-start h-full p-4">
-              <Link to="/" className="min-h-20">
-                <img src={logo} alt="Bial Academy Logo" className="h-full mb-2 pl-4 pr-4" />
-              </Link>
-              <div className="flex flex-col items-center justify-start w-full menu-scroll-div">
-                <div className="mt-2.5 w-full">
-                  <Menu
-                    data-tour-id="menu"
-                    className="principal-menu"
-                    selectedKeys={[current]}
-                    mode="inline"
-                    items={items}
-                    onClick={handleClickMenu}
-                  />
-                </div>
-              </div>
-            </div>
-          </Sider>
-        ) : (
-          <Drawer
-            className="menu-drawer"
-            size={400}
-            open={isOpenDrawerMenu}
-            onClose={() => setIsOpenDrawerMenu(false)}
-            maskClosable={true}
-            closable={false}
-          >
-            <Button type="text" className="absolute right-5 top-5 font-bold" onClick={() => setIsOpenDrawerMenu(false)}>
-              <CloseOutlined className="text-[#0c3c61]" />
-            </Button>
-            <div className="flex p-[60px_20px_20px_20px] cursor-pointer" onClick={() => handleClickMenu({ key: "/admin/perfil" })}>
-              <Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
-              <div className="flex flex-col">
-                <p className="text-[#0c3c61]">Olá,</p>
-                <p className="text-[#0c3c61]">{user.name}</p>
-              </div>
-            </div>
-            <div className="flex flex-col justify-start items-center p-5">
-              <Menu className="principal-menu" selectedKeys={[current]} mode="inline" items={items} onClick={handleClickMenu} />
-              <Divider />
-              <a className={`dropdown-item flex items-center w-full min-h-11.25 pl-6`} onClick={() => setIsOpenLogout(true)}>
-                <LoginOutlined className="mr-2" /> Logout
-              </a>
-            </div>
-          </Drawer>
-        )}
+	return (
+		<Layout>
+			<Helmet>
+				<title>{t("Admin Dashboard")} | BIAL Regional Academy</title>
+			</Helmet>
+			<Logout
+				open={isOpenLogout}
+				close={() => setIsOpenLogout(false)}
+				submit={logout}
+			/>
+			<Layout>
+				{windowDimension.width > 1080 ? (
+					<Sider width={250} className="bg-[#163986]! overflow-auto">
+						<div className="flex flex-col justify-between items-start h-full p-4">
+							<Link to={`/${i18n.language}`} className="min-h-20">
+								<img
+									src={logo}
+									alt="Bial Academy Logo"
+									className="h-full mb-2 pl-4 pr-4"
+								/>
+							</Link>
+							<div className="flex flex-col items-center justify-start w-full menu-scroll-div">
+								<div className="mt-2.5 w-full">
+									<Menu
+										data-tour-id="menu"
+										className="principal-menu"
+										selectedKeys={[current]}
+										mode="inline"
+										items={items}
+										onClick={handleClickMenu}
+									/>
+								</div>
+							</div>
+						</div>
+					</Sider>
+				) : (
+					<Drawer
+						className="menu-drawer"
+						size={400}
+						open={isOpenDrawerMenu}
+						onClose={() => setIsOpenDrawerMenu(false)}
+						maskClosable={true}
+						closable={false}
+					>
+						<Button
+							type="text"
+							className="absolute right-5 top-5 font-bold"
+							onClick={() => setIsOpenDrawerMenu(false)}
+						>
+							<CloseOutlined className="text-[#0c3c61]" />
+						</Button>
+						<div
+							className="flex p-[60px_20px_20px_20px] cursor-pointer"
+							onClick={() => handleClickMenu({ key: "/admin/perfil" })}
+						>
+							<Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
+							<div className="flex flex-col">
+								<p className="text-[#0c3c61]">Olá,</p>
+								<p className="text-[#0c3c61]">{user.name}</p>
+							</div>
+						</div>
+						<div className="flex flex-col justify-start items-center p-5">
+							<Menu
+								className="principal-menu"
+								selectedKeys={[current]}
+								mode="inline"
+								items={items}
+								onClick={handleClickMenu}
+							/>
+							<Divider />
+							<a
+								className={`dropdown-item flex items-center w-full min-h-11.25 pl-6`}
+								onClick={() => setIsOpenLogout(true)}
+							>
+								<LoginOutlined className="mr-2" /> Logout
+							</a>
+						</div>
+					</Drawer>
+				)}
 
-        <Layout>
-          <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center">
-            <div className="flex justify-end items-center">
-              {windowDimension.width > 1080 ? (
-                <div className="flex justify-center items-center">
-                  <Dropdown
-                    menu={{
-                      items: languages.map((item) => ({
-                        key: item.code,
-                        label: (
-                          <div
-                            className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`}
-                            onClick={() => selectLanguage(item)}
-                          >
-                            <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
-                            <p>{item.name}</p>
-                          </div>
-                        ),
-                      })),
-                    }}
-                    trigger={["click"]}
-                    placement="bottomRight"
-                  >
-                    <div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
-                      <div
-                        className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                        style={{ backgroundImage: `url(${languages.filter((l) => l.id === selectedLanguage.id)[0].flag})` }}
-                      ></div>
-                      <p>{selectedLanguage.code.toUpperCase()}</p>
-                    </div>
-                  </Dropdown>
+				<Layout>
+					<Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center">
+						<div className="flex justify-end items-center">
+							{windowDimension.width > 1080 ? (
+								<div className="flex justify-center items-center">
+									<Dropdown
+										menu={{
+											items: languages.map((item) => ({
+												key: item.code,
+												label: (
+													<div
+														className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`}
+														onClick={() => selectLanguage(item)}
+													>
+														<img
+															src={item.flag}
+															className="max-w-5 mr-2"
+															alt={item.name}
+														/>
+														<p>{item.name}</p>
+													</div>
+												),
+											})),
+										}}
+										trigger={["click"]}
+										placement="bottomRight"
+									>
+										<div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
+											<div
+												className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
+												style={{
+													backgroundImage: `url(${languages.filter((l) => l.id === selectedLanguage.id)[0].flag})`,
+												}}
+											></div>
+											<p>{selectedLanguage.code.toUpperCase()}</p>
+										</div>
+									</Dropdown>
 
-                  <Link className={`flex items-center`} to={`/admin/inbox`}>
-                    <div className="flex items-center">
-                      <div className="w-5 h-5 mr-2 flex justify-center items-center">
-                        {inbox.filter((n) => n.unread_messages > 0).length > 0 ? (
-                          <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                            <p className="text-white text-[10px]">{inbox.map((n) => n.unread_messages)}</p>
-                          </div>
-                        ) : (
-                          <NotificationIcon className="mr-2" />
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                  <Avatar icon={<FaRegUser />} />
-                  <p className="text-[12px] ml-2">{user.name}</p>
-                </div>
-              ) : (
-                <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
-              )}
-            </div>
-          </Header>
-          <div className="p-6 h-[calc(100vh-64px)] overflow-auto">
-            <Outlet />
-          </div>
-        </Layout>
-      </Layout>
-    </Layout>
-  );
+									<Link className={`flex items-center`} to={`/admin/inbox`}>
+										<div className="flex items-center">
+											<div className="w-5 h-5 mr-2 flex justify-center items-center">
+												{inbox.filter((n) => n.unread_messages > 0).length >
+												0 ? (
+													<div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+														<p className="text-white text-[10px]">
+															{inbox.map((n) => n.unread_messages)}
+														</p>
+													</div>
+												) : (
+													<NotificationIcon className="mr-2" />
+												)}
+											</div>
+										</div>
+									</Link>
+									<Avatar icon={<FaRegUser />} />
+									<p className="text-[12px] ml-2">{user.name}</p>
+								</div>
+							) : (
+								<MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+							)}
+						</div>
+					</Header>
+					<div className="p-6 h-[calc(100vh-64px)] overflow-auto">
+						<Outlet />
+					</div>
+				</Layout>
+			</Layout>
+		</Layout>
+	);
 };
 export default Main;

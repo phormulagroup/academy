@@ -6,8 +6,8 @@ import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
-import Create from "../../components/admin/document/create";
-import Update from "../../components/admin/document/update";
+import Create from "../../components/admin/product/create";
+import Update from "../../components/admin/product/update";
 import Delete from "../../components/admin/delete";
 
 import { Context } from "../../utils/context";
@@ -16,10 +16,9 @@ import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
-import config from "../../utils/config";
 
-export default function Language() {
-	const { user, selectedLanguage } = useContext(Context);
+export default function Product() {
+	const { user } = useContext(Context);
 	const { t } = useTranslation();
 	const [isLoading, setIsLoading] = useState(true);
 	const [data, setData] = useState([]);
@@ -33,14 +32,12 @@ export default function Language() {
 
 	useEffect(() => {
 		getData();
-	}, [selectedLanguage]);
+	}, []);
 
 	function getData() {
 		setIsLoading(true);
 		axios
-			.get(endpoints.document.readByLang, {
-				params: { id_lang: selectedLanguage.id },
-			})
+			.get(endpoints.product.read)
 			.then((res) => {
 				setData(res.data);
 				prepareData(res.data);
@@ -55,23 +52,9 @@ export default function Language() {
 	function prepareData(array) {
 		const aux = [];
 		for (let i = 0; i < array.length; i++) {
-			array[i].country = array[i].country ? JSON.parse(array[i].country) : null;
 			aux.push({
 				...array[i],
 				key: i + 1,
-				name: array[i].name,
-				file: array[i].file,
-				country: array[i].country
-					? array[i].country.join(", ")
-					: t("All countries"),
-				img: (
-					<div className="flex justify-start items-center">
-						<img
-							src={`${config.server_ip}/media/${array[i].img}`}
-							className="max-w-[100px] h-auto"
-						/>
-					</div>
-				),
 				is_deleted: array[i].is_deleted ? (
 					<Tag variant="outlined" color={"red"}>
 						Inativo
@@ -121,6 +104,11 @@ export default function Language() {
 		setIsOpenUpdate(true);
 	}
 
+	function openTranslations(obj) {
+		setSelectedData(obj);
+		setIsOpenTranslations(true);
+	}
+
 	function openDelete(obj) {
 		setSelectedData(obj);
 		setIsOpenDelete(true);
@@ -133,6 +121,7 @@ export default function Language() {
 		setIsOpenUpdate(false);
 		setIsOpenCreate(false);
 		setIsOpenDelete(false);
+		setIsOpenTranslations(false);
 	}
 
 	return (
@@ -143,11 +132,11 @@ export default function Language() {
 				data={selectedData}
 				open={isOpenDelete}
 				close={closeAction}
-				table="document"
+				table="product"
 			/>
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">{t("Documents")}</p>
+					<p className="text-xl font-bold">{t("Products")}</p>
 				</div>
 				<div>
 					<Button
@@ -161,7 +150,7 @@ export default function Language() {
 						onClick={() => setIsOpenCreate(true)}
 						icon={<AiOutlinePlus />}
 					>
-						{t("Add document")}
+						{t("Add product")}
 					</Button>
 				</div>
 			</div>
@@ -170,29 +159,13 @@ export default function Language() {
 				loading={isLoading}
 				columns={[
 					{
-						title: "",
-						dataIndex: "img",
-						key: "img",
-						width: "100px",
-					},
-					{
 						title: "Nome",
 						dataIndex: "name",
 						key: "name",
 						sort: true,
 						sortType: "text",
 						search: "name",
-						width: 500,
-					},
-					{
-						title: "File",
-						dataIndex: "file",
-						key: "file",
-					},
-					{
-						title: t("Country"),
-						dataIndex: "country",
-						key: "country",
+						width: "80%",
 					},
 					{
 						title: "",

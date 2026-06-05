@@ -7,6 +7,7 @@ import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
 import Create from "../../../components/admin/user/create";
+import Import from "../../../components/admin/import/import";
 import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
@@ -18,217 +19,253 @@ import Status from "../../../components/admin/user/status";
 import { useNavigate } from "react-router-dom";
 
 export default function User() {
-  const { user, languages, selectedLanguage } = useContext(Context);
+	const { user, languages, selectedLanguage } = useContext(Context);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
-  const [tableData, setTableData] = useState([]);
-  const [selectedData, setSelectedData] = useState({});
+	const [isLoading, setIsLoading] = useState(true);
+	const [data, setData] = useState([]);
+	const [tableData, setTableData] = useState([]);
+	const [selectedData, setSelectedData] = useState({});
 
-  const [isOpenCreate, setIsOpenCreate] = useState(false);
-  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
-  const [isOpenStatus, setIsOpenStatus] = useState(false);
-  const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenLogs, setIsOpenLogs] = useState(false);
+	const [isOpenCreate, setIsOpenCreate] = useState(false);
+	const [isOpenUpdate, setIsOpenUpdate] = useState(false);
+	const [isOpenStatus, setIsOpenStatus] = useState(false);
+	const [isOpenDelete, setIsOpenDelete] = useState(false);
+	const [isOpenImport, setIsOpenImport] = useState(false);
+	const [isOpenLogs, setIsOpenLogs] = useState(false);
 
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  const { t } = useTranslation();
+	const { t } = useTranslation();
 
-  useEffect(() => {
-    getData();
-  }, [selectedLanguage]);
+	useEffect(() => {
+		getData();
+	}, [selectedLanguage]);
 
-  function getData() {
-    setIsLoading(true);
-    axios
-      .get(endpoints.user.read)
-      .then((res) => {
-        setData(res.data);
-        prepareData(res.data);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setIsLoading(false);
-      });
-  }
+	function getData() {
+		setIsLoading(true);
+		axios
+			.get(endpoints.user.read)
+			.then((res) => {
+				setData(res.data);
+				prepareData(res.data);
+				setIsLoading(false);
+			})
+			.catch((err) => {
+				console.log(err);
+				setIsLoading(false);
+			});
+	}
 
-  function prepareData(array) {
-    const aux = [];
-    console.log(array);
-    for (let i = 0; i < array.length; i++) {
-      aux.push({
-        ...array[i],
-        key: array[i].id,
-        language: languages.filter((l) => l.id === array[i].id_lang)[0].code.toUpperCase(),
-        country: array[i].country,
-        status_tag:
-          array[i].status === "approved" ? (
-            <Tag variant="outlined" color={"#06D186"}>
-              {array[i].status}
-            </Tag>
-          ) : array[i].status === "denied" ? (
-            <Tag variant="outlined" color={"#F04C4B"}>
-              {array[i].status}
-            </Tag>
-          ) : array[i].status === "pending" ? (
-            <Tag variant="outlined" color={"#FF963B"}>
-              {array[i].status}
-            </Tag>
-          ) : null,
-        actions: (
-          <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
-                  {
-                    label: t("Change status"),
-                    key: `${array[i].id}-status`,
-                    icon: <RxSwitch />,
-                    onClick: () => openStatus(array[i]),
-                  },
-                  {
-                    label: t("Update"),
-                    key: `${array[i].id}-udpate`,
-                    icon: <FaRegEdit />,
-                    onClick: () => navigate(`/admin/users/${array[i].id}`),
-                  },
-                  {
-                    label: t("Logs"),
-                    key: `${array[i].id}-logs`,
-                    icon: <FaRegFile />,
-                    onClick: () => openLogs(array[i]),
-                  },
-                  {
-                    label: t("Delete"),
-                    key: `${array[i].id}-delete`,
-                    icon: <FaRegTrashAlt />,
-                    onClick: () => openDelete(array[i]),
-                  },
-                ],
-              }}
-            >
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
-          </div>
-        ),
-      });
-    }
+	function prepareData(array) {
+		const aux = [];
+		console.log(array);
+		for (let i = 0; i < array.length; i++) {
+			aux.push({
+				...array[i],
+				key: array[i].id,
+				language: languages
+					.filter((l) => l.id === array[i].id_lang)[0]
+					.code.toUpperCase(),
+				country: array[i].country,
+				status_tag:
+					array[i].status === "approved" ? (
+						<Tag variant="outlined" color={"#06D186"}>
+							{array[i].status}
+						</Tag>
+					) : array[i].status === "denied" ? (
+						<Tag variant="outlined" color={"#F04C4B"}>
+							{array[i].status}
+						</Tag>
+					) : array[i].status === "pending" ? (
+						<Tag variant="outlined" color={"#FF963B"}>
+							{array[i].status}
+						</Tag>
+					) : null,
+				actions: (
+					<div className="flex justify-end items-center">
+						<Dropdown
+							trigger={"click"}
+							placement="bottomRight"
+							menu={{
+								items: [
+									{
+										label: t("Change status"),
+										key: `${array[i].id}-status`,
+										icon: <RxSwitch />,
+										onClick: () => openStatus(array[i]),
+									},
+									{
+										label: t("Update"),
+										key: `${array[i].id}-udpate`,
+										icon: <FaRegEdit />,
+										onClick: () => navigate(`/admin/users/${array[i].id}`),
+									},
+									{
+										label: t("Logs"),
+										key: `${array[i].id}-logs`,
+										icon: <FaRegFile />,
+										onClick: () => openLogs(array[i]),
+									},
+									{
+										label: t("Delete"),
+										key: `${array[i].id}-delete`,
+										icon: <FaRegTrashAlt />,
+										onClick: () => openDelete(array[i]),
+									},
+								],
+							}}
+						>
+							<Button>
+								<IoMdMore />
+							</Button>
+						</Dropdown>
+					</div>
+				),
+			});
+		}
 
-    setTableData(aux);
-  }
+		setTableData(aux);
+	}
 
-  function openStatus(obj) {
-    setSelectedData(obj);
-    setIsOpenStatus(true);
-  }
+	function openStatus(obj) {
+		setSelectedData(obj);
+		setIsOpenStatus(true);
+	}
 
-  function openLogs(obj) {
-    setSelectedData(obj);
-    setIsOpenLogs(true);
-  }
+	function openLogs(obj) {
+		setSelectedData(obj);
+		setIsOpenLogs(true);
+	}
 
-  function openDelete() {
-    setIsOpenDelete(true);
-  }
+	function openDelete(obj) {
+		setSelectedData(obj);
+		setIsOpenDelete(true);
+	}
 
-  function closeAction(c) {
-    if (c) {
-      getData();
-    }
-    setIsOpenCreate(false);
-    setIsOpenUpdate(false);
-    setIsOpenDelete(false);
-    setIsOpenStatus(false);
-    setIsOpenLogs(false);
-  }
+	function closeAction(c) {
+		if (c) {
+			getData();
+		}
+		setIsOpenCreate(false);
+		setIsOpenUpdate(false);
+		setIsOpenDelete(false);
+		setIsOpenStatus(false);
+		setIsOpenLogs(false);
+		setIsOpenImport(false);
+	}
 
-  return (
-    <div className="p-2">
-      <Create open={isOpenCreate} close={closeAction} />
-      <Status data={selectedData} open={isOpenStatus} close={closeAction} />
-      <Logs table={"project"} id_project={selectedData.id} open={isOpenLogs} close={() => setIsOpenLogs(false)} />
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <p className="text-xl font-bold">Utilizadores</p>
-        </div>
-        <div className="flex justify-center">
-          <Button size="large" className="mr-2" onClick={() => getData()}>
-            <IoMdRefresh />
-          </Button>
-          <Button size="large" onClick={() => setIsOpenCreate(true)}>
-            Adicionar
-          </Button>
-        </div>
-      </div>
-      <Table
-        dataSource={tableData}
-        loading={isLoading}
-        columns={[
-          {
-            title: "Nome",
-            dataIndex: "name",
-            key: "name",
-            sort: true,
-            sortType: "text",
-            search: "name",
-          },
-          {
-            title: "E-mail",
-            dataIndex: "email",
-            key: "email",
-            sort: true,
-            sortType: "text",
-            search: "email",
-          },
-          {
-            title: "Language",
-            dataIndex: "language",
-            key: "language",
-          },
-          {
-            title: "Country",
-            dataIndex: "country",
-            key: "country",
-          },
-          {
-            title: "Papel",
-            dataIndex: "role_name",
-            key: "role_name",
-            sort: true,
-            sortType: "text",
-            filters:
-              tableData.filter((item) => item.role_name).length > 0
-                ? tableData
-                    .map((item, index) => (item.role_name ? { text: item.role_name, value: item.role_name } : {}))
-                    .filter((value, index, self) => (value.text ? index === self.findIndex((t) => t.value === value.text) : null))
-                : null,
-          },
-          {
-            title: "Status",
-            dataIndex: "status_tag",
-            key: "status_tag",
-            sort: true,
-            sortType: "text",
-            filters:
-              tableData.filter((item) => item.status).length > 0
-                ? tableData
-                    .map((item, index) => (item.status ? { text: item.status, value: item.status } : {}))
-                    .filter((value, index, self) => (value.text ? index === self.findIndex((t) => t.value === value.text) : null))
-                : null,
-          },
-          {
-            title: "",
-            dataIndex: "actions",
-            key: "actions",
-          },
-        ]}
-      />
-    </div>
-  );
+	return (
+		<div className="p-2">
+			<Create open={isOpenCreate} close={closeAction} />
+			<Import table="user" open={isOpenImport} close={closeAction} />
+			<Status data={selectedData} open={isOpenStatus} close={closeAction} />
+			<Logs
+				table={"project"}
+				id_project={selectedData.id}
+				open={isOpenLogs}
+				close={() => setIsOpenLogs(false)}
+			/>
+			<div className="flex justify-between items-center mb-4">
+				<div>
+					<p className="text-xl font-bold">Utilizadores</p>
+				</div>
+				<div className="flex justify-center">
+					<Button size="large" className="mr-2" onClick={() => getData()}>
+						<IoMdRefresh />
+					</Button>
+					<Button
+						size="large"
+						className="mr-2"
+						onClick={() => setIsOpenImport(true)}
+					>
+						{t("Import")}
+					</Button>
+					<Button size="large" onClick={() => setIsOpenCreate(true)}>
+						{t("Add User")}
+					</Button>
+				</div>
+			</div>
+			<Table
+				dataSource={tableData}
+				loading={isLoading}
+				columns={[
+					{
+						title: "Nome",
+						dataIndex: "name",
+						key: "name",
+						sort: true,
+						sortType: "text",
+						search: "name",
+					},
+					{
+						title: "E-mail",
+						dataIndex: "email",
+						key: "email",
+						sort: true,
+						sortType: "text",
+						search: "email",
+					},
+					{
+						title: "Language",
+						dataIndex: "language",
+						key: "language",
+					},
+					{
+						title: "Country",
+						dataIndex: "country",
+						key: "country",
+					},
+					{
+						title: "Papel",
+						dataIndex: "role_name",
+						key: "role_name",
+						sort: true,
+						sortType: "text",
+						filters:
+							tableData.filter((item) => item.role_name).length > 0
+								? tableData
+										.map((item, index) =>
+											item.role_name
+												? { text: item.role_name, value: item.role_name }
+												: {},
+										)
+										.filter((value, index, self) =>
+											value.text
+												? index ===
+													self.findIndex((t) => t.value === value.text)
+												: null,
+										)
+								: null,
+					},
+					{
+						title: "Status",
+						dataIndex: "status_tag",
+						key: "status_tag",
+						sort: true,
+						sortType: "text",
+						filters:
+							tableData.filter((item) => item.status).length > 0
+								? tableData
+										.map((item, index) =>
+											item.status
+												? { text: item.status, value: item.status }
+												: {},
+										)
+										.filter((value, index, self) =>
+											value.text
+												? index ===
+													self.findIndex((t) => t.value === value.text)
+												: null,
+										)
+								: null,
+					},
+					{
+						title: "",
+						dataIndex: "actions",
+						key: "actions",
+					},
+				]}
+			/>
+		</div>
+	);
 }

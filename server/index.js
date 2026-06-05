@@ -12,27 +12,6 @@ const { Server } = require("socket.io"); // <--- ADICIONADO
 const middleware = require("./utils/middleware");
 const db = require("./utils/database");
 
-/* Routes import */
-const authRouter = require("./routes/auth");
-const dashboardRouter = require("./routes/dashboard");
-const logsRouter = require("./routes/logs");
-const userRouter = require("./routes/user");
-const courseRouter = require("./routes/course");
-const importRouter = require("./routes/import");
-const languageRouter = require("./routes/language");
-const roleRouter = require("./routes/role");
-const mediaRouter = require("./routes/media");
-const settingsRouter = require("./routes/settings");
-const emailRouter = require("./routes/email");
-const certificateRouter = require("./routes/certificate");
-const notificationRouter = require("./routes/notification");
-const inboxRouter = require("./routes/inbox");
-const documentRouter = require("./routes/document");
-const downloadRouter = require("./routes/download");
-const faqsRouter = require("./routes/faqs");
-const formRouter = require("./routes/form");
-const personalizationRouter = require("./routes/personalization");
-
 /* Socket imports */
 const setupSocket = require("./socket");
 const { setSocketInstance } = require("./socketInstance");
@@ -50,17 +29,17 @@ const socket = setupSocket(server); // <--- INICIALIZA AQUI
 setSocketInstance(socket); // <--- TORNA GLOBAL
 
 app.use(
-  helmet({
-    crossOriginResourcePolicy: false,
-  }),
+	helmet({
+		crossOriginResourcePolicy: false,
+	}),
 );
 
 app.use(compression());
 
 // Limitação de taxa
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 600,
+	windowMs: 1 * 60 * 1000,
+	max: 600,
 });
 
 app.use(limiter);
@@ -70,49 +49,50 @@ app.use(cors());
 
 /* MUDAR DE app.listen para server.listen */
 server.listen(port, () => {
-  console.log(`---------- STARTING SERVER ----------`);
-  console.log(`${dayjs().format("YYYY-MM-DD HH:mm:ss")}`);
-  console.log(`Server running at ${port}`);
-  console.log(`--------------------`);
+	console.log(`---------- STARTING SERVER ----------`);
+	console.log(`${dayjs().format("YYYY-MM-DD HH:mm:ss")}`);
+	console.log(`Server running at ${port}`);
+	console.log(`--------------------`);
 });
 
 /* Conexão BD */
 db.getConnection((error, conn) => {
-  console.log(`---------- CONNECTING TO DB ----------`);
-  if (error) {
-    throw error;
-  } else {
-    console.log("MySQL database is connected successfully");
-    console.log(`--------------------`);
-    conn.release();
-  }
+	console.log(`---------- CONNECTING TO DB ----------`);
+	if (error) {
+		throw error;
+	} else {
+		console.log("MySQL database is connected successfully");
+		console.log(`--------------------`);
+		conn.release();
+	}
 });
 
 app.use("/media", express.static("media"));
 
 app.get("/", (req, res) => {
-  res.end("PHORMULA SHARE API!");
+	res.end("PHORMULA SHARE API!");
 });
 
 /* Rotas */
-app.use("/auth", authRouter);
-app.use("/dashboard", middleware, dashboardRouter);
-app.use("/logs", middleware, logsRouter);
-app.use("/user", middleware, userRouter);
-app.use("/course", middleware, courseRouter);
-app.use("/language", languageRouter);
-app.use("/role", middleware, roleRouter);
-app.use("/media", mediaRouter);
-app.use("/import", middleware, importRouter);
-app.use("/settings", settingsRouter);
-app.use("/email", middleware, emailRouter);
-app.use("/certificate", middleware, certificateRouter);
-app.use("/notification", middleware, notificationRouter);
-app.use("/inbox", middleware, inboxRouter);
-app.use("/document", middleware, documentRouter);
-app.use("/download", middleware, downloadRouter);
-app.use("/faqs", faqsRouter);
-app.use("/form", formRouter);
-app.use("/personalization", personalizationRouter);
+app.use("/auth", require("./routes/auth"));
+app.use("/dashboard", middleware, require("./routes/dashboard"));
+app.use("/logs", middleware, require("./routes/logs"));
+app.use("/user", middleware, require("./routes/user"));
+app.use("/course", middleware, require("./routes/course"));
+app.use("/language", require("./routes/language"));
+app.use("/role", middleware, require("./routes/role"));
+app.use("/media", require("./routes/media"));
+app.use("/import", middleware, require("./routes/import"));
+app.use("/settings", require("./routes/settings"));
+app.use("/email", middleware, require("./routes/email"));
+app.use("/certificate", middleware, require("./routes/certificate"));
+app.use("/notification", middleware, require("./routes/notification"));
+app.use("/inbox", middleware, require("./routes/inbox"));
+app.use("/document", middleware, require("./routes/document"));
+app.use("/download", middleware, require("./routes/download"));
+app.use("/faqs", require("./routes/faqs"));
+app.use("/form", require("./routes/form"));
+app.use("/personalization", require("./routes/personalization"));
+app.use("/product", require("./routes/product"));
 
 module.exports = app;

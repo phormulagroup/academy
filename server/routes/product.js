@@ -13,10 +13,10 @@ router.use((req, res, next) => {
 });
 
 router.get("/read", async (req, res) => {
-	console.log("//// READ LANGUAGE ////");
+	console.log("//// READ PRODUCT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query("SELECT * FROM language");
+		const rows = await query("SELECT * FROM product");
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -24,15 +24,11 @@ router.get("/read", async (req, res) => {
 });
 
 router.post("/create", async (req, res, next) => {
-	console.log("//// CREATE LANGUAGE ////");
+	console.log("//// CREATE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
-		data.country =
-			data.country && data.country.length > 0
-				? JSON.stringify(data.country)
-				: null;
-		const insertedRow = await query("INSERT INTO language SET ?", data);
+		const insertedRow = await query("INSERT INTO product SET ?", data);
 		res.send(insertedRow);
 	} catch (err) {
 		throw err;
@@ -40,14 +36,10 @@ router.post("/create", async (req, res, next) => {
 });
 
 router.post("/update", async (req, res, next) => {
-	console.log("//// UPDATE LANGUAGE ////");
+	console.log("//// UPDATE PRODUCT ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
-		data.country =
-			data.country && data.country.length > 0
-				? JSON.stringify(data.country)
-				: null;
 		delete data.id;
 
 		const columns = Object.keys(data);
@@ -55,7 +47,7 @@ router.post("/update", async (req, res, next) => {
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE language SET " +
+			"UPDATE product SET " +
 				columns.join(" = ?, ") +
 				" = ? WHERE id = " +
 				whereId,
@@ -69,27 +61,13 @@ router.post("/update", async (req, res, next) => {
 });
 
 router.post("/delete", async (req, res, next) => {
-	console.log("//// DELETE LANGUAGE ////");
+	console.log("//// DELETE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
-			"UPDATE language SET is_deleted = 1 WHERE id = " + req.body.data.id,
+			"UPDATE product SET is_deleted = 1 WHERE id = " + req.body.data.id,
 		);
 		res.send(deletedRow);
-	} catch (err) {
-		throw err;
-	}
-});
-
-router.post("/default", async (req, res, next) => {
-	console.log("//// DEFAULT LANGUAGE ////");
-	try {
-		const query = util.promisify(db.query).bind(db);
-		const updatedRow = await query(
-			"UPDATE language SET is_default = 1 WHERE id = ?; UPDATE language SET is_default = 0 WHERE id != ?",
-			[req.body.data.id, req.body.data.id],
-		);
-		res.send(updatedRow);
 	} catch (err) {
 		throw err;
 	}

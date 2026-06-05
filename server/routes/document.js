@@ -7,100 +7,125 @@ var slugify = require("slugify");
 var db = require("../utils/database");
 
 router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
+	console.log("---------------------------");
+	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
+	console.log("---------------------------");
+	next();
 });
 
 router.get("/read", async (req, res) => {
-  console.log("//// READ DOCUMENT ////");
-  const query = util.promisify(db.query).bind(db);
-  try {
-    const rows = await query("SELECT * FROM document");
-    res.send(rows);
-  } catch (e) {
-    throw e;
-  }
+	console.log("//// READ DOCUMENT ////");
+	const query = util.promisify(db.query).bind(db);
+	try {
+		const rows = await query("SELECT * FROM document");
+		res.send(rows);
+	} catch (e) {
+		throw e;
+	}
 });
 
 router.get("/readByLang", async (req, res) => {
-  console.log("//// READ DOCUMENT ////");
-  const query = util.promisify(db.query).bind(db);
-  try {
-    const rows = await query("SELECT * FROM document WHERE id_lang = ?", [req.query.id_lang]);
-    res.send(rows);
-  } catch (e) {
-    throw e;
-  }
+	console.log("//// READ DOCUMENT ////");
+	const query = util.promisify(db.query).bind(db);
+	try {
+		const rows = await query("SELECT * FROM document WHERE id_lang = ?", [
+			req.query.id_lang,
+		]);
+		res.send(rows);
+	} catch (e) {
+		throw e;
+	}
 });
 
 router.get("/readBySlug", async (req, res) => {
-  console.log("//// READ DOCUMENT ////");
-  const query = util.promisify(db.query).bind(db);
-  try {
-    const rows = await query("SELECT * FROM document WHERE slug = ? AND id_lang = ?", [req.query.slug, req.query.id_lang]);
-    res.send(rows);
-  } catch (e) {
-    throw e;
-  }
+	console.log("//// READ DOCUMENT ////");
+	const query = util.promisify(db.query).bind(db);
+	try {
+		const rows = await query(
+			"SELECT * FROM document WHERE slug = ? AND id_lang = ?",
+			[req.query.slug, req.query.id_lang],
+		);
+		res.send(rows);
+	} catch (e) {
+		throw e;
+	}
 });
 
 router.get("/readFile", async (req, res) => {
-  const response = await fetch("https://academyapi.phormuladev.com/media/" + req.query.file);
-  console.log(response);
-  const buffer = await response.arrayBuffer();
-  console.log(buffer);
+	const response = await fetch(
+		"https://academyapi.phormuladev.com/media/" + req.query.file,
+	);
 
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range");
-  res.setHeader("Accept-Ranges", "bytes");
+	const buffer = await response.arrayBuffer();
 
-  res.send(Buffer.from(buffer));
+	res.setHeader("Content-Type", "application/pdf");
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader(
+		"Access-Control-Expose-Headers",
+		"Content-Length, Content-Range",
+	);
+	res.setHeader("Accept-Ranges", "bytes");
+
+	res.send(Buffer.from(buffer));
 });
 
 router.post("/create", async (req, res, next) => {
-  console.log("//// CREATE DOCUMENT ////");
-  try {
-    const query = util.promisify(db.query).bind(db);
-    const data = req.body.data;
-    data.slug = slugify(data.name, { lower: true, strict: true });
-    const insertedRow = await query("INSERT INTO document SET ?", data);
-    res.send(insertedRow);
-  } catch (err) {
-    throw err;
-  }
+	console.log("//// CREATE DOCUMENT ////");
+	try {
+		const query = util.promisify(db.query).bind(db);
+		const data = req.body.data;
+		data.country =
+			data.country && data.country.length > 0
+				? JSON.stringify(data.country)
+				: null;
+		data.slug = slugify(data.name, { lower: true, strict: true });
+		const insertedRow = await query("INSERT INTO document SET ?", data);
+		res.send(insertedRow);
+	} catch (err) {
+		throw err;
+	}
 });
 
 router.post("/update", async (req, res, next) => {
-  console.log("//// UPDATE DOCUMENT ////");
-  try {
-    let data = req.body.data;
-    let whereId = data.id;
-    delete data.id;
+	console.log("//// UPDATE DOCUMENT ////");
+	try {
+		let data = req.body.data;
+		let whereId = data.id;
+		delete data.id;
+		data.country =
+			data.country && data.country.length > 0
+				? JSON.stringify(data.country)
+				: null;
 
-    const columns = Object.keys(data);
-    const values = Object.values(data);
+		const columns = Object.keys(data);
+		const values = Object.values(data);
 
-    const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE document SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+		const query = util.promisify(db.query).bind(db);
+		const updatedRow = await query(
+			"UPDATE document SET " +
+				columns.join(" = ?, ") +
+				" = ? WHERE id = " +
+				whereId,
+			values,
+		);
 
-    res.send(updatedRow);
-  } catch (err) {
-    throw err;
-  }
+		res.send(updatedRow);
+	} catch (err) {
+		throw err;
+	}
 });
 
 router.post("/delete", async (req, res, next) => {
-  console.log("//// DELETE DOCUMENT ////");
-  try {
-    const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id);
-    res.send(deletedRow);
-  } catch (err) {
-    throw err;
-  }
+	console.log("//// DELETE DOCUMENT ////");
+	try {
+		const query = util.promisify(db.query).bind(db);
+		const deletedRow = await query(
+			"UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id,
+		);
+		res.send(deletedRow);
+	} catch (err) {
+		throw err;
+	}
 });
 
 module.exports = router;

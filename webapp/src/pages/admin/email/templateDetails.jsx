@@ -14,154 +14,183 @@ import EmailEditor from "react-email-editor";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function TemplateDetails() {
-  const { user, messageApi, selectedLanguage } = useContext(Context);
-  const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [data, setData] = useState(null);
+	const { user, messageApi, selectedLanguage } = useContext(Context);
+	const { t } = useTranslation();
+	const [isLoading, setIsLoading] = useState(true);
+	const [isButtonLoading, setIsButtonLoading] = useState(false);
+	const [data, setData] = useState(null);
 
-  const emailEditorRef = useRef(null);
+	const emailEditorRef = useRef(null);
 
-  let { id } = useParams();
+	let { id } = useParams();
 
-  const navigate = useNavigate();
+	const navigate = useNavigate();
 
-  useEffect(() => {
-    getData();
-  }, []);
+	useEffect(() => {
+		getData();
+	}, []);
 
-  function getData() {
-    axios
-      .get(endpoints.email.readById, {
-        params: { id },
-      })
-      .then((res) => {
-        if (res.data && res.data[0]) {
-          setIsLoading(false);
-          setData(res.data[0]);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
+	function getData() {
+		axios
+			.get(endpoints.email.readById, {
+				params: { id },
+			})
+			.then((res) => {
+				if (res.data && res.data[0]) {
+					setIsLoading(false);
+					setData(res.data[0]);
+				}
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}
 
-  const exportHtml = () => {
-    return new Promise((resolve, reject) => {
-      const unlayer = emailEditorRef.current?.editor;
+	const exportHtml = () => {
+		return new Promise((resolve, reject) => {
+			const unlayer = emailEditorRef.current?.editor;
 
-      unlayer?.exportHtml((data) => {
-        const { design, html } = data;
-        resolve(html);
-      });
-    });
-  };
+			unlayer?.exportHtml((data) => {
+				const { design, html } = data;
+				resolve(html);
+			});
+		});
+	};
 
-  const saveDesign = () => {
-    return new Promise((resolve, reject) => {
-      const unlayer = emailEditorRef.current?.editor;
+	const saveDesign = () => {
+		return new Promise((resolve, reject) => {
+			const unlayer = emailEditorRef.current?.editor;
 
-      unlayer?.saveDesign((data) => {
-        resolve(data);
-      });
-    });
-  };
+			unlayer?.saveDesign((data) => {
+				resolve(data);
+			});
+		});
+	};
 
-  const onReady = (unlayer) => {
-    unlayer?.loadDesign(JSON.parse(data.design));
-    unlayer.registerCallback("image", function (file, done) {
-      // Do something to upload the image and return the URL of the uploaded image
-      var formData = new FormData();
-      formData.append("file", file.attachments[0]);
-      axios
-        .post(endpoints.email.upload, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then((res) => {
-          done({ progress: 100, url: `${config.server_ip}/media/${res.data.data.url}` });
-        })
-        .catch((err) => {
-          console.log(err);
-          return false;
-        });
-    });
-  };
+	const onReady = (unlayer) => {
+		unlayer?.loadDesign(data?.design ? JSON.parse(data.design) : {});
+		unlayer.registerCallback("image", function (file, done) {
+			// Do something to upload the image and return the URL of the uploaded image
+			var formData = new FormData();
+			formData.append("file", file.attachments[0]);
+			axios
+				.post(endpoints.email.upload, formData, {
+					headers: {
+						"Content-Type": "multipart/form-data",
+					},
+				})
+				.then((res) => {
+					done({
+						progress: 100,
+						url: `${config.server_ip}/media/${res.data.data.url}`,
+					});
+				})
+				.catch((err) => {
+					console.log(err);
+					return false;
+				});
+		});
+	};
 
-  async function submit() {
-    setIsButtonLoading(true);
-    let html = await exportHtml();
-    let design = await saveDesign();
+	async function submit() {
+		setIsButtonLoading(true);
+		let html = await exportHtml();
+		let design = await saveDesign();
 
-    axios
-      .post(endpoints.email.update, {
-        data: {
-          name_key: data.name_key,
-          name: data.name,
-          subject: data.subject,
-          design: design,
-          html: html,
-          id_lang: selectedLanguage.id,
-        },
-      })
-      .then((res) => {
-        messageApi.open({ type: "success", content: t("Template updated successfully!") });
-        setIsButtonLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        messageApi.open({ type: "error", content: t("Something went wrong, try again later!") });
-        setIsButtonLoading(false);
-      });
-  }
+		axios
+			.post(endpoints.email.update, {
+				data: {
+					name_key: data.name_key,
+					name: data.name,
+					subject: data.subject,
+					design: design,
+					html: html,
+					id_lang: selectedLanguage.id,
+				},
+			})
+			.then((res) => {
+				messageApi.open({
+					type: "success",
+					content: t("Template updated successfully!"),
+				});
+				setIsButtonLoading(false);
+			})
+			.catch((err) => {
+				console.log(err);
+				messageApi.open({
+					type: "error",
+					content: t("Something went wrong, try again later!"),
+				});
+				setIsButtonLoading(false);
+			});
+	}
 
-  return (
-    <div className="p-2">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <p className="cursor-pointer" onClick={() => navigate("/admin/templates")}>
-            « {t("Go back")}
-          </p>
-        </div>
-      </div>
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <p className="text-xl font-bold">{data?.name}</p>
-        </div>
-        <div>
-          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button disabled={isButtonLoading} className="mr-2" size="large" onClick={exportHtml}>
-            Export HTML
-          </Button>
-          <Button loading={isButtonLoading} type="primary" size="large" onClick={submit}>
-            Guardar
-          </Button>
-        </div>
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center items-center mb-4 mt-4">
-          <Spin spinning={true} />
-        </div>
-      ) : (
-        <div className="flex flex-col w-full">
-          <div className="flex justify-center items-center mb-4"></div>
+	return (
+		<div className="p-2">
+			<div className="flex justify-between items-center mb-4">
+				<div>
+					<p
+						className="cursor-pointer"
+						onClick={() => navigate("/admin/templates")}
+					>
+						« {t("Go back")}
+					</p>
+				</div>
+			</div>
+			<div className="flex justify-between items-center mb-4">
+				<div>
+					<p className="text-xl font-bold">
+						{t("Template")}: {data?.name}
+					</p>
+				</div>
+				<div className="flex justify-center">
+					<Button
+						size="large"
+						onClick={getData}
+						icon={<RxReload />}
+						className="mr-2"
+					/>
+					<Button
+						disabled={isButtonLoading}
+						className="mr-2"
+						size="large"
+						onClick={exportHtml}
+					>
+						Export HTML
+					</Button>
+					<Button
+						loading={isButtonLoading}
+						type="primary"
+						size="large"
+						onClick={submit}
+					>
+						Guardar
+					</Button>
+				</div>
+			</div>
+			{isLoading ? (
+				<div className="flex justify-center items-center mb-4 mt-4">
+					<Spin spinning={true} />
+				</div>
+			) : (
+				<div className="flex flex-col w-full">
+					<div className="flex justify-center items-center mb-4"></div>
 
-          <EmailEditor
-            ref={emailEditorRef}
-            onReady={onReady}
-            options={{
-              version: "latest",
-              appearance: {
-                theme: "modern_light",
-              },
-            }}
-            style={{
-              contentWidth: "100%",
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
+					<EmailEditor
+						ref={emailEditorRef}
+						onReady={onReady}
+						options={{
+							version: "latest",
+							appearance: {
+								theme: "modern_light",
+							},
+						}}
+						style={{
+							contentWidth: "100%",
+						}}
+					/>
+				</div>
+			)}
+		</div>
+	);
 }
