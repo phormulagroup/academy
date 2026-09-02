@@ -198,7 +198,9 @@ const ContextProvider = ({ children }) => {
 						{},
 					);
 
-					i18n.addResources(auxLanguages[i].code, "translation", translation);
+					// Remove old resource and add fresh translations
+					i18n.removeResourceBundle(auxLanguages[i].code, "translation");
+					i18n.addResourceBundle(auxLanguages[i].code, "translation", translation, true, true);
 				}
 			}
 
@@ -211,6 +213,9 @@ const ContextProvider = ({ children }) => {
 						: _l.is_default === 1,
 				)[0],
 			);
+
+			// Refresh i18n to trigger re-render with updated translations
+			await i18n.changeLanguage(i18n.language);
 		} catch (err) {
 			console.log(err);
 		}
@@ -435,6 +440,7 @@ const ContextProvider = ({ children }) => {
 				courses,
 				setCourses,
 				languages,
+				getLanguages,
 				isLoadingLanguage,
 				setIsLoadingLanguage,
 				t,

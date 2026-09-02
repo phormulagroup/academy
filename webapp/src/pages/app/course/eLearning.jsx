@@ -116,21 +116,38 @@ const Learning = () => {
 
 	async function getData() {
 		try {
+			// Admins can access courses from any language (use current UI language)
+			// Users are restricted to their assigned language
+			const isAdmin = user.id_role === 1;
+			const selectedLangId = isAdmin
+				? languages.filter((_l) => _l.code === i18n.language)[0].id
+				: user.id_lang;
+
 			const res = await axios.get(endpoints.course.readBySlug, {
-				params: { slug, id_user: user.id, id_lang: user.id_lang },
+				params: {
+					slug,
+					id_user: user.id,
+					id_lang: selectedLangId,
+				},
 			});
 			if (res.data.course.length > 0) {
 				let auxCourse = res.data.course[0];
 				auxCourse.settings = auxCourse.settings
 					? JSON.parse(auxCourse.settings)
 					: null;
+				
+				// Admins (id_role = 1) can access all courses regardless of restrictions
+				const isAdmin = user.id_role === 1;
+				
 				if (
+					!isAdmin &&
 					auxCourse.settings &&
 					auxCourse.settings.country_limit &&
 					!auxCourse.settings.country.includes(user.country)
 				)
 					auxCourse = null;
 				if (
+					!isAdmin &&
 					auxCourse.settings &&
 					auxCourse.settings.course_access_expiration &&
 					canAccess(auxCourse.settings)
@@ -229,6 +246,14 @@ const Learning = () => {
 	}
 
 	function canAccess(obj) {
+		// Admins bypass access expiration checks
+		if (user.id_role === 1) return false;
+		
+		// Check if course access has expired based on end_date
+		if (obj.course_access_expiration_dates && obj.course_access_expiration_dates.end_date) {
+			const endDate = dayjs(obj.course_access_expiration_dates.end_date);
+			return dayjs().isAfter(endDate); // true if expired (after end date)
+		}
 		return false;
 	}
 
