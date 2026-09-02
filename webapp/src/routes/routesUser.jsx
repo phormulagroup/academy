@@ -34,6 +34,7 @@ export const userRoutes = [
 			{ path: "notifications", element: <Notifications /> }, // "/:lang/notifications"
 			{ path: "inbox", element: <Inbox /> }, // "/:lang/inbox"
 			{ path: "contact", element: <Contact /> }, // "/:lang/contact"
+			{ path: "courses", element: <Course /> }, // "/:lang/courses"
 			{ path: "courses/:slug", element: <CourseDetails /> }, // "/:lang/courses/:slug"
 			{ path: "*", element: <Error404 /> }, // Errro 404 para rotas não encontradas dentro do layout, mantendo :lang
 		],
