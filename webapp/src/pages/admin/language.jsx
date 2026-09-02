@@ -9,6 +9,7 @@ import Table from "../../components/admin/table";
 import Create from "../../components/admin/language/create";
 import Update from "../../components/admin/language/update";
 import Delete from "../../components/admin/delete";
+import TranslationsImport from "../../components/admin/import/translations";
 
 import { Context } from "../../utils/context";
 
@@ -30,6 +31,7 @@ export default function Language() {
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenTranslations, setIsOpenTranslations] = useState(false);
+   const [isOpenImport, setIsOpenImport] = useState(false);
 
   useEffect(() => {
     getData();
@@ -134,21 +136,49 @@ export default function Language() {
     setIsOpenCreate(false);
     setIsOpenDelete(false);
     setIsOpenTranslations(false);
+    setIsOpenImport(false);
   }
 
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
-      <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
-      <Translations data={selectedData} defaultLanguage={data.filter((item) => item.is_default === 1)[0]} open={isOpenTranslations} close={closeAction} />
+      <Delete
+        data={selectedData}
+        open={isOpenDelete}
+        close={closeAction}
+        table="language"
+      />
+      <Translations
+        data={selectedData}
+        defaultLanguage={data.filter((item) => item.is_default === 1)[0]}
+        open={isOpenTranslations}
+        close={closeAction}
+      />
+      <TranslationsImport open={isOpenImport} close={closeAction} />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Translations")}</p>
         </div>
         <div>
-          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
+          <Button
+            size="large"
+            onClick={getData}
+            icon={<RxReload />}
+            className="mr-2"
+          />
+          <Button
+            size="large"
+            className="mr-2"
+            onClick={() => setIsOpenImport(true)}
+          >
+            {t("Import")}
+          </Button>
+          <Button
+            size="large"
+            onClick={() => setIsOpenCreate(true)}
+            icon={<AiOutlinePlus />}
+          >
             {t("Add Language")}
           </Button>
         </div>

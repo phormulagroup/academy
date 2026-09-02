@@ -261,7 +261,7 @@ function SortableModule({
 }
 
 export default function Constructor({ course }) {
-  const { createLog, user, selectedLanguage } = useContext(Context);
+  const { createLog, user, selectedLanguage, t } = useContext(Context);
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [original, setOriginal] = useState([]);
@@ -953,7 +953,7 @@ export default function Constructor({ course }) {
   return (
     <div>
       <Space wrap>
-        <Button onClick={addModule}>+ Novo módulo</Button>
+        <Button onClick={addModule}>+ {t("New module")}</Button>
         <Button onClick={undo} disabled={!history.length || isSaving}>
           Undo
         </Button>
