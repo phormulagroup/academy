@@ -1,7 +1,6 @@
 var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
-var fs = require("fs");
 var router = express.Router();
 const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
@@ -146,8 +145,7 @@ router.post("/update", (req, res, next) => {
 
 			let whereKey = data.name_key;
 			delete data.name_key;
-			fs.writeFileSync(`./templates/${whereKey}.handlebars`, data.html);
-
+			
 			const query = util.promisify(conn.query).bind(conn);
 			const updatedRow = await query(
 				"UPDATE email_template SET name = ?, design = ?, html = ?, subject = ?, id_lang = ? WHERE name_key = ?",
