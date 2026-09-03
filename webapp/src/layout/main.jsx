@@ -293,9 +293,12 @@ const Main = () => {
 				</Drawer>
 				{windowDimension.width > 1334 ? (
 					<div className="grid grid-cols-5 w-full container mx-auto pl-6 pr-6">
-						<Link to={`/${i18n.language}`}>
+						<div
+							onClick={() => navigate(`/${i18n.language}`)}
+							className="cursor-pointer"
+						>
 							<img src={logo} className="max-h-15" />
-						</Link>
+						</div>
 						<div className="col-span-3 flex justify-center items-center">
 							{menuItems.map((item) =>
 								isLoggedIn
@@ -485,9 +488,12 @@ const Main = () => {
 					</div>
 				) : (
 					<div className="flex justify-between items-center w-full container mx-auto">
-						<Link to={`/${i18n.language}`}>
+						<div
+							onClick={() => navigate(`/${i18n.language}`)}
+							className="cursor-pointer"
+						>
 							<img src={logo} className="max-h-15" />
-						</Link>
+						</div>
 						<div className="flex items-center">
 							{user && user.id_role === 1 && (
 								<Dropdown
