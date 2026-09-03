@@ -630,7 +630,7 @@ const Learning = () => {
 											iconPlacement="end"
 											className="button-learning-header"
 											onClick={() => next()}
-											disabled={!allowNext}
+											disabled={!allowNext && user.id_role !== 1}
 										>
 											{t("Next")}
 										</Button>
@@ -1055,7 +1055,7 @@ const Learning = () => {
 											iconPlacement="end"
 											className="button-learning-header"
 											onClick={() => next()}
-											disabled={!allowNext}
+											disabled={!allowNext && user.id_role !== 1}
 										></Button>
 									</>
 								)}
@@ -1221,7 +1221,7 @@ const Learning = () => {
 												type="primary"
 												size="large"
 												onClick={() => next()}
-												disabled={!allowNext}
+												disabled={!allowNext && user.id_role !== 1}
 												className="button-learning-footer"
 											>
 												{t("Next")}
