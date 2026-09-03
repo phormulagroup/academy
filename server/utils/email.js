@@ -1,7 +1,25 @@
 const nodemailer = require("nodemailer");
-const hbs = require("nodemailer-express-handlebars");
+const Handlebars = require("handlebars");
 const util = require("util");
 const db = require("./database");
+
+
+function buildTransporter(smtpSettings) {
+  const transporter = nodemailer.createTransport({
+    host: smtpSettings.host,
+    port: smtpSettings.port,
+    secure: smtpSettings.secure,
+    auth: {
+      user: smtpSettings.email,
+      pass: smtpSettings.password,
+    },
+  });
+
+  return {
+    transporter,
+    from: `${smtpSettings.name} <${smtpSettings.email}>`,
+  };
+}
 
 module.exports = {
   register: function (data) {
@@ -14,33 +32,24 @@ module.exports = {
           const smtpSettings = rows[0].meta_data ? JSON.parse(rows[0].meta_data) : null;
           const template = await query("SELECT * FROM email_template WHERE name_key = ?", `register_${data.id_lang}`);
 
-          const transporter = nodemailer.createTransport({
-            host: smtpSettings.host,
-            port: smtpSettings.port,
-            secure: smtpSettings.secure,
-            auth: {
-              user: smtpSettings.email,
-              pass: smtpSettings.password,
-            },
-          });
+          if (!template || template.length === 0) {
+            throw new Error(`Template not found for register_${data.id_lang}`);
+          }
 
-          const hbsOptions = {
-            viewEngine: {
-              defaultLayout: false,
-            },
-            viewPath: "./templates",
+          const fullContext = {
+            name: data.name,
           };
 
-          transporter.use("compile", hbs(hbsOptions));
+          const subject = Handlebars.compile(template[0].subject)(fullContext);
+          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
+          const html = Handlebars.compile(htmlString)(fullContext);
+          const { transporter, from } = buildTransporter(smtpSettings);
 
           const mailOptions = {
-            from: `${smtpSettings.name} <${smtpSettings.email}>`,
+            from: from,
             to: data.email,
-            subject: template[0].subject,
-            template: `register_${data.id_lang}`,
-            context: {
-              name: data.name,
-            },
+            subject: subject,
+            html: html, // template HTML content
           };
 
           transporter.sendMail(mailOptions, (err, info) => {
@@ -66,34 +75,25 @@ module.exports = {
           const smtpSettings = rows[0].meta_data ? JSON.parse(rows[0].meta_data) : null;
           const template = await query("SELECT * FROM email_template WHERE name_key = ?", `change_status_${data.id_lang}`);
 
-          const transporter = nodemailer.createTransport({
-            host: smtpSettings.host,
-            port: smtpSettings.port,
-            secure: smtpSettings.secure,
-            auth: {
-              user: smtpSettings.email,
-              pass: smtpSettings.password,
-            },
-          });
+          if (!template || template.length === 0) {
+            throw new Error(`Template not found for change_status_${data.id_lang}`);
+          }
 
-          const hbsOptions = {
-            viewEngine: {
-              defaultLayout: false,
-            },
-            viewPath: "./templates",
+          const fullContext = {
+            name: data.name,
+            status: data.status,
           };
 
-          transporter.use("compile", hbs(hbsOptions));
+          const subject = Handlebars.compile(template[0].subject)(fullContext);
+          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
+          const html = Handlebars.compile(htmlString)(fullContext);
+          const { transporter, from } = buildTransporter(smtpSettings);
 
           const mailOptions = {
-            from: `${smtpSettings.name} <${smtpSettings.email}>`,
+            from: from,
             to: data.email,
-            subject: template[0].subject,
-            template: `change_status_${data.id_lang}`,
-            context: {
-              name: data.name,
-              status: data.status,
-            },
+            subject: subject,
+            html: html,
           };
 
           transporter.sendMail(mailOptions, (err, info) => {
@@ -119,34 +119,25 @@ module.exports = {
           const smtpSettings = rows[0].meta_data ? JSON.parse(rows[0].meta_data) : null;
           const template = await query("SELECT * FROM email_template WHERE name_key = ?", `recover_${data.id_lang}`);
 
-          const transporter = nodemailer.createTransport({
-            host: smtpSettings.host,
-            port: smtpSettings.port,
-            secure: smtpSettings.secure,
-            auth: {
-              user: smtpSettings.email,
-              pass: smtpSettings.password,
-            },
-          });
+          if (!template || template.length === 0) {
+            throw new Error(`Template not found for recover_${data.id_lang}`);
+          }
 
-          const hbsOptions = {
-            viewEngine: {
-              defaultLayout: false,
-            },
-            viewPath: "./templates",
+          const fullContext = {
+            name: data.name,
+            code: data.code,
           };
 
-          transporter.use("compile", hbs(hbsOptions));
+          const subject = Handlebars.compile(template[0].subject)(fullContext);
+          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
+          const html = Handlebars.compile(htmlString)(fullContext);
+          const { transporter, from } = buildTransporter(smtpSettings);
 
           const mailOptions = {
-            from: `${smtpSettings.name} <${smtpSettings.email}>`,
+            from: from,
             to: data.email,
-            subject: template[0].subject,
-            template: `recover_${data.id_lang}`,
-            context: {
-              name: data.name,
-              code: data.code,
-            },
+            subject: subject,
+            html: html,
           };
 
           transporter.sendMail(mailOptions, (err, info) => {
@@ -161,4 +152,9 @@ module.exports = {
       });
     });
   },
+
+  // TODO : IMPLEMENTAR MAIS TARDE 
+  // createUser: function (data) {
+
+  // },
 };
