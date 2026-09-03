@@ -47,6 +47,8 @@ const Main = () => {
 		notifications,
 		inbox,
 		isLoggedIn,
+		selectedLanguage,
+		setSelectedLanguage,
 	} = useContext(Context);
 	const { t, i18n } = useTranslation();
 
@@ -102,7 +104,10 @@ const Main = () => {
 	const navigate = useNavigate();
 
 	const changeLanguage = (lang) => {
+		const selectedLang = languages.find((l) => l.code === lang);
+		localStorage.setItem("id_lang", selectedLang.id);
 		i18n.changeLanguage(lang);
+		setSelectedLanguage(selectedLang);
 		navigate(
 			`/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`,
 		);
@@ -325,7 +330,7 @@ const Main = () => {
 											key: item.code,
 											label: (
 												<div
-													className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+													className={`flex items-center ${selectedLanguage?.id === item.id ? "text-[#00B9D6]" : ""}`}
 													onClick={() => changeLanguage(item.code)}
 												>
 													<img
@@ -345,10 +350,10 @@ const Main = () => {
 										<div
 											className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
 											style={{
-												backgroundImage: `url(${languages?.filter((l) => l.code === i18n.language)[0]?.flag})`,
+												backgroundImage: `url(${selectedLanguage?.flag})`,
 											}}
 										></div>
-										<p>{i18n.language.toUpperCase()}</p>
+										<p>{selectedLanguage?.code?.toUpperCase()}</p>
 									</div>
 								</Dropdown>
 							)}
@@ -491,7 +496,7 @@ const Main = () => {
 											key: item.code,
 											label: (
 												<div
-													className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
+													className={`flex items-center ${selectedLanguage?.id === item.id ? "text-[#00B9D6]" : ""}`}
 													onClick={() => changeLanguage(item.code)}
 												>
 													<img
@@ -511,10 +516,10 @@ const Main = () => {
 										<div
 											className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
 											style={{
-												backgroundImage: `url(${languages?.filter((l) => l.code === i18n.language)[0]?.flag})`,
+												backgroundImage: `url(${selectedLanguage?.flag})`,
 											}}
 										></div>
-										<p>{i18n.language.toUpperCase()}</p>
+										<p>{selectedLanguage?.code?.toUpperCase()}</p>
 									</div>
 								</Dropdown>
 							)}
