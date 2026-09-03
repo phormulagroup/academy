@@ -90,11 +90,15 @@ export default function UserDetails() {
         let course = res.data.courses[c];
         course.settings = course.settings ? JSON.parse(course.settings) : null;
 
+        // Não mostra cursos em draft - que só devem ser vistos pelo admin
+        if (course.status === "draft") continue;
+
         if (course.settings && course.settings.country_limit && !course.settings.country.includes(res.data.user.country)) continue;
 
         let courseModules = res.data.modules.filter((m) => m.id_course === course.id);
+        let newModules = [];
+        
         if (courseModules.length > 0) {
-          let newModules = [];
           for (let i = 0; i < courseModules.length; i++) {
             courseModules[i].items = courseModules[i].items ? JSON.parse(courseModules[i].items) : null;
             if (courseModules[i].items) {
@@ -109,16 +113,15 @@ export default function UserDetails() {
               newModules.push(courseModules[i]);
             }
           }
-
-          aux.course = course;
-          aux.modules = newModules;
-          aux.progress = res.data.progress.filter((p) => p.id_course === course.id && p.id_user === parseInt(id));
-          aux.allItems = auxAllItems;
-          auxCourse.push(aux);
         }
 
-        setCourseData(auxCourse);
+        aux.course = course;
+        aux.modules = newModules;
+        aux.progress = res.data.progress.filter((p) => p.id_course === course.id && p.id_user === parseInt(id));
+        aux.allItems = auxAllItems;
+        auxCourse.push(aux);
       }
+      setCourseData(auxCourse);
     }
   }
 
@@ -276,12 +279,12 @@ export default function UserDetails() {
           </div>
         </div>
       </div>
-      {courseData.length > 0 && (
-        <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
-          <div></div>
-          <div className=" col-span-3 mt-10">
-            <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
-            {courseData.map((c) => {
+      <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
+        <div></div>
+        <div className=" col-span-3 mt-10">
+          <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
+          {courseData.length > 0 ? (
+            courseData.map((c) => {
               const tests = c.allItems
                 .filter((_c) => _c.type === "test")
                 .map((_t, _i) => {
@@ -598,10 +601,12 @@ export default function UserDetails() {
                   }}
                 />
               );
-            })}
-          </div>
+            })
+          ) : (
+            <Empty description={t("No courses available")} />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

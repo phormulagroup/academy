@@ -43,8 +43,17 @@ router.get("/readById", async (req, res) => {
 		);
 		if (userRow.length > 0) {
 			const user = userRow[0];
+			// For admins: use id_lang parameter if provided, otherwise use user's language
+			// For students: always use user's language
+			const languageId = user.id_role === 1 && req.query.id_lang 
+				? parseInt(req.query.id_lang) 
+				: user.id_lang;
+			
+			// For students, exclude draft courses; for admins, show all courses
+			const draftFilter = user.id_role === 1 ? "" : "AND c.status != 'draft'";
+			
 			const rows = await query(
-				"SELECT c.* FROM course c WHERE id_lang = ?; " +
+				"SELECT c.* FROM course c WHERE id_lang = ? " + draftFilter + "; " +
 					"SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? " +
 					"AND course.is_deleted = 0 AND course_module.is_deleted = 0;" +
 					"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
@@ -60,7 +69,7 @@ router.get("/readById", async (req, res) => {
 					"WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
 					"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
 					"AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-				[user.id_lang, user.id_lang, user.id_lang, user.id_lang, user.id],
+				[languageId, languageId, languageId, languageId, user.id],
 			);
 
 			let courses = rows[0];

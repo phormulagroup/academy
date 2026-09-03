@@ -43,7 +43,7 @@ import Countdown from "../../../components/countdown";
 import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
-	const { user, languages, windowDimension } = useContext(Context);
+	const { user, languages, windowDimension, selectedLanguage } = useContext(Context);
 	const [data, setData] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [viewType, setViewType] = useState("grid");
@@ -54,7 +54,8 @@ export default function CourseDetails() {
 
 	useEffect(() => {
 		if (user) getData();
-	}, [user, i18n.language]);
+		console.log("CourseDetails")	
+	}, [user, selectedLanguage]);
 
 	useEffect(() => {
 		if (windowDimension < 1080) setViewType("grid");
@@ -66,8 +67,8 @@ export default function CourseDetails() {
 				params: {
 					id_user: user.id,
 					id_lang:
-						user.id_role === 1
-							? languages.filter((_l) => _l.code === i18n.language)[0].id
+						user.id_role === 1 && selectedLanguage
+							? selectedLanguage.id
 							: user.id_lang,
 				},
 			});

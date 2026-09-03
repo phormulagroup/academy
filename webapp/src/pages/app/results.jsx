@@ -39,7 +39,7 @@ import { downloadCertificate } from "../../utils/certificate";
 import config from "../../utils/config";
 
 export default function Result() {
-	const { user } = useContext(Context);
+	const { user, selectedLanguage } = useContext(Context);
 	const [data, setData] = useState([]);
 	const [coursesData, setCoursesData] = useState([]);
 
@@ -48,23 +48,34 @@ export default function Result() {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		getData();
-	}, []);
+		if (user && Object.keys(user).length > 0) {
+			getData();
+		}
+	}, [user, selectedLanguage]);
 
 	function getData() {
+		const params = { id: user.id };
+		// For admins: pass the selected language; for students: no parameter needed
+		if (user.id_role === 1 && selectedLanguage) {
+			params.id_lang = selectedLanguage.id;
+		} else {
+			// console.log("Student fetching results for their language:", user.id_lang);
+		}
 		axios
-			.get(endpoints.user.readById, { params: { id: user.id } })
+			.get(endpoints.user.readById, { params })
 			.then((res) => {
+				// console.log("Server response - Courses:", res.data.courses.length, "Progress:", res.data.progress.length);
 				if (res.data.user) {
 					prepareData(res);
 				}
 			})
 			.catch((err) => {
-				console.log(err);
+				console.log("Error fetching data:", err);
 			});
 	}
 
 	function prepareData(res) {
+		// console.log("prepareData called with courses:", res.data.courses.length);
 		if (res.data.courses.length > 0) {
 			let auxCourse = [];
 			for (let c = 0; c < res.data.courses.length; c++) {
@@ -73,16 +84,28 @@ export default function Result() {
 				let course = res.data.courses[c];
 				course.settings = course.settings ? JSON.parse(course.settings) : null;
 
+				// Only apply country limit for regular students, not admins
 				if (
+					res.data.user.id_role !== 1 &&
 					course.settings &&
 					course.settings.country_limit &&
 					!course.settings.country.includes(res.data.user.country)
-				)
+				) {
+					// console.log("Course skipped due to country limit:", course.name);
 					continue;
+				}
 
 				let courseModules = res.data.modules.filter(
 					(m) => m.id_course === course.id,
 				);
+				
+				// Always add course, regardless of modules
+				aux.course = course;
+				aux.progress = res.data.progress.filter(
+					(p) => p.id_course === course.id,
+				);
+				aux.allItems = [];
+				
 				if (courseModules.length > 0) {
 					let newModules = [];
 					for (let i = 0; i < courseModules.length; i++) {
@@ -111,18 +134,21 @@ export default function Result() {
 							newModules.push(courseModules[i]);
 						}
 					}
-
-					aux.course = course;
 					aux.modules = newModules;
-					aux.progress = res.data.progress.filter(
-						(p) => p.id_course === course.id,
-					);
 					aux.allItems = auxAllItems;
-					auxCourse.push(aux);
+				} else {
+					aux.modules = [];
+					aux.allItems = [];
 				}
-
-				setCoursesData(auxCourse);
+				
+				auxCourse.push(aux);
+				// console.log("Course added:", course.name, "Modules:", courseModules.length);
 			}
+			
+			// console.log("Total courses prepared:", auxCourse.length);
+			setCoursesData(auxCourse);
+		} else {
+			// console.log("No courses returned from server");
 		}
 	}
 
@@ -204,20 +230,6 @@ export default function Result() {
 														<p className={`text-[20px] font-bold`}>
 															{c.course.name}
 														</p>
-														{data?.course?.settings.progression_type ===
-														"linear"
-															? mInd > 0 &&
-																c.progress.filter(
-																	(p) =>
-																		p.id_course === c.course.id &&
-																		p.activity_type === "module" &&
-																		p.id_course_module === modules[mInd - 1].id,
-																).length === 0 && (
-																	<div className="flex justify-center items-center ml-4">
-																		<RxLockClosed className="w-3.75 h-3.75" />
-																	</div>
-																)
-															: null}
 														{(100 *
 															c.progress.filter(
 																(p) =>

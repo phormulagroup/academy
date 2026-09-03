@@ -97,6 +97,10 @@ export default function CourseReport({ data }) {
       for (let i = 0; i < obj.courses.length; i++) {
         let course = obj.courses[i];
         course.settings = course.settings && typeof course.settings === "string" ? JSON.parse(course.settings) : course.settings;
+        
+        // Não surgir cursos daft
+        if (course.status === "draft") continue;
+        
         let modules = obj.modules.filter((t) => t.id_course === course.id);
         let topics = obj.topics.filter((t) => t.id_course === course.id);
         let tests = obj.tests.filter((t) => t.id_course === course.id);
@@ -208,6 +212,9 @@ export default function CourseReport({ data }) {
 
     let course = data.courses?.filter((c) => c.id === e.id)[0];
     if (!course) return null;
+    
+    // Skip draft courses - they should only be shown to admins
+    if (course.status === "draft") return null;
     
     // Filtra apenas os estudantes aprovados pelo administrador, excluindo administradores (id_role = 1)
     let students = data.users?.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved" && (course.settings?.country_limit ? course.settings?.country.includes(u.country) : u.id_lang === course.id_lang)) || [];

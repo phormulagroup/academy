@@ -32,12 +32,12 @@ export default function Card({ user, courses, scrollToResults }) {
         </div>
         <Divider orientation="vertical" className="m-0! h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
+          <p className="text-[30px] font-bold text-center">{courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length}</p>
           <p className="text-[#707C87] text-[12px] text-center">{t("Completed")}</p>
         </div>
         <Divider orientation="vertical" className="m-0!  h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length)}</p>
+          <p className="text-[30px] font-bold text-center">{courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length}</p>
           <p className="text-[#707C87] text-[12px] text-center">{t("Certificate(s)")}</p>
         </div>
       </div>

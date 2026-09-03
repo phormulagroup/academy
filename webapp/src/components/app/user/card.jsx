@@ -48,14 +48,18 @@ export default function UserCard({ courses }) {
           <Divider orientation="vertical" className="m-0! h-full!" />
           <div className="flex flex-col justify-start items-center">
             <p className="text-[30px] font-bold text-center">
-              {courses.length > 0 ? courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length) : 0}
+              {courses.length > 0 
+                ? courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length 
+                : 0}
             </p>
             <p className="text-[#707C87] text-[12px] text-center">{t("Completed")}</p>
           </div>
           <Divider orientation="vertical" className="m-0!  h-full!" />
           <div className="flex flex-col justify-start items-center">
             <p className="text-[30px] font-bold text-center">
-              {courses.length > 0 ? courses.map((_c) => _c.progress?.filter((_p) => _p.is_completed === 1 && _p.activity_type === "course").length) : 0}
+              {courses.length > 0 
+                ? courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length 
+                : 0}
             </p>
             <p className="text-[#707C87] text-[12px] text-center">{t("Certificate(s)")}</p>
           </div>

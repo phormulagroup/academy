@@ -103,6 +103,7 @@ export default function TestReport({ data }) {
     let aux = [];
     if (obj.users && obj.activity && obj.activity.length > 0) {
       // Filtra apenas os utilizadores regulares (id_role = 2) com status aprovado e as suas atividades de teste não eliminadas
+      // Exclui testes de cursos em draft - que só devem ser vistos pelo admin
       let regularUsers = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
       let testsActivity = obj.activity.filter(
         (a) => a.activity_type === "test" && a.is_deleted === 0 && regularUsers.some((u) => u.id === a.id_user),
@@ -152,6 +153,11 @@ export default function TestReport({ data }) {
         const test = obj.tests.filter(
           (t) => t.id === attemptSample.id_course_test,
         )[0];
+        
+        // Não mostra testes de cursos em draft
+        const module = obj.modules.find((m) => m.id === test?.id_course_module);
+        const course = obj.courses.find((c) => c.id === module?.id_course);
+        if (course?.status === "draft") continue;
 
         const testSettings =
           test.settings && typeof test.settings === "string"

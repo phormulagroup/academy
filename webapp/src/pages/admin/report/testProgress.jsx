@@ -68,13 +68,14 @@ export default function TestProgress({ data, products, languages }) {
       "< 20%": 0,
     };
 
-    // Filtra os cursos com base no produto selecionado (se houver)
-    let filteredCourses = obj.courses;
+    // Filtra os cursos com base no produto selecionado (se houver) e exclui cursos em draft
+    let filteredCourses = obj.courses.filter((c) => c.status !== "draft");
     if (id_product) {
       filteredCourses = filteredCourses.filter((c) => c.id_product === id_product);
     }
 
     // Filtra apenas os users regulares (id_role = 2) com status aprovado (aprovados pelo administrador)
+    // Exclui testes de cursos em draft - que só devem ser vistos pelo admin
     let users = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
     let testScoreMap = {};
     let testUserAttempts = {}; // Agrupa tentativas por combinação de user e test
