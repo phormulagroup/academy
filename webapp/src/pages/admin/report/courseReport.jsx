@@ -101,8 +101,8 @@ export default function CourseReport({ data }) {
         let topics = obj.topics.filter((t) => t.id_course === course.id);
         let tests = obj.tests.filter((t) => t.id_course === course.id);
         
-        // Filtra os estudantes com base no país ou idioma do curso
-        let students = obj.users.filter((u) => (course.settings.country_limit ? course.settings.country.includes(u.country) : u.id_lang === course.id_lang));
+        // Filtra os estudantes com base no país ou idioma do curso, excluindo admins (id_role = 1), apenas estudantes aprovados
+        let students = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved" && (course.settings.country_limit ? course.settings.country.includes(u.country) : u.id_lang === course.id_lang));
         
         // Conta os estudantes aprovados: aqueles que completaram ESTE curso (id_course === course.id)
         // Aprovado significa: curso concluído + todos os módulos concluídos + todos os tópicos concluídos + todos os testes concluídos
@@ -209,7 +209,8 @@ export default function CourseReport({ data }) {
     let course = data.courses?.filter((c) => c.id === e.id)[0];
     if (!course) return null;
     
-    let students = data.users?.filter((u) => (course.settings?.country_limit ? course.settings?.country.includes(u.country) : u.id_lang === course.id_lang)) || [];
+    // Filtra apenas os estudantes aprovados pelo administrador, excluindo administradores (id_role = 1)
+    let students = data.users?.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved" && (course.settings?.country_limit ? course.settings?.country.includes(u.country) : u.id_lang === course.id_lang)) || [];
     let activity = data.activity?.filter((a) => a.id_course === e.id) || [];
 
     const dataExpanded = [];

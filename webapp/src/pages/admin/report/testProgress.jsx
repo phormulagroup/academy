@@ -74,7 +74,8 @@ export default function TestProgress({ data, products, languages }) {
       filteredCourses = filteredCourses.filter((c) => c.id_product === id_product);
     }
 
-    let users = obj.users;
+    // Filtra apenas os users regulares (id_role = 2) com status aprovado (aprovados pelo administrador)
+    let users = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
     let testScoreMap = {};
     let testUserAttempts = {}; // Agrupa tentativas por combinação de user e test
     let notApprovedTests = new Set(); // Rastreia combinações de user/test que não foram aprovadas

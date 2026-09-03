@@ -102,8 +102,10 @@ export default function TestReport({ data }) {
   function prepareData(obj) {
     let aux = [];
     if (obj.users && obj.activity && obj.activity.length > 0) {
+      // Filtra apenas os utilizadores regulares (id_role = 2) com status aprovado e as suas atividades de teste não eliminadas
+      let regularUsers = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
       let testsActivity = obj.activity.filter(
-        (a) => a.activity_type === "test" && a.is_deleted === 0,
+        (a) => a.activity_type === "test" && a.is_deleted === 0 && regularUsers.some((u) => u.id === a.id_user),
       );
 
       // Agrupa as atividades por utilizador e teste, para calcular médias e outras métricas
@@ -313,13 +315,15 @@ export default function TestReport({ data }) {
     ];
 
     
-    // Filtra as atividades para o utilizador e teste específicos
+    // Filtra as atividades para o utilizador e teste específicos, excluindo admins
+    const regularUsers = data.users.filter((u) => u.id_role === 2);
     const testsActivity = data.activity.filter(
       (a) =>
         a.activity_type === "test" &&
         a.id_user === e.id_user &&
         a.id_course_test === e.id_course_test &&
-        a.is_deleted === 0,
+        a.is_deleted === 0 &&
+        regularUsers.some((u) => u.id === a.id_user),
     );
 
     //Ordena as tentativas por data

@@ -32,7 +32,9 @@ export default function StudentProgress({ data }) {
 
   useEffect(() => {
     if (data && Object.keys(data).length > 0) {
-      setFilteredData(data.users);
+      // Filtra apenas os estudantes aprovados pelo administrador, excluindo administradores (id_role = 1)
+      const approvedStudents = data.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
+      setFilteredData(approvedStudents);
     }
   }, [data]);
 
@@ -43,7 +45,8 @@ export default function StudentProgress({ data }) {
   function filterData(values) {
     setIsSearching(true);
     console.log(values);
-    let newData = Object.assign([], data.users);
+    // Começa com os users regulares (id_role = 2) que foram aprovados pelo administrador
+    let newData = data.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
 
     if (values.country && values.country.length > 0) newData = newData.filter((n) => values.country.includes(n.country));
     if (values.student)
