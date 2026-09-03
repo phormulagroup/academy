@@ -239,10 +239,11 @@ export default function User() {
 					},
 					{
 						title: "Status",
-						dataIndex: "status_tag",
+						dataIndex: "status",
 						key: "status_tag",
 						sort: true,
 						sortType: "text",
+						render: (text, record) => record.status_tag,
 						filters:
 							tableData.filter((item) => item.status).length > 0
 								? tableData

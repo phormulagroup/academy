@@ -107,6 +107,7 @@ const CustomTable = (props) => {
         width: item.width,
         hidden: item.hidden,
         filters: item.filters,
+        render: item.render,
         onFilter: (value, record) =>
           record.full_data
             ? item.dataIndex === "is_deleted"
