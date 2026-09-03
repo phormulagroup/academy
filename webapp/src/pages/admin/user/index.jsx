@@ -8,6 +8,7 @@ import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 import Table from "../../../components/admin/table";
 import Create from "../../../components/admin/user/create";
 import Import from "../../../components/admin/import/import";
+import Delete from "../../../components/admin/delete";
 import Logs from "../../../components/admin/logs";
 
 import { Context } from "../../../utils/context";
@@ -67,18 +68,27 @@ export default function User() {
 					.filter((l) => l.id === array[i].id_lang)[0]
 					.code.toUpperCase(),
 				country: array[i].country,
+				is_deleted: array[i].is_deleted ? (
+					<Tag variant="outlined" color={"#F04C4B"}>
+						Inativo
+					</Tag>
+				) : (
+					<Tag variant="outlined" color={"#06D186"}>
+						Ativo
+					</Tag>
+				),
 				status_tag:
 					array[i].status === "approved" ? (
 						<Tag variant="outlined" color={"#06D186"}>
-							{array[i].status}
+							{t("Approved")}
 						</Tag>
-					) : array[i].status === "denied" ? (
+					) : array[i].status === "not_approved" ? (
 						<Tag variant="outlined" color={"#F04C4B"}>
-							{array[i].status}
+							{t("Not Approved")}
 						</Tag>
 					) : array[i].status === "pending" ? (
 						<Tag variant="outlined" color={"#FF963B"}>
-							{array[i].status}
+							{t("Pending")}
 						</Tag>
 					) : null,
 				actions: (
@@ -159,6 +169,12 @@ export default function User() {
 			<Create open={isOpenCreate} close={closeAction} />
 			<Import table="user" open={isOpenImport} close={closeAction} />
 			<Status data={selectedData} open={isOpenStatus} close={closeAction} />
+			<Delete
+				data={selectedData}
+				open={isOpenDelete}
+				close={closeAction}
+				table="user"
+			/>
 			<Logs
 				table={"project"}
 				id_project={selectedData.id}
@@ -259,6 +275,15 @@ export default function User() {
 												: null,
 										)
 								: null,
+					},
+					{
+						title: t("Activity"),
+						dataIndex: "is_deleted",
+						key: "is_deleted",
+						filters: [
+							{ text: t("Active"), value: 0 },
+							{ text: t("Inactive"), value: 1 },
+						],
 					},
 					{
 						title: "",

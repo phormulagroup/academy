@@ -189,8 +189,8 @@ router.post("/delete", async (req, res, next) => {
 	console.log("//// DELETE USER ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
-		let id_user = req.body.data.id_user;
-		const deletedRow = await query("DELETE FROM user WHERE id = " + id_user);
+		let id_user = req.body.data.id;
+		const deletedRow = await query("UPDATE user SET is_deleted = 1 WHERE id = ?", [id_user]);
 		res.send(deletedRow);
 	} catch (err) {
 		throw err;

@@ -8,7 +8,7 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 export default function Status({ data, open, close, status }) {
-  const { createLog, selectedLanguage, user } = useContext(Context);
+  const { createLog, selectedLanguage, user, messageApi } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -26,6 +26,7 @@ export default function Status({ data, open, close, status }) {
       await createLog({ id_user: user.id, action: "status", table_name: "user", meta_data: JSON.stringify({ ...data, status: values.status }), id_lang: selectedLanguage.id });
       console.log(res);
       setIsButtonLoading(false);
+      messageApi.success(t("User status updated successfully"));
       close(true);
     } catch (err) {
       console.log(err);
@@ -72,8 +73,8 @@ export default function Status({ data, open, close, status }) {
                     value: "approved",
                   },
                   {
-                    label: t("Denied"),
-                    value: "denied",
+                    label: t("Not Approved"),
+                    value: "not_approved",
                   },
                 ]}
               />

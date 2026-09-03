@@ -9,7 +9,7 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
   const { messageApi, createLog, user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media") });
+  const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media"), user: t("User") });
 
   function onClose() {
     close();
