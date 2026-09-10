@@ -1,27 +1,16 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Divider, Dropdown, Form, Input, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-import Table from "../../components/admin/table";
-import Create from "../../components/admin/language/create";
-import Update from "../../components/admin/language/update";
-import Delete from "../../components/admin/delete";
+import { Button, Divider, Form } from "antd";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
-import Translations from "../../components/admin/language/translations";
-import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import TipTapFormField from "../../components/admin/tipTap/tipTapFormField";
 
 export default function Personalization() {
-  const { user, selectedLanguage, update, create } = useContext(Context);
-  const { t } = useTranslation();
+  const { t, selectedLanguage, update, create, languages, getPersonalization } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [data, setData] = useState([]);
@@ -56,6 +45,9 @@ export default function Personalization() {
     try {
       if (data?.id) await update({ data: { id: data?.id, json: JSON.stringify(values) }, table: "personalization" });
       else await create({ data: { json: JSON.stringify(values), name: "homepage_text", id_lang: selectedLanguage.id }, table: "personalization" });
+      
+      await getPersonalization(languages);
+      
       setIsButtonLoading(false);
     } catch (err) {
       console.log(err);

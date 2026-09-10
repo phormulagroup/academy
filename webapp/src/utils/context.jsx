@@ -456,7 +456,8 @@ const ContextProvider = ({ children }) => {
 				setInbox,
 				selectedInbox,
 				setSelectedInbox,
-				personalization,
+				personalization, 
+				getPersonalization
 			}}
 		>
 			{contextMessageHolder}
