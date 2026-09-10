@@ -44,7 +44,7 @@ export default function Main() {
 						/>
 					) : (
 						<div className="mt-4">
-							<p className="">
+							<p>
 								{t(
 									"Welcome to BIAL Regional Academy, the e-learning platform!",
 								)}

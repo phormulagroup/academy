@@ -15,6 +15,7 @@ export const publicRoutes = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Main /> },
+      { path: "about", element: <Navigate to="/" replace /> },
       { path: "faqs", element: <Faqs /> },
       { path: "contact", element: <Contact /> },
       { path: "*", element: <Error404 /> },
