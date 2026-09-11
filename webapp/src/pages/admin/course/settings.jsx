@@ -16,22 +16,15 @@ import {
   InputNumber,
   Radio,
   Select,
-  Space,
   Switch,
   Tabs,
 } from "antd";
-import Constructor from "./constructor";
-import { useParams } from "react-router-dom";
 import Media from "../../../components/admin/media/media";
 import { AiOutlineFile, AiOutlinePlus } from "react-icons/ai";
 import config from "../../../utils/config";
-import { RxCross1, RxPlus, RxTrash } from "react-icons/rx";
+import { RxTrash } from "react-icons/rx";
 
-import { TextStyleKit } from "@tiptap/extension-text-style";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
-import { CgClose } from "react-icons/cg";
 import dayjs from "dayjs";
 
 export default function Settings({ course }) {
@@ -77,7 +70,11 @@ export default function Settings({ course }) {
       .get(endpoints.product.read)
       .then((res) => {
         if (res.data.length > 0) {
-          setProducts(res.data.filter((p) => p.is_deleted === 0).map((p) => ({ value: p.id, label: p.name })));
+          setProducts(
+            res.data
+              .filter((p) => p.is_deleted === 0)
+              .map((p) => ({ value: p.id, label: p.name })),
+          );
         }
       })
       .catch((err) => {
@@ -171,29 +168,35 @@ export default function Settings({ course }) {
           </Form.Item>
 
           {/* Header Information settings + Toogle Show Info course */}
-          {/* <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
             <div>
+              <p className="text-[18px] font-bold">{t("Duration")}</p>
+              <p className="text-[12px] italic mb-4 text-[#666]">
+                {t("Control the duration time of the course")}
+              </p>
+            </div>
+
+            {/* <div>
               <p className="text-[18px] font-bold">{t("Information")}</p>
               <p className="text-[12px] italic mb-4 text-[#666]">
                 {t(
                   "Controls additional information that users will see on course page",
                 )}
               </p>
-            </div>
-            <div className="flex justify-center items-center gap-2">
+            </div> */}
+            {/* <div className="flex justify-center items-center gap-2">
               <p>{t("Show this info on course page")}</p>
               <Form.Item
                 name={["settings", "show_info_on_course_page"]}
                 className="mb-0!"
-                valuePropName="checked"
-              >
+                valuePropName="checked">
                 <Switch
                   size="large"
                   checkedChildren={t("Yes")}
                   unCheckedChildren={t("No")}
                 />
               </Form.Item>
-            </div>
+            </div> */}
           </div>
 
           <div className="grid grid-cols-3 gap-8">
@@ -202,8 +205,7 @@ export default function Settings({ course }) {
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item
                   name={["settings", "duration_hours"]}
-                  className="mb-0!"
-                >
+                  className="mb-0!">
                   <InputNumber
                     size="large"
                     suffix="hours"
@@ -212,8 +214,7 @@ export default function Settings({ course }) {
                 </Form.Item>
                 <Form.Item
                   name={["settings", "duration_minutes"]}
-                  className="mb-0!"
-                >
+                  className="mb-0!">
                   <InputNumber
                     size="large"
                     suffix="minutes"
@@ -223,7 +224,7 @@ export default function Settings({ course }) {
               </div>
             </div>
 
-            <Form.Item
+            {/* <Form.Item
               name={["settings", "trainer"]}
               label={t("Trainer")}
               className="mb-0!"
@@ -238,18 +239,18 @@ export default function Settings({ course }) {
                 }}
                 options={[]}
               />
-            </Form.Item>
+            </Form.Item> */}
 
-            <Form.Item
+            {/* <Form.Item
               name={["settings", "video"]}
               label={t("Video")}
               className="mb-0!"
             >
               <InputNumber size="large" className="w-full!" />
-            </Form.Item>
+            </Form.Item> */}
           </div>
 
-          <Divider /> */}
+          <Divider />
 
           <p className="text-[18px] font-bold">{t("Product")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
@@ -261,8 +262,7 @@ export default function Settings({ course }) {
             <Form.Item
               name={"id_product"}
               label={t("Product")}
-              className="mb-0!"
-            >
+              className="mb-0!">
               <Select
                 size="large"
                 className="w-full"
@@ -290,8 +290,7 @@ export default function Settings({ course }) {
                 name={["settings", "course_access_expiration"]}
                 label={t("Course access expiration")}
                 valuePropName="checked"
-                className="mb-0!"
-              >
+                className="mb-0!">
                 <Switch
                   size="large"
                   checkedChildren={t("Yes")}
@@ -303,8 +302,7 @@ export default function Settings({ course }) {
                 shouldUpdate={(prevValues, currentValues) =>
                   prevValues.settings?.course_access_expiration !==
                   currentValues.settings?.course_access_expiration
-                }
-              >
+                }>
                 {({ getFieldValue }) =>
                   getFieldValue("settings")?.course_access_expiration ? (
                     <div className="flex flex-col gap-4">
@@ -318,8 +316,7 @@ export default function Settings({ course }) {
                         className="mb-0!"
                         getValueProps={(value) => ({
                           value: value && dayjs(value),
-                        })}
-                      >
+                        })}>
                         <DatePicker showTime size="large" className="w-full" />
                       </Form.Item>
                       <Form.Item
@@ -332,8 +329,7 @@ export default function Settings({ course }) {
                         className="mb-0!"
                         getValueProps={(value) => ({
                           value: value && dayjs(value),
-                        })}
-                      >
+                        })}>
                         <DatePicker showTime size="large" className="w-full" />
                       </Form.Item>
                     </div>
@@ -346,8 +342,7 @@ export default function Settings({ course }) {
                 name={["settings", "country_limit"]}
                 label={t("Country limit")}
                 valuePropName="checked"
-                className="mb-0!"
-              >
+                className="mb-0!">
                 <Switch
                   size="large"
                   checkedChildren={t("Yes")}
@@ -359,16 +354,14 @@ export default function Settings({ course }) {
                 shouldUpdate={(prevValues, currentValues) =>
                   prevValues.settings?.country_limit !==
                   currentValues.settings?.country_limit
-                }
-              >
+                }>
                 {({ getFieldValue }) =>
                   getFieldValue("settings")?.country_limit ? (
                     <div className="flex flex-col gap-4">
                       <Form.Item
                         name={["settings", "country"]}
                         label={t("Country")}
-                        className="mb-0!"
-                      >
+                        className="mb-0!">
                         <Select
                           mode="multiple"
                           size="large"
@@ -392,8 +385,7 @@ export default function Settings({ course }) {
             <Form.Item
               name={["settings", "student_limit"]}
               label={t("Student limit")}
-              className="mb-0!"
-            >
+              className="mb-0!">
               <InputNumber size="large" className="w-full!" placeholder="0" />
             </Form.Item>
           </div>
@@ -414,8 +406,7 @@ export default function Settings({ course }) {
                 noStyle
                 shouldUpdate={(prevValues, currentValues) =>
                   prevValues.img !== currentValues.img
-                }
-              >
+                }>
                 {({ getFieldValue }) => (
                   <>
                     <p className="pb-2">{t("Banner image")}</p>
@@ -427,8 +418,7 @@ export default function Settings({ course }) {
                         backgroundSize: "contain",
                         backgroundRepeat: "no-repeat",
                         backgroundPosition: "center",
-                      }}
-                    >
+                      }}>
                       {!getFieldValue("img") ? (
                         <div className="flex justify-center items-center flex-col p-10">
                           <AiOutlineFile className="text-[30px]" />{" "}
@@ -451,8 +441,7 @@ export default function Settings({ course }) {
                 noStyle
                 shouldUpdate={(prevValues, currentValues) =>
                   prevValues.thumbnail !== currentValues.thumbnail
-                }
-              >
+                }>
                 {({ getFieldValue }) => (
                   <>
                     <p className="pb-2">{t("Thumbnail")}</p>
@@ -464,8 +453,7 @@ export default function Settings({ course }) {
                         backgroundSize: "contain",
                         backgroundRepeat: "no-repeat",
                         backgroundPosition: "center",
-                      }}
-                    >
+                      }}>
                       {!getFieldValue("thumbnail") ? (
                         <div className="flex justify-center items-center flex-col p-10">
                           <AiOutlineFile className="text-[30px]" />{" "}
@@ -494,8 +482,7 @@ export default function Settings({ course }) {
                       noStyle
                       shouldUpdate={(prevValues, currentValues) =>
                         prevValues.material !== currentValues.material
-                      }
-                    >
+                      }>
                       {({ getFieldValue }) => {
                         return (
                           <div className="relative">
@@ -506,8 +493,7 @@ export default function Settings({ course }) {
                                 backgroundSize: "contain",
                                 backgroundRepeat: "no-repeat",
                                 backgroundPosition: "center",
-                              }}
-                            >
+                              }}>
                               {!getFieldValue("material")[field.name]?.file ? (
                                 <div className="flex justify-center items-center flex-col p-10">
                                   <AiOutlineFile className="text-[30px]" />{" "}
@@ -534,8 +520,7 @@ export default function Settings({ course }) {
                             <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                               <Button
                                 onClick={() => remove(field.name)}
-                                icon={<RxTrash />}
-                              ></Button>
+                                icon={<RxTrash />}></Button>
                             </div>
                           </div>
                         );
@@ -549,8 +534,7 @@ export default function Settings({ course }) {
 
                 <div
                   className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                  onClick={() => add()}
-                >
+                  onClick={() => add()}>
                   <div className="flex justify-center items-center flex-col p-10">
                     <AiOutlinePlus className="text-[30px]" />{" "}
                     <p className="text-[11px] text-center mt-2">
@@ -571,8 +555,7 @@ export default function Settings({ course }) {
           <div className="grid grid-cols-3 gap-8">
             <Form.Item
               name={["settings", "progression_type"]}
-              className="mb-0!"
-            >
+              className="mb-0!">
               <Radio.Group>
                 <Radio value="linear" className="mb-4!">
                   <p className="font-bold">{t("Linear")}</p>
@@ -625,16 +608,14 @@ export default function Settings({ course }) {
                 noStyle
                 shouldUpdate={(prevValues, currentValues) =>
                   prevValues.enrollment !== currentValues.enrollment
-                }
-              >
+                }>
                 {({ getFieldValue }) =>
                   getFieldValue("enrollment") === "buy_now" && (
                     <div>
                       <Form.Item
                         name={["settings", "course_price"]}
                         label={t("Course price")}
-                        className="mb-0! ml-6!"
-                      >
+                        className="mb-0! ml-6!">
                         <InputNumber
                           size="large"
                           className="w-full!"
@@ -661,8 +642,7 @@ export default function Settings({ course }) {
             <Form.Item
               name={"id_course_certificate"}
               label={t("Certificate")}
-              className="mb-0!"
-            >
+              className="mb-0!">
               <Select
                 size="large"
                 className="w-full"
@@ -681,8 +661,7 @@ export default function Settings({ course }) {
           <Form.Item
             name={["objection", "text"]}
             className="mb-0!"
-            label={t("Description")}
-          >
+            label={t("Description")}>
             <TiptapFormField placeholder="Escreva o conteúdo..." />
           </Form.Item>
           <div className="mt-4">
@@ -718,30 +697,26 @@ export default function Settings({ course }) {
                                 <Form.Item
                                   name={[sub.name, "title"]}
                                   className="w-full!"
-                                  label={t("Title")}
-                                >
+                                  label={t("Title")}>
                                   <Input size="large" />
                                 </Form.Item>
                                 <Form.Item
                                   name={[sub.name, "text"]}
                                   className="w-full!"
-                                  label={t("Text")}
-                                >
+                                  label={t("Text")}>
                                   <TiptapFormField placeholder="Escreva o conteúdo..." />
                                 </Form.Item>
                                 <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                   <Button
                                     onClick={() => subOps.remove(field.name)}
-                                    icon={<RxTrash />}
-                                  ></Button>
+                                    icon={<RxTrash />}></Button>
                                 </div>
                               </div>
                             ))}
 
                             <div
                               className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-full w-full overflow-hidden"
-                              onClick={() => subOps.add()}
-                            >
+                              onClick={() => subOps.add()}>
                               <div className="flex justify-center items-center flex-col p-10">
                                 <AiOutlinePlus className="text-[30px]" />{" "}
                                 <p className="text-[11px] text-center mt-2">
@@ -791,8 +766,7 @@ export default function Settings({ course }) {
           className="mt-4"
           size="large"
           type="primary"
-          onClick={form.submit}
-        >
+          onClick={form.submit}>
           Save
         </Button>
       </div>
