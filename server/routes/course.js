@@ -134,7 +134,7 @@ router.get("/readBySlug", async (req, res) => {
 				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
 				"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
-				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
+				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0 AND (course_test.status != 'draft' OR ? = 1); " +
 				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
 				"WHERE course_user_activity.id_user = ? AND course.slug = ?",
 			[
@@ -143,6 +143,7 @@ router.get("/readBySlug", async (req, res) => {
 				req.query.slug,
 				req.query.slug,
 				req.query.slug,
+				req.query.id_role,
 				req.query.id_user,
 				req.query.slug,
 			],
@@ -501,6 +502,9 @@ router.post("/module", async (req, res, next) => {
 						if (isNewTest && aux.items[z].type === "test") {
 							itemData.settings = JSON.stringify({
 								passing_score: 75,
+								randomize_answers: false,
+								randomize_questions: false,
+								show_correct_answers: false,
 							});
 						}
 						

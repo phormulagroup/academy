@@ -1,7 +1,20 @@
 import axios from "axios";
 import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
-import { Button, Collapse, DatePicker, Divider, Dropdown, Empty, Form, Input, Progress, Select, Tabs, Tag } from "antd";
+import {
+  Button,
+  Collapse,
+  DatePicker,
+  Divider,
+  Dropdown,
+  Empty,
+  Form,
+  Input,
+  Progress,
+  Select,
+  Tabs,
+  Tag,
+} from "antd";
 
 import { Context } from "../../../utils/context";
 
@@ -14,7 +27,7 @@ import UserCard from "../../../components/admin/user/card";
 import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
 import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import dayjs from "dayjs";
-import  { downloadCertificate } from "../../../utils/certificate";
+import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import TimeIcon from "../../../assets/Backoffice/Tempo.svg?react";
@@ -90,23 +103,40 @@ export default function UserDetails() {
         let course = res.data.courses[c];
         course.settings = course.settings ? JSON.parse(course.settings) : null;
 
-        // Não mostra cursos em draft - que só devem ser vistos pelo admin
-        if (course.status === "draft") continue;
+        // Admin can see all courses including draft - backend already filters for regular users
+        if (
+          course.settings &&
+          course.settings.country_limit &&
+          !course.settings.country.includes(res.data.user.country)
+        )
+          continue;
 
-        if (course.settings && course.settings.country_limit && !course.settings.country.includes(res.data.user.country)) continue;
-
-        let courseModules = res.data.modules.filter((m) => m.id_course === course.id);
+        let courseModules = res.data.modules.filter(
+          (m) => m.id_course === course.id,
+        );
         let newModules = [];
-        
+
         if (courseModules.length > 0) {
           for (let i = 0; i < courseModules.length; i++) {
-            courseModules[i].items = courseModules[i].items ? JSON.parse(courseModules[i].items) : null;
+            courseModules[i].items = courseModules[i].items
+              ? JSON.parse(courseModules[i].items)
+              : null;
             if (courseModules[i].items) {
               for (let y = 0; y < courseModules[i].items.length; y++) {
                 if (courseModules[i].items[y].type === "topic")
-                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.topics.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+                  courseModules[i].items[y] = {
+                    type: courseModules[i].items[y].type,
+                    ...res.data.topics.filter(
+                      (_t) => _t.id === courseModules[i].items[y].id,
+                    )[0],
+                  };
                 if (courseModules[i].items[y].type === "test")
-                  courseModules[i].items[y] = { type: courseModules[i].items[y].type, ...res.data.tests.filter((_t) => _t.id === courseModules[i].items[y].id)[0] };
+                  courseModules[i].items[y] = {
+                    type: courseModules[i].items[y].type,
+                    ...res.data.tests.filter(
+                      (_t) => _t.id === courseModules[i].items[y].id,
+                    )[0],
+                  };
 
                 auxAllItems.push(courseModules[i].items[y]);
               }
@@ -117,7 +147,9 @@ export default function UserDetails() {
 
         aux.course = course;
         aux.modules = newModules;
-        aux.progress = res.data.progress.filter((p) => p.id_course === course.id && p.id_user === parseInt(id));
+        aux.progress = res.data.progress.filter(
+          (p) => p.id_course === course.id && p.id_user === parseInt(id),
+        );
         aux.allItems = auxAllItems;
         auxCourse.push(aux);
       }
@@ -129,8 +161,12 @@ export default function UserDetails() {
     let progressPercentage = (100 * a) / (b + c);
     const isInteger = progressPercentage % 1 === 0;
     return (
-      <p className={`text-[12px] ${progressPercentage === 100 ? "text-[#2F8351]" : "text-[#707070]"} text-nowrap mr-2`}>
-        {!isInteger ? (Math.round(progressPercentage * 100) / 100).toFixed(2) : progressPercentage}% {t("Completed")}
+      <p
+        className={`text-[12px] ${progressPercentage === 100 ? "text-[#2F8351]" : "text-[#707070]"} text-nowrap mr-2`}>
+        {!isInteger
+          ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
+          : progressPercentage}
+        % {t("Completed")}
       </p>
     );
   }
@@ -151,7 +187,9 @@ export default function UserDetails() {
   async function deleteTry(_try) {
     console.log(_try);
     try {
-      const res = await axios.post(endpoints.course.deleteTry, { data: { id: _try.id } });
+      const res = await axios.post(endpoints.course.deleteTry, {
+        data: { id: _try.id },
+      });
       console.log(res.data.affectedRows);
       if (res.data.affectedRows > 0) {
         // Update the course data
@@ -178,56 +216,104 @@ export default function UserDetails() {
     <div className="flex flex-col w-full">
       <div className="flex justify-between items-center">
         <p className="font-bold text-[18px]">{t("Student account")}</p>
-        <p className="text-sm cursor-pointer" onClick={() => navigate(`/admin/users`)}>
+        <p
+          className="text-sm cursor-pointer"
+          onClick={() => navigate(`/admin/users`)}>
           « {t("Go back")}
         </p>
       </div>
       <div className="grid grid-cols-4 gap-4 mt-4">
-        <UserCard user={data} courses={courseData} scrollToResults={scrollToResults} />
+        <UserCard
+          user={data}
+          courses={courseData}
+          scrollToResults={scrollToResults}
+        />
         <div className="col-span-3">
           <div className="bg-[#D0D7E7] p-10 flex flex-col h-full">
-            <p className="text-[26px] font-bold text-center mb-6!">{t("Account")}</p>
-            <Form form={form} onFinish={submit} layout="vertical" className="auth-form">
+            <p className="text-[26px] font-bold text-center mb-6!">
+              {t("Account")}
+            </p>
+            <Form
+              form={form}
+              onFinish={submit}
+              layout="vertical"
+              className="auth-form">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
-                  <Form.Item name="name" label={t("Name")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="name"
+                    label={t("Name")}
+                    rules={[{ required: true }]}
+                    className="mb-0!">
                     <Input size="large" placeholder="John Doe" />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item name="country" label={t("Country")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="country"
+                    label={t("Country")}
+                    rules={[{ required: true }]}
+                    className="mb-0!">
                     <Select
                       size="large"
                       placeholder={t("Choose a country")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
-                      options={countries.map((item) => ({ label: item.label, value: item.value }))}
+                      options={countries.map((item) => ({
+                        label: item.label,
+                        value: item.value,
+                      }))}
                     />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Academic background")} name="academic_background" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Academic background")}
+                    name="academic_background"
+                    rules={[{ required: true }]}
+                    className="mb-0!">
                     <Select
                       size="large"
                       placeholder={t("Academic background")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
                       options={[
-                        { label: "Secondary School", value: "Secondary School" },
-                        { label: "University Degree", value: "University Degree" },
+                        {
+                          label: "Secondary School",
+                          value: "Secondary School",
+                        },
+                        {
+                          label: "University Degree",
+                          value: "University Degree",
+                        },
                         { label: "PhD", value: "PhD" },
                       ]}
                     />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item name="email" label={t("E-mail")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="email"
+                    label={t("E-mail")}
+                    rules={[{ required: true }]}
+                    className="mb-0!">
                     <Input type="email" size="large" placeholder="E-mail" />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Birth date")} name="birth_date" rules={[{ required: true }]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
-                    <DatePicker size="large" placeholder="Select birth date" className="w-full" />
+                  <Form.Item
+                    label={t("Birth date")}
+                    name="birth_date"
+                    rules={[{ required: true }]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder="Select birth date"
+                      className="w-full"
+                    />
                   </Form.Item>
                 </div>
                 <div>
@@ -236,13 +322,22 @@ export default function UserDetails() {
                     name="bial_starting_date"
                     rules={[{ required: true }]}
                     className="mb-0!"
-                    getValueProps={(value) => ({ value: value && dayjs(value) })}
-                  >
-                    <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder="Select Bial's starting date"
+                      className="w-full"
+                    />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Password")} name="password" rules={[{ required: false }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Password")}
+                    name="password"
+                    rules={[{ required: false }]}
+                    className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
                 </div>
@@ -260,17 +355,22 @@ export default function UserDetails() {
                           if (!value || getFieldValue("password") === value) {
                             return Promise.resolve();
                           }
-                          return Promise.reject(new Error(t("The passwords does not match!")));
+                          return Promise.reject(
+                            new Error(t("The passwords does not match!")),
+                          );
                         },
                       }),
                     ]}
-                    className="mb-0!"
-                  >
+                    className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
                 </div>
                 <div className="flex justify-end items-end">
-                  <Button className="w-full" size="large" variant="solid" color="blue">
+                  <Button
+                    className="w-full"
+                    size="large"
+                    variant="solid"
+                    color="blue">
                     {t("Save")}
                   </Button>
                 </div>
@@ -282,14 +382,22 @@ export default function UserDetails() {
       <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
         <div></div>
         <div className=" col-span-3 mt-10">
-          <p className="text-[26px] font-bold text-center mb-6!">{t("Results")}</p>
+          <p className="text-[26px] font-bold text-center mb-6!">
+            {t("Results")}
+          </p>
           {courseData.length > 0 ? (
             courseData.map((c) => {
               const tests = c.allItems
                 .filter((_c) => _c.type === "test")
                 .map((_t, _i) => {
-                  let tries = c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id);
-                  let testSettings = _t.settings ? JSON.parse(_t.settings) : null;
+                  let tries = c.progress.filter(
+                    (_p) =>
+                      _p.activity_type === "test" &&
+                      _p.id_course_test === _t.id,
+                  );
+                  let testSettings = _t.settings
+                    ? JSON.parse(_t.settings)
+                    : null;
                   let maxTries = 0;
                   let time = null;
                   let questions = [];
@@ -318,12 +426,26 @@ export default function UserDetails() {
                         <div className="grid grid-cols-5 mb-6">
                           <div className="flex flex-col justify-center items-center gap-2">
                             <p className="italic text-[11px]">Status</p>
-                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id).length > 0 ? (
+                            {c.progress.filter(
+                              (_p) =>
+                                _p.activity_type === "test" &&
+                                _p.id_course_test === _t.id,
+                            ).length > 0 ? (
                               <>
                                 <p className="text-sm">
-                                  {c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id && _p.is_completed).length > 0
+                                  {c.progress.filter(
+                                    (_p) =>
+                                      _p.activity_type === "test" &&
+                                      _p.id_course_test === _t.id &&
+                                      _p.is_completed,
+                                  ).length > 0
                                     ? t("Completed")
-                                    : c.progress.filter((_p) => _p.activity_type === "test" && _p.id_course_test === _t.id && _p.is_completed === 0).length === maxTries
+                                    : c.progress.filter(
+                                          (_p) =>
+                                            _p.activity_type === "test" &&
+                                            _p.id_course_test === _t.id &&
+                                            _p.is_completed === 0,
+                                        ).length === maxTries
                                       ? "Not passed"
                                       : "In progress"}
                                 </p>
@@ -354,7 +476,9 @@ export default function UserDetails() {
 
                           <div className="flex flex-col justify-center items-center gap-2">
                             <p className="text-[11px]">{t("Passing score")}</p>
-                            <p className="text-sm">{testSettings?.passing_score ?? "80"}%</p>
+                            <p className="text-sm">
+                              {testSettings?.passing_score ?? "80"}%
+                            </p>
                           </div>
                         </div>
                         <div className="p-4">
@@ -365,11 +489,16 @@ export default function UserDetails() {
                               className="tabs-tries"
                               type="card"
                               items={tries.map((_try, _tryInd) => {
-                                let meta_data = _try.meta_data ? JSON.parse(_try.meta_data) : {};
+                                let meta_data = _try.meta_data
+                                  ? JSON.parse(_try.meta_data)
+                                  : {};
                                 let testTime = "";
                                 let answers = [];
                                 if (meta_data) {
-                                  testTime = meta_data.time > 60 ? `${Math.floor(meta_data.time / 60)} min` : `${meta_data.time} s`;
+                                  testTime =
+                                    meta_data.time > 60
+                                      ? `${Math.floor(meta_data.time / 60)} min`
+                                      : `${meta_data.time} s`;
                                   answers = meta_data.items;
                                 }
                                 return {
@@ -378,38 +507,71 @@ export default function UserDetails() {
                                   children: (
                                     <div className="grid grid-cols-5">
                                       <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">{t("Status")}</p>
-                                        {_try.is_completed ? <PassedIcon className="text-green-400 w-10 h-10" /> : <NotPassedIcon className="text-green-400 w-10 h-10" />}
-                                        <p className="text-sm">{_try.is_completed ? t("Passed") : t("Not passed")}</p>
-                                      </div>
-
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">{t("Correct")}</p>
-                                        <CorrectIcon className="text-[#010202] w-10 h-10" />
+                                        <p className="text-[11px]">
+                                          {t("Status")}
+                                        </p>
+                                        {_try.is_completed ? (
+                                          <PassedIcon className="text-green-400 w-10 h-10" />
+                                        ) : (
+                                          <NotPassedIcon className="text-green-400 w-10 h-10" />
+                                        )}
                                         <p className="text-sm">
-                                          {answers.filter((_a) => _a.is_correct).length}/{answers.length}
+                                          {_try.is_completed
+                                            ? t("Passed")
+                                            : t("Not passed")}
                                         </p>
                                       </div>
 
                                       <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">{t("Time")}</p>
+                                        <p className="text-[11px]">
+                                          {t("Correct")}
+                                        </p>
+                                        <CorrectIcon className="text-[#010202] w-10 h-10" />
+                                        <p className="text-sm">
+                                          {
+                                            answers.filter(
+                                              (_a) => _a.is_correct,
+                                            ).length
+                                          }
+                                          /{answers.length}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex flex-col justify-center items-center gap-2">
+                                        <p className="text-[11px]">
+                                          {t("Time")}
+                                        </p>
                                         <TimeIcon className="text-[#010202] w-10 h-10" />
                                         <p className="text-sm">{testTime}</p>
                                       </div>
 
                                       <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">{t("Date")}</p>
+                                        <p className="text-[11px]">
+                                          {t("Date")}
+                                        </p>
                                         <CalendarIcon className="text-[#010202] w-10 h-10" />
-                                        <p className="text-sm">{dayjs(_try.created_at).format("DD/MM/YYYY")}</p>
+                                        <p className="text-sm">
+                                          {dayjs(_try.created_at).format(
+                                            "DD/MM/YYYY",
+                                          )}
+                                        </p>
                                       </div>
 
                                       <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">{t("Hour")}</p>
+                                        <p className="text-[11px]">
+                                          {t("Hour")}
+                                        </p>
                                         <ThumbsUp className="text-[#010202] w-10 h-10" />
-                                        <p className="text-sm">{dayjs(_try.created_at).format("HH:mm")}</p>
+                                        <p className="text-sm">
+                                          {dayjs(_try.created_at).format(
+                                            "HH:mm",
+                                          )}
+                                        </p>
                                       </div>
                                       <div className="col-span-5 flex flex-col justify-center items-center mt-6">
-                                        <Button dashed onClick={() => deleteTry(_try)}>
+                                        <Button
+                                          dashed
+                                          onClick={() => deleteTry(_try)}>
                                           {t("Delete try")}
                                         </Button>
                                       </div>
@@ -419,7 +581,10 @@ export default function UserDetails() {
                               })}
                             />
                           ) : (
-                            <Empty className="mt-6" description={t("No tries made yet")} />
+                            <Empty
+                              className="mt-6"
+                              description={t("No tries made yet")}
+                            />
                           )}
                         </div>
                       </div>
@@ -444,7 +609,11 @@ export default function UserDetails() {
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Status")}</p>
                           {c.progress.length > 0 ? (
-                            c.progress.filter((_p) => _p.activity_type === "course" && _p.is_completed).length > 0 ? (
+                            c.progress.filter(
+                              (_p) =>
+                                _p.activity_type === "course" &&
+                                _p.is_completed,
+                            ).length > 0 ? (
                               <>
                                 <ThumbsUp className="text-green-400 w-10 h-10" />
                                 <p className="text-sm">{t("Passed")}</p>
@@ -468,7 +637,14 @@ export default function UserDetails() {
                             className={`${c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length === c.modules.length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
                           />
                           <p className="text-sm">
-                            {c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length}/{c.modules.length}
+                            {
+                              c.progress.filter(
+                                (_p) =>
+                                  _p.activity_type === "module" &&
+                                  _p.is_completed,
+                              ).length
+                            }
+                            /{c.modules.length}
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
@@ -477,7 +653,18 @@ export default function UserDetails() {
                             className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
                           />
                           <p className="text-sm">
-                            {c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "topic").length}
+                            {
+                              c.progress.filter(
+                                (_p) =>
+                                  _p.activity_type === "topic" &&
+                                  _p.is_completed,
+                              ).length
+                            }
+                            /
+                            {
+                              c.allItems.filter((_c) => _c.type === "topic")
+                                .length
+                            }
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
@@ -486,20 +673,39 @@ export default function UserDetails() {
                             className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
                           />
                           <p className="text-sm">
-                            {c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length}/{c.allItems.filter((_c) => _c.type === "test").length}
+                            {
+                              c.progress.filter(
+                                (_p) =>
+                                  _p.activity_type === "test" &&
+                                  _p.is_completed,
+                              ).length
+                            }
+                            /
+                            {
+                              c.allItems.filter((_c) => _c.type === "test")
+                                .length
+                            }
                           </p>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Start Date")}</p>
                           <CalendarIcon className="text-green-400 w-10 h-10" />
                           <p className="text-sm">
-                            {c.progress.filter((_p) => _p.activity_type === "enroll").length > 0
-                              ? dayjs(c.progress.filter((_p) => _p.activity_type === "enroll")[0].created_at).format("DD/MM/YYYY")
+                            {c.progress.filter(
+                              (_p) => _p.activity_type === "enroll",
+                            ).length > 0
+                              ? dayjs(
+                                  c.progress.filter(
+                                    (_p) => _p.activity_type === "enroll",
+                                  )[0].created_at,
+                                ).format("DD/MM/YYYY")
                               : t("Not started")}
                           </p>
                         </div>
                       </div>
-                      {c.progress.length > 0 && <CourseProgress data={c} user={data} />}
+                      {c.progress.length > 0 && (
+                        <CourseProgress data={c} user={data} />
+                      )}
                     </div>
                   ),
                 },
@@ -519,26 +725,51 @@ export default function UserDetails() {
                         <div className="p-2 cursor-pointer flex items-center w-full!">
                           <div className="flex flex-col ml-2 w-full">
                             <div className="flex mb-4">
-                              <p className={`text-[20px] font-bold`}>{c.course.name}</p>
-                              {data?.course?.settings.progression_type === "linear"
+                              <p className={`text-[20px] font-bold`}>
+                                {c.course.name}
+                              </p>
+                              {data?.course?.settings.progression_type ===
+                              "linear"
                                 ? mInd > 0 &&
-                                  c.progress.filter((p) => p.id_course === c.course.id && p.activity_type === "module" && p.id_course_module === modules[mInd - 1].id).length ===
-                                    0 && (
+                                  c.progress.filter(
+                                    (p) =>
+                                      p.id_course === c.course.id &&
+                                      p.activity_type === "module" &&
+                                      p.id_course_module ===
+                                        modules[mInd - 1].id,
+                                  ).length === 0 && (
                                     <div className="flex justify-center items-center ml-4">
                                       <RxLockClosed className="w-3.75 h-3.75" />
                                     </div>
                                   )
                                 : null}
                               {(100 *
-                                c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                  .length) /
-                                (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) ===
+                                c.progress.filter(
+                                  (p) =>
+                                    p.is_completed === 1 &&
+                                    p.activity_type !== "module" &&
+                                    p.activity_type !== "course" &&
+                                    p.activity_type !== "enroll",
+                                ).length) /
+                                (c.allItems.filter((_c) => _c.type === "topic")
+                                  .length +
+                                  c.allItems.filter((_c) => _c.type === "test")
+                                    .length) ===
                                 100 && (
                                 <div className="flex items-center w-full">
-                                  <Button className="certificate-button  ml-4" onClick={() => handleDownloadCertificate(c.course, c.progress)}>
+                                  <Button
+                                    className="certificate-button  ml-4"
+                                    onClick={() =>
+                                      handleDownloadCertificate(
+                                        c.course,
+                                        c.progress,
+                                      )
+                                    }>
                                     <div className="flex justify-center items-center">
                                       <DownloadCloudIcon className="mr-2 h-3" />
-                                      <p className="text-[12px]">{t("Certificate")}</p>
+                                      <p className="text-[12px]">
+                                        {t("Certificate")}
+                                      </p>
                                     </div>
                                   </Button>
                                   <CertificateIconWhite className="ml-2 h-7" />
@@ -549,27 +780,50 @@ export default function UserDetails() {
                               <div className="flex items-center">
                                 {c.progress.length > 0 ? (
                                   <p className="text-[12px] text-[#707070] text-nowrap">
-                                    {t("Last activity at")} {dayjs(c.progress[c.progress.length - 1].created_at).format("YYYY-MM-DD HH:mm")}
+                                    {t("Last activity at")}{" "}
+                                    {dayjs(
+                                      c.progress[c.progress.length - 1]
+                                        .created_at,
+                                    ).format("YYYY-MM-DD HH:mm")}
                                   </p>
                                 ) : (
-                                  <p className="text-[12px] text-[#707070] text-nowrap">{t("Not started")}</p>
+                                  <p className="text-[12px] text-[#707070] text-nowrap">
+                                    {t("Not started")}
+                                  </p>
                                 )}
                               </div>
                               <div className="flex justify-start items-center w-full">
                                 {calcCourseProgress(
-                                  c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
+                                  c.progress.filter(
+                                    (p) =>
+                                      p.is_completed === 1 &&
+                                      p.activity_type !== "module" &&
+                                      p.activity_type !== "course" &&
+                                      p.activity_type !== "enroll",
+                                  ).length,
+                                  c.allItems.filter((_c) => _c.type === "topic")
                                     .length,
-                                  c.allItems.filter((_c) => _c.type === "topic").length,
-                                  c.allItems.filter((_c) => _c.type === "test").length,
+                                  c.allItems.filter((_c) => _c.type === "test")
+                                    .length,
                                 )}
                                 <Progress
                                   strokeColor={"#2F8351"}
                                   railColor={"#EAEAEA"}
                                   percent={
                                     (100 *
-                                      c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll")
-                                        .length) /
-                                    (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length)
+                                      c.progress.filter(
+                                        (p) =>
+                                          p.is_completed === 1 &&
+                                          p.activity_type !== "module" &&
+                                          p.activity_type !== "course" &&
+                                          p.activity_type !== "enroll",
+                                      ).length) /
+                                    (c.allItems.filter(
+                                      (_c) => _c.type === "topic",
+                                    ).length +
+                                      c.allItems.filter(
+                                        (_c) => _c.type === "test",
+                                      ).length)
                                   }
                                   className="max-w-75"
                                   showInfo={false}
@@ -581,7 +835,13 @@ export default function UserDetails() {
                       ),
                       children: (
                         <div>
-                          <Tabs tabPlacement="start" type="card" items={tabsInside} size="large" className="result-tab-course-item" />
+                          <Tabs
+                            tabPlacement="start"
+                            type="card"
+                            items={tabsInside}
+                            size="large"
+                            className="result-tab-course-item"
+                          />
                         </div>
                       ),
                     },
@@ -591,10 +851,18 @@ export default function UserDetails() {
                     return (
                       <div className="flex justify-center items-center">
                         <div className="mr-2">
-                          {panelProps.isActive ? <p className="font-bold text-sm">{t("Collapse")}</p> : <p className="font-bold text-sm">{t("Expand")}</p>}
+                          {panelProps.isActive ? (
+                            <p className="font-bold text-sm">{t("Collapse")}</p>
+                          ) : (
+                            <p className="font-bold text-sm">{t("Expand")}</p>
+                          )}
                         </div>
                         <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                          {panelProps.isActive ? <RxChevronUp className="w-3.75 h-3.75 text-white" /> : <RxChevronDown className="w-3.75 h-3.75 text-white" />}
+                          {panelProps.isActive ? (
+                            <RxChevronUp className="w-3.75 h-3.75 text-white" />
+                          ) : (
+                            <RxChevronDown className="w-3.75 h-3.75 text-white" />
+                          )}
                         </div>
                       </div>
                     );

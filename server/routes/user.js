@@ -61,7 +61,7 @@ router.get("/readById", async (req, res) => {
 					"AND course_module.is_deleted = 0 AND course_topic.is_deleted = 0; " +
 					"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
 					"LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course.is_deleted = 0 " +
-					"AND course_module.is_deleted = 0 AND course_test.is_deleted = 0; " +
+					"AND course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND (course_test.status != 'draft' OR ? = 1); " +
 					"SELECT cua.* FROM course_user_activity cua LEFT JOIN course ON course.id = cua.id_course " +
 					"LEFT JOIN course_module ON course_module.id = cua.id_course_module " +
 					"LEFT JOIN course_topic ON course_topic.id = cua.id_course_topic " +
@@ -69,7 +69,7 @@ router.get("/readById", async (req, res) => {
 					"WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
 					"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
 					"AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-				[languageId, languageId, languageId, languageId, user.id],
+				[languageId, languageId, languageId, languageId, user.id_role, user.id],
 			);
 
 			let courses = rows[0];
