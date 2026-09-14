@@ -128,13 +128,21 @@ router.get("/readBySlug", async (req, res) => {
 	console.log("//// READ COURSE BY SLUG ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
+		const isAdmin = parseInt(req.query.id_role) === 1;
+
+		let testQuery = "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+			"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0";
+		
+		if (!isAdmin) {
+			testQuery += " AND course_test.status != 'draft'";
+		}
+
 		const rows = await query(
 			"SELECT * FROM course WHERE slug = ? AND id_lang = ? AND is_deleted = 0; SELECT course_module.* FROM course_module " +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_module.is_deleted = 0; " +
 				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
-				"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
-				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0 AND (course_test.status != 'draft' OR ? = 1); " +
+				testQuery + "; " +
 				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
 				"WHERE course_user_activity.id_user = ? AND course.slug = ?",
 			[
@@ -143,7 +151,6 @@ router.get("/readBySlug", async (req, res) => {
 				req.query.slug,
 				req.query.slug,
 				req.query.slug,
-				req.query.id_role,
 				req.query.id_user,
 				req.query.slug,
 			],

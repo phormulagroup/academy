@@ -69,7 +69,7 @@ router.get("/readById", async (req, res) => {
 					"WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
 					"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
 					"AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-				[languageId, languageId, languageId, languageId, user.id_role, user.id],
+				[languageId, languageId, languageId, languageId, req.query.id_role || user.id_role, user.id],
 			);
 
 			let courses = rows[0];

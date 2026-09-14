@@ -6,14 +6,12 @@ import {
   Collapse,
   DatePicker,
   Divider,
-  Dropdown,
   Empty,
   Form,
   Input,
   Progress,
   Select,
   Tabs,
-  Tag,
 } from "antd";
 
 import { Context } from "../../../utils/context";
@@ -57,16 +55,11 @@ export default function UserDetails() {
     getData();
   }, [id]);
 
-  useEffect(() => {
-    console.log(courseData);
-  }, [courseData]);
-
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.user.readById, { params: { id } })
+      .get(endpoints.user.readById, { params: { id, id_role: user.id_role } })
       .then((res) => {
-        console.log(res.data);
         setData(res.data.user);
         if (res.data.user) {
           setCountries(
