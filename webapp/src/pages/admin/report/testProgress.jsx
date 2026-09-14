@@ -89,7 +89,10 @@ export default function TestProgress({ data, products, languages }) {
       // Primeira passagem: Agrupa tentativas por combinação de user e test, e calcula a pontuação média
       for (let u = 0; u < users.length; u++) {
         let findActivity = obj.activity.filter(
-          (_a) => _a.id_user === users[u].id && _a.activity_type === "test",
+          (_a) =>
+            _a.id_user === users[u].id &&
+            _a.activity_type === "test" &&
+            _a.is_deleted === 0,
         );
 
         if (findActivity.length > 0) {
@@ -177,7 +180,9 @@ export default function TestProgress({ data, products, languages }) {
 
         // Verifica se o teste tem limite de tentativas e se o user excedeu esse limite sem passar, para marcar como "Not Approved"
         const { id_course_test } = firstItem;
-        let findTest = obj.tests.filter((c) => c.id === id_course_test)[0];
+        let findTest = obj.tests.filter(
+          (c) => c.id === id_course_test && c.is_deleted !== 1,
+        )[0];
         if (findTest && !isCompleted) {
           // Apenas considera para "Not Approved" se o teste não foi concluído
           let testSettings =
@@ -208,10 +213,11 @@ export default function TestProgress({ data, products, languages }) {
       auxGraphicGlobalValues.notApproved = notApprovedTests.size;
 
       // Count "Not Started" tests - testes em cursos filtrados que não têm nenhuma tentativa registrada
+      // Exclui testes deletados (is_deleted = 1)
       let allTestsInFilteredCourses = new Set();
       for (let i = 0; i < filteredCourses.length; i++) {
         let testsForCourse = obj.tests.filter(
-          (t) => t.id_course === filteredCourses[i].id,
+          (t) => t.id_course === filteredCourses[i].id && t.is_deleted !== 1,
         );
         for (let j = 0; j < testsForCourse.length; j++) {
           allTestsInFilteredCourses.add(testsForCourse[j].id);
