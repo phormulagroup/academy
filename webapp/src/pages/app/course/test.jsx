@@ -1,8 +1,20 @@
 import { useTranslation } from "react-i18next";
 import { useContext, useEffect, useRef, useState } from "react";
-import { Button, Checkbox, Form, Input, message, Progress, Radio, Spin } from "antd";
-import { AiFillCheckCircle, AiFillCloseCircle, AiOutlineArrowLeft, AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
-import { RxArrowLeft, RxChevronLeft, RxChevronRight, RxClock, RxFile, RxFileText, RxLockClosed, RxReload } from "react-icons/rx";
+import { Button, Checkbox, Form, Progress } from "antd";
+import {
+  AiFillCheckCircle,
+  AiFillCloseCircle,
+  AiOutlineCheck,
+  AiOutlineClose,
+} from "react-icons/ai";
+import {
+  RxChevronLeft,
+  RxChevronRight,
+  RxClock,
+  RxFileText,
+  RxLockClosed,
+  RxReload,
+} from "react-icons/rx";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
@@ -11,7 +23,17 @@ import dayjs from "dayjs";
 import Lottie from "lottie-react";
 import { Helmet } from "react-helmet";
 
-const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, setMetaData, modules, updateProgress, next }) => {
+const Test = ({
+  course,
+  selectedCourseItem,
+  progress,
+  setAllowNext,
+  allItems,
+  setMetaData,
+  modules,
+  updateProgress,
+  next,
+}) => {
   const { user, messageApi } = useContext(Context);
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -53,9 +75,21 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
     console.log(course);
     // Verifica se o teste foi concluído ou se houve tentativas falhadas
-    const completedTest = progress.filter((p) => p.activity_type === "test" && p.is_completed === 1 && p.id_course_test === selectedCourseItem.id);
-    const failedAttempts = progress.filter((p) => p.activity_type === "test" && p.is_completed === 0 && p.id_course_test === selectedCourseItem.id);
-    
+    const completedTest = progress.filter(
+      (p) =>
+        p.activity_type === "test" &&
+        p.is_completed === 1 &&
+        p.is_deleted !== 1 &&
+        p.id_course_test === selectedCourseItem.id,
+    );
+    const failedAttempts = progress.filter(
+      (p) =>
+        p.activity_type === "test" &&
+        p.is_completed === 0 &&
+        p.is_deleted !== 1 &&
+        p.id_course_test === selectedCourseItem.id,
+    );
+
     if (completedTest.length > 0) {
       // Teste é aprovado - mostra o layout aprovado sem opção de reinício
       setAllowNext(true);
@@ -80,13 +114,20 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     }
 
     if (course.settings && course.settings.progression_type === "linear") {
-      let findIndex = allItems.findIndex((i) => i.id === selectedCourseItem.id && i.type === selectedCourseItem.type);
+      let findIndex = allItems.findIndex(
+        (i) =>
+          i.id === selectedCourseItem.id && i.type === selectedCourseItem.type,
+      );
       if (findIndex > 0) {
         let previousItem = allItems[findIndex - 1];
         let previousCompleted = progress.filter(
           (p) =>
             p.is_completed === 1 &&
-            ((p.activity_type === "topic" && p.id_course_topic === previousItem.id) || (p.activity_type === "test" && p.id_course_test === previousItem.id)),
+            p.is_deleted !== 1 &&
+            ((p.activity_type === "topic" &&
+              p.id_course_topic === previousItem.id) ||
+              (p.activity_type === "test" &&
+                p.id_course_test === previousItem.id)),
         ).length;
 
         if (previousCompleted > 0) {
@@ -102,10 +143,16 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
     let aux = Object.assign({}, selectedCourseItem);
     aux.settings = aux.settings ? JSON.parse(aux.settings) : {};
 
-    aux.question = aux.question ? (aux.settings?.randomize_questions ? shuffleArray(JSON.parse(aux.question)) : JSON.parse(aux.question)) : [];
+    aux.question = aux.question
+      ? aux.settings?.randomize_questions
+        ? shuffleArray(JSON.parse(aux.question))
+        : JSON.parse(aux.question)
+      : [];
     for (let i = 0; i < aux.question.length; i++) {
       if (aux.question[i].answer && aux.question[i].answer.length > 0) {
-        aux.question[i].answer = aux.settings?.randomize_answers ? shuffleArray(aux.question[i].answer) : aux.question[i].answer;
+        aux.question[i].answer = aux.settings?.randomize_answers
+          ? shuffleArray(aux.question[i].answer)
+          : aux.question[i].answer;
       }
     }
 
@@ -129,7 +176,11 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
         setIsAvailable(false);
         setCountdownToBeAvailable(
           <div className="flex flex-col justify-center items-center mt-4">
-            <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-20" />
+            <Lottie
+              animationData={trailLoadingAnimation}
+              loop={true}
+              className="max-w-20"
+            />
           </div>,
         );
         startAvailableTimer(aux.settings.start_date);
@@ -172,7 +223,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
       const distance = countDownDate - now;
 
       const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
@@ -229,10 +282,19 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   }
 
   function submit(values) {
-    const isValid = Object.keys(values).map((key) => values[key]?.answer && (!Array.isArray(values[key].answer) || values[key].answer.length > 0));
+    const isValid = Object.keys(values).map(
+      (key) =>
+        values[key]?.answer &&
+        (!Array.isArray(values[key].answer) || values[key].answer.length > 0),
+    );
 
     if (isValid.filter((item) => !item).length > 0) {
-      messageApi.open({ type: "error", content: t("You will need to answer ALL questions! Please check if you miss any question.") });
+      messageApi.open({
+        type: "error",
+        content: t(
+          "You will need to answer ALL questions! Please check if you miss any question.",
+        ),
+      });
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -249,29 +311,52 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
         if (index < questions.length) {
           if (values[questions[index]]) {
             if (typeof values[questions[index]].answer === "string") {
-              const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
-              const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
+              const auxQuestion = data.question.filter(
+                (q) => q.title === questions[index],
+              )[0];
+              const findCorrectAnswer = auxQuestion.answer.filter(
+                (a) => a.is_correct,
+              );
               if (findCorrectAnswer.length > 0) {
-                auxResult.push({ is_correct: values[questions[index]].answer === findCorrectAnswer[0].title, ...auxQuestion, myAnswer: values[questions[index]].answer });
+                auxResult.push({
+                  is_correct:
+                    values[questions[index]].answer ===
+                    findCorrectAnswer[0].title,
+                  ...auxQuestion,
+                  myAnswer: values[questions[index]].answer,
+                });
               }
             } else {
               let is_correct = true;
-              const auxQuestion = data.question.filter((q) => q.title === questions[index])[0];
-              const findCorrectAnswer = auxQuestion.answer.filter((a) => a.is_correct);
+              const auxQuestion = data.question.filter(
+                (q) => q.title === questions[index],
+              )[0];
+              const findCorrectAnswer = auxQuestion.answer.filter(
+                (a) => a.is_correct,
+              );
               if (findCorrectAnswer.length > 0) {
                 for (let y = 0; y < findCorrectAnswer.length; y++) {
-                  const findInMyAnswers = values[questions[index]].answer.filter((a) => a === findCorrectAnswer[y].title);
+                  const findInMyAnswers = values[
+                    questions[index]
+                  ].answer.filter((a) => a === findCorrectAnswer[y].title);
                   if (findInMyAnswers.length === 0) {
                     is_correct = false;
                   }
                 }
 
-                auxResult.push({ is_correct, ...auxQuestion, myAnswer: values[questions[index]].answer });
+                auxResult.push({
+                  is_correct,
+                  ...auxQuestion,
+                  myAnswer: values[questions[index]].answer,
+                });
               }
             }
           }
 
-          setCalculate({ percentage: ((index + 1) * 100) / questions.length, step: `${index + 1} / ${questions.length}` });
+          setCalculate({
+            percentage: ((index + 1) * 100) / questions.length,
+            step: `${index + 1} / ${questions.length}`,
+          });
         }
 
         setResult({ items: auxResult, time: timePassed });
@@ -286,7 +371,11 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
           let passingScore = data.settings?.passing_score ?? 80;
 
-          if ((auxResult.filter((r) => r.is_correct).length * 100) / auxResult.length >= passingScore) {
+          if (
+            (auxResult.filter((r) => r.is_correct).length * 100) /
+              auxResult.length >=
+            passingScore
+          ) {
             setAllowNext(true);
             next(false, { items: auxResult, time: timePassed });
           } else {
@@ -309,7 +398,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
   }
 
   function createActivity(auxMetaData) {
-    const moduleSelectedCourseItem = modules.filter((m) => m.id === selectedCourseItem.id_course_module)[0];
+    const moduleSelectedCourseItem = modules.filter(
+      (m) => m.id === selectedCourseItem.id_course_module,
+    )[0];
     const auxData = [
       {
         id_course: course.id,
@@ -381,7 +472,9 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                     )}
                     <p className="text-center text-[14px] text-[#999] mt-2">
                       {!data.settings.time && !data.settings.retries_allowed
-                        ? t("This test doesn't have limited time or retries allowed")
+                        ? t(
+                            "This test doesn't have limited time or retries allowed",
+                          )
                         : !data.settings.time
                           ? t("This test doesn't have limited time")
                           : !data.settings.retries_allowed
@@ -392,8 +485,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                       onClick={startTest}
                       className="mt-4"
                       type="primary"
-                      size="large"
-                    >
+                      size="large">
                       {t("Start test")}
                     </Button>
                   </div>
@@ -492,14 +584,12 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
 
                           {/* AÇÕES */}
                           <div
-                            className={`flex mb-4 mt-4 w-full gap-2 ${isApproved ? "justify-center" : ""}`}
-                          >
+                            className={`flex mb-4 mt-4 w-full gap-2 ${isApproved ? "justify-center" : ""}`}>
                             <Button
                               size="large"
                               className="blue flex-1"
                               onClick={() => setReview(!review)}
-                              icon={<RxFileText />}
-                            >
+                              icon={<RxFileText />}>
                               {review
                                 ? t("Hide questions")
                                 : t("Review questions")}
@@ -509,8 +599,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                 size="large"
                                 className="flex-1"
                                 onClick={() => restartTest()}
-                                icon={<RxReload />}
-                              >
+                                icon={<RxReload />}>
                                 {t("Restart test")}
                               </Button>
                             )}
@@ -522,8 +611,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                     {/* LISTA DE QUESTÕES */}
                     {result.items?.map((q, i) => (
                       <div
-                        className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}
-                      >
+                        className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
                         <div className="flex justify-between">
                           <p className="mb-4">
                             <b>{i + 1}</b>. {q.title}
@@ -534,12 +622,10 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                             <div>
                               {q.answer.map((a, index) => (
                                 <div
-                                  className={`review-test-question multiple ${q.myAnswer.includes(a.title) ? (a.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : "") : ""}`}
-                                >
+                                  className={`review-test-question multiple ${q.myAnswer.includes(a.title) ? (a.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : "") : ""}`}>
                                   <div className="flex">
                                     <div
-                                      className={`circle flex justify-center items-center`}
-                                    >
+                                      className={`circle flex justify-center items-center`}>
                                       {q.myAnswer.includes(a.title) && (
                                         <div className="w-full h-full bg-[#00B9D6] rounded-full flex justify-center items-center">
                                           <AiOutlineCheck className="text-white text-[12px]" />
@@ -580,12 +666,10 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                             <div>
                               {q.answer.map((a, index) => (
                                 <div
-                                  className={`review-test-question ${a.title === q.myAnswer ? (q.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (a.is_correct ? "correct" : !a.is_correct ? "incorrect" : "") : ""}`}
-                                >
+                                  className={`review-test-question ${a.title === q.myAnswer ? (q.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (a.is_correct ? "correct" : !a.is_correct ? "incorrect" : "") : ""}`}>
                                   <div className="flex">
                                     <div
-                                      className={`circle flex justify-center items-center`}
-                                    >
+                                      className={`circle flex justify-center items-center`}>
                                       {a.title === q.myAnswer && (
                                         <div className="w-3.5 h-3.5 bg-[#00B9D6] rounded-full"></div>
                                       )}
@@ -664,8 +748,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                     <div>
                       {data.question.map((q, i) => (
                         <div
-                          className={`${i === currentQuestion ? "flex flex-col" : "hidden"}`}
-                        >
+                          className={`${i === currentQuestion ? "flex flex-col" : "hidden"}`}>
                           <div className={`bg-[#FFF] p-6 `}>
                             <p className="mb-4">
                               <b>{i + 1}</b>. {q.title}
@@ -677,8 +760,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                   <Form.Item
                                     name={[q.title, "answer"]}
                                     className="mb-0! test-form-item-multiple"
-                                    valuePropName="checked"
-                                  >
+                                    valuePropName="checked">
                                     <Checkbox.Group
                                       options={q.answer.map((a) => a.title)}
                                     />
@@ -695,13 +777,11 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                       ) =>
                                         prevValues[q.title] !==
                                         currentValues[q.title]
-                                      }
-                                    >
+                                      }>
                                       {({ getFieldValue }) => (
                                         <Form.Item
                                           name={[q.title, "answer"]}
-                                          className="mb-0! test-form-item"
-                                        >
+                                          className="mb-0! test-form-item">
                                           <Checkbox
                                             key={a.title}
                                             checked={
@@ -715,8 +795,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                                 [q.title, "answer"],
                                                 a.title,
                                               )
-                                            }
-                                          >
+                                            }>
                                             {a.title}
                                           </Checkbox>
                                         </Form.Item>
@@ -734,8 +813,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                         shouldUpdate={(prevValues, currentValues) =>
                           prevValues[data.question[currentQuestion].title] !==
                           currentValues[data.question[currentQuestion].title]
-                        }
-                      >
+                        }>
                         {({ getFieldValue }) => {
                           return (
                             <div className="flex justify-between items-center mt-4">
@@ -745,8 +823,7 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                   onClick={() =>
                                     setCurrentQuestion(currentQuestion - 1)
                                   }
-                                  icon={<RxChevronLeft />}
-                                >
+                                  icon={<RxChevronLeft />}>
                                   {t("Previous question")}
                                 </Button>
                               ) : (
@@ -760,16 +837,14 @@ const Test = ({ course, selectedCourseItem, progress, setAllowNext, allItems, se
                                     setCurrentQuestion(currentQuestion + 1)
                                   }
                                   icon={<RxChevronRight />}
-                                  iconPlacement="end"
-                                >
+                                  iconPlacement="end">
                                   {t("Next question")}
                                 </Button>
                               ) : (
                                 <Button
                                   size="large"
                                   type="primary"
-                                  onClick={form.submit}
-                                >
+                                  onClick={form.submit}>
                                   {t("Finish")}
                                 </Button>
                               )}

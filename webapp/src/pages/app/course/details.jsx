@@ -365,12 +365,27 @@ export default function CourseDetails() {
                         progress.filter(
                           (p) =>
                             p.is_completed === 1 &&
+                            p.is_deleted !== 1 &&
                             p.activity_type !== "module" &&
                             p.activity_type !== "course" &&
-                            p.activity_type !== "enroll",
+                            p.activity_type !== "enroll" &&
+                            ((p.activity_type === "topic" &&
+                              data?.topics?.some(
+                                (t) =>
+                                  t.id === p.id_course_topic &&
+                                  t.is_deleted !== 1,
+                              )) ||
+                              (p.activity_type === "test" &&
+                                data?.tests?.some(
+                                  (t) =>
+                                    t.id === p.id_course_test &&
+                                    t.is_deleted !== 1,
+                                ))),
                         ).length,
-                        data?.topics?.length,
-                        data?.tests?.length,
+                        data?.topics?.filter((t) => t.is_deleted !== 1)
+                          ?.length || 0,
+                        data?.tests?.filter((t) => t.is_deleted !== 1)
+                          ?.length || 0,
                       )}
                       % {t("Completed")}
                     </p>
@@ -393,11 +408,27 @@ export default function CourseDetails() {
                         progress.filter(
                           (p) =>
                             p.is_completed === 1 &&
+                            p.is_deleted !== 1 &&
                             p.activity_type !== "module" &&
                             p.activity_type !== "course" &&
-                            p.activity_type !== "enroll",
+                            p.activity_type !== "enroll" &&
+                            ((p.activity_type === "topic" &&
+                              data?.topics?.some(
+                                (t) =>
+                                  t.id === p.id_course_topic &&
+                                  t.is_deleted !== 1,
+                              )) ||
+                              (p.activity_type === "test" &&
+                                data?.tests?.some(
+                                  (t) =>
+                                    t.id === p.id_course_test &&
+                                    t.is_deleted !== 1,
+                                ))),
                         ).length) /
-                      (data?.topics?.length + data?.tests?.length)
+                      ((data?.topics?.filter((t) => t.is_deleted !== 1)
+                        ?.length || 0) +
+                        (data?.tests?.filter((t) => t.is_deleted !== 1)
+                          ?.length || 0))
                     }
                     className="w-full!"
                     showInfo={false}
@@ -415,12 +446,23 @@ export default function CourseDetails() {
                   progress.filter(
                     (p) =>
                       p.is_completed === 1 &&
+                      p.is_deleted !== 1 &&
                       p.activity_type !== "module" &&
                       p.activity_type !== "course" &&
-                      p.activity_type !== "enroll",
+                      p.activity_type !== "enroll" &&
+                      ((p.activity_type === "topic" &&
+                        data?.topics?.some(
+                          (t) =>
+                            t.id === p.id_course_topic && t.is_deleted !== 1,
+                        )) ||
+                        (p.activity_type === "test" &&
+                          data?.tests?.some(
+                            (t) =>
+                              t.id === p.id_course_test && t.is_deleted !== 1,
+                          ))),
                   ).length,
-                  data?.topics?.length,
-                  data?.tests?.length,
+                  data?.topics?.filter((t) => t.is_deleted !== 1)?.length || 0,
+                  data?.tests?.filter((t) => t.is_deleted !== 1)?.length || 0,
                 ) === 100 ? (
                   <Button
                     className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"

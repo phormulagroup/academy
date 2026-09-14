@@ -1,36 +1,14 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { Avatar, Button, Collapse, Divider, Progress } from "antd";
-import { FaRegUser } from "react-icons/fa";
+import { Button, Collapse, Progress } from "antd";
 import { useContext } from "react";
-import {
-  FaChevronRight,
-  FaRegCheckCircle,
-  FaRegCopy,
-  FaRegEdit,
-  FaRegFile,
-  FaRegTimesCircle,
-  FaRegTrashAlt,
-} from "react-icons/fa";
 
-import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { useNavigate } from "react-router-dom";
 import UserCard from "../../components/app/user/card";
-import i18n from "../../utils/i18n";
-import {
-  AiOutlineArrowDown,
-  AiOutlineArrowUp,
-  AiOutlineCheck,
-} from "react-icons/ai";
-import {
-  RxCheck,
-  RxChevronDown,
-  RxChevronUp,
-  RxLockClosed,
-} from "react-icons/rx";
+import { RxCheck, RxChevronDown, RxChevronUp } from "react-icons/rx";
 import DownloadCloudIcon from "../../assets/download-cloud.svg?react";
 import CertificateIconWhite from "../../assets/Certificado-digital.svg?react";
 import { useTranslation } from "react-i18next";
@@ -124,7 +102,7 @@ export default function Result() {
                   const topicData = res.data.topics.filter(
                     (_t) => _t.id === courseModules[i].items[y].id,
                   )[0];
-                  if (topicData) {
+                  if (topicData && topicData.is_deleted !== 1) {
                     itemToAdd = {
                       type: courseModules[i].items[y].type,
                       ...topicData,
@@ -136,7 +114,11 @@ export default function Result() {
                   const testData = res.data.tests.filter(
                     (_t) => _t.id === courseModules[i].items[y].id,
                   )[0];
-                  if (testData) {
+                  if (
+                    testData &&
+                    testData.is_deleted !== 1 &&
+                    (res.data.user.id_role === 1 || testData.status !== "draft")
+                  ) {
                     itemToAdd = {
                       type: courseModules[i].items[y].type,
                       ...testData,
@@ -183,6 +165,7 @@ export default function Result() {
             progress.filter(
               (p) =>
                 p.is_completed === 1 &&
+                p.is_deleted !== 1 &&
                 p.id_course_module === item.id_course_module &&
                 p.activity_type === item.type &&
                 (item.id === p.id_course_topic || item.id === p.id_course_test),
@@ -236,241 +219,230 @@ export default function Result() {
             <p className="text-[26px] font-bold text-center mb-6!">
               {t("Results")}
             </p>
-            {coursesData.map((c) => (
-              <Collapse
-                key={`results-collapse-${c.course.id}`}
-                className={`${(100 * c.progress.filter((p) => p.is_completed === 1 && p.activity_type !== "module" && p.activity_type !== "course" && p.activity_type !== "enroll").length) / (c.allItems.filter((_c) => _c.type === "topic").length + c.allItems.filter((_c) => _c.type === "test").length) === 100 ? "completed" : "ongoing"} collapse-result`}
-                size="large"
-                bordered={false}
-                items={[
-                  {
-                    key: c.course.id,
-                    label: (
-                      <div className="p-2 cursor-pointer flex items-center">
-                        <div className="flex flex-col ml-2 w-full">
-                          <div className="flex mb-4">
-                            <p className={`text-[20px] font-bold`}>
-                              {c.course.name}
-                            </p>
-                            {(100 *
-                              c.progress.filter(
-                                (p) =>
-                                  p.is_completed === 1 &&
-                                  p.activity_type !== "module" &&
-                                  p.activity_type !== "course" &&
-                                  p.activity_type !== "enroll",
-                              ).length) /
-                              (c.allItems.filter((_c) => _c.type === "topic")
-                                .length +
-                                c.allItems.filter((_c) => _c.type === "test")
-                                  .length) ===
-                              100 && (
-                              <div className="flex items-center w-full">
-                                <Button
-                                  className="certificate-button  ml-4"
-                                  onClick={() =>
-                                    handleDownloadCertificate(
-                                      c.course,
-                                      c.progress,
-                                    )
-                                  }>
-                                  <div className="flex justify-center items-center">
-                                    <DownloadCloudIcon className="mr-2 h-3" />
-                                    <p className="text-[12px]">
-                                      {t("Certificate")}
-                                    </p>
-                                  </div>
-                                </Button>
-                                <CertificateIconWhite className="ml-2 h-7" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex w-full gap-8">
-                            {c.progress.length > 0 && (
-                              <div className="flex items-center">
-                                <p className="text-[12px] text-[#707070] text-nowrap">
-                                  {t("Last activity at")}{" "}
-                                  {dayjs(
-                                    c.progress[c.progress.length - 1]
-                                      .created_at,
-                                  ).format("YYYY-MM-DD HH:mm")}
-                                </p>
-                              </div>
-                            )}
-                            <div className="flex justify-start items-center w-full">
-                              {calcCourseProgress(
-                                c.progress.filter(
-                                  (p) =>
-                                    p.is_completed === 1 &&
-                                    p.activity_type !== "module" &&
-                                    p.activity_type !== "course" &&
-                                    p.activity_type !== "enroll",
-                                ).length,
-                                c.allItems.filter((_c) => _c.type === "topic")
-                                  .length,
-                                c.allItems.filter((_c) => _c.type === "test")
-                                  .length,
+            {coursesData.map((c) => {
+              const validCompletions = c.progress.filter(
+                (p) =>
+                  p.is_completed === 1 &&
+                  p.activity_type !== "module" &&
+                  p.activity_type !== "course" &&
+                  p.activity_type !== "enroll" &&
+                  c.allItems.some(
+                    (item) =>
+                      (p.activity_type === "topic" &&
+                        item.type === "topic" &&
+                        p.id_course_topic === item.id) ||
+                      (p.activity_type === "test" &&
+                        item.type === "test" &&
+                        p.id_course_test === item.id),
+                  ),
+              ).length;
+              const totalItems = c.allItems.length;
+              const progressPercent =
+                totalItems > 0 ? (100 * validCompletions) / totalItems : 0;
+
+              return (
+                <Collapse
+                  key={`results-collapse-${c.course.id}`}
+                  className={`${progressPercent === 100 ? "completed" : "ongoing"} collapse-result`}
+                  size="large"
+                  bordered={false}
+                  items={[
+                    {
+                      key: c.course.id,
+                      label: (
+                        <div className="p-2 cursor-pointer flex items-center">
+                          <div className="flex flex-col ml-2 w-full">
+                            <div className="flex mb-4">
+                              <p className={`text-[20px] font-bold`}>
+                                {c.course.name}
+                              </p>
+                              {progressPercent === 100 && (
+                                <div className="flex items-center w-full">
+                                  <Button
+                                    className="certificate-button  ml-4"
+                                    onClick={() =>
+                                      handleDownloadCertificate(
+                                        c.course,
+                                        c.progress,
+                                      )
+                                    }>
+                                    <div className="flex justify-center items-center">
+                                      <DownloadCloudIcon className="mr-2 h-3" />
+                                      <p className="text-[12px]">
+                                        {t("Certificate")}
+                                      </p>
+                                    </div>
+                                  </Button>
+                                  <CertificateIconWhite className="ml-2 h-7" />
+                                </div>
                               )}
-                              <Progress
-                                strokeColor={"#2F8351"}
-                                railColor={"#EAEAEA"}
-                                percent={
-                                  (100 *
-                                    c.progress.filter(
-                                      (p) =>
-                                        p.is_completed === 1 &&
-                                        p.activity_type !== "module" &&
-                                        p.activity_type !== "course" &&
-                                        p.activity_type !== "enroll",
-                                    ).length) /
-                                  (c.allItems.filter(
-                                    (_c) => _c.type === "topic",
-                                  ).length +
-                                    c.allItems.filter(
-                                      (_c) => _c.type === "test",
-                                    ).length)
-                                }
-                                className="max-w-75"
-                                showInfo={false}
-                              />
+                            </div>
+                            <div className="flex w-full gap-8">
+                              {c.progress.length > 0 && (
+                                <div className="flex items-center">
+                                  <p className="text-[12px] text-[#707070] text-nowrap">
+                                    {t("Last activity at")}{" "}
+                                    {dayjs(
+                                      c.progress[c.progress.length - 1]
+                                        .created_at,
+                                    ).format("YYYY-MM-DD HH:mm")}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex justify-start items-center w-full">
+                                {calcCourseProgress(
+                                  validCompletions,
+                                  totalItems,
+                                  0,
+                                )}
+                                <Progress
+                                  strokeColor={"#2F8351"}
+                                  railColor={"#EAEAEA"}
+                                  percent={progressPercent}
+                                  className="max-w-75"
+                                  showInfo={false}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ),
-                    children: (
-                      <Collapse
-                        className="collapse-course"
-                        size="large"
-                        bordered={false}
-                        items={c.modules?.map((item) => ({
-                          key: item.id,
-                          label: (
-                            <div className="flex flex-col">
-                              <div className="p-2 cursor-pointer flex">
-                                {c.progress.length > 0 &&
-                                c.progress.filter(
-                                  (p) =>
-                                    p.id_course === c.course.id &&
-                                    p.activity_type === "module" &&
-                                    p.id_course_module === item.id,
-                                ).length > 0 ? (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                    <RxCheck className="text-white" />
+                      ),
+                      children: (
+                        <Collapse
+                          className="collapse-course"
+                          size="large"
+                          bordered={false}
+                          items={c.modules?.map((item) => ({
+                            key: item.id,
+                            label: (
+                              <div className="flex flex-col">
+                                <div className="p-2 cursor-pointer flex">
+                                  {c.progress.length > 0 &&
+                                  c.progress.filter(
+                                    (p) =>
+                                      p.id_course === c.course.id &&
+                                      p.activity_type === "module" &&
+                                      p.id_course_module === item.id,
+                                  ).length > 0 ? (
+                                    <div
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      <RxCheck className="text-white" />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                  )}
+                                  <div className="flex flex-col ml-4">
+                                    <p className={`text-[16px]`}>
+                                      {item.title}
+                                    </p>
+                                    <p className="text-[12px] mt-1">
+                                      {c.allItems.filter(
+                                        (_t) =>
+                                          _t.type === "topic" &&
+                                          _t.id_course_module === item.id,
+                                      ).length > 0
+                                        ? `${c.allItems.filter((_t) => _t.type === "topic" && _t.id_course_module === item.id).length} ${t("topic")} ${c.allItems.length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? " | " : ""}`
+                                        : ""}{" "}
+                                      {` ${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? `${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
+                                    </p>
                                   </div>
-                                ) : (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                )}
-                                <div className="flex flex-col ml-4">
-                                  <p className={`text-[16px]`}>{item.title}</p>
-                                  <p className="text-[12px] mt-1">
-                                    {c.allItems.filter(
-                                      (_t) =>
-                                        _t.type === "topic" &&
-                                        _t.id_course_module === item.id,
-                                    ).length > 0
-                                      ? `${c.allItems.filter((_t) => _t.type === "topic" && _t.id_course_module === item.id).length} ${t("topic")} ${c.allItems.length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? " | " : ""}`
-                                      : ""}{" "}
-                                    {` ${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? `${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
-                                  </p>
                                 </div>
                               </div>
-                            </div>
-                          ),
-                          children: (
-                            <div className="flex flex-col">
-                              {item.description && (
-                                <div className="p-6">{item.description}</div>
-                              )}
-                              <div className="p-6 bg-[#414141] flex justify-between items-center">
-                                <p className="text-white">
-                                  {t("Module content")}
-                                </p>
-                                <div>
-                                  {calcProgress(item.items, c.progress)}
+                            ),
+                            children: (
+                              <div className="flex flex-col">
+                                {item.description && (
+                                  <div className="p-6">{item.description}</div>
+                                )}
+                                <div className="p-6 bg-[#414141] flex justify-between items-center">
+                                  <p className="text-white">
+                                    {t("Module content")}
+                                  </p>
+                                  <div>
+                                    {calcProgress(item.items, c.progress)}
+                                  </div>
+                                </div>
+                                <div className="p-4">
+                                  {item.items.map((_t, i) => (
+                                    <div
+                                      className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
+                                      {c.progress.length > 0 &&
+                                      c.progress.filter(
+                                        (p) =>
+                                          p.is_completed === 1 &&
+                                          p.id_course === c.course.id &&
+                                          (p.id_course_topic === _t.id ||
+                                            p.id_course_test === _t.id),
+                                      ).length > 0 ? (
+                                        <div
+                                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                          <RxCheck className="text-white" />
+                                        </div>
+                                      ) : (
+                                        <div
+                                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                      )}
+                                      <p className="text-sm ml-2">{_t.title}</p>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              <div className="p-4">
-                                {item.items.map((_t, i) => (
-                                  <div
-                                    className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
-                                    {c.progress.length > 0 &&
-                                    c.progress.filter(
-                                      (p) =>
-                                        p.is_completed === 1 &&
-                                        p.id_course === c.course.id &&
-                                        (p.id_course_topic === _t.id ||
-                                          p.id_course_test === _t.id),
-                                    ).length > 0 ? (
-                                      <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                        <RxCheck className="text-white" />
-                                      </div>
-                                    ) : (
-                                      <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                    )}
-                                    <p className="text-sm ml-2">{_t.title}</p>
-                                  </div>
-                                ))}
+                            ),
+                          }))}
+                          expandIconPlacement="end"
+                          expandIcon={(panelProps) => {
+                            return (
+                              <div className="flex justify-center items-center">
+                                <div className="mr-2">
+                                  {panelProps.isActive ? (
+                                    <p className="font-bold text-sm">
+                                      {t("Collapse")}
+                                    </p>
+                                  ) : (
+                                    <p className="font-bold text-sm">
+                                      {t("Expand")}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                                  {panelProps.isActive ? (
+                                    <RxChevronUp className="w-3.75 h-3.75 text-white" />
+                                  ) : (
+                                    <RxChevronDown className="w-3.75 h-3.75 text-white" />
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ),
-                        }))}
-                        expandIconPlacement="end"
-                        expandIcon={(panelProps) => {
-                          return (
-                            <div className="flex justify-center items-center">
-                              <div className="mr-2">
-                                {panelProps.isActive ? (
-                                  <p className="font-bold text-sm">
-                                    {t("Collapse")}
-                                  </p>
-                                ) : (
-                                  <p className="font-bold text-sm">
-                                    {t("Expand")}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                                {panelProps.isActive ? (
-                                  <RxChevronUp className="w-3.75 h-3.75 text-white" />
-                                ) : (
-                                  <RxChevronDown className="w-3.75 h-3.75 text-white" />
-                                )}
-                              </div>
-                            </div>
-                          );
-                        }}
-                      />
-                    ),
-                  },
-                ]}
-                expandIconPlacement="end"
-                expandIcon={(panelProps) => {
-                  return (
-                    <div className="flex justify-center items-center">
-                      <div className="mr-2">
-                        {panelProps.isActive ? (
-                          <p className="font-bold text-sm">{t("Collapse")}</p>
-                        ) : (
-                          <p className="font-bold text-sm">{t("Expand")}</p>
-                        )}
+                            );
+                          }}
+                        />
+                      ),
+                    },
+                  ]}
+                  expandIconPlacement="end"
+                  expandIcon={(panelProps) => {
+                    return (
+                      <div className="flex justify-center items-center">
+                        <div className="mr-2">
+                          {panelProps.isActive ? (
+                            <p className="font-bold text-sm">{t("Collapse")}</p>
+                          ) : (
+                            <p className="font-bold text-sm">{t("Expand")}</p>
+                          )}
+                        </div>
+                        <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                          {panelProps.isActive ? (
+                            <RxChevronUp className="w-3.75 h-3.75 text-white" />
+                          ) : (
+                            <RxChevronDown className="w-3.75 h-3.75 text-white" />
+                          )}
+                        </div>
                       </div>
-                      <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                        {panelProps.isActive ? (
-                          <RxChevronUp className="w-3.75 h-3.75 text-white" />
-                        ) : (
-                          <RxChevronDown className="w-3.75 h-3.75 text-white" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-            ))}
+                    );
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

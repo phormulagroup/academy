@@ -1,44 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
-import {
-  CloseOutlined,
-  CustomerServiceOutlined,
-  DownOutlined,
-  LoginOutlined,
-  MenuOutlined,
-  ProfileOutlined,
-} from "@ant-design/icons";
-import {
-  Avatar,
-  Button,
-  Collapse,
-  Divider,
-  Drawer,
-  Dropdown,
-  FloatButton,
-  Layout,
-  Menu,
-  Modal,
-  Progress,
-  Tabs,
-} from "antd";
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { MenuOutlined } from "@ant-design/icons";
+import { Button, Collapse, Drawer, Layout, Modal, Progress, Tabs } from "antd";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 import endpoints from "../../../utils/endpoints";
-import config from "../../../utils/config";
 
 import { Context } from "../../../utils/context";
 
 import Logout from "../../../components/logout";
-import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
-import { TbWorld } from "react-icons/tb";
 import {
   AiFillCloseCircle,
   AiOutlineArrowDown,
@@ -50,8 +21,6 @@ import {
   RxChevronLeft,
   RxExclamationTriangle,
   RxLockClosed,
-  RxArrowLeft,
-  RxArrowRight,
 } from "react-icons/rx";
 
 import dayjs from "dayjs";
@@ -62,7 +31,6 @@ import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-import CourseContent from "./content";
 import CourseMaterial from "./material";
 import CourseObjection from "./objection/objection";
 import CourseIcon from "../../../assets/Curso.svg?react";
@@ -255,9 +223,9 @@ const Learning = () => {
               topics: res.data.topics,
               tests: res.data.tests,
             });
-            setAllItems(auxAllItems);
             setModules(newModules);
             setProgress(res.data.progress);
+            setAllItems(auxAllItems);
           }
         } else {
           navigate(`/${i18n.language}/courses`, { replace: true });
@@ -285,8 +253,27 @@ const Learning = () => {
     return false;
   }
 
+  // Check if a module is truly completed based on its actual items
+  function isModuleCompleted(module) {
+    if (!module || !module.items || module.items.length === 0) {
+      return false; // Module with no items is not completed
+    }
+
+    // All items in the module must be completed
+    return module.items.every((item) => {
+      const itemProgress = progress?.filter(
+        (p) =>
+          p.is_completed === 1 &&
+          p.is_deleted !== 1 &&
+          p.activity_type === item.type &&
+          p[`id_course_${item.type}`] === item.id,
+      );
+      return itemProgress && itemProgress.length > 0;
+    });
+  }
+
   function isCourseCompleted(simulatedProgress = null) {
-    if (!data || !data.topics || !data.tests || !modules) {
+    if (!data || !modules || !allItems) {
       return false;
     }
 
@@ -297,8 +284,8 @@ const Learning = () => {
       return false;
     }
 
-    const completedModules = progressToCheck.filter(
-      (p) => p.activity_type === "module" && p.is_completed === 1,
+    const completedModules = modules.filter((module) =>
+      isModuleCompleted(module),
     ).length;
     const completedTopics = progressToCheck.filter(
       (p) => p.activity_type === "topic" && p.is_completed === 1,
@@ -308,8 +295,9 @@ const Learning = () => {
     ).length;
 
     const totalModules = modules.length;
-    const totalTopics = data.topics.length;
-    const totalTests = data.tests.length;
+    // Count topics and tests from allItems (already filtered based on user role)
+    const totalTopics = allItems.filter((item) => item.type === "topic").length;
+    const totalTests = allItems.filter((item) => item.type === "test").length;
 
     // Determinar se é necessário verificar a conclusão de módulos, tópicos e testes
     const needToCheckModules = totalModules > 0;
@@ -343,7 +331,8 @@ const Learning = () => {
     let findInProgress = progress.filter(
       (p) =>
         p[`id_course_${selectedCourseItem.type}`] === selectedCourseItem.id &&
-        p.is_completed === 1,
+        p.is_completed === 1 &&
+        p.is_deleted !== 1,
     );
     let goToNextModule = false;
     let courseCompleted = false;
@@ -354,7 +343,8 @@ const Learning = () => {
           (p) =>
             p.id_course_module === moduleSelectedCourseItem.id &&
             p.activity_type !== "module" &&
-            p.is_completed === 1,
+            p.is_completed === 1 &&
+            p.is_deleted !== 1,
         ).length + 1; // +1 para incluir o item atual
 
       // Verifica se todos os itens do módulo serão completados após adicionar o item atual
@@ -367,7 +357,8 @@ const Learning = () => {
           (p) =>
             p.id_course_module === moduleSelectedCourseItem.id &&
             p.activity_type === "module" &&
-            p.is_completed === 1,
+            p.is_completed === 1 &&
+            p.is_deleted !== 1,
         ).length === 0;
 
       if (allModuleItemsCompleted && moduleNotYetCompleted) {
@@ -486,7 +477,8 @@ const Learning = () => {
         (p) =>
           p.id_course_module === moduleSelectedCourseItem.id &&
           p.activity_type !== "module" &&
-          p.is_completed === 1,
+          p.is_completed === 1 &&
+          p.is_deleted !== 1,
       ).length;
 
       const allModuleItemsCompleted =
@@ -561,10 +553,21 @@ const Learning = () => {
     const completed = progress?.filter(
       (p) =>
         (p.activity_type === "topic" || p.activity_type === "test") &&
-        p.is_completed === 1,
+        p.is_completed === 1 &&
+        p.is_deleted !== 1 &&
+        ((p.activity_type === "topic" &&
+          data?.topics?.some(
+            (t) => t.id === p.id_course_topic && t.is_deleted !== 1,
+          )) ||
+          (p.activity_type === "test" &&
+            data?.tests?.some(
+              (t) => t.id === p.id_course_test && t.is_deleted !== 1,
+            ))),
     ).length;
-    const total = data?.topics.length + data?.tests.length;
-    setProgressPercentage(((100 * completed) / total).toFixed(2));
+    const total = allItems?.length || 0;
+    setProgressPercentage(
+      total > 0 ? ((100 * completed) / total).toFixed(2) : 0,
+    );
   }
 
   function updateProgress(newObj) {
@@ -612,15 +615,20 @@ const Learning = () => {
                     {progressPercentage}% {t("Completed")}
                   </p>
                   <p className="leading-1">
-                    {
-                      progress?.filter(
+                    {allItems?.filter((item) =>
+                      progress?.some(
                         (p) =>
-                          (p.activity_type === "topic" ||
-                            p.activity_type === "test") &&
-                          p.is_completed === 1,
-                      ).length
-                    }{" "}
-                    / {data?.topics.length + data?.tests.length} {t("Steps")}
+                          p.is_completed === 1 &&
+                          p.is_deleted !== 1 &&
+                          ((p.activity_type === "topic" &&
+                            item.type === "topic" &&
+                            p.id_course_topic === item.id) ||
+                            (p.activity_type === "test" &&
+                              item.type === "test" &&
+                              p.id_course_test === item.id)),
+                      ),
+                    ).length || 0}{" "}
+                    / {allItems?.length || 0} {t("Steps")}
                   </p>
                 </div>
                 <Progress
@@ -704,12 +712,7 @@ const Learning = () => {
                           label: (
                             <div className="flex flex-col">
                               <div className="p-2 cursor-pointer flex items-center">
-                                {progress.length > 0 &&
-                                progress.filter(
-                                  (p) =>
-                                    p.activity_type === "module" &&
-                                    p.id_course_module === item.id,
-                                ).length > 0 ? (
+                                {isModuleCompleted(item) ? (
                                   <div
                                     className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
@@ -750,6 +753,7 @@ const Learning = () => {
                                   progress.filter(
                                     (p) =>
                                       p.is_completed &&
+                                      p.is_deleted !== 1 &&
                                       p[`id_course_${_t.type}`] === _t.id,
                                   ).length > 0 ? (
                                     <div
@@ -899,7 +903,9 @@ const Learning = () => {
                                 progress.filter(
                                   (p) =>
                                     p.activity_type === "module" &&
-                                    p.id_course_module === item.id,
+                                    p.id_course_module === item.id &&
+                                    p.is_completed === 1 &&
+                                    p.is_deleted !== 1,
                                 ).length > 0 ? (
                                   <div
                                     className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
@@ -921,7 +927,9 @@ const Learning = () => {
                                       (p) =>
                                         p.activity_type === "module" &&
                                         p.id_course_module ===
-                                          modules[mInd - 1].id,
+                                          modules[mInd - 1].id &&
+                                        p.is_completed === 1 &&
+                                        p.is_deleted !== 1,
                                     ).length === 0 && (
                                       <div className="flex justify-center items-center ml-4">
                                         <RxLockClosed className="w-3.75 h-3.75" />
@@ -940,9 +948,10 @@ const Learning = () => {
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
-                                      p.is_completed &&
-                                      (p.id_course_topic === _t.id ||
-                                        p.id_course_test === _t.id),
+                                      p.is_completed === 1 &&
+                                      p.is_deleted !== 1 &&
+                                      p.activity_type === _t.type &&
+                                      p[`id_course_${_t.type}`] === _t.id,
                                   ).length > 0 ? (
                                     <div
                                       className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
@@ -967,19 +976,27 @@ const Learning = () => {
                                                 modules[mInd - 1].items[
                                                   modules[mInd - 1].items
                                                     .length - 1
-                                                ]?.id && p.is_completed
+                                                ]?.id &&
+                                              p.is_completed === 1 &&
+                                              p.is_deleted !== 1
                                             : p.id_course_test ===
                                                 modules[mInd - 1].items[
                                                   modules[mInd - 1].items
                                                     .length - 1
-                                                ]?.id && p.is_completed
+                                                ]?.id &&
+                                              p.is_completed === 1 &&
+                                              p.is_deleted !== 1
                                           : p.activity_type === "topic"
                                             ? p.id_course_topic ===
                                                 modules[mInd].items[_i - 1]
-                                                  ?.id && p.is_completed
+                                                  ?.id &&
+                                              p.is_completed === 1 &&
+                                              p.is_deleted !== 1
                                             : p.id_course_test ===
                                                 modules[mInd].items[_i - 1]
-                                                  ?.id && p.is_completed,
+                                                  ?.id &&
+                                              p.is_completed === 1 &&
+                                              p.is_deleted !== 1,
                                       ).length === 0 && (
                                         <div className="flex justify-center items-center ml-4">
                                           <RxLockClosed className="w-3.75 h-3.75" />
@@ -1072,7 +1089,8 @@ const Learning = () => {
                     p.activity_type === selectedCourseItem?.type &&
                     p[`id_course_${selectedCourseItem?.type}`] ===
                       selectedCourseItem?.id &&
-                    p.is_completed === 1,
+                    p.is_completed === 1 &&
+                    p.is_deleted !== 1,
                 ).length > 0 ? (
                   <div className="p-4 bg-black flex justify-between items-center">
                     <p className="text-[20px] text-white">
