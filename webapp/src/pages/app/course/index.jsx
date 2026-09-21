@@ -16,7 +16,7 @@ import { getMarginClasses, getPaddingClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
 
 import { FaAward, FaRegClock } from "react-icons/fa";
-import { FaRegSquareCheck } from "react-icons/fa6";
+import { FaListCheck } from "react-icons/fa6";
 import { AiOutlineCloudDownload, AiOutlinePlayCircle } from "react-icons/ai";
 
 import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
@@ -224,8 +224,8 @@ export default function CourseDetails() {
 
   function formatDuration(hours, minutes) {
     let duration = "";
-    if (hours) duration += `${hours}h`;
-    if (minutes) duration += ` ${minutes}m`;
+    if (hours) duration += `${hours} h`;
+    if (minutes) duration += ` ${minutes} m`;
     return duration.trim();
   }
 
@@ -305,6 +305,14 @@ export default function CourseDetails() {
         : t("Without certificate"),
     });
 
+    // Vídeos do curso
+    const videoCount = countVideosCourse(modules);
+    items.push({
+      id: "videos",
+      icon: AiOutlinePlayCircle,
+      label: `${videoCount} ${videoCount === 1 ? t("Video") : t("Videos")}`,
+    });
+
     // Duração do curso
     const duration =
       course.settings?.duration_hours || course.settings?.duration_minutes
@@ -319,19 +327,11 @@ export default function CourseDetails() {
       label: duration,
     });
 
-    // Vídeos do curso
-    const videoCount = countVideosCourse(modules);
-    items.push({
-      id: "videos",
-      icon: AiOutlinePlayCircle,
-      label: `${videoCount} ${videoCount === 1 ? t("Video") : t("Videos")}`,
-    });
-
     // Testes ativos do curso
     const testCount = countActiveTests(modules);
     items.push({
       id: "tests",
-      icon: FaRegSquareCheck,
+      icon: FaListCheck,
       label: `${testCount} ${testCount === 1 ? t("Active Test") : t("Active Tests")}`,
     });
 
@@ -842,7 +842,7 @@ export default function CourseDetails() {
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
-          style={{ backgroundColor: "#FFD700" }}
+          style={{ backgroundColor: "#FFC600" }}
           className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
           title="Scroll to top">
           <RxChevronUp className="w-6! h-6! text-black!" />

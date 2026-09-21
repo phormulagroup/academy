@@ -381,7 +381,7 @@ select {
 .collapse-course .ant-collapse-item {
   margin-bottom: 20px !important;
   border-bottom: 0 !important;
-  border: 1px solid #969696 !important;
+  border: 1px solid rgba(22, 57, 134, 0.8) !important;
   border-radius: 5px !important;
 }
 
@@ -685,17 +685,17 @@ select {
   background-color: #fff !important;
 }
 
-.course-button-start {
+.main-cta-button {
   background-color: #163986 !important;
   border-color: #163986 !important;
   color: #fff !important;
   font-weight: 600 !important;
 }
 
-.course-button-start:hover {
-  background-color: #c5cee1 !important;
-  border-color: #c5cee1 !important;
-  color: #163986 !important;
+.main-cta-button:hover {
+  background-color: #ffffff !important;
+  border-color: #00b9d6 !important;
+  color: #00b9d6 !important;
 }
 
 .course-button-enter {
@@ -778,6 +778,14 @@ select {
 
 .tabs-report .ant-tabs-tab-btn {
   color: #000000 !important;
+}
+
+.ant-tabs-nav-more {
+  color: #163986 !important;
+}
+
+.ant-tabs-dropdown-menu-item {
+  color: #163986 !important;
 }
 
 iframe {
