@@ -33,7 +33,7 @@ export default function CourseMaterial({ data }) {
       ) : (
         <div className="flex-1 flex flex-col justify-center items-center gap-1.5 py-12">
           <p
-            className="text-[#163986] uppercase font-semibold"
+            className="text-[#163986] uppercase font-semibold text-center"
             style={{
               fontSize:
                 windowDimension.width < 425

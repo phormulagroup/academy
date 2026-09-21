@@ -78,7 +78,7 @@ export default function CourseContent({ modules, progress, data }) {
       const isInteger = progressPercentage % 1 === 0;
 
       return (
-        <p className="text-[#FFFFFF] text-[14px] sm:text-[16px] md:text-[18px] lg:text-[18px]">
+        <p className="text-[#FFFFFF] text-[14px] sm:text-[16px] md:text-[16px] lg:text-[18px]">
           <span className="font-bold uppercase">
             {!isInteger
               ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
@@ -104,9 +104,9 @@ export default function CourseContent({ modules, progress, data }) {
             .map((item) => ({
               key: item.id,
               label: (
-                <div className="flex flex-col">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 p-2 w-full min-w-0">
                   <div
-                    className={`p-2 flex ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+                    className={`p-2 flex min-w-0 ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
                     // onClick={() => handleNavigate(item.id, "module")}
                   >
                     {isModuleCompleted(item) ? (
@@ -118,12 +118,12 @@ export default function CourseContent({ modules, progress, data }) {
                       <div
                         className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                     )}
-                    <div className="flex flex-col ml-4">
+                    <div className="flex flex-col ml-4 max-w-full flex-1 min-w-0 overflow-hidden">
                       <p
-                        className={`text-[#163986] font-bold text-[16px] sm:text-[16px] md:text-[18px] lg:text-[20px] line-clamp-3`}>
+                        className={`text-[#163986] font-bold text-[16px] sm:text-[16px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
-                      <p className="mt-1 text-[#163986] text-[13px] lg:text-[14px]">
+                      <p className="mt-1 text-[#163986] text-[13px] lg:text-[14px] line-clamp-2">
                         {data?.topics &&
                         data.topics.filter(
                           (_t) => _t.id_course_module === item.id,
@@ -212,7 +212,7 @@ export default function CourseContent({ modules, progress, data }) {
                           )}
                           {/* Item title */}
                           <p
-                            className={`text-[#163986] font-medium transition-colors line-clamp-2 ${canAccess ? "group-hover:text-[#FFFFFF] group-hover:font-bold" : ""}`}>
+                            className={`text-[#163986] font-medium transition-colors line-clamp-2 w-full ${canAccess ? "group-hover:text-[#FFFFFF] group-hover:font-bold" : ""}`}>
                             {_t.title}
                           </p>
                         </div>

@@ -408,7 +408,7 @@ export default function CourseDetails() {
                       backgroundBlendMode: "overlay",
                     }}>
                     {(viewType === "grid" || windowDimension.width <= 640) && (
-                      <div className="p-[6px_12px] sm:p-[8px_16px] lg:p-[8px_20px] bg-white border border-[#163986] rounded-[40px] max-w-[250px]">
+                      <div className="p-[6px_12px] sm:p-[8px_16px] lg:p-[8px_20px] bg-white border border-[#163986] rounded-[40px] max-w-full">
                         <p
                           className={`font-bold text-[#163986] truncate ${viewType === "list" ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px] lg:text-[18px]"}`}
                           style={{
@@ -439,7 +439,7 @@ export default function CourseDetails() {
                         {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
                             <div className="p-[6px_12px] sm:p-[8px_16px] bg-white border border-[#163986] rounded-[40px] inline-block max-w-full">
-                              <p className="font-bold text-[#163986] text-[13px] sm:text-[15px] lg:text-[18px] line-clamp-1">
+                              <p className="font-bold text-[#163986] text-[13px] sm:text-[15px] lg:text-[18px] truncate">
                                 {item.course?.name}
                               </p>
                             </div>
