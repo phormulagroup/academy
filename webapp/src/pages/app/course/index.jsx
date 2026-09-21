@@ -12,6 +12,8 @@ import dayjs from "dayjs";
 import Lottie from "lottie-react";
 
 import config from "../../../utils/config";
+import { getMarginClasses, getPaddingClasses } from "../../../utils/responsive";
+import useScrollToTop from "../../../utils/scrollToTop";
 
 import { FaAward, FaRegClock } from "react-icons/fa";
 import { FaRegSquareCheck } from "react-icons/fa6";
@@ -24,12 +26,14 @@ import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
 import Countdown from "../../../components/countdown";
 import { Helmet } from "react-helmet";
+import { RxChevronUp } from "react-icons/rx";
 
 export default function CourseDetails() {
   const { t, user, windowDimension, selectedLanguage } = useContext(Context);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
+  const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
 
   let { slug } = useParams();
   const navigate = useNavigate();
@@ -147,10 +151,6 @@ export default function CourseDetails() {
       console.log(err);
     }
   }
-
-  useEffect(() => {
-    console.log("data", data);
-  }, [data]);
 
   function canAccess(obj) {
     let settings = obj.settings;
@@ -277,6 +277,22 @@ export default function CourseDetails() {
     return activeTestCount;
   }
 
+  function getCertificateIconClass() {
+    return windowDimension.width <= 320
+      ? "w-[60px] h-[60px] right-[12px] bottom-[-30px]"
+      : windowDimension.width <= 425
+        ? "w-[65px] h-[65px] right-[12px] bottom-[-34px]"
+        : windowDimension.width < 768
+          ? "w-[70px] h-[70px] right-[18px] bottom-[-38px]"
+          : windowDimension.width <= 1024
+            ? "w-[70px] h-[70px] right-[18px] bottom-[-44px]"
+            : windowDimension.width <= 1440
+              ? "w-[75px] h-[75px] right-[20px] bottom-[-38px]"
+              : windowDimension.width < 1920
+                ? "w-[85px] h-[85px] right-[24px] bottom-[-40px]"
+                : "w-[90px] h-[90px] right-[24px] bottom-[-40px]";
+  }
+
   function getCourseInfoItems(course, modules) {
     const items = [];
 
@@ -340,12 +356,13 @@ export default function CourseDetails() {
           content={`${t("Courses")} - Bial Regional Academy`}
         />
       </Helmet>
-      <div className="container mx-auto p-6 mt-10 mb-10">
-        <div className="flex flex-col justify-center items-center mb-10">
-          <p className="text-[30px] font-bold text-center text-[#163986]">
+      <div
+        className={`container mx-auto ${getPaddingClasses(windowDimension)} ${getMarginClasses(windowDimension)}`}>
+        <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
+          <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Online Courses")} - Bial Academy
           </p>
-          <p className="italic text-center text-[21px] text-[#163986]">
+          <p className="italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
             Keeping training in mind
           </p>
         </div>
@@ -358,52 +375,77 @@ export default function CourseDetails() {
             />
           </div>
         ) : data.length > 0 ? (
-          <div
-            className={`grid ${viewType === "list" ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"} gap-0 gap-y-8 sm:gap-8`}>
-            <div className="col-span-3 flex justify-end items-center gap-4 mb-4">
-              <GridIcon
-                className="cursor-pointer"
-                onClick={() => setViewType("grid")}
-              />
-              <ListIcon
-                className="cursor-pointer"
-                onClick={() => setViewType("list")}
-              />
-            </div>
-
-            {/* CARD COURSE */}
-            {data.map((item) => (
-              <div
-                className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" ? "flex" : "flex flex-col"} ${viewType === "list" ? "col-span-3" : "col-span-1"}`}>
+          <div>
+            {windowDimension.width > 768 && (
+              <div className="col-span-3 flex justify-end items-center gap-4 mb-8">
+                <GridIcon
+                  className="cursor-pointer"
+                  color="#163986"
+                  onClick={() => setViewType("grid")}
+                />
+                <ListIcon
+                  className="cursor-pointer"
+                  color="#163986"
+                  onClick={() => setViewType("list")}
+                />
+              </div>
+            )}
+            <div
+              className={`grid ${(viewType === "list" && windowDimension.width > 640) || windowDimension.width < 700 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"} gap-5 sm:gap-7 lg:gap-8`}>
+              {/* CARD COURSE */}
+              {data.map((item) => (
                 <div
-                  className={`${viewType === "grid" ? "h-75 rounded-tl-[5px] rounded-tr-[5px]" : "h-full w-50 rounded-bl-[5px] rounded-tl-[5px]"} bg-center bg-cover bg-no-repeat p-6 flex justify-start items-end bg-black relative`}
-                  style={{
-                    backgroundImage: item.course?.thumbnail
-                      ? `url(${config.server_ip}/media/${item.course?.thumbnail})`
-                      : "none",
-                  }}>
-                  <div className="p-[8px_20px_8px_20px] bg-white border border-[#163986] rounded-[40px] max-w-xs">
-                    <p
-                      className={`font-bold truncate text-[#163986] ${viewType === "list" ? "text-[14px]" : "text-[18px]"}`}>
-                      {item.course?.name}
-                    </p>
-                  </div>
-                  {viewType === "grid" &&
-                    calcProgress(item.progress, item.modules) === 100 && (
-                      <div className="absolute -bottom-4 right-4 rounded-[40px] flex items-center">
-                        <CertificateIconWhite className="w-20 h-20" />
+                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden`}>
+                  <div
+                    className={`${viewType === "grid" ? "h-48 sm:h-60 lg:h-75 rounded-tl-[5px] rounded-tr-[5px]" : viewType === "list" && windowDimension.width > 640 ? "h-40 sm:h-full sm:w-40 lg:w-50 rounded-bl-[5px] rounded-tl-[5px]" : "h-48 sm:h-60 lg:h-75 rounded-tl-[5px] rounded-tr-[5px]"} bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
+                    style={{
+                      backgroundImage: item.course?.thumbnail
+                        ? `url(${config.server_ip}/media/${item.course?.thumbnail})`
+                        : "none",
+                      backgroundColor: item.course?.thumbnail
+                        ? "rgba(0, 0, 0, 0.05)"
+                        : "rgb(0, 0, 0)",
+                      backgroundBlendMode: "overlay",
+                    }}>
+                    {(viewType === "grid" || windowDimension.width <= 640) && (
+                      <div className="p-[6px_12px] sm:p-[8px_16px] lg:p-[8px_20px] bg-white border border-[#163986] rounded-[40px] max-w-[250px]">
+                        <p
+                          className={`font-bold text-[#163986] truncate ${viewType === "list" ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px] lg:text-[18px]"}`}
+                          style={{
+                            fontSize:
+                              viewType === "grid" &&
+                              windowDimension.width > 1200
+                                ? "18px"
+                                : "inherit",
+                          }}>
+                          {item.course?.name}
+                        </p>
                       </div>
                     )}
-                </div>
-                <div
-                  className={`w-full flex-1 ${viewType === "list" ? "grid grid-cols-5" : "flex flex-col"}`}>
+                    {(viewType === "grid" ||
+                      (viewType === "list" && windowDimension.width <= 640)) &&
+                      calcProgress(item.progress, item.modules) === 100 && (
+                        <CertificateIconWhite
+                          className={`absolute z-10 rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
+                        />
+                      )}
+                  </div>
                   <div
-                    className={`bg-[#F7F7F7] p-6 ${viewType === "list" ? "col-span-4 grid grid-cols-3 gap-10" : "col-span-1"}`}>
+                    className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
-                      className="flex flex-col col-span-3"
-                      // className={`flex flex-col ${item.course.settings?.show_info_on_course_page ? "col-span-1" : "col-span-3 justify-center items-center"}`}
-                    >
-                      {/* {item.course.settings?.id_trainer && (
+                      className={`bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
+                      <div className="flex flex-col col-span-3">
+                        {/* Course name for list view on desktop */}
+                        {viewType === "list" && windowDimension.width > 640 && (
+                          <div className="mb-4">
+                            <div className="p-[6px_12px] sm:p-[8px_16px] bg-white border border-[#163986] rounded-[40px] inline-block max-w-full">
+                              <p className="font-bold text-[#163986] text-[13px] sm:text-[15px] lg:text-[18px] line-clamp-1">
+                                {item.course?.name}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {/* {item.course.settings?.id_trainer && (
 												<div className="flex items-center mb-4">
 													<Avatar src={avatarImg} className="w-12.5! h-12.5!" />
 													<div className="ml-2">
@@ -419,147 +461,393 @@ export default function CourseDetails() {
 													</div>
 												</div>
 											)} */}
-                      <div
-                        className="mt-2 flex flex-col justify-center items-center"
-                        // className={`${item.course.settings?.id_trainer ? "mt-4" : "mt-0"} flex flex-col justify-center items-center`}
-                      >
-                        {calcProgress(item.progress, item.modules) === 100 ? (
-                          <>
-                            <div className="flex items-center justify-between w-full mb-2 min-h-8.25">
-                              <p className="uppercase text-[#2F8351] mb-1">
-                                {calcProgress(item.progress, item.modules)}%{" "}
-                                {t("completed")}
-                              </p>
-                              {/* Certificado do Curso */}
-                              <Button
-                                className="certificate-button"
-                                onClick={() =>
-                                  handleDownloadCertificate(
-                                    item.course,
-                                    item.progress,
-                                  )
-                                }>
-                                <div className="flex justify-center items-center">
-                                  <AiOutlineCloudDownload className="mr-2 text-[18px]" />
-                                  {t("Certificate")}
-                                </div>
-                              </Button>
-                            </div>
-                            <Progress
-                              percent={calcProgress(
-                                item.progress,
-                                item.modules,
-                              )}
-                              showInfo={false}
-                              strokeColor="#2F8351"
-                              railColor="#EAEAEA"
-                            />
-                          </>
-                        ) : (
-                          <div className="flex flex-col w-full">
-                            {item.progress?.length > 0 ? (
-                              <>
-                                <div className="flex items-center justify-center w-full mb-3">
-                                  <p className="uppercase text-[#163986]">
-                                    {calcProgress(item.progress, item.modules)}%{" "}
-                                    {t("completed")}
-                                  </p>
-                                </div>
-                                <Progress
-                                  percent={calcProgress(
-                                    item.progress,
-                                    item.modules,
-                                  )}
-                                  showInfo={false}
-                                  strokeColor="#2F8351"
-                                  railColor="#EAEAEA"
-                                />
-                              </>
-                            ) : (
-                              <div className="flex items-center text-[#163986] font-bold justify-center w-full mb-1">
-                                <p>{t("Not enrolled")}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Informações do curso */}
-                        {(() => {
-                          const infoItems = getCourseInfoItems(
-                            item.course,
-                            item.modules,
-                          );
-
-                          return (
-                            <div className="mt-6 w-full grid grid-cols-2 gap-4">
-                              {infoItems.map((infoItem, index) => {
-                                const IconComponent = infoItem.icon;
-                                return (
+                        <div className="mt-2 sm:mt-2 lg:mt-[6px] flex flex-col justify-center items-center">
+                          {calcProgress(item.progress, item.modules) === 100 ? (
+                            <>
+                              <div className="flex flex-row items-center justify-between w-full mb-3 sm:mb-3 gap-2 sm:gap-2 min-h-auto">
+                                <p
+                                  className="uppercase font-bold text-[13px] sm:text-[10px] md:text-[12px] lg:text-[14px] text-[#2F8351] flex-shrink-0"
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width < 375
+                                        ? "11px"
+                                        : windowDimension.width < 640
+                                          ? "11px"
+                                          : windowDimension.width >= 1024 &&
+                                              windowDimension.width < 1440
+                                            ? "12px"
+                                            : "inherit",
+                                  }}>
+                                  {calcProgress(item.progress, item.modules)}%{" "}
+                                  {t("completed")}
+                                </p>
+                                {/* Certificado do Curso */}
+                                <Button
+                                  size="middle"
+                                  className={`certificate-button ${windowDimension.width < 640 ? "w-fit" : "flex-shrink-0"} ${windowDimension.width < 640 ? "px-2 py-1!" : "px-3 py-2!"} lg:text-[14px] lg:px-4`}
+                                  onClick={() =>
+                                    handleDownloadCertificate(
+                                      item.course,
+                                      item.progress,
+                                    )
+                                  }>
                                   <div
-                                    key={infoItem.id}
-                                    className={`flex items-center ${index % 2 === 1 ? "justify-self-end" : ""}`}>
-                                    <IconComponent className="mr-2 text-[18px] text-[#163986]" />
-                                    <p className="text-[15px] text-[#163986]">
-                                      {infoItem.label}
+                                    className={`flex ${windowDimension.width < 640 ? "justify-center w-14" : "justify-center"} items-center ${windowDimension.width < 640 ? "gap-0" : "gap-1"}`}>
+                                    <AiOutlineCloudDownload
+                                      className={`${windowDimension.width < 640 ? "text-[18px]" : windowDimension.width < 768 ? "text-[18px]" : windowDimension.width < 1024 ? "text-[20px]" : windowDimension.width >= 1440 ? "text-[24px]" : "text-[20px]"}`}
+                                      style={{
+                                        fontSize:
+                                          windowDimension.width < 640
+                                            ? "20px"
+                                            : windowDimension.width < 768
+                                              ? "18.5px"
+                                              : windowDimension.width < 1024
+                                                ? "20px"
+                                                : windowDimension.width >= 1440
+                                                  ? "24px"
+                                                  : "20px",
+                                      }}
+                                    />
+                                    {windowDimension.width >= 640 && (
+                                      <span
+                                        className="text-[9px] sm:text-[12px] lg:text-[14px]"
+                                        style={{
+                                          fontSize:
+                                            windowDimension.width >= 1440
+                                              ? "12px"
+                                              : "inherit",
+                                        }}>
+                                        {t("Certificate")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </Button>
+                              </div>
+                              <Progress
+                                percent={calcProgress(
+                                  item.progress,
+                                  item.modules,
+                                )}
+                                showInfo={false}
+                                strokeColor="#2F8351"
+                                railColor="#FFFFFF"
+                              />
+                            </>
+                          ) : (
+                            <div className="flex flex-col w-full">
+                              {item.progress?.length > 0 ? (
+                                <>
+                                  <div className="flex items-center justify-center w-full mb-3">
+                                    <p
+                                      className="uppercase font-bold text-[8px] sm:text-[10px] md:text-[12px] lg:text-[14px] text-[#163986]"
+                                      style={{
+                                        fontSize:
+                                          windowDimension.width < 640
+                                            ? "11px"
+                                            : windowDimension.width >= 1024 &&
+                                                windowDimension.width < 1440
+                                              ? "12px"
+                                              : "inherit",
+                                      }}>
+                                      {calcProgress(
+                                        item.progress,
+                                        item.modules,
+                                      )}
+                                      % {t("completed")}
                                     </p>
                                   </div>
-                                );
-                              })}
+                                  <Progress
+                                    percent={calcProgress(
+                                      item.progress,
+                                      item.modules,
+                                    )}
+                                    showInfo={false}
+                                    strokeColor="#2F8351"
+                                    railColor="#FFFFFF"
+                                  />
+                                </>
+                              ) : (
+                                <div className="flex items-center text-[#163986] font-bold justify-center w-full mb-1">
+                                  <p
+                                    className="text-[8px] sm:text-[14px]"
+                                    style={{
+                                      fontSize:
+                                        windowDimension.width < 640
+                                          ? "11px"
+                                          : "inherit",
+                                    }}>
+                                    {t("Not enrolled")}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          );
-                        })()}
+                          )}
+
+                          {/* Informações do curso */}
+                          {(() => {
+                            const infoItems = getCourseInfoItems(
+                              item.course,
+                              item.modules,
+                            );
+
+                            // For list view, split into 2 groups (left and right)
+                            if (
+                              viewType === "list" &&
+                              windowDimension.width > 640
+                            ) {
+                              const leftGroup = infoItems.slice(0, 2);
+                              const rightGroup = infoItems.slice(2);
+                              return (
+                                <div className="mt-2 sm:mt-3 lg:mt-4 w-full flex gap-6 lg:gap-8">
+                                  <div className="flex flex-col gap-1.5">
+                                    {leftGroup.map((infoItem) => {
+                                      const IconComponent = infoItem.icon;
+                                      return (
+                                        <div
+                                          key={infoItem.id}
+                                          className="flex items-center gap-1 sm:gap-1.5">
+                                          <IconComponent
+                                            className="text-[11px] sm:text-[13.5px] md:text-[14px] lg:text-[15px] text-[#163986] flex-shrink-0"
+                                            style={{
+                                              fontSize:
+                                                windowDimension.width >= 1440
+                                                  ? "18px"
+                                                  : "inherit",
+                                            }}
+                                          />
+                                          <p
+                                            className="text-[11px] sm:text-[11.5px] md:text-[14px] lg:text-[14px] text-[#163986] break-words"
+                                            style={{
+                                              fontSize:
+                                                windowDimension.width >= 1024 &&
+                                                windowDimension.width < 1440
+                                                  ? "13px"
+                                                  : windowDimension.width >=
+                                                      1440
+                                                    ? "16px"
+                                                    : "inherit",
+                                            }}>
+                                            {infoItem.label}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    {rightGroup.map((infoItem) => {
+                                      const IconComponent = infoItem.icon;
+                                      return (
+                                        <div
+                                          key={infoItem.id}
+                                          className="flex items-center gap-1 sm:gap-1.5">
+                                          <IconComponent
+                                            className="text-[11px] sm:text-[13.5px] md:text-[14px] lg:text-[15px] text-[#163986] flex-shrink-0"
+                                            style={{
+                                              fontSize:
+                                                windowDimension.width >= 1440
+                                                  ? "18px"
+                                                  : "inherit",
+                                            }}
+                                          />
+                                          <p
+                                            className="text-[11px] sm:text-[11.5px] md:text-[14px] lg:text-[14px] text-[#163986] break-words whitespace-nowrap"
+                                            style={{
+                                              fontSize:
+                                                windowDimension.width >= 1024 &&
+                                                windowDimension.width < 1440
+                                                  ? "13px"
+                                                  : windowDimension.width >=
+                                                      1440
+                                                    ? "16px"
+                                                    : "inherit",
+                                            }}>
+                                            {infoItem.label}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            // Default grid layout for grid/mobile view - split into left and right groups
+                            const leftGroup = infoItems.slice(0, 2);
+                            const rightGroup = infoItems.slice(2);
+                            return (
+                              <div className="mt-4 sm:mt-3 lg:mt-4 w-full flex gap-3 sm:gap-4 lg:gap-6">
+                                <div className="flex flex-col gap-1.5">
+                                  {leftGroup.map((infoItem) => {
+                                    const IconComponent = infoItem.icon;
+                                    return (
+                                      <div
+                                        key={infoItem.id}
+                                        className="flex items-center gap-1 sm:gap-1.5">
+                                        <IconComponent
+                                          className="text-[11px] sm:text-[13.5px] md:text-[14px] lg:text-[15px] text-[#163986] flex-shrink-0"
+                                          style={{
+                                            fontSize:
+                                              windowDimension.width < 640
+                                                ? "14px"
+                                                : windowDimension.width >= 1440
+                                                  ? "18px"
+                                                  : "inherit",
+                                          }}
+                                        />
+                                        <p
+                                          className="text-[11px] sm:text-[11.5px] md:text-[14px] lg:text-[14px] text-[#163986] break-words"
+                                          style={{
+                                            fontSize:
+                                              windowDimension.width < 640
+                                                ? "12px"
+                                                : windowDimension.width >=
+                                                      1024 &&
+                                                    windowDimension.width < 1440
+                                                  ? "13px"
+                                                  : windowDimension.width >=
+                                                      1440
+                                                    ? "16px"
+                                                    : "inherit",
+                                          }}>
+                                          {infoItem.label}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                  {rightGroup.map((infoItem) => {
+                                    const IconComponent = infoItem.icon;
+                                    return (
+                                      <div
+                                        key={infoItem.id}
+                                        className="flex items-center gap-1 sm:gap-1.5">
+                                        <IconComponent
+                                          className="text-[11px] sm:text-[13.5px] md:text-[14px] lg:text-[15px] text-[#163986] flex-shrink-0"
+                                          style={{
+                                            fontSize:
+                                              windowDimension.width < 640
+                                                ? "14px"
+                                                : windowDimension.width >= 1440
+                                                  ? "18px"
+                                                  : "inherit",
+                                          }}
+                                        />
+                                        <p
+                                          className="text-[11px] sm:text-[11.5px] md:text-[14px] lg:text-[14px] text-[#163986] break-words whitespace-nowrap"
+                                          style={{
+                                            fontSize:
+                                              windowDimension.width < 640
+                                                ? "12px"
+                                                : windowDimension.width >=
+                                                      1024 &&
+                                                    windowDimension.width < 1440
+                                                  ? "13px"
+                                                  : windowDimension.width >=
+                                                      1440
+                                                    ? "16px"
+                                                    : "inherit",
+                                          }}>
+                                          {infoItem.label}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="px-6 py-0 flex flex-col justify-center items-center w-full flex-1">
-                    {canAccess(item.course) || item.is_available ? (
-                      <Link
-                        to={`/${i18n.language}/courses/${item.course.slug}`}
-                        className="w-full! block my-6">
-                        {calcProgress(item.progress, item.modules) === 100 ? (
-                          <Button
-                            size="large"
-                            className="w-full! course-button-review">
-                            {t("Review")}
-                          </Button>
-                        ) : (
-                          <Button
-                            size="large"
-                            type="primary"
-                            className={`w-full! ${calcProgress(item.progress, item.modules) === 0 ? "course-button-start" : "course-button-enter"}`}>
-                            {calcProgress(item.progress, item.modules) === 0
-                              ? t("Start")
-                              : t("Enter")}
-                          </Button>
+                    <div className="px-4 sm:px-4 md:px-4 lg:px-6 py-4 sm:py-6 md:py-4 lg:py-6 flex flex-col justify-center items-center w-full flex-1">
+                      {/* Certificate icon for list view */}
+                      {viewType === "list" &&
+                        windowDimension.width > 640 &&
+                        calcProgress(item.progress, item.modules) === 100 && (
+                          <div className="mb-8 flex justify-center">
+                            <CertificateIconWhite
+                              className={`rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
+                            />
+                          </div>
                         )}
-                      </Link>
-                    ) : (
-                      <div className="flex flex-col justify-center items-center my-6">
-                        <p className="font-bold">{t("Available in")}</p>
-                        <Countdown
-                          targetDate={
-                            item.course.settings.course_access_expiration_dates
-                              .start_date
-                          }
-                          className="text-[20px]"
-                          countdownType="course"
-                          updateCourseAvailable={() =>
-                            updateCourseAvailable(item.course)
-                          }
-                        />
-                      </div>
-                    )}
+                      {/* Action button: Review/Start/Enter or Available countdown */}
+                      {canAccess(item.course) || item.is_available ? (
+                        <Link
+                          to={`/${i18n.language}/courses/${item.course.slug}`}
+                          className="w-full! block">
+                          {calcProgress(item.progress, item.modules) === 100 ? (
+                            <Button
+                              size={
+                                windowDimension.width < 640 ? "middle" : "large"
+                              }
+                              className="w-full! course-button-review text-[8px] sm:text-[12px] lg:text-[13px]"
+                              style={{
+                                fontSize:
+                                  windowDimension.width < 640
+                                    ? "11px"
+                                    : "inherit",
+                              }}>
+                              {t("Review")}
+                            </Button>
+                          ) : (
+                            <Button
+                              size={
+                                windowDimension.width < 640 ? "middle" : "large"
+                              }
+                              type="primary"
+                              className={`w-full! text-[8px] sm:text-[12px] lg:text-[13px] ${calcProgress(item.progress, item.modules) === 0 ? "main-cta-button" : "course-button-enter"}`}
+                              style={{
+                                fontSize:
+                                  windowDimension.width < 640
+                                    ? "11px"
+                                    : "inherit",
+                              }}>
+                              {calcProgress(item.progress, item.modules) === 0
+                                ? t("Start")
+                                : t("Enter")}
+                            </Button>
+                          )}
+                        </Link>
+                      ) : (
+                        <div className="flex flex-col justify-center items-center">
+                          <p className="font-bold text-[12px] sm:text-[14px]">
+                            {t("Available in")}
+                          </p>
+                          <Countdown
+                            targetDate={
+                              item.course.settings
+                                .course_access_expiration_dates.start_date
+                            }
+                            className="text-[20px]"
+                            countdownType="course"
+                            updateCourseAvailable={() =>
+                              updateCourseAvailable(item.course)
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="col-span-3 flex flex-col justify-center items-center">
+          <div className="flex flex-col justify-center items-center">
             <Empty description={t("No courses found")} />
           </div>
         )}
       </div>
+      {/* Scroll to Top Button */}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTop}
+          style={{ backgroundColor: "#FFD700" }}
+          className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
+          title="Scroll to top">
+          <RxChevronUp className="w-6! h-6! text-black!" />
+        </button>
+      )}
     </div>
   );
 }
