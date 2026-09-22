@@ -1,35 +1,21 @@
 import React, { useContext, useEffect, useState } from "react";
-import {
-  CloseOutlined,
-  DashboardOutlined,
-  DashOutlined,
-  DownOutlined,
-  LoginOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  ProfileOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
+import { LogoutOutlined, MenuOutlined } from "@ant-design/icons";
+import { Avatar, Divider, Drawer, Dropdown, Layout } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import logo from "../assets/BIAL-Regional-Academy.png";
-
-import endpoints from "../utils/endpoints";
-import config from "../utils/config";
 
 import { Context } from "../utils/context";
 
 import Logout from "../components/logout";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
-import { TbWorld } from "react-icons/tb";
 import { Footer } from "antd/es/layout/layout";
 
 import bialLogo from "../assets/BIAL-logo-footer.svg";
 import NotificationIcon from "../assets/Notifications-off.svg?react";
 import FacebookIcon from "../assets/facebook.svg?react";
 import LinkedInIcon from "../assets/Linkedin.svg?react";
+// import InstagramIcon from "../assets/instagram.svg?react";
 import { AiFillCloseCircle } from "react-icons/ai";
 import dayjs from "dayjs";
 
@@ -517,12 +503,14 @@ const Main = () => {
             <div className="mb-4 flex justify-center md:justify-start items-center">
               <p className="text-white mr-4">{t("Follow us")}</p>
               <Link
-                to={"https://facebook.com/"}
+                to={"https://www.facebook.com/bial.farmaceutica/"}
                 target="_blank"
                 className="mr-2">
                 <FacebookIcon className="max-w-7.5" />
               </Link>
-              <Link to={"https://linkedin.com/"} target="_blank">
+              <Link
+                to={"https://www.linkedin.com/company/bial/home/"}
+                target="_blank">
                 <LinkedInIcon className="max-w-7.5" />
               </Link>
             </div>
@@ -533,13 +521,21 @@ const Main = () => {
                 </p>
               </Link>
               <p className="text-white">|</p>
-              <p className="text-white text-sm underline text-center md:text-left">
-                {t("Terms and conditions")}
-              </p>
+              <Link
+                to={`https://www.bial.com/en/terms-and-conditions`}
+                target="_blank">
+                <p className="text-white text-sm underline text-center md:text-left">
+                  {t("Terms and conditions")}
+                </p>
+              </Link>
               <p className="text-white">|</p>
-              <p className="text-white text-sm underline text-center md:text-left">
-                {t("Privacy policy")}
-              </p>
+              <Link
+                to={"https://www.bial.com/en/privacy-policy"}
+                target="_blank">
+                <p className="text-white text-sm underline text-center md:text-left">
+                  {t("Privacy policy")}
+                </p>
+              </Link>
             </div>
           </div>
           <div className="flex flex-col justify-center items-center md:items-end w-full">
