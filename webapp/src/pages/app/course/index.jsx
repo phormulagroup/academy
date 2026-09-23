@@ -6,7 +6,7 @@ import { useContext } from "react";
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import dayjs from "dayjs";
 import Lottie from "lottie-react";
@@ -15,9 +15,12 @@ import config from "../../../utils/config";
 import { getMarginClasses, getPaddingClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
 
-import { FaAward, FaRegClock } from "react-icons/fa";
-import { FaListCheck } from "react-icons/fa6";
-import { AiOutlineCloudDownload, AiOutlinePlayCircle } from "react-icons/ai";
+// import { FaAward, FaRegClock } from "react-icons/fa";
+// import { FaListCheck } from "react-icons/fa6";
+import {
+  AiOutlineCloudDownload,
+  // AiOutlinePlayCircle
+} from "react-icons/ai";
 
 import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import i18n from "../../../utils/i18n";
@@ -34,9 +37,6 @@ export default function CourseDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
-
-  let { slug } = useParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) getData();
@@ -218,64 +218,64 @@ export default function CourseDetails() {
     );
   }
 
-  function hasCertificate(course) {
-    return course?.id_course_certificate ? true : false;
-  }
+  // function hasCertificate(course) {
+  //   return course?.id_course_certificate ? true : false;
+  // }
 
-  function formatDuration(hours, minutes) {
-    let duration = "";
-    if (hours) duration += `${hours} h`;
-    if (minutes) duration += ` ${minutes} m`;
-    return duration.trim();
-  }
+  // function formatDuration(hours, minutes) {
+  //   let duration = "";
+  //   if (hours) duration += `${hours} h`;
+  //   if (minutes) duration += ` ${minutes} m`;
+  //   return duration.trim();
+  // }
 
-  function countVideosCourse(modules) {
-    if (!modules || modules.length === 0) return 0;
+  // function countVideosCourse(modules) {
+  //   if (!modules || modules.length === 0) return 0;
 
-    let videoCount = 0;
-    modules.forEach((module) => {
-      if (module.items && Array.isArray(module.items)) {
-        module.items.forEach((item) => {
-          if (item.type === "topic" && item.content) {
-            try {
-              const content =
-                typeof item.content === "string"
-                  ? JSON.parse(item.content)
-                  : item.content;
-              if (content?.content && Array.isArray(content.content)) {
-                content.content.forEach((block) => {
-                  if (block.type === "Video" && block.props?.link) {
-                    videoCount++;
-                  }
-                });
-              }
-            } catch {
-              console.log("Error parsing content for item:", item);
-            }
-          }
-        });
-      }
-    });
+  //   let videoCount = 0;
+  //   modules.forEach((module) => {
+  //     if (module.items && Array.isArray(module.items)) {
+  //       module.items.forEach((item) => {
+  //         if (item.type === "topic" && item.content) {
+  //           try {
+  //             const content =
+  //               typeof item.content === "string"
+  //                 ? JSON.parse(item.content)
+  //                 : item.content;
+  //             if (content?.content && Array.isArray(content.content)) {
+  //               content.content.forEach((block) => {
+  //                 if (block.type === "Video" && block.props?.link) {
+  //                   videoCount++;
+  //                 }
+  //               });
+  //             }
+  //           } catch {
+  //             console.log("Error parsing content for item:", item);
+  //           }
+  //         }
+  //       });
+  //     }
+  //   });
 
-    return videoCount;
-  }
+  //   return videoCount;
+  // }
 
-  function countActiveTests(modules) {
-    if (!modules || modules.length === 0) return 0;
+  // function countActiveTests(modules) {
+  //   if (!modules || modules.length === 0) return 0;
 
-    let activeTestCount = 0;
-    modules.forEach((module) => {
-      if (module.items && Array.isArray(module.items)) {
-        module.items.forEach((item) => {
-          if (item.type === "test" && item.status === "published") {
-            activeTestCount++;
-          }
-        });
-      }
-    });
+  //   let activeTestCount = 0;
+  //   modules.forEach((module) => {
+  //     if (module.items && Array.isArray(module.items)) {
+  //       module.items.forEach((item) => {
+  //         if (item.type === "test" && item.status === "published") {
+  //           activeTestCount++;
+  //         }
+  //       });
+  //     }
+  //   });
 
-    return activeTestCount;
-  }
+  //   return activeTestCount;
+  // }
 
   function getCertificateIconClass() {
     return windowDimension.width <= 320
@@ -293,50 +293,50 @@ export default function CourseDetails() {
                 : "w-[90px] h-[90px] right-[24px] bottom-[-40px]";
   }
 
-  function getCourseInfoItems(course, modules) {
-    const items = [];
+  // function getCourseInfoItems(course, modules) {
+  //   const items = [];
 
-    // Informações do certificado
-    items.push({
-      id: "certificate",
-      icon: FaAward,
-      label: hasCertificate(course)
-        ? t("With certificate")
-        : t("Without certificate"),
-    });
+  //   // Informações do certificado
+  //   items.push({
+  //     id: "certificate",
+  //     icon: FaAward,
+  //     label: hasCertificate(course)
+  //       ? t("With certificate")
+  //       : t("Without certificate"),
+  //   });
 
-    // Vídeos do curso
-    const videoCount = countVideosCourse(modules);
-    items.push({
-      id: "videos",
-      icon: AiOutlinePlayCircle,
-      label: `${videoCount} ${videoCount === 1 ? t("Video") : t("Videos")}`,
-    });
+  //   // Vídeos do curso
+  //   const videoCount = countVideosCourse(modules);
+  //   items.push({
+  //     id: "videos",
+  //     icon: AiOutlinePlayCircle,
+  //     label: `${videoCount} ${videoCount === 1 ? t("Video") : t("Videos")}`,
+  //   });
 
-    // Duração do curso
-    const duration =
-      course.settings?.duration_hours || course.settings?.duration_minutes
-        ? formatDuration(
-            course.settings.duration_hours,
-            course.settings.duration_minutes,
-          )
-        : t("No duration");
-    items.push({
-      id: "duration",
-      icon: FaRegClock,
-      label: duration,
-    });
+  //   // Duração do curso
+  //   const duration =
+  //     course.settings?.duration_hours || course.settings?.duration_minutes
+  //       ? formatDuration(
+  //           course.settings.duration_hours,
+  //           course.settings.duration_minutes,
+  //         )
+  //       : t("No duration");
+  //   items.push({
+  //     id: "duration",
+  //     icon: FaRegClock,
+  //     label: duration,
+  //   });
 
-    // Testes ativos do curso
-    const testCount = countActiveTests(modules);
-    items.push({
-      id: "tests",
-      icon: FaListCheck,
-      label: `${testCount} ${testCount === 1 ? t("Active Test") : t("Active Tests")}`,
-    });
+  //   // Testes ativos do curso
+  //   const testCount = countActiveTests(modules);
+  //   items.push({
+  //     id: "tests",
+  //     icon: FaListCheck,
+  //     label: `${testCount} ${testCount === 1 ? t("Active Test") : t("Active Tests")}`,
+  //   });
 
-    return items;
-  }
+  //   return items;
+  // }
 
   return (
     <div className="bg-[#FFFFFF] relative">
@@ -583,14 +583,13 @@ export default function CourseDetails() {
                             </div>
                           )}
 
-                          {/* Informações do curso */}
-                          {(() => {
+                          {/* INFO SECTION */}
+                          {/* (() => {
                             const infoItems = getCourseInfoItems(
                               item.course,
                               item.modules,
                             );
 
-                            // For list view, split into 2 groups (left and right)
                             if (
                               viewType === "list" &&
                               windowDimension.width > 640
@@ -670,7 +669,6 @@ export default function CourseDetails() {
                                 </div>
                               );
                             }
-                            // Default grid layout for grid/mobile view - split into left and right groups
                             const leftGroup = infoItems.slice(0, 2);
                             const rightGroup = infoItems.slice(2);
                             return (
@@ -755,7 +753,7 @@ export default function CourseDetails() {
                                 </div>
                               </div>
                             );
-                          })()}
+                          })() */}
                         </div>
                       </div>
                     </div>
