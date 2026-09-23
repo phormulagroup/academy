@@ -1,3 +1,7 @@
+/* TODO: ALTERAR FONTE PARA BIAL 
+  - TITULOS: RIKER
+  - CORPO: POPPINS
+*/
 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 :root {
@@ -37,7 +41,7 @@ a {
   font-size: 16px;
   cursor: pointer;
   transition: color 0.3s ease;
-  color: #707070 !important;
+  color: #8b9cc3 !important;
   font-weight: 600;
 }
 
@@ -48,14 +52,14 @@ a {
   bottom: -4px;
   width: 0;
   height: 2px;
-  background-color: #000; /* azul (ajusta se quiseres) */
+  background-color: #163986; /* azul (ajusta se quiseres) */
   transition:
     width 0.3s ease,
     left 0.3s ease;
 }
 
 .nav-link:hover {
-  color: #000 !important;
+  color: #163986 !important;
 }
 
 .nav-link:hover::after {
@@ -64,13 +68,13 @@ a {
 }
 
 .nav-link.active {
-  color: #000 !important;
+  color: #163986 !important;
 }
 
 .nav-link.active::after {
   width: 100%;
   left: 0;
-  background-color: #000;
+  background-color: #163986;
 }
 
 ol,
@@ -247,7 +251,7 @@ select {
 }
 
 .collapse-learning .ant-collapse-body {
-  background-color: #eaeaea;
+  background-color: #c5cee1;
   border: 0 !important;
   padding: 20px !important;
 }
@@ -426,8 +430,8 @@ select {
 
 .button-back-learning-header {
   background-color: transparent !important;
-  border: 2px solid #010202;
-  color: #010202 !important;
+  border: 2px solid #00b9d6;
+  color: #00b9d6 !important;
   border-style: dashed;
   border-radius: 40px !important;
   font-size: 16px !important;
@@ -435,17 +439,17 @@ select {
 }
 
 .button-back-learning-header:hover {
-  background-color: #010202 !important;
+  background-color: #00b9d6 !important;
   color: #fff !important;
-  border: 2px solid #010202 !important;
+  border: 2px solid #00b9d6 !important;
 }
 
 .button-learning-header {
   background-color: transparent !important;
-  border: 2px solid #010202;
-  color: #010202 !important;
+  border: 2px solid #00b9d6;
+  color: #00b9d6 !important;
   border-radius: 5px !important;
-  font-size: 16px !important;
+  font-size: 14px !important;
   height: 50px !important;
   min-width: 50px !important;
 }
@@ -457,8 +461,8 @@ select {
 }
 
 .button-learning-header:hover {
-  background-color: #010202 !important;
-  border: 2px solid #010202 !important;
+  background-color: #00b9d6 !important;
+  border: 2px solid #00b9d6 !important;
   color: #fff !important;
 }
 
@@ -724,6 +728,73 @@ select {
   color: #163986 !important;
 }
 
+.course-button-previous {
+  border: 2px solid #163986 !important;
+  background-color: white !important;
+  color: #163986 !important;
+  border-radius: 5px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.course-button-previous:hover {
+  background-color: #163986 !important;
+  color: #ffffff !important;
+  border: 2px solid #163986 !important;
+}
+
+.course-button-previous-mobile {
+  border: 2px solid #ffffff !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-radius: 5px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.course-button-previous-mobile:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+.course-button-next {
+  border: 2px solid #163986 !important;
+  background-color: #163986 !important;
+  color: #ffffff !important;
+  border-radius: 5px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.course-button-next:hover {
+  background-color: #ffffff !important;
+  border: 2px solid #163986 !important;
+  color: #163986 !important;
+  font-weight: 600 !important;
+}
+
 .ant-dropdown-menu {
   border-radius: 5px !important;
 }
@@ -786,6 +857,11 @@ select {
 
 .ant-tabs-dropdown-menu-item {
   color: #163986 !important;
+}
+
+.tabs-topic .ant-tabs-ink-bar,
+.tabs-test .ant-tabs-ink-bar {
+  height: 4px !important;
 }
 
 iframe {
