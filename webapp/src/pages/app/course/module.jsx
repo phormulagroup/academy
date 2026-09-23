@@ -50,7 +50,7 @@ const Module = ({
                   console.log(item);
                   return (
                     <div
-                      className="p-4 border-solid border border-black mt-4 flex items-center cursor-pointer"
+                      className="bg-white group p-4 rounded-[5px] mt-4 flex items-center cursor-pointer hover:bg-[#FF9E83] transition-all text-[#163986] border border-[#163986] border-spacing-x-1.5 hover:border-[#FF9E83]"
                       onClick={() => selectCourseItem(item)}>
                       {progress.length > 0 &&
                       progress.filter(
@@ -61,14 +61,16 @@ const Module = ({
                           p[`id_course_${item.type}`] === item.id,
                       ).length > 0 ? (
                         <div
-                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                          <AiOutlineCheck className="text-white" />
+                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0 transition-all group-hover:bg-[#FFFFFF] group-hover:border-[#FF9E83]`}>
+                          <AiOutlineCheck className="text-white group-hover:text-[#163986]" />
                         </div>
                       ) : (
                         <div
-                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                       )}
-                      <p className="text-sm ml-2">{item.title}</p>
+                      <p className="text-sm ml-2 font-medium group-hover:text-white group-hover:font-bold">
+                        {item.title}
+                      </p>
                     </div>
                   );
                 })}

@@ -15,6 +15,8 @@ import {
   AiOutlineArrowDown,
   AiOutlineArrowUp,
   AiOutlineCheck,
+  AiFillCaretLeft,
+  AiFillCaretRight,
 } from "react-icons/ai";
 import {
   RxChevronRight,
@@ -22,6 +24,12 @@ import {
   RxExclamationTriangle,
   RxLockClosed,
 } from "react-icons/rx";
+import { FaListCheck } from "react-icons/fa6";
+import {
+  PiFileTextLight,
+  PiBookBookmark,
+  PiBookOpenLight,
+} from "react-icons/pi";
 
 import dayjs from "dayjs";
 import Topic from "./topic";
@@ -33,9 +41,6 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import CourseMaterial from "./material";
 import CourseObjection from "./objection/objection";
-import CourseIcon from "../../../assets/Curso.svg?react";
-import MaterialIcon from "../../../assets/Materiais.svg?react";
-import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
 import { Helmet } from "react-helmet";
 
 const { confirm } = Modal;
@@ -56,6 +61,7 @@ const Learning = () => {
   const [allowNext, setAllowNext] = useState(false);
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
+  const [activeKey, setActiveKey] = useState("1");
 
   const { t, i18n } = useTranslation();
 
@@ -320,7 +326,10 @@ const Learning = () => {
 
   function selectCourseItem(item) {
     setSelectedCourseItem(item);
-    closeDrawer();
+    // Only close drawer when selecting an actual topic/test item, not module headers
+    if (item.type && windowDimension.width < 1080) {
+      closeDrawer();
+    }
   }
 
   function next(changeItem, itemMetaData) {
@@ -594,14 +603,31 @@ const Learning = () => {
         close={() => setIsOpenLogout(false)}
         submit={logout}
       />
-      <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center h-25!">
+      <Header
+        className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center"
+        style={{
+          paddingLeft:
+            windowDimension.width >= 1024
+              ? "50px"
+              : windowDimension.width >= 768
+                ? "24px"
+                : "16px",
+          paddingRight:
+            windowDimension.width >= 1024
+              ? "50px"
+              : windowDimension.width >= 768
+                ? "24px"
+                : "16px",
+          height: "auto",
+          minHeight: windowDimension.width > 1080 ? "80px" : "auto",
+        }}>
         <div className="flex justify-center items-center w-full">
           {windowDimension.width > 1080 ? (
             <div className="grid grid-cols-3 gap-4 w-full">
               <div>
                 <img
                   src={logo}
-                  className="max-h-17.5 cursor-pointer"
+                  className="max-h-13.5 cursor-pointer"
                   onClick={() =>
                     navigate(`/${i18n.language}/courses/${slug}`, {
                       replace: true,
@@ -611,10 +637,21 @@ const Learning = () => {
               </div>
               <div className="flex flex-col justify-center items-center">
                 <div className="w-full flex justify-between items-center mb-2">
-                  <p className="leading-[1em] text-[24px] font-bold uppercase">
+                  <p
+                    className="leading-[1em] font-bold uppercase text-[#163986]"
+                    style={{
+                      fontSize:
+                        windowDimension.width >= 1440
+                          ? "24px"
+                          : windowDimension.width >= 1225
+                            ? "22px"
+                            : windowDimension.width >= 1081
+                              ? "20px"
+                              : "18px",
+                    }}>
                     {progressPercentage}% {t("Completed")}
                   </p>
-                  <p className="leading-1">
+                  <p className="leading-1 text-[12px] lg:text-[14px] text-[#8B9CC3]">
                     {allItems?.filter((item) =>
                       progress?.some(
                         (p) =>
@@ -656,7 +693,10 @@ const Learning = () => {
                           icon={<RxChevronLeft />}
                           className="button-learning-header mr-2"
                           onClick={() => previous()}>
-                          {t("Previous")}
+                          {windowDimension.width >= 1081 &&
+                          windowDimension.width < 1270
+                            ? ""
+                            : t("Previous")}
                         </Button>
                       )}
                     <Button
@@ -666,46 +706,208 @@ const Learning = () => {
                       className="button-learning-header"
                       onClick={() => next()}
                       disabled={!allowNext && user.id_role !== 1}>
-                      {t("Next")}
+                      {windowDimension.width >= 1081 &&
+                      windowDimension.width < 1270
+                        ? ""
+                        : t("Next")}
                     </Button>
                   </>
                 )}
               </div>
             </div>
-          ) : (
-            <div className="flex justify-between items-center w-full">
-              <img src={logo} className="max-h-17.5" />
+          ) : windowDimension.width <= 768 ? (
+            // Mobile Header (≤ 768px)
+            <div className="flex justify-between items-center w-full gap-2">
+              {/* Group 1: Progress information */}
+              <div className="flex items-center gap-4">
+                {/* Progress bar - FIRST */}
+                <div
+                  className="bg-[#C5CEE1] rounded-full overflow-hidden"
+                  style={{
+                    height: "12px",
+                    width:
+                      windowDimension.width <= 375
+                        ? "100px"
+                        : windowDimension.width >= 376 &&
+                            windowDimension.width <= 499
+                          ? "140px"
+                          : windowDimension.width >= 500 &&
+                              windowDimension.width <= 650
+                            ? "220px"
+                            : windowDimension.width >= 651 &&
+                                windowDimension.width <= 768
+                              ? "250px"
+                              : "50px",
+                    flexShrink: 0,
+                  }}>
+                  <div
+                    className="h-full bg-[#2F8351] transition-all"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+
+                {/* Progress percentage label - SECOND */}
+                <p
+                  className="font-bold uppercase text-[#163986] shrink-0 whitespace-nowrap"
+                  style={{
+                    fontSize:
+                      windowDimension.width < 375
+                        ? "12px"
+                        : windowDimension.width < 425
+                          ? "13px"
+                          : windowDimension.width < 640
+                            ? "14px"
+                            : "15px",
+                  }}>
+                  {progressPercentage}% {t("Completed")}
+                </p>
+
+                {/* Steps label - Visible only from 550px and up */}
+                {windowDimension.width >= 550 && (
+                  <p
+                    className="text-[#8B9CC3] shrink-0 font-medium"
+                    style={{
+                      fontSize: "13px",
+                    }}>
+                    {allItems?.filter((item) =>
+                      progress?.some(
+                        (p) =>
+                          p.is_completed === 1 &&
+                          p.is_deleted !== 1 &&
+                          ((p.activity_type === "topic" &&
+                            item.type === "topic" &&
+                            p.id_course_topic === item.id) ||
+                            (p.activity_type === "test" &&
+                              item.type === "test" &&
+                              p.id_course_test === item.id)),
+                      ),
+                    ).length || 0}{" "}
+                    / {allItems?.length || 0} {t("Steps")}
+                  </p>
+                )}
+              </div>
+
+              {/* Group 2: Mobile menu */}
               <MenuOutlined
-                className="text-xl"
-                onClick={() => setIsOpenDrawerMenu(true)}
+                className="text-xl shrink-0"
+                style={{ color: "#163986", cursor: "pointer" }}
+                onClick={() => (
+                  setIsOpenDrawerMenu(true),
+                  console.log("Drawer Mobile menu opened")
+                )}
               />
             </div>
-          )}
+          ) : windowDimension.width <= 1080 ? (
+            // Mobile/Tablet Header (550px to 1080px) - Single horizontal row
+            <div className="flex justify-between items-center w-full gap-2">
+              {/* Group 1: Progress information (single row) */}
+              <div className="flex items-center gap-4">
+                {/* Progress bar */}
+                <div
+                  className="bg-[#C5CEE1] rounded-full overflow-hidden"
+                  style={{
+                    height: "12px",
+                    width:
+                      windowDimension.width < 550
+                        ? "50px"
+                        : windowDimension.width < 650
+                          ? "220px"
+                          : windowDimension.width < 768
+                            ? "250px"
+                            : windowDimension.width < 850
+                              ? "280px"
+                              : "300px",
+                    flexShrink: 0,
+                  }}>
+                  <div
+                    className="h-full bg-[#2F8351] transition-all"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+
+                {/* % completed label */}
+                <p
+                  className="font-bold uppercase text-[#163986] shrink-0 whitespace-nowrap"
+                  style={{
+                    fontSize:
+                      windowDimension.width < 550
+                        ? "12px"
+                        : windowDimension.width < 768
+                          ? "14px"
+                          : windowDimension.width < 850
+                            ? "16px"
+                            : windowDimension.width < 1081
+                              ? "18px"
+                              : "20px",
+                  }}>
+                  {progressPercentage}% {t("Completed")}
+                </p>
+
+                {/* Steps label - visible from 550px and up */}
+                {windowDimension.width >= 550 && (
+                  <p
+                    className="text-[#8B9CC3] shrink-0 font-medium"
+                    style={{
+                      fontSize: "13px",
+                    }}>
+                    {allItems?.filter((item) =>
+                      progress?.some(
+                        (p) =>
+                          p.is_completed === 1 &&
+                          p.is_deleted !== 1 &&
+                          ((p.activity_type === "topic" &&
+                            item.type === "topic" &&
+                            p.id_course_topic === item.id) ||
+                            (p.activity_type === "test" &&
+                              item.type === "test" &&
+                              p.id_course_test === item.id)),
+                      ),
+                    ).length || 0}{" "}
+                    / {allItems?.length || 0} {t("Steps")}
+                  </p>
+                )}
+              </div>
+
+              {/* Group 2: Mobile/tablet menu */}
+              <MenuOutlined
+                className="text-xl shrink-0"
+                style={{ color: "#163986", cursor: "pointer" }}
+                onClick={() => (
+                  setIsOpenDrawerMenu(true),
+                  console.log("Drawer Mobile menu opened")
+                )}
+              />
+            </div>
+          ) : null}
         </div>
       </Header>
 
       <Layout>
         {windowDimension.width > 1080 ? (
           <Sider
-            width={400}
+            width={windowDimension.width > 1225 ? 400 : 350}
             className="bg-white! overflow-auto learning-sider"
             collapsed={collapsed}>
             {!collapsed && (
               <div className="flex flex-col h-full">
-                <div className="flex flex-col w-full p-6 bg-[#506BA4]">
+                <div className="flex flex-col w-full p-6 bg-[#163986]">
                   <p className="text-white">{t("Course")}</p>
                   <p className="text-[20px] font-bold text-white">
                     {data?.course?.name}
                   </p>
                 </div>
-                <div className="w-full">
+                <div className="w-full bg-[#FFFFFF]">
                   {modules?.length > 0 && (
                     <Collapse
                       className="collapse-learning"
                       size="large"
                       bordered={false}
-                      defaultActiveKey={activeModule}
                       activeKey={activeModule}
+                      onChange={(keys) =>
+                        setActiveModule(
+                          keys.length > 0 ? keys[keys.length - 1] : [],
+                        )
+                      }
                       items={modules.map((item, mInd) => {
                         return {
                           key: item.id,
@@ -722,7 +924,7 @@ const Learning = () => {
                                     className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p
-                                  className={`text-sm ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-normal"}`}
+                                  className={`text-sm text-[#163986] ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
                                   onClick={() => selectCourseItem(item)}>
                                   {item.title}
                                 </p>
@@ -748,7 +950,7 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className="p-2 pl-6 cursor-pointer flex items-center">
+                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2">
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -757,15 +959,18 @@ const Learning = () => {
                                       p[`id_course_${_t.type}`] === _t.id,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
+                                  )}
+                                  {_t.type === "test" && (
+                                    <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                   )}
                                   <p
-                                    className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>
+                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
                                     {_t.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
@@ -823,12 +1028,12 @@ const Learning = () => {
                             onClick={() => setActiveModule(content.id)}>
                             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                               {panelProps.isActive ? (
-                                <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" />
+                                <AiOutlineArrowUp className="w-3.75 h-3.75 text-black" />
                               ) : (
-                                <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />
+                                <AiOutlineArrowDown className="w-3.75 h-3.75 text-black" />
                               )}
                             </div>
-                            <p>
+                            <p className="text-[#506BA4]">
                               {topics && topics.length > 0
                                 ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}`
                                 : ""}{" "}
@@ -844,159 +1049,103 @@ const Learning = () => {
             )}
           </Sider>
         ) : null}
-        <Content>
-          <div className="h-[calc(100vh-100px)] flex flex-col justify-between w-full relative">
-            {windowDimension.width > 1080 && (
-              <Button
-                variant="solid"
-                color="yellow"
-                className="absolute! top-20 -left-6! h-12! w-12! rounded-full! flex justify-center items-center"
-                onClick={() => setCollapsed(!collapsed)}
-                icon={
-                  collapsed ? (
-                    <ArrowRight className="w-6! h-6! text-black!" />
-                  ) : (
-                    <ArrowLeft className="w-6! h-6! text-black!" />
-                  )
-                }></Button>
-            )}
-            <Drawer
-              open={isOpenDrawerMenu}
-              size={"80%"}
-              onClose={closeDrawer}
-              maskClosable={false}
-              extra={[]}
-              className="drawer-learning">
-              <div className="flex flex-col h-full">
-                <div className="absolute top-5 right-5 flex justify-end">
-                  <AiFillCloseCircle
-                    className="text-white text-3xl"
-                    onClick={closeDrawer}
-                  />
-                </div>
-                <div className="flex flex-col w-full p-6 bg-[#010202]">
-                  <p className="text-white">{t("Course")}</p>
-                  <p className="text-[20px] font-bold text-white">
-                    {data?.course?.name}
-                  </p>
-                </div>
-                <div className="w-full">
-                  {modules?.length > 0 && (
-                    <Collapse
-                      className="collapse-learning"
-                      size="large"
-                      bordered={false}
-                      defaultActiveKey={[
-                        selectedCourseItem?.type === "module"
-                          ? selectedCourseItem?.id
-                          : selectedCourseItem?.id_course_module,
-                      ]}
-                      items={modules.map((item, mInd) => {
-                        return {
-                          key: item.id,
-                          label: (
-                            <div
-                              className="flex flex-col"
-                              onClick={() => setActiveModule(item.id)}>
-                              <div className="p-2 cursor-pointer flex items-center">
-                                {progress.length > 0 &&
-                                progress.filter(
-                                  (p) =>
-                                    p.activity_type === "module" &&
-                                    p.id_course_module === item.id &&
-                                    p.is_completed === 1 &&
-                                    p.is_deleted !== 1,
-                                ).length > 0 ? (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                    <AiOutlineCheck className="text-white" />
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                )}
-                                <p
-                                  className={`text-sm ml-2`}
-                                  onClick={() => selectCourseItem(item)}>
-                                  {item.title}
-                                </p>
-                                {data?.course?.settings.progression_type ===
-                                "linear"
-                                  ? mInd > 0 &&
-                                    progress.filter(
-                                      (p) =>
-                                        p.activity_type === "module" &&
-                                        p.id_course_module ===
-                                          modules[mInd - 1].id &&
-                                        p.is_completed === 1 &&
-                                        p.is_deleted !== 1,
-                                    ).length === 0 && (
-                                      <div className="flex justify-center items-center ml-4">
-                                        <RxLockClosed className="w-3.75 h-3.75" />
-                                      </div>
-                                    )
-                                  : null}
-                              </div>
-                            </div>
-                          ),
-                          children: (
-                            <div className="flex flex-col">
-                              {item.items.map((_t, _i) => (
-                                <div
-                                  onClick={() => selectCourseItem(_t)}
-                                  className="p-2 pl-6 cursor-pointer flex items-center">
+        <Layout
+          style={{ flex: 1, flexDirection: "column", position: "relative" }}>
+          {windowDimension.width > 1080 && (
+            <Button
+              variant="solid"
+              style={{
+                backgroundColor: "#FFC600",
+                position: "absolute",
+                top: "80px",
+                left: "-24px",
+                zIndex: 50,
+              }}
+              className="h-12! w-12! rounded-full! flex justify-center items-center"
+              onClick={() => setCollapsed(!collapsed)}
+              icon={
+                collapsed ? (
+                  <ArrowRight className="w-6! h-6! text-black!" />
+                ) : (
+                  <ArrowLeft className="w-6! h-6! text-black!" />
+                )
+              }
+            />
+          )}
+          <Content style={{ flex: 1, overflow: "hidden" }}>
+            <div className="flex-1 flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
+              <Drawer
+                open={isOpenDrawerMenu}
+                size={"80%"}
+                onClose={closeDrawer}
+                maskClosable={false}
+                extra={[]}
+                className="drawer-learning">
+                <div className="flex flex-col h-full">
+                  <div className="absolute top-5 right-5 flex justify-end">
+                    <AiFillCloseCircle
+                      className="text-white text-3xl"
+                      onClick={closeDrawer}
+                    />
+                  </div>
+                  <div className="flex flex-col w-full p-6 bg-[#163986]">
+                    <p className="text-white">{t("Course")}</p>
+                    <p className="text-[20px] font-bold text-white">
+                      {data?.course?.name}
+                    </p>
+                  </div>
+                  <div className="w-full">
+                    {modules?.length > 0 && (
+                      <Collapse
+                        className="collapse-learning"
+                        size="large"
+                        bordered={false}
+                        activeKey={activeModule}
+                        onChange={(keys) =>
+                          setActiveModule(
+                            keys.length > 0 ? keys[keys.length - 1] : [],
+                          )
+                        }
+                        items={modules.map((item, mInd) => {
+                          return {
+                            key: item.id,
+                            label: (
+                              <div className="flex flex-col">
+                                <div className="p-2 cursor-pointer flex items-center">
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
+                                      p.activity_type === "module" &&
+                                      p.id_course_module === item.id &&
                                       p.is_completed === 1 &&
-                                      p.is_deleted !== 1 &&
-                                      p.activity_type === _t.type &&
-                                      p[`id_course_${_t.type}`] === _t.id,
+                                      p.is_deleted !== 1,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                   )}
                                   <p
-                                    className={`text-sm ml-2 ${selectedCourseItem?.id === _t.id ? "font-bold" : ""}`}>
-                                    {_t.title}
+                                    className={`text-sm ml-2 text-[#163986] ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      selectCourseItem(item);
+                                    }}>
+                                    {item.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
                                   "linear"
-                                    ? ((_i > 0 && mInd === 0) ||
-                                        (mInd > 0 && _i >= 0)) &&
-                                      progress.filter((p) =>
-                                        mInd > 0 && _i === 0
-                                          ? p.activity_type === "topic"
-                                            ? p.id_course_topic ===
-                                                modules[mInd - 1].items[
-                                                  modules[mInd - 1].items
-                                                    .length - 1
-                                                ]?.id &&
-                                              p.is_completed === 1 &&
-                                              p.is_deleted !== 1
-                                            : p.id_course_test ===
-                                                modules[mInd - 1].items[
-                                                  modules[mInd - 1].items
-                                                    .length - 1
-                                                ]?.id &&
-                                              p.is_completed === 1 &&
-                                              p.is_deleted !== 1
-                                          : p.activity_type === "topic"
-                                            ? p.id_course_topic ===
-                                                modules[mInd].items[_i - 1]
-                                                  ?.id &&
-                                              p.is_completed === 1 &&
-                                              p.is_deleted !== 1
-                                            : p.id_course_test ===
-                                                modules[mInd].items[_i - 1]
-                                                  ?.id &&
-                                              p.is_completed === 1 &&
-                                              p.is_deleted !== 1,
+                                    ? mInd > 0 &&
+                                      progress.filter(
+                                        (p) =>
+                                          p.activity_type === "module" &&
+                                          p.id_course_module ===
+                                            modules[mInd - 1].id &&
+                                          p.is_completed === 1 &&
+                                          p.is_deleted !== 1,
                                       ).length === 0 && (
                                         <div className="flex justify-center items-center ml-4">
                                           <RxLockClosed className="w-3.75 h-3.75" />
@@ -1004,255 +1153,428 @@ const Learning = () => {
                                       )
                                     : null}
                                 </div>
-                              ))}
+                              </div>
+                            ),
+                            children: (
+                              <div className="flex flex-col">
+                                {item.items.map((_t, _i) => (
+                                  <div
+                                    onClick={() => selectCourseItem(_t)}
+                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2">
+                                    {progress.length > 0 &&
+                                    progress.filter(
+                                      (p) =>
+                                        p.is_completed === 1 &&
+                                        p.is_deleted !== 1 &&
+                                        p.activity_type === _t.type &&
+                                        p[`id_course_${_t.type}`] === _t.id,
+                                    ).length > 0 ? (
+                                      <div
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
+                                        <AiOutlineCheck className="text-white" />
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
+                                    )}
+                                    {_t.type === "test" && (
+                                      <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
+                                    )}
+                                    <p
+                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
+                                      {_t.title}
+                                    </p>
+                                    {data?.course?.settings.progression_type ===
+                                    "linear"
+                                      ? ((_i > 0 && mInd === 0) ||
+                                          (mInd > 0 && _i >= 0)) &&
+                                        progress.filter((p) =>
+                                          mInd > 0 && _i === 0
+                                            ? p.activity_type === "topic"
+                                              ? p.id_course_topic ===
+                                                  modules[mInd - 1].items[
+                                                    modules[mInd - 1].items
+                                                      .length - 1
+                                                  ]?.id &&
+                                                p.is_completed === 1 &&
+                                                p.is_deleted !== 1
+                                              : p.id_course_test ===
+                                                  modules[mInd - 1].items[
+                                                    modules[mInd - 1].items
+                                                      .length - 1
+                                                  ]?.id &&
+                                                p.is_completed === 1 &&
+                                                p.is_deleted !== 1
+                                            : p.activity_type === "topic"
+                                              ? p.id_course_topic ===
+                                                  modules[mInd].items[_i - 1]
+                                                    ?.id &&
+                                                p.is_completed === 1 &&
+                                                p.is_deleted !== 1
+                                              : p.id_course_test ===
+                                                  modules[mInd].items[_i - 1]
+                                                    ?.id &&
+                                                p.is_completed === 1 &&
+                                                p.is_deleted !== 1,
+                                        ).length === 0 && (
+                                          <div className="flex justify-center items-center ml-4">
+                                            <RxLockClosed className="w-3.75 h-3.75" />
+                                          </div>
+                                        )
+                                      : null}
+                                  </div>
+                                ))}
+                              </div>
+                            ),
+                          };
+                        })}
+                        expandIconPlacement="end"
+                        expandIcon={(panelProps) => {
+                          let content = modules.filter(
+                            (item) => item.id === parseInt(panelProps.panelKey),
+                          )[0];
+                          let topics = content.items?.filter(
+                            (_t) => _t.type === "topic",
+                          );
+                          let tests = content.items?.filter(
+                            (_t) => _t.type === "test",
+                          );
+                          return (
+                            <div className="flex justify-center items-center">
+                              <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
+                                {panelProps.isActive ? (
+                                  <AiOutlineArrowUp className="w-3.75 h-3.75 text-black" />
+                                ) : (
+                                  <AiOutlineArrowDown className="w-3.75 h-3.75 text-black" />
+                                )}
+                              </div>
+                              <p className="text-[#506BA4]">
+                                {topics && topics.length > 0
+                                  ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}`
+                                  : ""}{" "}
+                                {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                              </p>
                             </div>
-                          ),
-                        };
-                      })}
-                      expandIconPlacement="end"
-                      expandIcon={(panelProps) => {
-                        let content = modules.filter(
-                          (item) => item.id === parseInt(panelProps.panelKey),
-                        )[0];
-                        let topics = content.items?.filter(
-                          (_t) => _t.type === "topic",
-                        );
-                        let tests = content.items?.filter(
-                          (_t) => _t.type === "test",
-                        );
-                        return (
-                          <div className="flex justify-center items-center">
-                            <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                              {panelProps.isActive ? (
-                                <AiOutlineArrowUp className="w-3.75 h-3.75 text-white" />
-                              ) : (
-                                <AiOutlineArrowDown className="w-3.75 h-3.75 text-white" />
-                              )}
-                            </div>
-                            <p>
-                              {topics
-                                ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}`
-                                : ""}{" "}
-                              {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
-                            </p>
-                          </div>
-                        );
-                      }}
-                    />
-                  )}
+                          );
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Drawer>
-            <div className="overflow-y-auto">
-              <div className="flex lg:hidden justify-between bg-white p-6 gap-8">
-                {selectedCourseItem?.type && (
-                  <>
-                    {allItems &&
-                      allItems.length > 0 &&
-                      selectedCourseItem.id !== allItems[0].id && (
-                        <Button
-                          size="large"
-                          icon={<RxChevronLeft />}
-                          className="button-learning-header mr-2"
-                          onClick={() => previous()}></Button>
-                      )}
-                  </>
-                )}
-                <div className="flex flex-col justify-center items-center w-full">
-                  <p className="leading-[1em] text-[16px] lg:text-[24px] font-bold uppercase mb-2">
-                    {progressPercentage}% {t("Complete")}
-                  </p>
-                  <Progress
-                    strokeColor={"#2F8351"}
-                    percent={progressPercentage}
-                    className="w-full"
-                    showInfo={false}
-                  />
-                </div>
-
-                {selectedCourseItem?.type && (
-                  <>
-                    <Button
-                      size="large"
-                      icon={<RxChevronRight />}
-                      iconPlacement="end"
-                      className="button-learning-header"
-                      onClick={() => next()}
-                      disabled={!allowNext && user.id_role !== 1}></Button>
-                  </>
-                )}
-              </div>
-              <div className="p-8 lg:pl-12!">
-                {progress?.length > 0 &&
-                progress.filter(
-                  (p) =>
-                    p.activity_type === selectedCourseItem?.type &&
-                    p[`id_course_${selectedCourseItem?.type}`] ===
-                      selectedCourseItem?.id &&
-                    p.is_completed === 1 &&
-                    p.is_deleted !== 1,
-                ).length > 0 ? (
-                  <div className="p-4 bg-black flex justify-between items-center">
-                    <p className="text-[20px] text-white">
+              </Drawer>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 md:p-6 lg:p-8 lg:pl-12!">
+                  {progress?.length > 0 &&
+                  progress.filter(
+                    (p) =>
+                      p.activity_type === selectedCourseItem?.type &&
+                      p[`id_course_${selectedCourseItem?.type}`] ===
+                        selectedCourseItem?.id &&
+                      p.is_completed === 1 &&
+                      p.is_deleted !== 1,
+                  ).length > 0 ? (
+                    // Title of the module preview
+                    <div className="p-4 bg-[#C5CEE1] flex justify-between items-center rounded-[5px]">
+                      <p
+                        className="text-[#163986] font-bold"
+                        style={{
+                          fontSize:
+                            windowDimension.width < 425
+                              ? "18px"
+                              : windowDimension.width < 768
+                                ? "19px"
+                                : windowDimension.width < 1024
+                                  ? "20px"
+                                  : windowDimension.width < 1225
+                                    ? "22px"
+                                    : windowDimension.width < 1440
+                                      ? "23px"
+                                      : "24px",
+                        }}>
+                        {selectedCourseItem?.title}
+                      </p>
+                      <div className="p-4 bg-[#2F8351] rounded-[5px]">
+                        <p
+                          className="text-white"
+                          style={{
+                            fontSize:
+                              windowDimension.width < 425
+                                ? "14px"
+                                : windowDimension.width < 768
+                                  ? "14px"
+                                  : windowDimension.width < 1024
+                                    ? "14px"
+                                    : windowDimension.width < 1225
+                                      ? "14px"
+                                      : windowDimension.width < 1440
+                                        ? "15px"
+                                        : "16px",
+                          }}>
+                          {t("Completed")}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p
+                      className="text-[#163986] font-bold text-center md:text-left"
+                      style={{
+                        fontSize:
+                          windowDimension.width < 425
+                            ? "18px"
+                            : windowDimension.width < 768
+                              ? "19px"
+                              : windowDimension.width < 1024
+                                ? "20px"
+                                : windowDimension.width < 1225
+                                  ? "22px"
+                                  : windowDimension.width < 1440
+                                    ? "23px"
+                                    : "24px",
+                      }}>
                       {selectedCourseItem?.title}
                     </p>
-                    <div className="p-4 bg-[#2F8351]">
-                      <p className="text-white text-[16px]">{t("Completed")}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p
-                    className={`${windowDimension.width < 768 ? "text-[20px] text-center" : "text-[26px]"} text-black font-bold`}>
-                    {selectedCourseItem?.title}
-                  </p>
-                )}
-                {selectedCourseItem &&
-                Object.keys(selectedCourseItem).length > 0 &&
-                (selectedCourseItem.type === "topic" ||
-                  selectedCourseItem.type === "test") &&
-                (data.course.material || data.course.objection) ? (
-                  <Tabs
-                    centered={windowDimension.width < 768}
-                    className={`tabs-${selectedCourseItem.type}`}
-                    items={[
-                      {
-                        key: "1",
-                        label: (
-                          <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                            <CourseIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
-                            <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-                              {t("Course")}
-                            </p>
-                          </div>
-                        ),
-                        forceRender: true,
-                        children:
-                          selectedCourseItem.type === "topic" ? (
-                            <Topic
-                              course={data.course}
-                              progress={progress}
-                              selectedCourseItem={selectedCourseItem}
-                              setAllowNext={setAllowNext}
-                              modules={modules}
-                              allItems={allItems}
-                              collapsed={collapsed}
-                            />
-                          ) : (
-                            <Test
-                              course={data.course}
-                              progress={progress}
-                              selectedCourseItem={selectedCourseItem}
-                              setAllowNext={setAllowNext}
-                              modules={modules}
-                              allItems={allItems}
-                              metaData={metaData}
-                              setMetaData={setMetaData}
-                              updateProgress={updateProgress}
-                              next={next}
-                            />
-                          ),
-                      },
-                      data.course.material &&
-                        data.course.material.length > 0 && {
-                          key: "2",
-                          label: (
-                            <div className="flex flex-col lg:flex-row p-2 justify-center items-center">
-                              <MaterialIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
-                              <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-                                {t("Materials")}
-                              </p>
-                            </div>
-                          ),
-                          children: <CourseMaterial data={data.course} />,
-                        },
-                      data.course.objection &&
-                        data.course.objection.length > 0 && {
-                          key: "3",
-                          label: (
-                            <div className="flex flex-col lg:flex-row  p-2 justify-center items-center">
-                              <ObjectionIcon className="w-4 h-4 sm:w-6 sm:h-6 sm:mr-2" />{" "}
-                              <p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-                                {t("Objection books")}
-                              </p>
-                            </div>
-                          ),
-                          children: <CourseObjection data={data.course} />,
-                        },
-                    ].filter(Boolean)}
-                  />
-                ) : selectedCourseItem?.type === "topic" ? (
-                  <Topic
-                    course={data.course}
-                    progress={progress}
-                    selectedCourseItem={selectedCourseItem}
-                    setAllowNext={setAllowNext}
-                    modules={modules}
-                    allItems={allItems}
-                  />
-                ) : selectedCourseItem?.type === "test" ? (
-                  <Test
-                    course={data?.course}
-                    progress={progress}
-                    selectedCourseItem={selectedCourseItem}
-                    setAllowNext={setAllowNext}
-                    modules={modules}
-                    allItems={allItems}
-                    metaData={metaData}
-                    setMetaData={setMetaData}
-                    updateProgress={updateProgress}
-                    next={next}
-                  />
-                ) : null}
-                {selectedCourseItem &&
+                  )}
+                  {selectedCourseItem &&
                   Object.keys(selectedCourseItem).length > 0 &&
-                  !selectedCourseItem.type && (
-                    <Module
+                  (selectedCourseItem.type === "topic" ||
+                    selectedCourseItem.type === "test") &&
+                  (data?.course?.material || data?.course?.objection) ? (
+                    <Tabs
+                      activeKey={activeKey}
+                      onChange={(key) => setActiveKey(key)}
+                      centered={windowDimension.width < 768}
+                      className={`tabs-${selectedCourseItem.type}`}
+                      items={[
+                        {
+                          key: "1",
+                          label: (
+                            <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                              <PiFileTextLight
+                                className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
+                                  activeKey === "1"
+                                    ? "text-[#163986]"
+                                    : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                }`}
+                              />
+                              <p
+                                className={`font-bold mt-2 sm:mt-0 transition ${
+                                  activeKey === "1"
+                                    ? "text-[#163986]"
+                                    : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                }`}
+                                style={{
+                                  fontSize:
+                                    windowDimension.width < 425
+                                      ? "14px"
+                                      : windowDimension.width >= 425 &&
+                                          windowDimension.width <= 767
+                                        ? "15px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width <= 1023
+                                          ? "16px"
+                                          : windowDimension.width >= 1024 &&
+                                              windowDimension.width <= 1224
+                                            ? "18px"
+                                            : windowDimension.width >= 1225 &&
+                                                windowDimension.width <= 1439
+                                              ? "19px"
+                                              : windowDimension.width >= 1440
+                                                ? "20px"
+                                                : "16px",
+                                }}>
+                                {t("Topic")}
+                              </p>
+                            </div>
+                          ),
+                          forceRender: true,
+                          children:
+                            selectedCourseItem.type === "topic" ? (
+                              <Topic
+                                course={data.course}
+                                progress={progress}
+                                selectedCourseItem={selectedCourseItem}
+                                setAllowNext={setAllowNext}
+                                modules={modules}
+                                allItems={allItems}
+                                collapsed={collapsed}
+                              />
+                            ) : (
+                              <Test
+                                course={data.course}
+                                progress={progress}
+                                selectedCourseItem={selectedCourseItem}
+                                setAllowNext={setAllowNext}
+                                modules={modules}
+                                allItems={allItems}
+                                metaData={metaData}
+                                setMetaData={setMetaData}
+                                updateProgress={updateProgress}
+                                next={next}
+                              />
+                            ),
+                        },
+                        data.course.material &&
+                          data.course.material.length > 0 && {
+                            key: "2",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiBookBookmark
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
+                                    activeKey === "2"
+                                      ? "text-[#163986]"
+                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                  }`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 transition ${
+                                    activeKey === "2"
+                                      ? "text-[#163986]"
+                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                  }`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width < 425
+                                        ? "14px"
+                                        : windowDimension.width >= 425 &&
+                                            windowDimension.width <= 767
+                                          ? "15px"
+                                          : windowDimension.width >= 768 &&
+                                              windowDimension.width <= 1023
+                                            ? "16px"
+                                            : windowDimension.width >= 1024 &&
+                                                windowDimension.width <= 1224
+                                              ? "18px"
+                                              : windowDimension.width >= 1225 &&
+                                                  windowDimension.width <= 1439
+                                                ? "19px"
+                                                : windowDimension.width >= 1440
+                                                  ? "20px"
+                                                  : "16px",
+                                  }}>
+                                  {t("Materials")}
+                                </p>
+                              </div>
+                            ),
+                            children: <CourseMaterial data={data.course} />,
+                          },
+                        data.course.objection?.tabs &&
+                          data.course.objection?.tabs.length > 0 && {
+                            key: "3",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiBookOpenLight
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
+                                    activeKey === "3"
+                                      ? "text-[#163986]"
+                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                  }`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 transition ${
+                                    activeKey === "3"
+                                      ? "text-[#163986]"
+                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
+                                  }`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width < 425
+                                        ? "14px"
+                                        : windowDimension.width >= 425 &&
+                                            windowDimension.width <= 767
+                                          ? "15px"
+                                          : windowDimension.width >= 768 &&
+                                              windowDimension.width <= 1023
+                                            ? "16px"
+                                            : windowDimension.width >= 1024 &&
+                                                windowDimension.width <= 1224
+                                              ? "18px"
+                                              : windowDimension.width >= 1225 &&
+                                                  windowDimension.width <= 1439
+                                                ? "19px"
+                                                : windowDimension.width >= 1440
+                                                  ? "20px"
+                                                  : "16px",
+                                  }}>
+                                  {t("Objection books")}
+                                </p>
+                              </div>
+                            ),
+                            children: <CourseObjection data={data.course} />,
+                          },
+                      ].filter(Boolean)}
+                    />
+                  ) : selectedCourseItem?.type === "topic" ? (
+                    <Topic
                       course={data.course}
                       progress={progress}
                       selectedCourseItem={selectedCourseItem}
+                      setAllowNext={setAllowNext}
                       modules={modules}
                       allItems={allItems}
-                      selectCourseItem={selectCourseItem}
                     />
+                  ) : selectedCourseItem?.type === "test" ? (
+                    <Test
+                      course={data?.course}
+                      progress={progress}
+                      selectedCourseItem={selectedCourseItem}
+                      setAllowNext={setAllowNext}
+                      modules={modules}
+                      allItems={allItems}
+                      metaData={metaData}
+                      setMetaData={setMetaData}
+                      updateProgress={updateProgress}
+                      next={next}
+                    />
+                  ) : null}
+                  {selectedCourseItem &&
+                    Object.keys(selectedCourseItem).length > 0 &&
+                    !selectedCourseItem.type && (
+                      <Module
+                        course={data.course}
+                        progress={progress}
+                        selectedCourseItem={selectedCourseItem}
+                        modules={modules}
+                        allItems={allItems}
+                        selectCourseItem={selectCourseItem}
+                      />
+                    )}
+                </div>
+              </div>
+            </div>
+          </Content>
+          {selectedCourseItem && selectedCourseItem.type && (
+            <div className="p-4 md:p-6 flex items-center bg-[#FF9E83] shrink-0 px-8">
+              <div className="flex-1">
+                {allItems &&
+                  allItems.length > 0 &&
+                  selectedCourseItem.id !== allItems[0].id && (
+                    <Button
+                      icon={<RxChevronLeft />}
+                      // icon={<AiFillCaretLeft />}
+                      className={
+                        windowDimension.width <= 425
+                          ? "course-button-previous-mobile"
+                          : "course-button-previous"
+                      }
+                      onClick={() => previous()}>
+                      {windowDimension.width > 425 && t("Previous")}
+                    </Button>
                   )}
               </div>
-            </div>
-            <div>
-              <div className="p-6 flex justify-between items-center bg-[#707070]">
-                {selectedCourseItem && (
-                  <>
-                    {selectedCourseItem.type &&
-                    allItems &&
-                    allItems.length > 0 &&
-                    selectedCourseItem.id !== allItems[0].id ? (
-                      <Button
-                        size="large"
-                        icon={<RxChevronLeft />}
-                        className="button-learning-header mr-2"
-                        onClick={() => previous()}>
-                        {t("Previous")}
-                      </Button>
-                    ) : (
-                      <div></div>
-                    )}
-                    {selectedCourseItem.type && (
-                      <Button
-                        icon={<RxChevronRight />}
-                        iconPlacement="end"
-                        type="primary"
-                        size="large"
-                        onClick={() => next()}
-                        disabled={!allowNext && user.id_role !== 1}
-                        className="button-learning-footer">
-                        {t("Next")}
-                      </Button>
-                    )}
-                  </>
-                )}
+              <div className="flex-1 flex justify-end">
+                <Button
+                  icon={<RxChevronRight />}
+                  // icon={<AiFillCaretRight />}
+                  iconPlacement="end"
+                  onClick={() => next()}
+                  disabled={!allowNext && user.id_role !== 1}
+                  className="course-button-next">
+                  {windowDimension.width > 425 && t("Next")}
+                </Button>
               </div>
             </div>
-          </div>
-        </Content>
+          )}
+        </Layout>
       </Layout>
     </Layout>
   );
