@@ -1,53 +1,38 @@
 import axios from "axios";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { useState } from "react";
-import { Button, Checkbox, Collapse, Dropdown, Empty, Form, Image, Input, Pagination, Select, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
-import { FaArrowAltCircleRight, FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-import Table from "../../components/admin/table";
-import Create from "../../components/admin/notification/create";
-import Update from "../../components/admin/notification/update";
-import Delete from "../../components/admin/delete";
+import { Button, Checkbox, Form, Input, Select } from "antd";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
-import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
-import dayjs from "dayjs";
-import NotificationIcon from "../../assets/Notifications-off.svg?react";
-import { RiCloseCircleLine } from "react-icons/ri";
 import i18n from "../../utils/i18n";
-import config from "../../utils/config";
 
-import trailLoadingAnimation from "../../assets/Trail-loading.json";
-import Lottie from "lottie-react";
 import { Helmet } from "react-helmet";
 
 export default function Contact() {
-  const { languages, user, messageApi } = useContext(Context);
-  const [isLoading, setIsLoading] = useState(true);
+  const { t, languages, messageApi } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [data, setData] = useState(null);
-  const [pageSize] = useState(5);
-
-  const { t } = useTranslation();
 
   const [form] = Form.useForm();
 
   function submit(values) {
     setIsButtonLoading(true);
     axios
-      .post(endpoints.form.create, { data: { ...values, id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } })
+      .post(endpoints.form.create, {
+        data: {
+          ...values,
+          id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id,
+        },
+      })
       .then((res) => {
         console.log(res);
         setIsButtonLoading(false);
         messageApi.open({
           type: "success",
-          content: t("You message was sent successfully! We will reply as soon as possible."),
+          content: t(
+            "You message was sent successfully! We will reply as soon as possible.",
+          ),
         });
         form.resetFields();
       })
@@ -55,7 +40,9 @@ export default function Contact() {
         console.log(err);
         messageApi.open({
           type: "error",
-          content: t("An error occurred while sending your message, try again later."),
+          content: t(
+            "An error occurred while sending your message, try again later.",
+          ),
         });
         setIsButtonLoading(false);
       });
@@ -66,14 +53,31 @@ export default function Contact() {
       <Helmet>
         <meta charSet="utf-8" />
         <title>{t("Contact")} - Bial Regional Academy</title>
-        <meta name="description" content={`${t("Contact")} - Bial Regional Academy`} />
-        <meta property="og:title" content={`${t("Contact")} - Bial Regional Academy`} />
-        <meta property="og:description" content={`${t("Contact")} - Bial Regional Academy`} />
+        <meta
+          name="description"
+          content={`${t("Contact")} - Bial Regional Academy`}
+        />
+        <meta
+          property="og:title"
+          content={`${t("Contact")} - Bial Regional Academy`}
+        />
+        <meta
+          property="og:description"
+          content={`${t("Contact")} - Bial Regional Academy`}
+        />
       </Helmet>
       <div className="flex flex-col mb-10">
-        <p className="text-[30px] font-bold text-center">{t("Contact form")}</p>
-        <p className="text-center">{t("Talk with us")}</p>
-        <p className="mt-6 text-[16px]">{t("For any questions or clarifications, please send us a message through this Contact Form.")}</p>
+        <p className="text-[30px] font-bold text-center text-[#163986]">
+          {t("Contact form")}
+        </p>
+        <p className="text-[20px] text-center italic text-[#163986]">
+          {t("Talk with us")}
+        </p>
+        <p className="mt-6 text-[16px] text-[#163986]">
+          {t(
+            "For any questions or clarifications, please send us a message through this Contact Form.",
+          )}
+        </p>
       </div>
       <div className="w-full flex flex-col justify-center items-center">
         <Form
@@ -83,9 +87,13 @@ export default function Contact() {
           layout="vertical"
           validateMessages={{
             required: t("This field is required."),
-          }}
-        >
-          <Form.Item name="subject" label={t("Subject")} className="col-span-3 md:col-span-1" required>
+          }}>
+          <Form.Item
+            name="subject"
+            label={t("Subject")}
+            className="col-span-3 md:col-span-1"
+            rules={[{ required: true }]}
+            required>
             <Select
               size="large"
               className="w-full"
@@ -113,21 +121,64 @@ export default function Contact() {
               ]}
             />
           </Form.Item>
-          <Form.Item name="name" label={t("Name")} className="col-span-3 md:col-span-1" required>
+          <Form.Item
+            name="name"
+            label={t("Name")}
+            className="col-span-3 md:col-span-1"
+            rules={[{ required: true }]}
+            required>
             <Input size="large" placeholder={t("Your name")} />
           </Form.Item>
-          <Form.Item name="email" label={t("Email")} className="col-span-3 md:col-span-1" required>
+          <Form.Item
+            name="email"
+            label={t("Email")}
+            className="col-span-3 md:col-span-1"
+            rules={[
+              { required: true },
+              { type: "email", message: t("Please enter a valid email!") },
+            ]}
+            required>
             <Input size="large" placeholder={t("Your email")} />
           </Form.Item>
-          <Form.Item name="message" label={t("Message")} className="col-span-1 md:col-span-3" required>
-            <Input.TextArea maxLength={200} showCount size="large" placeholder={t("Your message")} rows={6} />
+          <Form.Item
+            name="message"
+            label={t("Message")}
+            className="col-span-1 md:col-span-3"
+            rules={[{ required: true }]}
+            required>
+            <Input.TextArea
+              maxLength={200}
+              showCount
+              size="large"
+              placeholder={t("Your message")}
+              rows={6}
+            />
           </Form.Item>
           <div className="flex col-span-1 md:col-span-3">
-            <p className="text-[12px] text-[#707070]">{t("Fields marked with * are required.")}</p>
+            <p className="text-[12px] text-[#707070]">
+              {t("Fields marked with * are required.")}
+            </p>
           </div>
           <div className="flex col-span-1 md:col-span-3">
-            <Form.Item name="acceptance" valuePropName="checked" className="mb-0!">
-              <Checkbox size="large" required>
+            <Form.Item
+              name="acceptance"
+              valuePropName="checked"
+              className="mb-0!"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (value === true) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error(
+                        t("Please check this box if you want to proceed."),
+                      ),
+                    );
+                  },
+                },
+              ]}>
+              <Checkbox size="large">
                 <p className="text-[#707070] text-[12px]">
                   {t(
                     "By submitting this Contact Form, I declare that I am familiar with this website's Privacy Policy, as well as the Terms and Conditions, available below.",
@@ -137,7 +188,12 @@ export default function Contact() {
             </Form.Item>
           </div>
           <div className="flex justify-center items-center col-span-1 md:col-span-3 mt-4 mb-6">
-            <Button size="large" type="primary" htmlType="submit" className="min-w-30" loading={isButtonLoading}>
+            <Button
+              size="large"
+              type="primary"
+              htmlType="submit"
+              className="min-w-30 main-cta-button"
+              loading={isButtonLoading}>
               {t("Send")}
             </Button>
           </div>
