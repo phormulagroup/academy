@@ -328,7 +328,7 @@ export default function CourseDetails() {
 
                     {/* Progress Content */}
                     {progress.length > 0 ? (
-                      <div className="flex-1 flex flex-col lg:flex-row w-full gap-4 lg:gap-6 lg:items-center border-0 sm:border-l sm:pl-6 border-l-[#163986]">
+                      <div className="flex-1 flex flex-col lg:flex-row w-full gap-4 lg:gap-6 items-center border-0 sm:border-l sm:pl-6 border-l-[#163986]">
                         <div className="flex-1 flex flex-col w-full">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start mb-3 gap-2 sm:gap-4">
                             <p className="text-[#163986] font-bold uppercase whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-xl">
@@ -432,7 +432,7 @@ export default function CourseDetails() {
                             ?.length || 0,
                         ) === 100 ? (
                           <Button
-                            className="min-w-50 main-cta-button w-full lg:w-auto text-xs sm:text-sm md:text-base"
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                             color="#163986"
                             variant="solid"
                             size="large"
@@ -446,7 +446,7 @@ export default function CourseDetails() {
                         ) : progress.filter((p) => p.activity_type === "enroll")
                             .length === 0 ? (
                           <Button
-                            className="min-w-50 main-cta-button w-full lg:w-auto text-xs sm:text-sm md:text-base"
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                             variant="solid"
                             size="large"
                             onClick={() => enroll()}>
@@ -454,7 +454,7 @@ export default function CourseDetails() {
                           </Button>
                         ) : (
                           <Button
-                            className="min-w-50 main-cta-button w-full lg:w-auto text-xs sm:text-sm md:text-base"
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                             color="black"
                             variant="solid"
                             size="large"
@@ -473,7 +473,7 @@ export default function CourseDetails() {
                           {t("Not enrolled")}
                         </p>
                         <Button
-                          className="min-w-50 main-cta-button w-full sm:w-auto text-xs sm:text-sm md:text-base"
+                          className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                           variant="solid"
                           size="large"
                           onClick={() => enroll()}>
