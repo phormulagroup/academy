@@ -30,45 +30,47 @@ export default function CourseObjection({ data }) {
               size="large"
               activeKey={activeKey}
               onChange={(key) => setActiveKey(key)}
-              items={data.objection.tabs.map((tabItem, _tind) => ({
-                key: String(_tind),
-                label: (
-                  <p
-                    className="font-bold text-xs sm:text-sm md:text-base"
-                    style={{
-                      fontSize:
-                        windowDimension.width >= 1225
-                          ? "16px"
-                          : windowDimension.width >= 425 &&
-                              windowDimension.width < 1225
-                            ? "14px"
-                            : "",
-                    }}>
-                    {t(tabItem.label)}
-                  </p>
-                ),
-                children: (
-                  <Collapse
-                    className="collapse-objection"
-                    size="large"
-                    bordered={false}
-                    items={tabItem.items.map((_i, _ind) => ({
-                      key: `${tabItem.label}-${_ind}`,
-                      label: (
-                        <p className="text-xs sm:text-sm md:text-base">
-                          {_i.title}
-                        </p>
-                      ),
-                      children: (
-                        <div
-                          className="prose-content text-xs sm:text-sm md:text-base"
-                          dangerouslySetInnerHTML={{ __html: _i.text }}
-                        />
-                      ),
-                    }))}
-                  />
-                ),
-              }))}
+              items={data.objection.tabs
+                .filter((tabItem) => tabItem.items && tabItem.items.length > 0)
+                .map((tabItem, _tind) => ({
+                  key: String(_tind),
+                  label: (
+                    <p
+                      className="font-bold text-xs sm:text-sm md:text-base"
+                      style={{
+                        fontSize:
+                          windowDimension.width >= 1225
+                            ? "16px"
+                            : windowDimension.width >= 425 &&
+                                windowDimension.width < 1225
+                              ? "14px"
+                              : "",
+                      }}>
+                      {t(tabItem.label)}
+                    </p>
+                  ),
+                  children: (
+                    <Collapse
+                      className="collapse-objection"
+                      size="large"
+                      bordered={false}
+                      items={tabItem.items.map((_i, _ind) => ({
+                        key: `${tabItem.label}-${_ind}`,
+                        label: (
+                          <p className="text-xs sm:text-sm md:text-base">
+                            {_i.title}
+                          </p>
+                        ),
+                        children: (
+                          <div
+                            className="prose-content text-xs sm:text-sm md:text-base"
+                            dangerouslySetInnerHTML={{ __html: _i.text }}
+                          />
+                        ),
+                      }))}
+                    />
+                  ),
+                }))}
             />
           </div>
         </div>
