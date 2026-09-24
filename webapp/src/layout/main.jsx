@@ -110,7 +110,7 @@ const Main = () => {
   }
 
   return (
-    <div className="main-container">
+    <>
       <Layout className="h-auto! min-h-screen!">
         <Logout
           open={isOpenLogout}
@@ -123,7 +123,7 @@ const Main = () => {
             open={isOpenDrawerMenu}
             size={"80%"}
             onClose={closeDrawer}
-            maskClosable={false}
+            maskClosable={true}
             extra={[]}
             className="drawer-learning">
             <div className="flex flex-col justify-between h-full">
@@ -295,7 +295,10 @@ const Main = () => {
                 <div className="p-4 pb-10">
                   <div
                     className="flex justify-center items-center cursor-pointer m-2 text-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px]"
-                    onClick={() => setIsOpenLogout(true)}>
+                    onClick={() => {
+                      closeDrawer();
+                      setIsOpenLogout(true);
+                    }}>
                     <p className="text-center">{t("Logout")}</p>
                   </div>
                 </div>
@@ -381,18 +384,11 @@ const Main = () => {
                             key: "backoffice",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]`}
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "admin" ? "active" : ""}`}
                                 to="/admin">
                                 <div className="flex items-center">
                                   <div className="w-5 mr-2"></div>
-                                  <p
-                                    className={`text-[${
-                                      currentSection === "admin"
-                                        ? "#00B9D6"
-                                        : "#163F90"
-                                    }]`}>
-                                    {t("Go to backoffice")}
-                                  </p>
+                                  <p>{t("Go to backoffice")}</p>
                                 </div>
                               </Link>
                             ),
@@ -401,18 +397,11 @@ const Main = () => {
                             key: "account",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]`}
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "account" ? "active" : ""}`}
                                 to={`/${i18n.language}/account`}>
                                 <div className="flex items-center">
                                   <div className="w-5 mr-2"></div>
-                                  <p
-                                    className={`text-[${
-                                      currentSection === "account"
-                                        ? "#00B9D6"
-                                        : "#163F90"
-                                    }]`}>
-                                    {t("My account")}
-                                  </p>
+                                  <p>{t("My account")}</p>
                                 </div>
                               </Link>
                             ),
@@ -421,18 +410,11 @@ const Main = () => {
                             key: "result",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]`}
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "result" ? "active" : ""}`}
                                 to={`/${i18n.language}/result`}>
                                 <div className="flex items-center">
                                   <div className="w-5 mr-2"></div>
-                                  <p
-                                    className={`text-[${
-                                      currentSection === "result"
-                                        ? "#00B9D6"
-                                        : "#163F90"
-                                    }]`}>
-                                    {t("Results")}
-                                  </p>
+                                  <p>{t("Results")}</p>
                                 </div>
                               </Link>
                             ),
@@ -441,7 +423,7 @@ const Main = () => {
                             key: "inbox",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]`}
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "inbox" ? "active" : ""}`}
                                 to={
                                   user.id_role === 1
                                     ? "/admin/inbox"
@@ -457,23 +439,10 @@ const Main = () => {
                                         </p>
                                       </div>
                                     ) : (
-                                      <MdNotificationsNone
-                                        className={`text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] text-[${
-                                          currentSection === "inbox"
-                                            ? "#00B9D6"
-                                            : "#163F90"
-                                        }]`}
-                                      />
+                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
                                     )}
                                   </div>
-                                  <p
-                                    className={`text-[${
-                                      currentSection === "inbox"
-                                        ? "#00B9D6"
-                                        : "#163F90"
-                                    }]`}>
-                                    {t("Inbox")}
-                                  </p>
+                                  <p>{t("Inbox")}</p>
                                 </div>
                               </Link>
                             ),
@@ -482,7 +451,7 @@ const Main = () => {
                             key: "notification",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]`}
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "notifications" ? "active" : ""}`}
                                 to={`/${i18n.language}/notifications`}>
                                 <div className="flex items-center">
                                   <div className="w-5 h-5 mr-2 flex justify-center items-center">
@@ -499,23 +468,10 @@ const Main = () => {
                                         </p>
                                       </div>
                                     ) : (
-                                      <MdNotificationsNone
-                                        className={`text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] text-[${
-                                          currentSection === "notifications"
-                                            ? "#00B9D6"
-                                            : "#163F90"
-                                        }]`}
-                                      />
+                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
                                     )}
                                   </div>
-                                  <p
-                                    className={`text-[${
-                                      currentSection === "notifications"
-                                        ? "#00B9D6"
-                                        : "#163F90"
-                                    }]`}>
-                                    {t("Notifications")}
-                                  </p>
+                                  <p>{t("Notifications")}</p>
                                 </div>
                               </Link>
                             ),
@@ -647,7 +603,7 @@ const Main = () => {
               </div>
               <div className="flex justify-center md:justify-start items-center gap-4">
                 <Link to={`/${i18n.language}/contact`}>
-                  <p className="text-white text-[12px] md:text-[13px] lg:text-[13-5px] underline text-center md:text-left">
+                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
                     {t("Contact Form")}
                   </p>
                 </Link>
@@ -655,7 +611,7 @@ const Main = () => {
                 <Link
                   to={`https://www.bial.com/en/terms-and-conditions`}
                   target="_blank">
-                  <p className="text-white text-[12px] md:text-[13px] lg:text-[13-5px] underline text-center md:text-left">
+                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
                     {t("Terms and conditions")}
                   </p>
                 </Link>
@@ -663,7 +619,7 @@ const Main = () => {
                 <Link
                   to={"https://www.bial.com/en/privacy-policy"}
                   target="_blank">
-                  <p className="text-white text-[12px] md:text-[13px] lg:text-[13-5px] underline text-center md:text-left">
+                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
                     {t("Privacy policy")}
                   </p>
                 </Link>
@@ -676,14 +632,14 @@ const Main = () => {
                   className="max-h-10 invert-[1] brightness-[0] cursor-pointer"
                 />
               </Link>
-              <p className="text-white text-[11px] md:text-[12px] lg:text-[13px] mt-6!">
+              <p className="text-white text-[11px] md:text-[12px] lg:text-[12px] mt-6!">
                 © {dayjs().year()} Bial. {t("All rights reserved.")}
               </p>
             </div>
           </div>
         </Footer>
       </Layout>
-    </div>
+    </>
   );
 };
 export default Main;

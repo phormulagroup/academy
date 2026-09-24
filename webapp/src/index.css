@@ -170,6 +170,32 @@ ul {
   color: #00b9d6 !important;
 }
 
+/* USER DROPDOWN MENU BASE STATE */
+.dropdown-user-menu-item {
+  color: #163f90 !important;
+}
+
+.dropdown-user-menu-item p {
+  color: #163f90 !important;
+}
+
+.dropdown-user-menu-item svg {
+  color: #163f90 !important;
+}
+
+/* USER DROPDOWN MENU ACTIVE STATE */
+.dropdown-user-menu-item.active {
+  color: #00b9d6 !important;
+}
+
+.dropdown-user-menu-item.active p {
+  color: #00b9d6 !important;
+}
+
+.dropdown-user-menu-item.active svg {
+  color: #00b9d6 !important;
+}
+
 /* USER DROPDOWN MENU HOVER EFFECT */
 .ant-dropdown-menu-item:has(.dropdown-user-menu-item):hover
   .dropdown-user-menu-item {
@@ -792,6 +818,19 @@ select {
   font-weight: 600 !important;
 }
 
+.main-secondary-cta-button {
+  background-color: #ffffff !important;
+  border-color: #00b9d6 !important;
+  color: #00b9d6 !important;
+  font-weight: 600 !important;
+}
+
+.main-secondary-cta-button:hover {
+  background-color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+  color: #fff !important;
+}
+
 .main-cta-button:hover {
   background-color: #ffffff !important;
   border-color: #00b9d6 !important;
@@ -928,6 +967,86 @@ select {
 
 .tabs-report .ant-tabs-tab-active .ant-tabs-tab-btn {
   font-weight: 600;
+}
+
+/* LOGOUT MODAL STYLING */
+.modal-logout .ant-modal-footer {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 12px !important;
+}
+
+.modal-logout-body {
+  padding: 8px 8px 0 8px;
+}
+
+.modal-logout-title {
+  font-weight: 700 !important;
+  color: #163986 !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+
+/* Responsive font sizes for logout modal title */
+@media screen and (max-width: 768px) {
+  .modal-logout-title {
+    font-size: 14px !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1224px) {
+  .modal-logout-title {
+    font-size: 15px !important;
+  }
+}
+
+@media screen and (min-width: 1225px) {
+  .modal-logout-title {
+    font-size: 16px !important;
+  }
+}
+
+/* Responsive font sizes for logout modal buttons */
+.modal-logout .ant-modal-footer button {
+  text-align: center !important;
+}
+
+.modal-logout .ant-modal-footer .main-secondary-cta-button,
+.modal-logout .ant-modal-footer .main-cta-button {
+  text-align: center !important;
+}
+
+@media screen and (max-width: 768px) {
+  .modal-logout .ant-modal-footer .main-secondary-cta-button,
+  .modal-logout .ant-modal-footer .main-cta-button {
+    font-size: 12px !important;
+  }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1225px) {
+  .modal-logout .ant-modal-footer .main-secondary-cta-button,
+  .modal-logout .ant-modal-footer .main-cta-button {
+    font-size: 13px !important;
+  }
+}
+
+@media screen and (min-width: 1226px) {
+  .modal-logout .ant-modal-footer .main-secondary-cta-button,
+  .modal-logout .ant-modal-footer .main-cta-button {
+    font-size: 14px !important;
+  }
+}
+
+/* Responsive footer layout for very small screens */
+@media screen and (max-width: 342px) {
+  .modal-logout .ant-modal-footer {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .modal-logout .ant-modal-footer button {
+    width: 100% !important;
+  }
 }
 
 .tabs-report .ant-tabs-tab {
