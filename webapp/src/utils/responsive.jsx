@@ -7,9 +7,9 @@
 
 export const getPaddingClasses = (windowDimension) => {
   const w = windowDimension.width;
-  if (w <= 360) {
+  if (w <= 549) {
     return "px-[24px]";
-  } else if (w >= 361 && w <= 695) {
+  } else if (w >= 550 && w <= 695) {
     return "px-[50px]";
   } else if (w >= 1536 && w <= 1550) {
     return "px-[74px]";

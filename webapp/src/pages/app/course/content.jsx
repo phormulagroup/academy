@@ -208,7 +208,9 @@ export default function CourseContent({ modules, progress, data }) {
                           )}
                           {/* Test icon - only for test type items */}
                           {_t.type === "test" && (
-                            <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-[#FFFFFF]" />
+                            <FaListCheck
+                              className={`shrink-0 w-4 h-4 sm:w-5 sm:h-5 transition-colors ${canAccess ? "text-[#163986] group-hover:text-[#FFFFFF]" : "text-[#163986] opacity-50"}`}
+                            />
                           )}
                           {/* Item title */}
                           <p

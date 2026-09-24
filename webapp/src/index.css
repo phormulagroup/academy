@@ -88,6 +88,102 @@ ul {
   font-size: 12px !important;
 }
 
+/* DRAWER MENU ACTIVE & HOVER STATES */
+.drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a,
+.drawer-learning .flex.flex-col.p-4.pt-0 a {
+  padding: 0.75rem 0.75rem !important;
+  border-radius: 5px !important;
+  transition: all 0.2s duration !important;
+  color: #00b9d6 !important;
+  font-weight: 500 !important;
+}
+
+.drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a:hover,
+.drawer-learning .flex.flex-col.p-4.pt-0 a:hover {
+  background-color: #00b9d6 !important;
+  color: #ffffff !important;
+}
+
+.drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a.active,
+.drawer-learning .flex.flex-col.p-4.pt-0 a.active {
+  background-color: #00b9d6 !important;
+  color: #ffffff !important;
+}
+
+/* DRAWER LOGOUT BUTTON */
+.drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2 {
+  padding: 0.75rem 0.75rem !important;
+  border-radius: 5px !important;
+  transition: all 0.2s duration !important;
+  color: #163986 !important;
+  font-weight: 500 !important;
+}
+
+.drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2:hover {
+  background-color: #00b9d6 !important;
+  color: #ffffff !important;
+}
+
+/* MOBILE DRAWER FONT SIZE */
+@media screen and (max-width: 1023px) {
+  .drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a,
+  .drawer-learning .flex.flex-col.p-4.pt-0 a,
+  .drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2,
+  .drawer-learning .drawer-label-text {
+    font-size: 12px !important;
+  }
+}
+
+/* TABLET DRAWER FONT SIZE 1024-1224px */
+@media screen and (min-width: 1024px) and (max-width: 1224px) {
+  .drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a,
+  .drawer-learning .flex.flex-col.p-4.pt-0 a,
+  .drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2,
+  .drawer-learning .drawer-label-text {
+    font-size: 13px !important;
+  }
+}
+
+/* TABLET DRAWER FONT SIZE 1225-1439px */
+@media screen and (min-width: 1225px) and (max-width: 1439px) {
+  .drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a,
+  .drawer-learning .flex.flex-col.p-4.pt-0 a,
+  .drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2,
+  .drawer-learning .drawer-label-text {
+    font-size: 14px !important;
+  }
+}
+
+/* DESKTOP DRAWER FONT SIZE 1440px+ */
+@media screen and (min-width: 1440px) {
+  .drawer-learning .flex.flex-col.mt-2.p-4.pb-0 a,
+  .drawer-learning .flex.flex-col.p-4.pt-0 a,
+  .drawer-learning .flex.justify-center.items-center.cursor-pointer.m-2,
+  .drawer-learning .drawer-label-text {
+    font-size: 16px !important;
+  }
+}
+
+/* LANGUAGE DROPDOWN HOVER EFFECT */
+.ant-dropdown-menu-item:has(.dropdown-language-item):hover
+  .dropdown-language-item {
+  color: #00b9d6 !important;
+}
+
+/* USER DROPDOWN MENU HOVER EFFECT */
+.ant-dropdown-menu-item:has(.dropdown-user-menu-item):hover
+  .dropdown-user-menu-item {
+  color: #00b9d6 !important;
+}
+
+.ant-dropdown-menu-item:has(.dropdown-user-menu-item):hover p {
+  color: #00b9d6 !important;
+}
+
+.ant-dropdown-menu-item:has(.dropdown-user-menu-item):hover svg {
+  color: #00b9d6 !important;
+}
+
 input,
 select,
 .ant-input-password,
@@ -690,8 +786,8 @@ select {
 }
 
 .main-cta-button {
-  background-color: #163986 !important;
-  border-color: #163986 !important;
+  background-color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
   color: #fff !important;
   font-weight: 600 !important;
 }
@@ -710,8 +806,8 @@ select {
 }
 
 .course-button-enter:hover {
-  background-color: #163986 !important;
-  border-color: #163986 !important;
+  background-color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
   color: #fff !important;
 }
 
