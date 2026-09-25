@@ -256,48 +256,7 @@ export default function CourseContent({ modules, progress, data }) {
             );
           }}
         />
-      ) : (
-        <div className="flex-1 flex flex-col justify-center items-center gap-1.5 py-12">
-          <p
-            className="text-[#163986] uppercase font-semibold"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "18px"
-                  : windowDimension.width < 768
-                    ? "18px"
-                    : windowDimension.width < 1024
-                      ? "19px"
-                      : windowDimension.width < 1225
-                        ? "19px"
-                        : windowDimension.width < 1440
-                          ? "20px"
-                          : "20px",
-            }}>
-            {t("No modules available")}
-          </p>
-          <p
-            className="text-[#163986] font-light text-center"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "14px"
-                  : windowDimension.width < 768
-                    ? "14px"
-                    : windowDimension.width < 1024
-                      ? "15px"
-                      : windowDimension.width < 1225
-                        ? "15px"
-                        : windowDimension.width < 1440
-                          ? "16px"
-                          : "16px",
-            }}>
-            {t(
-              "This course currently has no modules. Please check back later.",
-            )}
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

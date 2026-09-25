@@ -228,6 +228,47 @@ export default function CourseDetails() {
       });
   }
 
+  // Validar se a tab Course deve aparecer (módulos com items)
+  function hasCourseContent() {
+    return modules && modules.length > 0;
+  }
+
+  // Validar se a tab Materials deve aparecer
+  function hasMaterialContent() {
+    if (!data.course || !data.course.material) return false;
+    const material = data.course.material;
+    if (!Array.isArray(material) || material.length === 0) return false;
+    // Verificar se há pelo menos um material com arquivo válido
+    return material.some(
+      (m) => m && m.file && typeof m.file === "string" && m.file.trim() !== "",
+    );
+  }
+
+  // Validar se a tab Objection deve aparecer
+  function hasObjectionContent() {
+    if (!data.course || !data.course.objection) return false;
+    const objection = data.course.objection;
+    if (!objection.tabs || !Array.isArray(objection.tabs)) return false;
+    // Verificar se há pelo menos uma tab com items contendo conteúdo válido
+    return objection.tabs.some(
+      (tab) =>
+        tab &&
+        tab.items &&
+        Array.isArray(tab.items) &&
+        tab.items.length > 0 &&
+        tab.items.some(
+          (item) =>
+            item &&
+            item.title &&
+            typeof item.title === "string" &&
+            item.title.trim() !== "" &&
+            item.text &&
+            typeof item.text === "string" &&
+            item.text.trim() !== "",
+        ),
+    );
+  }
+
   function getThumbnailHeight() {
     const w = windowDimension.width;
 
@@ -487,115 +528,133 @@ export default function CourseDetails() {
             </div>
 
             {/* Segundo container */}
-            <div className="mt-6 sm:mt-8">
-              <Tabs
-                defaultActiveKey={activeKey}
-                centered={windowDimension.width < 768}
-                items={[
-                  {
-                    key: "1",
-                    label: (
-                      <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                        <PiFileTextLight
-                          className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                        />
-                        <p
-                          className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                          style={{
-                            fontSize:
-                              windowDimension.width >= 1225
-                                ? "20px"
-                                : windowDimension.width >= 768 &&
-                                    windowDimension.width < 1225
-                                  ? "18px"
-                                  : windowDimension.width >= 425 &&
-                                      windowDimension.width < 768
-                                    ? "16px"
-                                    : "",
-                          }}>
-                          {t("Course")}
-                        </p>
-                      </div>
-                    ),
-                    children: (
-                      <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
-                        <CourseContent
-                          modules={modules}
-                          progress={progress}
-                          data={data}
-                        />
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "2",
-                    label: (
-                      <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                        <PiBookBookmark
-                          className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                        />
-                        <p
-                          className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                          style={{
-                            fontSize:
-                              windowDimension.width >= 1225
-                                ? "20px"
-                                : windowDimension.width >= 768 &&
-                                    windowDimension.width < 1225
-                                  ? "18px"
-                                  : windowDimension.width >= 425 &&
-                                      windowDimension.width < 768
-                                    ? "16px"
-                                    : "",
-                          }}>
-                          {t("Materials")}
-                        </p>
-                      </div>
-                    ),
-                    children: (
-                      <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
-                        <CourseMaterial data={data.course} />
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "3",
-                    label: (
-                      <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                        <PiBookOpenLight
-                          className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                        />
-                        <p
-                          className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
-                          style={{
-                            fontSize:
-                              windowDimension.width >= 1225
-                                ? "20px"
-                                : windowDimension.width >= 768 &&
-                                    windowDimension.width < 1225
-                                  ? "18px"
-                                  : windowDimension.width >= 425 &&
-                                      windowDimension.width < 768
-                                    ? "16px"
-                                    : "",
-                          }}>
-                          {t("Objection books")}
-                        </p>
-                      </div>
-                    ),
-                    children: (
-                      <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
-                        <CourseObjection data={data.course} />
-                      </div>
-                    ),
-                  },
-                ]}
-                onChange={(key) => {
-                  setActiveKey(key);
-                }}
-                indicator={{ size: (origin) => origin - 20, align: "center" }}
-              />
-            </div>
+            {(hasCourseContent() ||
+              hasMaterialContent() ||
+              hasObjectionContent()) && (
+              <div className="mt-6 sm:mt-8">
+                <Tabs
+                  defaultActiveKey={
+                    hasCourseContent() ? "1" : hasMaterialContent() ? "2" : "3"
+                  }
+                  centered={windowDimension.width < 768}
+                  items={[
+                    ...(hasCourseContent()
+                      ? [
+                          {
+                            key: "1",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiFileTextLight
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Course")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseContent
+                                  modules={modules}
+                                  progress={progress}
+                                  data={data}
+                                />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(hasMaterialContent()
+                      ? [
+                          {
+                            key: "2",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiBookBookmark
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Materials")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseMaterial data={data.course} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(hasObjectionContent()
+                      ? [
+                          {
+                            key: "3",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify center items-center">
+                                <PiBookOpenLight
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Objection books")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseObjection data={data.course} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                  onChange={(key) => {
+                    setActiveKey(key);
+                  }}
+                  indicator={{ size: (origin) => origin - 20, align: "center" }}
+                />
+              </div>
+            )}
           </div>
           <div className="flex w-full bg-[#F7F7F7]">
             <div className="container m-auto">

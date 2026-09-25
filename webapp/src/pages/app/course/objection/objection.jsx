@@ -74,46 +74,7 @@ export default function CourseObjection({ data }) {
             />
           </div>
         </div>
-      ) : (
-        <div className="flex-1 flex flex-col justify-center items-center gap-1.5 py-12">
-          <p
-            className="text-[#163986] uppercase font-semibold text-center"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "18px"
-                  : windowDimension.width < 768
-                    ? "18px"
-                    : windowDimension.width < 1024
-                      ? "19px"
-                      : windowDimension.width < 1225
-                        ? "19px"
-                        : windowDimension.width < 1440
-                          ? "20px"
-                          : "20px",
-            }}>
-            {t("No objection books available")}
-          </p>
-          <p
-            className="text-[#163986] font-light text-center"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "14px"
-                  : windowDimension.width < 768
-                    ? "14px"
-                    : windowDimension.width < 1024
-                      ? "15px"
-                      : windowDimension.width < 1225
-                        ? "15px"
-                        : windowDimension.width < 1440
-                          ? "16px"
-                          : "16px",
-            }}>
-            {t("Please check back later for objection books.")}
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

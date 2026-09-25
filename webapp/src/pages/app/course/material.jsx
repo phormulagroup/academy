@@ -1,11 +1,7 @@
-import { useContext } from "react";
 import config from "../../../utils/config";
 import { PiBookBookmark } from "react-icons/pi";
-import { Context } from "../../../utils/context";
 
 export default function CourseMaterial({ data }) {
-  const { t, windowDimension } = useContext(Context);
-
   function downloadFile(item) {
     window.open(`${config.server_ip}/media/${item.file}`, "_blank");
   }
@@ -30,46 +26,7 @@ export default function CourseMaterial({ data }) {
               </div>
             ))}
         </div>
-      ) : (
-        <div className="flex-1 flex flex-col justify-center items-center gap-1.5 py-12">
-          <p
-            className="text-[#163986] uppercase font-semibold text-center"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "18px"
-                  : windowDimension.width < 768
-                    ? "18px"
-                    : windowDimension.width < 1024
-                      ? "19px"
-                      : windowDimension.width < 1225
-                        ? "19px"
-                        : windowDimension.width < 1440
-                          ? "20px"
-                          : "20px",
-            }}>
-            {t("No materials available")}
-          </p>
-          <p
-            className="text-[#163986] font-light text-center"
-            style={{
-              fontSize:
-                windowDimension.width < 425
-                  ? "14px"
-                  : windowDimension.width < 768
-                    ? "14px"
-                    : windowDimension.width < 1024
-                      ? "15px"
-                      : windowDimension.width < 1225
-                        ? "15px"
-                        : windowDimension.width < 1440
-                          ? "16px"
-                          : "16px",
-            }}>
-            {t("Please check back later for materials.")}
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
