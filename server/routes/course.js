@@ -7,6 +7,9 @@ var slugify = require("slugify");
 var db = require("../utils/database");
 const { read } = require("fs");
 
+// Remove símbolos de marca (®, ™, ©) antes do slugify, que os converteria em "r", "tm", "c"
+const courseSlug = (name) => slugify(name.replace(/[®™©]/g, ""), { lower: true, strict: true });
+
 router.use((req, res, next) => {
 	console.log("---------------------------");
 	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
@@ -130,29 +133,36 @@ router.get("/readBySlug", async (req, res) => {
 	try {
 		const isAdmin = parseInt(req.query.id_role) === 1;
 
+		// O mesmo slug pode existir em vários idiomas: todas as queries filtram por slug + id_lang
+		const courseFilter = "course.slug = ? AND course.id_lang = ? AND course.is_deleted = 0";
+
 		let testQuery = "SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
-			"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0";
-		
+			`LEFT JOIN course ON course.id = course_module.id_course WHERE ${courseFilter} AND course_test.is_deleted = 0 AND course_module.is_deleted = 0`;
+
 		if (!isAdmin) {
 			testQuery += " AND course_test.status != 'draft'";
 		}
 
 		const rows = await query(
-			"SELECT * FROM course WHERE slug = ? AND id_lang = ? AND is_deleted = 0; SELECT course_module.* FROM course_module " +
-				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_module.is_deleted = 0; " +
+			`SELECT * FROM course WHERE ${courseFilter}; SELECT course_module.* FROM course_module ` +
+				`LEFT JOIN course ON course.id = course_module.id_course WHERE ${courseFilter} AND course_module.is_deleted = 0; ` +
 				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
-				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.slug = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
+				`LEFT JOIN course ON course.id = course_module.id_course WHERE ${courseFilter} AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; ` +
 				testQuery + "; " +
 				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
-				"WHERE course_user_activity.id_user = ? AND course.slug = ?",
+				`WHERE course_user_activity.id_user = ? AND ${courseFilter}`,
 			[
 				req.query.slug,
 				req.query.id_lang,
 				req.query.slug,
+				req.query.id_lang,
 				req.query.slug,
+				req.query.id_lang,
 				req.query.slug,
+				req.query.id_lang,
 				req.query.id_user,
 				req.query.slug,
+				req.query.id_lang,
 			],
 		);
 		res.send({
@@ -259,7 +269,7 @@ router.post("/create", async (req, res, next) => {
 	try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
-    data.slug = slugify(data.name, { lower: true, strict: true });
+    data.slug = courseSlug(data.name);
 
     // Adiciona definições padrão ao criar um novo curso, caso não existam ( valores default )
     if (!data.enrollment && !data.settings) {
@@ -285,7 +295,7 @@ router.post("/update", async (req, res, next) => {
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
-		data.slug = slugify(data.name, { lower: true, strict: true });
+		data.slug = courseSlug(data.name);
 		delete data.id;
 
 		const columns = Object.keys(data);
@@ -650,7 +660,7 @@ router.post("/duplicate", async (req, res, next) => {
 			course.id_lang = data.id_lang || course.id_lang;
 			course.id_course_certificate = null;
 			course.status = "draft";
-			course.slug = slugify(data.new_name || course.name + " (copy)", { lower: true, strict: true });
+			course.slug = courseSlug(data.new_name || course.name + " (copy)");
 
 			const insertedCourse = await query("INSERT INTO course SET ?", course);
 
