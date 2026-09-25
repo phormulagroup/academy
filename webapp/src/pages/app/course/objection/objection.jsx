@@ -1,11 +1,23 @@
 import { useContext, useEffect, useState } from "react";
-import { Collapse, Tabs } from "antd";
+import { Collapse, Image, Tabs } from "antd";
 import "./objection.css";
 import { Context } from "../../../../utils/context";
+import config from "../../../../utils/config";
+
+// Imagens no HTML das objecções são guardadas como src="/media/<ficheiro>" e resolvidas para o servidor atual
+const withMediaUrl = (html) => (html ? html.replaceAll('src="/media/', `src="${config.server_ip}/media/`) : html);
 
 export default function CourseObjection({ data }) {
   const { t, windowDimension } = useContext(Context);
   const [activeKey, setActiveKey] = useState("0");
+  const [preview, setPreview] = useState({ open: false, items: [], current: 0 });
+
+  // Clique numa imagem do HTML abre a pré-visualização com zoom (as restantes imagens do mesmo texto ficam navegáveis)
+  function openImagePreview(e) {
+    if (e.target.tagName !== "IMG") return;
+    const images = [...e.currentTarget.querySelectorAll("img")];
+    setPreview({ open: true, items: images.map((img) => img.src), current: images.indexOf(e.target) });
+  }
 
   useEffect(() => {
     console.log(data);
@@ -13,6 +25,15 @@ export default function CourseObjection({ data }) {
 
   return (
     <div className="mb-10">
+      <Image.PreviewGroup
+        items={preview.items}
+        preview={{
+          open: preview.open,
+          current: preview.current,
+          onOpenChange: (open) => setPreview((p) => ({ ...p, open })),
+          onChange: (current) => setPreview((p) => ({ ...p, current })),
+        }}
+      />
       {data.objection &&
       Object.keys(data.objection).length > 0 &&
       data.objection.tabs &&
@@ -20,7 +41,7 @@ export default function CourseObjection({ data }) {
         <div className="flex flex-col">
           {data.objection.text && (
             <div key="objection-text" className="prose-content">
-              <div dangerouslySetInnerHTML={{ __html: data.objection.text }} />
+              <div onClick={openImagePreview} dangerouslySetInnerHTML={{ __html: withMediaUrl(data.objection.text) }} />
             </div>
           )}
           <div className="w-full mt-4">
@@ -64,7 +85,8 @@ export default function CourseObjection({ data }) {
                         children: (
                           <div
                             className="prose-content text-xs sm:text-sm md:text-base"
-                            dangerouslySetInnerHTML={{ __html: _i.text }}
+                            onClick={openImagePreview}
+                            dangerouslySetInnerHTML={{ __html: withMediaUrl(_i.text) }}
                           />
                         ),
                       }))}
