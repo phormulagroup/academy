@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { CopyOutlined, DeleteOutlined, FilePdfOutlined, FilePptOutlined, InboxOutlined } from "@ant-design/icons";
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  FilePdfOutlined,
+  FilePptOutlined,
+  InboxOutlined,
+} from "@ant-design/icons";
 import { Upload, Card, Pagination } from "antd";
 import axios from "axios";
 
@@ -127,7 +133,10 @@ function Media() {
   function handleDeleteSuccess(deletedItem) {
     messageApi.open({
       type: "success",
-      content: t("Asset") + ` "${deletedItem?.name || deletedItem?.id}" ` + t("was removed successfully"),
+      content:
+        t("Asset") +
+        ` "${deletedItem?.name || deletedItem?.id}" ` +
+        t("was removed successfully"),
     });
   }
 
@@ -151,7 +160,13 @@ function Media() {
 
   return (
     <div className="p-2">
-      <Delete table="media" open={isOpenDelete} close={handleCloseDelete} data={selectedMedia} onDeleteSuccess={handleDeleteSuccess} />
+      <Delete
+        table="media"
+        open={isOpenDelete}
+        close={handleCloseDelete}
+        data={selectedMedia}
+        onDeleteSuccess={handleDeleteSuccess}
+      />
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold">{t("Multimedia")}</p>
@@ -162,8 +177,14 @@ function Media() {
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">{t("Click or drag file to this area to upload")}</p>
-          <p className="ant-upload-hint">{t("Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.")}</p>
+          <p className="ant-upload-text">
+            {t("Click or drag file to this area to upload")}
+          </p>
+          <p className="ant-upload-hint">
+            {t(
+              "Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.",
+            )}
+          </p>
         </Dragger>
       </div>
       <div className="grid grid-cols-8 gap-4 mt-6">
@@ -184,20 +205,41 @@ function Media() {
                   ) : (
                     <div
                       className="flex! justify-center items-center min-h-25 w-full bg-contain bg-center bg-no-repeat"
-                      style={{ backgroundImage: `url(${config.server_ip}/media/${item.name})` }}
-                    ></div>
+                      style={{
+                        backgroundImage: `url(${config.server_ip}/media/${item.name})`,
+                      }}></div>
                   )
                 }
-                actions={[<CopyOutlined key="copy" onClick={() => handleCopyClipboard(item.name)} />, <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />]}
-              >
-                <Meta title={<p className="font-normal! text-[12px]">{item.name}</p>} />
+                actions={[
+                  <CopyOutlined
+                    key="copy"
+                    onClick={() => handleCopyClipboard(item.name)}
+                  />,
+                  <DeleteOutlined
+                    key="delete"
+                    onClick={() => handleOpenDelete(item)}
+                  />,
+                ]}>
+                <Meta
+                  title={
+                    <p className="font-normal! text-[12px]">{item.name}</p>
+                  }
+                />
               </Card>
             </div>
           );
         })}
         {media.length > 0 && (
           <div className="col-span-8 mt-4">
-            <Pagination align="center" showSizeChanger={false} onChange={handleChangePage} pageSize={itemsPerPage} defaultCurrent={1} current={currentPage} total={media.length} />
+            <Pagination
+              align="center"
+              showSizeChanger={false}
+              onChange={handleChangePage}
+              pageSize={itemsPerPage}
+              defaultCurrent={1}
+              current={currentPage}
+              total={media.length}
+            />
           </div>
         )}
       </div>

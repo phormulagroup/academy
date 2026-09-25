@@ -662,7 +662,7 @@ export default function Settings({ course }) {
             name={["objection", "text"]}
             className="mb-0!"
             label={t("Description")}>
-            <TiptapFormField placeholder="Escreva o conteúdo..." />
+            <TiptapFormField placeholder="Escreva o conteúdo..." richMedia />
           </Form.Item>
           <div className="mt-4">
             <Form.List name={["objection", "tabs"]}>
@@ -704,7 +704,7 @@ export default function Settings({ course }) {
                                   name={[sub.name, "text"]}
                                   className="w-full!"
                                   label={t("Text")}>
-                                  <TiptapFormField placeholder="Escreva o conteúdo..." />
+                                  <TiptapFormField placeholder="Escreva o conteúdo..." richMedia />
                                 </Form.Item>
                                 <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                   <Button

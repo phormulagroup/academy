@@ -228,3 +228,56 @@
   border-top: 1px solid rgba(61, 37, 20, 0.08);
   margin: 2rem 0;
 }
+
+/* -------------------------------------- */
+/* ---------- TABLES & IMAGES ----------- */
+/* -------------------------------------- */
+
+/* Tabelas criadas no editor (Tiptap) — scroll horizontal em ecrãs pequenos */
+.prose-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 12px 0;
+  color: #163986;
+}
+
+.prose-content th,
+.prose-content td {
+  border: 1px solid #00b9d6;
+  padding: 8px 10px;
+  vertical-align: top;
+  text-align: left;
+  min-width: 120px;
+}
+
+.prose-content th {
+  background-color: #163986;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.prose-content tbody tr:nth-child(even) td {
+  background-color: rgba(0, 185, 214, 0.08);
+}
+
+.prose-content th p,
+.prose-content td p {
+  margin: 0;
+}
+
+.prose-content img {
+  display: block;
+  /* .prose-content é flex em coluna: sem isto a imagem estica para a largura toda */
+  align-self: flex-start;
+  max-width: 100%;
+  height: auto;
+  margin: 12px 0;
+  cursor: zoom-in;
+}
+
+/* Imagens sem tamanho definido no editor não ultrapassam 600px */
+.prose-content img:not([width]) {
+  max-width: min(100%, 600px);
+}
