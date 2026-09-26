@@ -7,8 +7,8 @@ var slugify = require("slugify");
 var db = require("../utils/database");
 const { read } = require("fs");
 
-// Remove símbolos de marca (®, ™, ©) antes do slugify, que os converteria em "r", "tm", "c"
-const courseSlug = (name) => slugify(name.replace(/[®™©]/g, ""), { lower: true, strict: true });
+// Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
+const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
 
 router.use((req, res, next) => {
 	console.log("---------------------------");
