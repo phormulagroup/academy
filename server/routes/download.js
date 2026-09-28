@@ -17,7 +17,7 @@ router.get("/read", async (req, res) => {
 	console.log("//// READ DOWNLOAD ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query("SELECT * FROM download");
+		const rows = await query("SELECT * FROM download WHERE is_deleted = 0");
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -28,8 +28,12 @@ router.get("/readByLang", async (req, res) => {
 	console.log("//// READ DOWNLOAD ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
+		// Para incluir downloads inativos, o backoffice envia include_deleted=1
+		const includeDeleted = req.query.include_deleted === "1";
+		const downloadFilter = includeDeleted ? "" : " AND is_deleted = 0";
 		const rows = await query(
-			"SELECT * FROM download WHERE id_lang = ?; SELECT * FROM download_item WHERE id_download IN (SELECT id FROM download WHERE id_lang = ?)",
+			`SELECT * FROM download WHERE id_lang = ?${downloadFilter}; ` +
+				`SELECT * FROM download_item WHERE is_deleted = 0 AND id_download IN (SELECT id FROM download WHERE id_lang = ?${downloadFilter})`,
 			[req.query.id_lang, req.query.id_lang],
 		);
 		res.send(rows);
@@ -43,7 +47,8 @@ router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
-			"SELECT * FROM download WHERE slug = ? AND id_lang = ?; SELECT * FROM download_item WHERE id_download IN (SELECT id FROM download WHERE slug = ? AND id_lang = ?)",
+			"SELECT * FROM download WHERE slug = ? AND id_lang = ? AND is_deleted = 0; " +
+				"SELECT * FROM download_item WHERE is_deleted = 0 AND id_download IN (SELECT id FROM download WHERE slug = ? AND id_lang = ? AND is_deleted = 0)",
 			[req.query.slug, req.query.id_lang, req.query.slug, req.query.id_lang],
 		);
 		res.send({ download: rows[0][0], items: rows[1] });
@@ -77,7 +82,7 @@ router.post("/create", async (req, res, next) => {
 			]);
 		}
 		const insertedItemsRow = await query(
-			"INSERT INTO download_item (id_download, name, filem, id_lang) VALUES ?",
+			"INSERT INTO download_item (id_download, name, file, id_lang) VALUES ?",
 			[dataInsert],
 		);
 		res.send(insertedRow);
@@ -91,7 +96,7 @@ router.post("/update", async (req, res, next) => {
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
-		let items = data.items;
+		let items = data.items || [];
 		data.country =
 			data.country && data.country.length > 0
 				? JSON.stringify(data.country)
@@ -110,6 +115,22 @@ router.post("/update", async (req, res, next) => {
 				whereId,
 			values,
 		);
+
+		// Ficheiros: os que saíram da lista ficam inativos, os existentes são atualizados e os novos são inseridos
+		const keptIds = items.filter((i) => i.id).map((i) => i.id);
+		await query(
+			"UPDATE download_item SET is_deleted = 1 WHERE id_download = ?" + (keptIds.length > 0 ? " AND id NOT IN (?)" : ""),
+			[whereId, keptIds],
+		);
+		for (let i = 0; i < items.length; i++) {
+			if (items[i].id) {
+				await query("UPDATE download_item SET name = ?, file = ? WHERE id = ?", [items[i].name, items[i].file, items[i].id]);
+			}
+		}
+		const newItems = items.filter((i) => !i.id).map((i) => [whereId, i.name, i.file, data.id_lang]);
+		if (newItems.length > 0) {
+			await query("INSERT INTO download_item (id_download, name, file, id_lang) VALUES ?", [newItems]);
+		}
 
 		res.send(updatedRow);
 	} catch (err) {
