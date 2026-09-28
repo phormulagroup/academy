@@ -3,6 +3,8 @@ var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
 var slugify = require("slugify");
+var fs = require("fs");
+var path = require("path");
 
 var db = require("../utils/database");
 
@@ -17,7 +19,7 @@ router.get("/read", async (req, res) => {
 	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query("SELECT * FROM document");
+		const rows = await query("SELECT * FROM document WHERE is_deleted = 0");
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -28,9 +30,12 @@ router.get("/readByLang", async (req, res) => {
 	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query("SELECT * FROM document WHERE id_lang = ?", [
-			req.query.id_lang,
-		]);
+		// A app só vê documentos ativos; o backoffice pede também os inativos (include_deleted=1) para os mostrar como "Inativo"
+		const includeDeleted = req.query.include_deleted === "1";
+		const rows = await query(
+			`SELECT * FROM document WHERE id_lang = ?${includeDeleted ? "" : " AND is_deleted = 0"}`,
+			[req.query.id_lang],
+		);
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -42,7 +47,7 @@ router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
-			"SELECT * FROM document WHERE slug = ? AND id_lang = ?",
+			"SELECT * FROM document WHERE slug = ? AND id_lang = ? AND is_deleted = 0",
 			[req.query.slug, req.query.id_lang],
 		);
 		res.send(rows);
@@ -52,11 +57,18 @@ router.get("/readBySlug", async (req, res) => {
 });
 
 router.get("/readFile", async (req, res) => {
-	const response = await fetch(
-		"https://academyapi.phormuladev.com/media/" + req.query.file,
-	);
-
-	const buffer = await response.arrayBuffer();
+	// Serve o ficheiro PDF solicitado. Primeiro tenta servir a partir do servidor local; se não existir, busca do servidor remoto.
+	const fileName = path.basename(req.query.file || "");
+	const localFile = path.join(__dirname, "..", "media", fileName);
+	let buffer;
+	if (fileName && fs.existsSync(localFile)) {
+		buffer = fs.readFileSync(localFile);
+	} else {
+		const response = await fetch(
+			"https://academyapi.phormuladev.com/media/" + encodeURIComponent(fileName),
+		);
+		buffer = await response.arrayBuffer();
+	}
 
 	res.setHeader("Content-Type", "application/pdf");
 	res.setHeader("Access-Control-Allow-Origin", "*");
