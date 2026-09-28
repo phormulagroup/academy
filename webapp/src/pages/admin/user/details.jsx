@@ -35,6 +35,7 @@ import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
 import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
 import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
 import CourseProgress from "./progress";
+import { matchFieldRule, requiredRule, requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function UserDetails() {
   const { user, languages } = useContext(Context);
@@ -236,7 +237,7 @@ export default function UserDetails() {
                   <Form.Item
                     name="name"
                     label={t("Name")}
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!">
                     <Input size="large" placeholder="John Doe" />
                   </Form.Item>
@@ -245,7 +246,7 @@ export default function UserDetails() {
                   <Form.Item
                     name="country"
                     label={t("Country")}
-                    rules={[{ required: true }]}
+                    rules={[requiredSelectRule]}
                     className="mb-0!">
                     <Select
                       size="large"
@@ -263,7 +264,7 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("Academic background")}
                     name="academic_background"
-                    rules={[{ required: true }]}
+                    rules={[requiredSelectRule]}
                     className="mb-0!">
                     <Select
                       size="large"
@@ -288,7 +289,7 @@ export default function UserDetails() {
                   <Form.Item
                     name="email"
                     label={t("E-mail")}
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!">
                     <Input type="email" size="large" placeholder="E-mail" />
                   </Form.Item>
@@ -297,7 +298,7 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("Birth date")}
                     name="birth_date"
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
@@ -313,7 +314,7 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
@@ -329,7 +330,6 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("Password")}
                     name="password"
-                    rules={[{ required: false }]}
                     className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
@@ -339,21 +339,7 @@ export default function UserDetails() {
                     label={t("Confirm password")}
                     name="confirm_password"
                     dependencies={["password"]}
-                    rules={[
-                      {
-                        required: false,
-                      },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          if (!value || getFieldValue("password") === value) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(
-                            new Error(t("The passwords does not match!")),
-                          );
-                        },
-                      }),
-                    ]}
+                    rules={[matchFieldRule("password", t("The passwords does not match!"))]}
                     className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
@@ -363,7 +349,8 @@ export default function UserDetails() {
                     className="w-full"
                     size="large"
                     variant="solid"
-                    color="blue">
+                    color="blue"
+                    onClick={form.submit}>
                     {t("Save")}
                   </Button>
                 </div>

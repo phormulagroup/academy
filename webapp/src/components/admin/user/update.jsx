@@ -1,8 +1,11 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { Button, Drawer, Form, Input, Select, Divider, Switch } from "antd";
-import { AiOutlinePlus } from "react-icons/ai";
+import { useContext, useEffect, useState } from "react";
+import { Button, Drawer, Form, Input, Select } from "antd";
 
 import { Context } from "../../../utils/context";
+import {
+  requiredRule,
+  requiredSelectRule,
+} from "../../../utils/formFieldError";
 
 export default function Update({ data, open, close, submit }) {
   const { update, roles } = useContext(Context);
@@ -44,27 +47,23 @@ export default function Update({ data, open, close, submit }) {
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
           Editar
         </Button>,
-      ]}
-    >
-      <Form
-        form={form}
-        onFinish={submit}
-        layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
-      >
+      ]}>
+      <Form form={form} onFinish={submit} layout="vertical">
         <Form.Item name="id" hidden>
           <Input />
         </Form.Item>
 
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
+        <Form.Item name="name" label="Nome" rules={[requiredRule]}>
           <Input placeholder="John Doe" size="large" />
         </Form.Item>
-        <Form.Item name="email" label="E-mail" rules={[{ required: true }]}>
-          <Input type="email" placeholder="nome@phormulagroup.com" size="large" />
+        <Form.Item name="email" label="E-mail" rules={[requiredRule]}>
+          <Input
+            type="email"
+            placeholder="nome@phormulagroup.com"
+            size="large"
+          />
         </Form.Item>
-        <Form.Item name="id_role" label="Role" rules={[{ required: true }]}>
+        <Form.Item name="id_role" label="Role" rules={[requiredSelectRule]}>
           <Select
             size="large"
             placeholder="Role..."
@@ -72,7 +71,10 @@ export default function Update({ data, open, close, submit }) {
               optionFilterProp: "label",
             }}
             allowClear
-            options={roles.map((item) => ({ label: item.name, value: item.id }))}
+            options={roles.map((item) => ({
+              label: item.name,
+              value: item.id,
+            }))}
           />
         </Form.Item>
       </Form>

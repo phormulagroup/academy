@@ -1,64 +1,84 @@
 import { useContext, useState } from "react";
 import { Button, Drawer, Form, Input, Select } from "antd";
-import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
 import Media from "../media/media";
-import config from "../../../utils/config";
 import { useTranslation } from "react-i18next";
-import { AiOutlineFile, AiOutlineFileImage } from "react-icons/ai";
+import PowerPointPdfNote from "./powerPointPdfNote";
+import { powerPointPdfRule } from "./powerPointPdf";
+import { fileTypeRule } from "../../../utils/fileValidation";
+import { requiredListRule, requiredRule } from "../../../utils/formFieldError";
+import useMediaPicker from "../../../utils/useMediaPicker";
+import useFormErrors from "../../../utils/useFormErrors";
+import FieldLabel from "../../../utils/fieldLabel";
+import MediaField from "../../../utils/mediaField";
 
-export default function Create({ open, close, submit }) {
+// Tipo de ficheiro aceite por cada campo da Multimédia (os ficheiros do download aceitam qualquer formato)
+const FIELD_TYPES = { thumbnail: "image", banner: "image" };
+
+export default function Create({ open, close, nameRule }) {
 	const { create, selectedLanguage, languages } = useContext(Context);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
-	const [mediaKey, setMediaKey] = useState(null);
-	const [mediaKeyInd, setMediaKeyInd] = useState(null);
-	const [isOpenMedia, setIsOpenMedia] = useState(false);
 
 	const { t } = useTranslation();
 
 	const [form] = Form.useForm();
+	const name = Form.useWatch("name", form);
+	const items = Form.useWatch("items", form);
+	const media = useMediaPicker(form, FIELD_TYPES, t);
+	const errors = useFormErrors(form);
+
+	function resetState() {
+		form.resetFields();
+		errors.reset();
+		media.resetSelectionErrors();
+	}
 
 	function onClose() {
-		form.resetFields();
+		resetState();
 		close();
 	}
 
-	async function submit(values) {
+	async function handleSubmit(values) {
 		setIsButtonLoading(true);
-		console.log(values);
 		try {
 			await create({
 				data: { ...values, id_lang: selectedLanguage.id },
 				table: "download",
 			});
 			setIsButtonLoading(false);
+			resetState();
 			close(true);
-			form.resetFields();
 		} catch (err) {
 			console.log(err);
 			setIsButtonLoading(false);
 		}
 	}
 
-	function openMedia(k, i) {
-		setMediaKey(k);
-		console.log(i);
-		if (i !== null && i !== undefined) setMediaKeyInd(i);
-		setIsOpenMedia(true);
+	// Thumbnail e Banner: imagens obrigatórias
+	function renderImageField(key, label) {
+		return (
+			<Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[key] !== currentValues[key]}>
+				{({ getFieldValue }) => (
+					<div>
+						<MediaField
+							label={label}
+							value={getFieldValue(key)}
+							error={media.selectionError(key) || errors.errorOf(key, getFieldValue(key))}
+							placeholder={t("Add multimedia")}
+							onOpen={() => media.openMedia(key)}
+							onRemove={() => media.setMediaValue(key, null)}
+						/>
+						<Form.Item name={key} hidden rules={[requiredRule, fileTypeRule("image", t)]}>
+							<Input />
+						</Form.Item>
+					</div>
+				)}
+			</Form.Item>
+		);
 	}
 
-	function closeMedia(res) {
-		if (res) {
-			if (mediaKeyInd !== null)
-				form.setFieldValue([mediaKey, mediaKeyInd, "file"], res[mediaKey]);
-			else form.setFieldValue(mediaKey, res[mediaKey]);
-		}
-
-		setMediaKey(null);
-		setMediaKeyInd(null);
-		setIsOpenMedia(false);
-	}
+	const filesError = errors.errorOf("items", items);
 
 	return (
 		<Drawer
@@ -68,26 +88,14 @@ export default function Create({ open, close, submit }) {
 			maskClosable={false}
 			title={`${t("Add download")}`}
 			extra={[
-				<Button
-					type="primary"
-					size="large"
-					loading={isButtonLoading}
-					onClick={form.submit}
-				>
+				<Button key="submit" type="primary" size="large" loading={isButtonLoading} onClick={errors.submit}>
 					{t("Add")}
 				</Button>,
 			]}
 		>
-			<Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
-			<Form
-				form={form}
-				onFinish={submit}
-				layout="vertical"
-				validateMessages={{
-					required: "Este campo é obrigatório!",
-				}}
-			>
-				<Form.Item name="name" label="Nome" required>
+			<Media mediaKey={media.mediaKey} open={media.isOpenMedia} close={media.closeMedia} />
+			<Form form={form} onFinish={handleSubmit} onFieldsChange={errors.onFieldsChange} layout="vertical">
+				<Form.Item name="name" {...errors.labelErrorProps("name", name, "Nome")} rules={[requiredRule, nameRule()]}>
 					<Input size="large" placeholder="Nome do download" />
 				</Form.Item>
 				<Form.Item name="country" label={t("Country")}>
@@ -109,143 +117,70 @@ export default function Create({ open, close, submit }) {
 					/>
 				</Form.Item>
 				<div className="grid grid-cols-2 gap-4">
-					<Form.Item
-						noStyle
-						shouldUpdate={(prevValues, currentValues) =>
-							prevValues.img !== currentValues.img
-						}
-					>
-						{({ getFieldValue }) => (
-							<div>
-								<p className="pb-2">{t("Thumbnail")}</p>
-								<div
-									className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-									onClick={() => openMedia("thumbnail")}
-									style={{
-										backgroundImage: `url(${config.server_ip}/media/${getFieldValue("thumbnail")})`,
-										backgroundSize: "contain",
-										backgroundRepeat: "no-repeat",
-										backgroundPosition: "center",
-									}}
-								>
-									{!getFieldValue("thumbnail") ? (
-										<div className="flex justify-center items-center flex-col p-10">
-											<AiOutlineFileImage className="text-[30px]" />{" "}
-											<p className="text-[11px] text-center mt-2">
-												{t("Add multimedia")}
-											</p>
-										</div>
-									) : null}
-								</div>
-
-								<Form.Item name="thumbnail" hidden>
-									<Input />
-								</Form.Item>
-							</div>
-						)}
-					</Form.Item>
-					<Form.Item
-						noStyle
-						shouldUpdate={(prevValues, currentValues) =>
-							prevValues.img !== currentValues.img
-						}
-					>
-						{({ getFieldValue }) => (
-							<div>
-								<p className="pb-2">{t("Banner")}</p>
-								<div
-									className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-									onClick={() => openMedia("banner")}
-									style={{
-										backgroundImage: `url(${config.server_ip}/media/${getFieldValue("banner")})`,
-										backgroundSize: "contain",
-										backgroundRepeat: "no-repeat",
-										backgroundPosition: "center",
-									}}
-								>
-									{!getFieldValue("banner") ? (
-										<div className="flex justify-center items-center flex-col p-10">
-											<AiOutlineFileImage className="text-[30px]" />{" "}
-											<p className="text-[11px] text-center mt-2">
-												{t("Add multimedia")}
-											</p>
-										</div>
-									) : null}
-								</div>
-
-								<Form.Item name="banner" hidden>
-									<Input />
-								</Form.Item>
-							</div>
-						)}
-					</Form.Item>
+					{renderImageField("thumbnail", t("Thumbnail"))}
+					{renderImageField("banner", t("Banner"))}
 				</div>
 
-				<p className="pb-2">{t("Files")}</p>
-				<Form.List name="items">
-					{(fields, { add, remove, move }) => (
-						<div className="flex flex-col border border-dashed border-gray-300 p-6">
+				<p className="pb-2">
+					<FieldLabel label={t("Files")} error={filesError} />
+				</p>
+				<p className="pb-3 text-[12px] text-gray-500">
+					{t(
+						"Note: a PowerPoint file (.pptx) can only be added if its PDF version, with exactly the same name (e.g. Presentation.pptx → Presentation.pdf), is uploaded to the Media library. That version is what the Preview shows in the app.",
+					)}
+				</p>
+				<Form.List name="items" rules={[requiredListRule]}>
+					{(fields, { add, remove }) => (
+						<div className={`flex flex-col border border-dashed ${filesError ? "border-red-500" : "border-gray-300"} p-6`}>
 							{fields.map((field) => (
-								<div
-									className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`}
-									key={field.key}
-								>
+								<div className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`} key={field.key}>
 									<Form.Item
 										name={[field.name, "name"]}
 										className="w-full"
-										label="Name"
-										rules={[{ required: true }]}
+										{...errors.labelErrorProps(["items", field.name, "name"], items?.[field.name]?.name, "Name")}
+										rules={[requiredRule]}
 									>
 										<Input size="large" placeholder="Name" />
 									</Form.Item>
 									<Form.Item
 										noStyle
 										shouldUpdate={(prevValues, currentValues) =>
-											prevValues.img !== currentValues.img
+											JSON.stringify(prevValues.items) !== JSON.stringify(currentValues.items)
 										}
 									>
-										{({ getFieldValue }) => (
-											<>
-												<p className="pb-2">{t("File")}</p>
-												<div
-													className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-													onClick={() => openMedia("items", field.name)}
-												>
-													{!getFieldValue("items")[field?.name]?.file ? (
-														<div className="flex justify-center items-center flex-col p-10">
-															<AiOutlineFile className="text-[30px]" />{" "}
-															<p className="text-[11px] text-center mt-2">
-																{t("Add file")}
-															</p>
-														</div>
-													) : (
-														<div className="flex justify-center items-center flex-col p-10">
-															<AiOutlineFile className="text-[30px]" />{" "}
-															<p className="text-[11px] text-center mt-2">
-																{getFieldValue("items")[field?.name].file}
-															</p>
-														</div>
-													)}
-												</div>
+										{({ getFieldValue }) => {
+											const path = ["items", field.name, "file"];
+											const fileValue = getFieldValue(path);
 
-												<Form.Item name={[field.name, "file"]} hidden>
-													<Input />
-												</Form.Item>
-											</>
-										)}
+											return (
+												<>
+													{/* o botão remove o item inteiro (nome + ficheiro), mesmo que ainda não tenha ficheiro */}
+													<MediaField
+														type="file"
+														label={t("File")}
+														value={fileValue}
+														error={media.selectionError(path) || errors.errorOf(path, fileValue)}
+														placeholder={t("Add file")}
+														onOpen={() => media.openMedia("items", field.name, "file")}
+														onRemove={() => remove(field.name)}
+														alwaysRemovable
+													/>
+													<PowerPointPdfNote file={fileValue} />
+													<Form.Item name={[field.name, "file"]} hidden rules={[requiredRule, powerPointPdfRule(t)]}>
+														<Input />
+													</Form.Item>
+												</>
+											);
+										}}
 									</Form.Item>
 
-									<Form.Item
-										name={[field.name, "id_lang"]}
-										hidden
-										defaultValue={selectedLanguage.id}
-									>
+									<Form.Item name={[field.name, "id_lang"]} hidden defaultValue={selectedLanguage.id}>
 										<Input />
 									</Form.Item>
 								</div>
 							))}
 							<Button size="large" onClick={() => add()}>
-								Add file
+								{t("Add file")}
 							</Button>
 						</div>
 					)}

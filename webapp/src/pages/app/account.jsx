@@ -1,9 +1,26 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { Avatar, Button, Collapse, DatePicker, Divider, Form, Input, Select } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Avatar,
+  Button,
+  Collapse,
+  DatePicker,
+  Divider,
+  Form,
+  Input,
+  Select,
+} from "antd";
 import { FaRegUser } from "react-icons/fa";
 import { useContext } from "react";
-import { FaChevronRight, FaRegCheckCircle, FaRegCopy, FaRegEdit, FaRegFile, FaRegTimesCircle, FaRegTrashAlt } from "react-icons/fa";
+import {
+  FaChevronRight,
+  FaRegCheckCircle,
+  FaRegCopy,
+  FaRegEdit,
+  FaRegFile,
+  FaRegTimesCircle,
+  FaRegTrashAlt,
+} from "react-icons/fa";
 
 import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
@@ -14,21 +31,30 @@ import avatarImg from "../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
 import UserCard from "../../components/app/user/card";
 import dayjs from "dayjs";
+import {
+  matchFieldRule,
+  requiredRule,
+  requiredSelectRule,
+} from "../../utils/formFieldError";
 
 export default function Account() {
-  const { user, setUser, languages, messageApi } = useContext(Context);
+  const { user, setUser, languages, selectedLanguage, messageApi } = useContext(Context);
 
   const { t } = useTranslation();
-  const [countries] = useState(
-    languages
-      .flatMap((l) =>
-        JSON.parse(l.country).map((c) => ({
-          value: c,
-          label: t(`${c}`),
-          id_lang: l.id,
-        })),
-      )
-      .sort((a, b) => a.label.localeCompare(b.label)),
+  // Apenas os países do idioma selecionado (como nos formulários do backoffice)
+  const countries = useMemo(
+    () =>
+      languages
+        .filter((lang) => lang.id === selectedLanguage?.id)
+        .flatMap((l) =>
+          JSON.parse(l.country).map((c) => ({
+            value: c,
+            label: t(`${c}`),
+            id_lang: l.id,
+          })),
+        )
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [languages, selectedLanguage, t],
   );
 
   const navigate = useNavigate();
@@ -83,45 +109,76 @@ export default function Account() {
         <div className="grid grid-cols-4">
           <UserCard />
           <div className="bg-[#F7F7F7] col-span-3 p-10">
-            <p className="text-[26px] font-bold text-center mb-6!">{t("My account")}</p>
-            <Form form={form} onFinish={submit} layout="vertical" className="auth-form">
+            <p className="text-[26px] font-bold text-center mb-6!">
+              {t("My account")}
+            </p>
+            <Form
+              form={form}
+              onFinish={submit}
+              layout="vertical"
+              className="auth-form">
               <Form.Item name="id" hidden>
                 <Input />
               </Form.Item>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
-                  <Form.Item name="name" label={t("Name")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="name"
+                    label={t("Name")}
+                    rules={[requiredRule]}
+                    className="mb-0!">
                     <Input size="large" placeholder="John Doe" />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item name="country" label={t("Country")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="country"
+                    label={t("Country")}
+                    rules={[requiredSelectRule]}
+                    className="mb-0!">
                     <Select
                       size="large"
                       placeholder={t("Choose a country")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
-                      options={countries.map((item) => ({ label: item.label, value: item.value }))}
+                      options={countries.map((item) => ({
+                        label: item.label,
+                        value: item.value,
+                      }))}
                     />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Academic background")} name="academic_background" rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Academic background")}
+                    name="academic_background"
+                    rules={[requiredSelectRule]}
+                    className="mb-0!">
                     <Select
                       size="large"
                       placeholder={t("Academic background")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
                       options={[
-                        { label: "Secondary School", value: "Secondary School" },
-                        { label: "University Degree", value: "University Degree" },
+                        {
+                          label: "Secondary School",
+                          value: "Secondary School",
+                        },
+                        {
+                          label: "University Degree",
+                          value: "University Degree",
+                        },
                         { label: "PhD", value: "PhD" },
                       ]}
                     />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item name="email" label={t("E-mail")} rules={[{ required: true }]} className="mb-0!">
+                  <Form.Item
+                    name="email"
+                    label={t("E-mail")}
+                    rules={[requiredRule]}
+                    className="mb-0!">
                     <Input type="email" size="large" placeholder="E-mail" />
                   </Form.Item>
                 </div>
@@ -129,26 +186,39 @@ export default function Account() {
                   <Form.Item
                     label={t("Birth date")}
                     name="birth_date"
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!"
-                    getValueProps={(value) => ({ value: value && dayjs(value) })}
-                  >
-                    <DatePicker size="large" placeholder="Select birth date" className="w-full" />
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder="Select birth date"
+                      className="w-full"
+                    />
                   </Form.Item>
                 </div>
                 <div>
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
-                    rules={[{ required: true }]}
+                    rules={[requiredRule]}
                     className="mb-0!"
-                    getValueProps={(value) => ({ value: value && dayjs(value) })}
-                  >
-                    <DatePicker size="large" placeholder="Select Bial's starting date" className="w-full" />
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder="Select Bial's starting date"
+                      className="w-full"
+                    />
                   </Form.Item>
                 </div>
                 <div>
-                  <Form.Item label={t("Password")} name="password" rules={[{ required: false }]} className="mb-0!">
+                  <Form.Item
+                    label={t("Password")}
+                    name="password"
+                    className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
                 </div>
@@ -158,25 +228,22 @@ export default function Account() {
                     name="confirm_password"
                     dependencies={["password"]}
                     rules={[
-                      {
-                        required: false,
-                      },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          if (!value || getFieldValue("password") === value) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(new Error(t("The passwords does not match!")));
-                        },
-                      }),
+                      matchFieldRule(
+                        "password",
+                        t("The passwords does not match!"),
+                      ),
                     ]}
-                    className="mb-0!"
-                  >
+                    className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>
                 </div>
                 <div className="flex justify-end items-end">
-                  <Button className="w-full" size="large" variant="solid" color="blue" onClick={form.submit}>
+                  <Button
+                    className="w-full"
+                    size="large"
+                    variant="solid"
+                    color="blue"
+                    onClick={form.submit}>
                     {t("Save")}
                   </Button>
                 </div>

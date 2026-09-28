@@ -3,6 +3,7 @@ import { Button, Drawer, Form, Input, Select } from "antd";
 import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
+import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Create({ open, close, submit }) {
   const { create } = useContext(Context);
@@ -45,25 +46,22 @@ export default function Create({ open, close, submit }) {
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
           Adicionar
         </Button>,
-      ]}
-    >
-      <Form
-        form={form}
-        onFinish={submit}
-        layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
-      >
+      ]}>
+      <Form form={form} onFinish={submit} layout="vertical">
         <Form.Item name="flag" hidden>
           <Input />
         </Form.Item>
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
+        <Form.Item name="name" label="Nome" rules={[requiredSelectRule]}>
           <Select
             size="large"
             className="w-full"
             placeholder="Selecione..."
-            onChange={(e) => form.setFieldValue("flag", languageOptions.filter((i) => i.name === e)[0].flag)}
+            onChange={(e) =>
+              form.setFieldValue(
+                "flag",
+                languageOptions.filter((i) => i.name === e)[0].flag,
+              )
+            }
             showSearch={{
               optionFilterProp: ["label"],
             }}
@@ -78,7 +76,7 @@ export default function Create({ open, close, submit }) {
             }))}
           />
         </Form.Item>
-        <Form.Item name="country" label="Países" rules={[{ required: true }]}>
+        <Form.Item name="country" label="Países" rules={[requiredSelectRule]}>
           <Select
             mode="multiple"
             size="large"

@@ -1,10 +1,10 @@
 import { useContext, useState } from "react";
-import { Button, Drawer, Form, Input, Select } from "antd";
-import countries from "../../../utils/countries.json";
+import { Button, Drawer, Form } from "antd";
 
 import { Context } from "../../../utils/context";
 import TipTapFormField from "../tipTap/tipTapFormField";
 import { useTranslation } from "react-i18next";
+import { requiredRichTextRule } from "../../../utils/formFieldError";
 
 export default function Create({ open, close, submit }) {
   const { create, selectedLanguage } = useContext(Context);
@@ -22,7 +22,10 @@ export default function Create({ open, close, submit }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      await create({ data: { ...values, id_lang: selectedLanguage.id }, table: "notification" });
+      await create({
+        data: { ...values, id_lang: selectedLanguage.id },
+        table: "notification",
+      });
       setIsButtonLoading(false);
       close(true);
       form.resetFields();
@@ -38,25 +41,23 @@ export default function Create({ open, close, submit }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Adicionar linguagem"
+      title="Adicionar Notificação"
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
           Adicionar
         </Button>,
-      ]}
-    >
-      <Form
-        form={form}
-        onFinish={submit}
-        layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
-      >
-        <Form.Item name="title" label={t("Title")} rules={[{ required: true }]}>
+      ]}>
+      <Form form={form} onFinish={submit} layout="vertical">
+        <Form.Item
+          name="title"
+          label={t("Title")}
+          rules={[requiredRichTextRule]}>
           <TipTapFormField />
         </Form.Item>
-        <Form.Item name="description" label={t("Description")} rules={[{ required: true }]}>
+        <Form.Item
+          name="description"
+          label={t("Description")}
+          rules={[requiredRichTextRule]}>
           <TipTapFormField />
         </Form.Item>
       </Form>

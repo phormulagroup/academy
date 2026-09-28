@@ -1,14 +1,16 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
+import { Button, Dropdown } from "antd";
 import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
+import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
 import Create from "../../components/admin/document/create";
 import Update from "../../components/admin/document/update";
 import Delete from "../../components/admin/delete";
+import StatusTag from "../../utils/statusTag";
+import { uniqueRule } from "../../utils/formFieldError";
 
 import { Context } from "../../utils/context";
 
@@ -19,189 +21,202 @@ import { RxReload } from "react-icons/rx";
 import config from "../../utils/config";
 
 export default function Language() {
-	const { user, selectedLanguage } = useContext(Context);
-	const { t } = useTranslation();
-	const [isLoading, setIsLoading] = useState(true);
-	const [data, setData] = useState([]);
-	const [tableData, setTableData] = useState([]);
-	const [selectedData, setSelectedData] = useState({});
+  const { user, selectedLanguage } = useContext(Context);
+  const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState([]);
+  const [tableData, setTableData] = useState([]);
+  const [selectedData, setSelectedData] = useState({});
 
-	const [isOpenCreate, setIsOpenCreate] = useState(false);
-	const [isOpenUpdate, setIsOpenUpdate] = useState(false);
-	const [isOpenDelete, setIsOpenDelete] = useState(false);
-	const [isOpenTranslations, setIsOpenTranslations] = useState(false);
+  const [isOpenCreate, setIsOpenCreate] = useState(false);
+  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
+  const [isOpenDelete, setIsOpenDelete] = useState(false);
+  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
 
-	useEffect(() => {
-		getData();
-	}, [selectedLanguage]);
+  useEffect(() => {
+    getData();
+  }, [selectedLanguage]);
 
-	function getData() {
-		setIsLoading(true);
-		axios
-			.get(endpoints.document.readByLang, {
-				params: { id_lang: selectedLanguage.id },
-			})
-			.then((res) => {
-				setData(res.data);
-				prepareData(res.data);
-				setIsLoading(false);
-			})
-			.catch((err) => {
-				console.log(err);
-				setIsLoading(false);
-			});
-	}
+  function getData() {
+    setIsLoading(true);
+    axios
+      .get(endpoints.document.readByLang, {
+        // O backoffice lista também os documentos inativos (apagados)
+        params: { id_lang: selectedLanguage.id, include_deleted: 1 },
+      })
+      .then((res) => {
+        setData(res.data);
+        prepareData(res.data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.log(err);
+        setIsLoading(false);
+      });
+  }
 
-	function prepareData(array) {
-		const aux = [];
-		for (let i = 0; i < array.length; i++) {
-			array[i].country = array[i].country ? JSON.parse(array[i].country) : null;
-			aux.push({
-				...array[i],
-				key: i + 1,
-				name: array[i].name,
-				file: array[i].file,
-				country: array[i].country
-					? array[i].country.join(", ")
-					: t("All countries"),
-				img: (
-					<div className="flex justify-start items-center">
-						<img
-							src={`${config.server_ip}/media/${array[i].img}`}
-							className="max-w-[100px] h-auto"
-						/>
-					</div>
-				),
-				is_deleted: array[i].is_deleted ? (
-					<Tag variant="outlined" color={"red"}>
-						Inativo
-					</Tag>
-				) : (
-					<Tag variant="outlined" color={"green"}>
-						Ativo
-					</Tag>
-				),
-				full_data: array[i],
-				actions: (
-					<div className="flex justify-end items-center">
-						<Dropdown
-							trigger={"click"}
-							placement="bottomRight"
-							menu={{
-								items: [
-									{
-										label: "Update",
-										key: `${array[i].id}-udpate`,
-										icon: <FaRegEdit />,
-										onClick: () => openUpdate(array[i]),
-									},
-									{
-										label: "Delete",
-										key: `${array[i].id}-delete`,
-										icon: <FaRegTrashAlt />,
-										onClick: () => openDelete(array[i]),
-									},
-								],
-							}}
-						>
-							<Button>
-								<IoMdMore />
-							</Button>
-						</Dropdown>
-					</div>
-				),
-			});
-		}
+  function prepareData(array) {
+    const aux = [];
+    for (let i = 0; i < array.length; i++) {
+      array[i].country = array[i].country ? JSON.parse(array[i].country) : null;
+      aux.push({
+        ...array[i],
+        key: i + 1,
+        name: array[i].name,
+        file: array[i].file,
+        country: array[i].country
+          ? array[i].country.join(", ")
+          : t("All countries"),
+        img: (
+          <div className="flex justify-start items-center">
+            <img
+              src={`${config.server_ip}/media/${array[i].img}`}
+              className="max-w-[100px] h-auto"
+            />
+          </div>
+        ),
+        is_deleted: <StatusTag isDeleted={array[i].is_deleted} />,
+        full_data: array[i],
+        actions: (
+          <div className="flex justify-end items-center">
+            <Dropdown
+              trigger={"click"}
+              placement="bottomRight"
+              menu={{
+                items: [
+                  {
+                    label: "Update",
+                    key: `${array[i].id}-udpate`,
+                    icon: <FaRegEdit />,
+                    onClick: () => openUpdate(array[i]),
+                  },
+                  {
+                    label: "Delete",
+                    key: `${array[i].id}-delete`,
+                    icon: <FaRegTrashAlt />,
+                    onClick: () => openDelete(array[i]),
+                  },
+                ],
+              }}>
+              <Button>
+                <IoMdMore />
+              </Button>
+            </Dropdown>
+          </div>
+        ),
+      });
+    }
 
-		setTableData(aux);
-	}
+    setTableData(aux);
+  }
 
-	function openUpdate(obj) {
-		setSelectedData(obj);
-		setIsOpenUpdate(true);
-	}
+  function openUpdate(obj) {
+    setSelectedData(obj);
+    setIsOpenUpdate(true);
+  }
 
-	function openDelete(obj) {
-		setSelectedData(obj);
-		setIsOpenDelete(true);
-	}
+  function openDelete(obj) {
+    setSelectedData(obj);
+    setIsOpenDelete(true);
+  }
 
-	function closeAction(c) {
-		if (c) {
-			getData();
-		}
-		setIsOpenUpdate(false);
-		setIsOpenCreate(false);
-		setIsOpenDelete(false);
-	}
+  // Nome único (usado pelo Create e pelo Update): não pode existir outro documento ativo neste idioma
+  // com o mesmo nome; no Update ignora o próprio documento (excludeId)
+  const nameRule = (excludeId = null) =>
+    uniqueRule(data, t("A document with this name already exists"), {
+      excludeId,
+    });
 
-	return (
-		<div className="p-2">
-			<Create open={isOpenCreate} close={closeAction} />
-			<Update data={selectedData} open={isOpenUpdate} close={closeAction} />
-			<Delete
-				data={selectedData}
-				open={isOpenDelete}
-				close={closeAction}
-				table="document"
-			/>
-			<div className="flex justify-between items-center mb-4">
-				<div>
-					<p className="text-xl font-bold">{t("Documents")}</p>
-				</div>
-				<div>
-					<Button
-						size="large"
-						onClick={getData}
-						icon={<RxReload />}
-						className="mr-2"
-					/>
-					<Button
-						size="large"
-						onClick={() => setIsOpenCreate(true)}
-						icon={<AiOutlinePlus />}
-					>
-						{t("Add document")}
-					</Button>
-				</div>
-			</div>
-			<Table
-				dataSource={tableData}
-				loading={isLoading}
-				columns={[
-					{
-						title: "",
-						dataIndex: "img",
-						key: "img",
-						width: "100px",
-					},
-					{
-						title: "Nome",
-						dataIndex: "name",
-						key: "name",
-						sort: true,
-						sortType: "text",
-						search: "name",
-						width: 500,
-					},
-					{
-						title: "File",
-						dataIndex: "file",
-						key: "file",
-					},
-					{
-						title: t("Country"),
-						dataIndex: "country",
-						key: "country",
-					},
-					{
-						title: "",
-						dataIndex: "actions",
-						key: "actions",
-						width: "80px",
-					},
-				]}
-			/>
-		</div>
-	);
+  function closeAction(c) {
+    if (c) {
+      getData();
+    }
+    setIsOpenUpdate(false);
+    setIsOpenCreate(false);
+    setIsOpenDelete(false);
+  }
+
+  return (
+    <div className="p-2">
+      <Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
+      <Update
+        data={selectedData}
+        open={isOpenUpdate}
+        close={closeAction}
+        nameRule={nameRule}
+      />
+      <Delete
+        data={selectedData}
+        open={isOpenDelete}
+        close={closeAction}
+        table="document"
+      />
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <p className="text-xl font-bold">{t("Documents")}</p>
+        </div>
+        <div>
+          <Button
+            size="large"
+            onClick={getData}
+            icon={<RxReload />}
+            className="mr-2"
+          />
+          <Button
+            size="large"
+            onClick={() => setIsOpenCreate(true)}
+            icon={<AiOutlinePlus />}>
+            {t("Add document")}
+          </Button>
+        </div>
+      </div>
+      <Table
+        dataSource={tableData}
+        loading={isLoading}
+        columns={[
+          {
+            title: "",
+            dataIndex: "img",
+            key: "img",
+            width: "100px",
+          },
+          {
+            title: "Nome",
+            dataIndex: "name",
+            key: "name",
+            sort: true,
+            sortType: "text",
+            search: "name",
+            width: 350,
+          },
+          {
+            title: "File",
+            dataIndex: "file",
+            key: "file",
+          },
+          {
+            title: t("Country"),
+            dataIndex: "country",
+            key: "country",
+          },
+          {
+            title: t("Status"),
+            dataIndex: "is_deleted",
+            key: "is_deleted",
+            width: "150px",
+            filters: [
+              { text: t("Active"), value: 0 },
+              { text: t("Inactive"), value: 1 },
+            ],
+          },
+          {
+            title: "",
+            dataIndex: "actions",
+            key: "actions",
+            width: "80px",
+          },
+        ]}
+      />
+    </div>
+  );
 }

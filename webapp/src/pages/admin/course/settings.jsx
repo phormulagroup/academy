@@ -20,8 +20,10 @@ import {
   Tabs,
 } from "antd";
 import Media from "../../../components/admin/media/media";
-import { AiOutlineFile, AiOutlinePlus } from "react-icons/ai";
-import config from "../../../utils/config";
+import MediaField from "../../../utils/mediaField";
+import useMediaPicker from "../../../utils/useMediaPicker";
+import { fileTypeRule } from "../../../utils/fileValidation";
+import { AiOutlinePlus } from "react-icons/ai";
 import { RxTrash } from "react-icons/rx";
 
 import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
@@ -30,15 +32,14 @@ import dayjs from "dayjs";
 export default function Settings({ course }) {
   const { languages, createLog, user, selectedLanguage, messageApi } =
     useContext(Context);
-  const [isOpenMedia, setIsOpenMedia] = useState(false);
-  const [mediaKey, setMediaKey] = useState(null);
-  const [mediaKeyInd, setMediaKeyInd] = useState(null);
   const [products, setProducts] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [activeKey, setActiveKey] = useState("0");
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
+  // Banner image e Thumbnail só aceitam imagens; os materiais aceitam qualquer ficheiro
+  const media = useMediaPicker(form, { img: "image", thumbnail: "image" }, t);
 
   useEffect(() => {
     if (course) {
@@ -99,23 +100,33 @@ export default function Settings({ course }) {
       });
   }
 
-  function openMedia(k, i) {
-    setMediaKey(k);
-    if (i !== null && i !== undefined) setMediaKeyInd(i);
-    setIsOpenMedia(true);
-  }
-
-  function closeMedia(res) {
-    console.log(mediaKeyInd);
-    if (res) {
-      if (mediaKeyInd !== null)
-        form.setFieldValue([mediaKey, mediaKeyInd, "file"], res[mediaKey]);
-      else form.setFieldValue(mediaKey, res[mediaKey]);
-    }
-
-    setMediaKey(null);
-    setMediaKeyInd(null);
-    setIsOpenMedia(false);
+  // Banner image e Thumbnail: imagens opcionais
+  function renderImageField(key, label) {
+    return (
+      <div>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) =>
+            prevValues[key] !== currentValues[key]
+          }>
+          {({ getFieldValue, getFieldError }) => (
+            <>
+              <MediaField
+                label={label}
+                value={getFieldValue(key)}
+                error={media.selectionError(key) || getFieldError(key)[0]}
+                placeholder={t("Add multimedia")}
+                onOpen={() => media.openMedia(key)}
+                onRemove={() => media.setMediaValue(key, null)}
+              />
+              <Form.Item name={key} hidden rules={[fileTypeRule("image", t)]}>
+                <Input />
+              </Form.Item>
+            </>
+          )}
+        </Form.Item>
+      </div>
+    );
   }
 
   async function save(values) {
@@ -157,7 +168,11 @@ export default function Settings({ course }) {
 
   return (
     <div className="p-2">
-      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
+      <Media
+        mediaKey={media.mediaKey}
+        open={media.isOpenMedia}
+        close={media.closeMedia}
+      />
       <div>
         <Form form={form} onFinish={save} layout="vertical">
           <Form.Item hidden name="id">
@@ -401,128 +416,40 @@ export default function Settings({ course }) {
           </p>
 
           <div className="grid grid-cols-2 gap-8">
-            <div>
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.img !== currentValues.img
-                }>
-                {({ getFieldValue }) => (
-                  <>
-                    <p className="pb-2">{t("Banner image")}</p>
-                    <div
-                      className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                      onClick={() => openMedia("img")}
-                      style={{
-                        backgroundImage: `url(${config.server_ip}/media/${getFieldValue("img")})`,
-                        backgroundSize: "contain",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                      }}>
-                      {!getFieldValue("img") ? (
-                        <div className="flex justify-center items-center flex-col p-10">
-                          <AiOutlineFile className="text-[30px]" />{" "}
-                          <p className="text-[11px] text-center mt-2">
-                            {t("Add multimedia")}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <Form.Item name="img" hidden>
-                      <Input />
-                    </Form.Item>
-                  </>
-                )}
-              </Form.Item>
-            </div>
-            <div>
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.thumbnail !== currentValues.thumbnail
-                }>
-                {({ getFieldValue }) => (
-                  <>
-                    <p className="pb-2">{t("Thumbnail")}</p>
-                    <div
-                      className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                      onClick={() => openMedia("thumbnail")}
-                      style={{
-                        backgroundImage: `url(${config.server_ip}/media/${getFieldValue("thumbnail")})`,
-                        backgroundSize: "contain",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                      }}>
-                      {!getFieldValue("thumbnail") ? (
-                        <div className="flex justify-center items-center flex-col p-10">
-                          <AiOutlineFile className="text-[30px]" />{" "}
-                          <p className="text-[11px] text-center mt-2">
-                            {t("Add multimedia")}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <Form.Item name="thumbnail" hidden>
-                      <Input />
-                    </Form.Item>
-                  </>
-                )}
-              </Form.Item>
-            </div>
+            {renderImageField("img", t("Banner image"))}
+            {renderImageField("thumbnail", t("Thumbnail"))}
           </div>
           <p>Materials</p>
           <Form.List name="material">
-            {(fields, { add, remove, move }) => (
+            {(fields, { add, remove }) => (
               <div className="grid grid-cols-4 gap-8 mt-4">
                 {fields.map((field) => (
-                  <div>
+                  <div key={field.key}>
                     <Form.Item
                       noStyle
                       shouldUpdate={(prevValues, currentValues) =>
                         prevValues.material !== currentValues.material
                       }>
                       {({ getFieldValue }) => {
+                        const path = ["material", field.name, "file"];
                         return (
-                          <div className="relative">
-                            <div
-                              className="relative border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                              onClick={() => openMedia("material", field.name)}
-                              style={{
-                                backgroundSize: "contain",
-                                backgroundRepeat: "no-repeat",
-                                backgroundPosition: "center",
-                              }}>
-                              {!getFieldValue("material")[field.name]?.file ? (
-                                <div className="flex justify-center items-center flex-col p-10">
-                                  <AiOutlineFile className="text-[30px]" />{" "}
-                                  <p className="text-[11px] text-center mt-2">
-                                    {t("Select file")}
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="flex justify-center items-center flex-col p-10">
-                                  <AiOutlineFile className="text-[30px]" />{" "}
-                                  <p className="text-[11px] text-center mt-2">
-                                    {
-                                      getFieldValue("material")[field.name]
-                                        ?.file
-                                    }
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
+                          <>
+                            {/* o botão remove o material inteiro (ficheiro + nome) */}
+                            <MediaField
+                              type="file"
+                              value={getFieldValue(path)}
+                              error={media.selectionError(path)}
+                              placeholder={t("Select file")}
+                              onOpen={() =>
+                                media.openMedia("material", field.name, "file")
+                              }
+                              onRemove={() => remove(field.name)}
+                              alwaysRemovable
+                            />
                             <Form.Item name={[field.name, "file"]} hidden>
                               <Input />
                             </Form.Item>
-                            <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
-                              <Button
-                                onClick={() => remove(field.name)}
-                                icon={<RxTrash />}></Button>
-                            </div>
-                          </div>
+                          </>
                         );
                       }}
                     </Form.Item>

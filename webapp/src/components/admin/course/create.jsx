@@ -8,15 +8,13 @@ import {
 	message,
 } from "antd";
 
-import Media from "../media/media";
 import { Context } from "../../../utils/context";
 import { useNavigate } from "react-router-dom";
+import { requiredRule } from "../../../utils/formFieldError";
 
-export default function Create({ open, close, products, courses, validateInternalName }) {
+export default function Create({ open, close, products, nameRule, internalNameRule }) {
 	const { create, t, selectedLanguage } = useContext(Context);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
-	const [mediaKey, setMediaKey] = useState(null);
-	const [isOpenMedia, setIsOpenMedia] = useState(false);
 
 	const [form] = Form.useForm();
 
@@ -47,19 +45,7 @@ export default function Create({ open, close, products, courses, validateInterna
 		}
 	}
 
-	function openMedia(key) {
-		setMediaKey(key);
-		setIsOpenMedia(true);
-	}
 
-	function closeMedia(res) {
-		if (res) {
-			form.setFieldValue(mediaKey, res[mediaKey]);
-		}
-
-		setMediaKey(null);
-		setIsOpenMedia(false);
-	}
 
 	return (
 		<Modal
@@ -76,26 +62,19 @@ export default function Create({ open, close, products, courses, validateInterna
 				</Button>,
 			]}
 		>
-			<Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
 			<p className="text-[16px] font-bold mb-4">{t("Create Course")}</p>
 			<Form
 				form={form}
 				onFinish={submit}
 				layout="vertical"
-				validateMessages={{
-					required: "Este campo é obrigatório!",
-				}}
 			>
-				<Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
+				<Form.Item name="name" label={t("Name")} rules={[requiredRule, nameRule()]}>
 					<Input size="large" placeholder={t("Enter course name")} />
 				</Form.Item>
 				<Form.Item
 					name="internal_name"
 					label={t("Internal name")}
-					rules={[
-						{ required: true },
-						{ validator: validateInternalName, validateTrigger: ["onChange", "onBlur"] },
-					]}
+					rules={[requiredRule, internalNameRule()]}
 				>
 					<Input size="large" placeholder={t("Enter internal course name")} />
 				</Form.Item>

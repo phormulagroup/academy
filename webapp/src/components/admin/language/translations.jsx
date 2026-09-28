@@ -1,16 +1,28 @@
 import { useContext, useEffect, useState } from "react";
-import { Button, Drawer, Input, Form, Table, Space, Popconfirm, Pagination, message, Dropdown } from "antd";
+import {
+  Button,
+  Drawer,
+  Input,
+  Form,
+  Table,
+  Space,
+  Popconfirm,
+  Pagination,
+  message,
+  Dropdown,
+} from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
 import { Context } from "../../../utils/context";
+import { requiredRule } from "../../../utils/formFieldError";
 
 export default function Translations({ data, defaultLanguage, open, close }) {
   const { update, getLanguages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [form] = Form.useForm();
-  
+
   const [translations, setTranslations] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -85,20 +97,10 @@ export default function Translations({ data, defaultLanguage, open, close }) {
   const save = async (id) => {
     try {
       const row = await form.validateFields();
-      
-      // Validar que key e value não estão vazios
-      if (!row.key || !row.key.trim()) {
-        message.error("Key is required");
-        return;
-      }
-      if (!row.value || !row.value.trim()) {
-        message.error("Translation value is required");
-        return;
-      }
 
       const newData = [...translations];
       const index = newData.findIndex((item) => id === item.id);
-      
+
       if (index > -1) {
         const item = newData[index];
         newData.splice(index, 1, { ...item, ...row });
@@ -108,8 +110,10 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           setNewRowId(null);
         }
       }
+      return newData;
     } catch (errInfo) {
       console.log("Validação Falhou:", errInfo);
+      return null;
     }
   };
 
@@ -164,7 +168,9 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       });
 
       const countryData =
-        typeof data.country === "string" ? JSON.parse(data.country) : data.country;
+        typeof data.country === "string"
+          ? JSON.parse(data.country)
+          : data.country;
 
       // Atualizar na base de dados
       await update({
@@ -189,10 +195,17 @@ export default function Translations({ data, defaultLanguage, open, close }) {
   }
 
   async function submit() {
+    // Uma linha ainda em edição é validada e guardada antes de gravar tudo
+    let rows = translations;
+    if (editingKey) {
+      rows = await save(editingKey);
+      if (!rows) return;
+    }
+
     setIsButtonLoading(true);
     try {
-      await saveTranslationsToDatabase(translations);
-      
+      await saveTranslationsToDatabase(rows);
+
       // Aguardar antes de fechar para que o utilizador veja a mensagem de sucesso
       await new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -214,7 +227,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       render: (text, record) => {
         const isEdited = isEditing(record);
         return isEdited ? (
-          <Form.Item name="key" rules={[{ required: true, message: "Key is required" }]} style={{ margin: 0 }}>
+          <Form.Item name="key" rules={[requiredRule]} style={{ margin: 0 }}>
             <Input.TextArea placeholder="Translation key" rows={2} />
           </Form.Item>
         ) : (
@@ -231,7 +244,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       render: (text, record) => {
         const isEdited = isEditing(record);
         return isEdited ? (
-          <Form.Item name="value" rules={[{ required: true, message: "Translation value is required" }]} style={{ margin: 0 }}>
+          <Form.Item name="value" rules={[requiredRule]} style={{ margin: 0 }}>
             <Input.TextArea placeholder="Translation value" rows={2} />
           </Form.Item>
         ) : (
@@ -245,11 +258,14 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       width: "10%",
       render: (_, record) => {
         const isEdited = isEditing(record);
-        
+
         if (isEdited) {
           return (
             <Space size="small">
-              <Button type="primary" size="small" onClick={() => save(record.id)}>
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => save(record.id)}>
                 Save
               </Button>
               <Button size="small" onClick={cancel}>
@@ -282,7 +298,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           </Dropdown>
         );
       },
-    }
+    },
   ];
 
   // Páginação
@@ -297,8 +313,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       onClose={onClose}
       maskClosable={false}
       title={`Traduções - ${data?.name || "Language"}`}
-      extra={[]}
-    >
+      extra={[]}>
       {data && defaultLanguage ? (
         <div>
           <Form form={form} layout="vertical">
@@ -334,7 +349,9 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                     setEditingKey(""); // Cancelar edição ao mudar tamanho da página
                   }}
                   showSizeChanger
-                  showTotal={(total, range) => `${range[0]}-${range[1]} de ${total}`}
+                  showTotal={(total, range) =>
+                    `${range[0]}-${range[1]} de ${total}`
+                  }
                 />
               </div>
             )}
@@ -346,8 +363,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                 icon={<PlusOutlined />}
                 onClick={addRow}
                 size="large"
-                block
-              >
+                block>
                 Add Translation
               </Button>
             </div>
@@ -359,8 +375,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                 type="primary"
                 loading={isButtonLoading}
                 onClick={submit}
-                size="large"
-              >
+                size="large">
                 Save All Translations
               </Button>
             </div>

@@ -1,62 +1,75 @@
-import { useContext, useState } from "react";
-import { Button, Drawer, Form, Input, Select } from "antd";
-import countries from "../../../utils/countries.json";
+import { useContext, useState, useEffect } from "react";
+import { Button, Drawer, Form, Input } from "antd";
 
 import { Context } from "../../../utils/context";
 import Media from "../media/media";
-import config from "../../../utils/config";
 import { useTranslation } from "react-i18next";
-import { AiOutlineFile, AiOutlineFileImage } from "react-icons/ai";
 import TipTapFormField from "../tipTap/tipTapFormField";
+import { fileTypeRule } from "../../../utils/fileValidation";
+import {
+  requiredListRule,
+  requiredRichTextRule,
+  requiredRule,
+} from "../../../utils/formFieldError";
+import useMediaPicker from "../../../utils/useMediaPicker";
+import useFormErrors from "../../../utils/useFormErrors";
+import FieldLabel from "../../../utils/fieldLabel";
+import MediaField from "../../../utils/mediaField";
 
-export default function Create({ open, close, submit }) {
+// Tipo de ficheiro aceite por cada campo da Multimédia
+const FIELD_TYPES = { images: "image" };
+
+export default function Create({ data, open, close, nameRule }) {
   const { create, selectedLanguage } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [mediaKey, setMediaKey] = useState(null);
-  const [mediaKeyInd, setMediaKeyInd] = useState(null);
-  const [isOpenMedia, setIsOpenMedia] = useState(false);
 
   const { t } = useTranslation();
 
   const [form] = Form.useForm();
+  const images = Form.useWatch("images", form);
+  const media = useMediaPicker(form, FIELD_TYPES, t);
+  const errors = useFormErrors(form);
+
+  useEffect(() => {
+    if (open) {
+      errors.reset();
+      media.resetSelectionErrors();
+      // As imagens vêm em JSON da base de dados; copia para não alterar a prop
+      const values = { ...data };
+      if (typeof values.images === "string")
+        values.images = JSON.parse(values.images);
+      form.setFieldsValue(values);
+    }
+  }, [open]);
+  function resetState() {
+    form.resetFields();
+    errors.reset();
+    media.resetSelectionErrors();
+  }
 
   function onClose() {
-    form.resetFields();
+    resetState();
     close();
   }
 
-  async function submit(values) {
+  async function handleSubmit(values) {
     setIsButtonLoading(true);
-    console.log(values);
     try {
       if (values.images) values.images = JSON.stringify(values.images);
-      await create({ data: { ...values, id_lang: selectedLanguage.id }, table: "faqs" });
+      await create({
+        data: { ...values, id_lang: selectedLanguage.id },
+        table: "faqs",
+      });
       setIsButtonLoading(false);
+      resetState();
       close(true);
-      form.resetFields();
     } catch (err) {
       console.log(err);
       setIsButtonLoading(false);
     }
   }
 
-  function openMedia(k, i) {
-    setMediaKey(k);
-    console.log(i);
-    if (i !== null && i !== undefined) setMediaKeyInd(i);
-    setIsOpenMedia(true);
-  }
-
-  function closeMedia(res) {
-    if (res) {
-      if (mediaKeyInd !== null) form.setFieldValue([mediaKey, mediaKeyInd, "img"], res[mediaKey]);
-      else form.setFieldValue(mediaKey, res[mediaKey]);
-    }
-
-    setMediaKey(null);
-    setMediaKeyInd(null);
-    setIsOpenMedia(false);
-  }
+  const imagesError = errors.errorOf("images", images);
 
   return (
     <Drawer
@@ -66,67 +79,95 @@ export default function Create({ open, close, submit }) {
       maskClosable={false}
       title={`${t("Add faq")}`}
       extra={[
-        <Button type="primary" size="large" loading={isButtonLoading} onClick={form.submit}>
+        <Button
+          key="submit"
+          type="primary"
+          size="large"
+          loading={isButtonLoading}
+          onClick={errors.submit}>
           {t("Add")}
         </Button>,
-      ]}
-    >
-      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
+      ]}>
+      <Media
+        mediaKey={media.mediaKey}
+        open={media.isOpenMedia}
+        close={media.closeMedia}
+      />
       <Form
         form={form}
-        onFinish={submit}
-        layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
-      >
-        <Form.Item name="title" label={t("Title")} rules={[{ required: true }]}>
+        onFinish={handleSubmit}
+        onFieldsChange={errors.onFieldsChange}
+        layout="vertical">
+        <Form.Item name="title" label={t("Title")} rules={[requiredRule, nameRule()]}>
           <Input size="large" placeholder={t("Title")} />
         </Form.Item>
-        <Form.Item name="description" label={t("Description")} rules={[{ required: true }]}>
+        <Form.Item
+          name="description"
+          label={t("Description")}
+          rules={[requiredRichTextRule]}>
           <TipTapFormField />
         </Form.Item>
 
-        <p className="pb-2">{t("Images")}</p>
-        <Form.List name="images">
-          {(fields, { add, remove, move }) => (
-            <div className="flex flex-col border border-dashed border-gray-300 p-6">
+        <p className="pb-2">
+          <FieldLabel label={t("Images")} error={imagesError} />
+        </p>
+        <Form.List name="images" rules={[requiredListRule]}>
+          {(fields, { add, remove }) => (
+            <div
+              className={`flex flex-col border border-dashed ${imagesError ? "border-red-500" : "border-gray-300"} p-6`}>
               {fields.map((field) => (
-                <div className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`} key={field.key}>
-                  <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.img !== currentValues.img}>
-                    {({ getFieldValue }) => (
-                      <>
-                        <div
-                          className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                          onClick={() => openMedia("images", field.name)}
-                          style={{
-                            backgroundImage: `url(${config.server_ip}/media/${getFieldValue("images")[field?.name]?.img})`,
-                            backgroundSize: "contain",
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "center",
-                          }}
-                        >
-                          {!getFieldValue("images")[field?.name]?.img ? (
-                            <div className="flex justify-center items-center flex-col p-10">
-                              <AiOutlineFileImage className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add image")}</p>
-                            </div>
-                          ) : null}
-                        </div>
+                <div
+                  className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`}
+                  key={field.key}>
+                  <Form.Item
+                    noStyle
+                    shouldUpdate={(prevValues, currentValues) =>
+                      JSON.stringify(prevValues.images) !==
+                      JSON.stringify(currentValues.images)
+                    }>
+                    {({ getFieldValue }) => {
+                      const path = ["images", field.name, "img"];
+                      const value = getFieldValue(path);
 
-                        <Form.Item name={[field.name, "img"]} hidden>
-                          <Input />
-                        </Form.Item>
-                      </>
-                    )}
+                      return (
+                        <>
+                          {/* o botão remove a imagem inteira, mesmo que ainda não tenha ficheiro */}
+                          <MediaField
+                            label={t("Image")}
+                            value={value}
+                            error={
+                              media.selectionError(path) ||
+                              errors.errorOf(path, value)
+                            }
+                            placeholder={t("Add image")}
+                            onOpen={() =>
+                              media.openMedia("images", field.name, "img")
+                            }
+                            onRemove={() => remove(field.name)}
+                            alwaysRemovable
+                          />
+                          <Form.Item
+                            name={[field.name, "img"]}
+                            hidden
+                            validateTrigger="onChange"
+                            rules={[requiredRule, fileTypeRule("image", t)]}>
+                            <Input />
+                          </Form.Item>
+                        </>
+                      );
+                    }}
                   </Form.Item>
 
-                  <Form.Item name={[field.name, "id_lang"]} hidden defaultValue={selectedLanguage.id}>
+                  <Form.Item
+                    name={[field.name, "id_lang"]}
+                    hidden
+                    defaultValue={selectedLanguage.id}>
                     <Input />
                   </Form.Item>
                 </div>
               ))}
               <Button size="large" onClick={() => add()}>
-                Add image
+                {t("Add image")}
               </Button>
             </div>
           )}

@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import CertificateForm from "../../../components/admin/certificate/form";
 import CertificatePreview from "../../../components/admin/certificate/preview";
+import useFormErrors from "../../../utils/useFormErrors";
 
 export default function CertificateDetails() {
   const { user, messageApi } = useContext(Context);
@@ -24,6 +25,7 @@ export default function CertificateDetails() {
   const navigate = useNavigate();
 
   const [form] = Form.useForm();
+  const errors = useFormErrors(form);
 
   const { id } = useParams();
 
@@ -51,9 +53,7 @@ export default function CertificateDetails() {
       });
   }
 
-  function submit() {
-    let values = form.getFieldsValue();
-    console.log(values);
+  function submit(values) {
     axios
       .post(endpoints.course_certificate.update, { data: values })
       .then((res) => {
@@ -79,11 +79,12 @@ export default function CertificateDetails() {
       </div>
       <p className="font-bold text-[20px]">Certificate details</p>
       <div className="grid grid-cols-2 gap-8 mt-4">
-        <CertificateForm form={form} data={data} submit={submit} />
+        <CertificateForm form={form} submit={submit} errors={errors} />
         <CertificatePreview data={previewData} />
       </div>
       <div className="mt-4">
-        <Button size="large" type="primary" onClick={() => submit()}>
+        {/* Valida o formulário antes de gravar (o onFinish do CertificateForm é o submit) */}
+        <Button size="large" type="primary" onClick={errors.submit}>
           Save
         </Button>
         <Button className="ml-2" size="large" onClick={() => preview()}>
