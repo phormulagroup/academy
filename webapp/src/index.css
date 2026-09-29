@@ -20,8 +20,30 @@ a {
   width: 100vw;
   height: 100vh;
   font-family: "Poppins";
-  color: #000000;
+  /* Cor base do texto (front e backoffice), identidade Bial */
+  color: #163986;
   overflow-x: hidden;
+}
+
+/* Inputs (front e backoffice): o valor escrito tem mais peso do que o placeholder */
+input,
+textarea,
+.ant-input,
+.ant-input-number-input,
+.ant-picker-input > input,
+.ant-select-selection-item {
+  color: #163986;
+  font-weight: 500;
+}
+
+input::placeholder,
+textarea::placeholder,
+.ant-input::placeholder,
+.ant-picker-input > input::placeholder,
+.ant-select-selection-placeholder {
+  color: #8b9cc3 !important;
+  font-weight: 300;
+  opacity: 1;
 }
 
 /* Parametrização */
@@ -330,7 +352,7 @@ select,
 
 .principal-menu .ant-menu-item-selected {
   background-color: #fff !important;
-  color: #000 !important;
+  color: #163986 !important;
 }
 
 .principal-menu .ant-menu-item-selected .icon {
@@ -444,7 +466,7 @@ select {
 }
 
 .result-tab-course-item .ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: #000 !important;
+  color: #163986 !important;
 }
 
 .result-tab-course-item .ant-tabs-tab-active .ant-tabs-tab-btn:hover {
@@ -1063,7 +1085,7 @@ select {
 }
 
 .tabs-report .ant-tabs-tab-btn {
-  color: #000000 !important;
+  color: #163986 !important;
 }
 
 .ant-tabs-nav-more {

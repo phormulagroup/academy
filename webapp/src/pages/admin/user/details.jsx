@@ -614,7 +614,7 @@ export default function UserDetails() {
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Modules")}</p>
                           <ThumbsUp
-                            className={`${c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length === c.modules.length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                            className={`${c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length === c.modules.length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
                           />
                           <p className="text-sm">
                             {
@@ -630,7 +630,7 @@ export default function UserDetails() {
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Topics")}</p>
                           <ThumbsUp
-                            className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                            className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
                           />
                           <p className="text-sm">
                             {
@@ -650,7 +650,7 @@ export default function UserDetails() {
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Tests")}</p>
                           <TestIcon
-                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#010202]"} w-10 h-10`}
+                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
                           />
                           <p className="text-sm">
                             {

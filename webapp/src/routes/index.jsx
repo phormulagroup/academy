@@ -104,6 +104,10 @@ export default function AppRoutes() {
 			theme={{
 				token: {
 					colorPrimary: "#163986",
+					// Texto, títulos/labels e placeholders dos componentes antd (front e backoffice)
+					colorText: "#163986",
+					colorTextHeading: "#163986",
+					colorTextPlaceholder: "#8b9cc3",
 					fontFamily: "Poppins",
 					blue: "#00b9d6",
 					controlInteractiveSize: 20,
