@@ -1,20 +1,15 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Footer } from "antd/es/layout/layout";
 import {
   Button,
   Checkbox,
   DatePicker,
-  Divider,
   Dropdown,
   Form,
   Input,
   message,
   Select,
 } from "antd";
-import { FaChevronRight } from "react-icons/fa";
-import { TfiMicrosoftAlt } from "react-icons/tfi";
-import logoPhormula from "../../assets/logo-phormula.svg";
 
 import { Context } from "../../utils/context";
 
@@ -28,10 +23,11 @@ import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
+import useChangeLanguage from "../../utils/useChangeLanguage";
 
 export default function Register() {
   const { t } = useTranslation();
-  const { setIsLoadingLanguage, languages, messageApi } = useContext(Context);
+  const { languages, messageApi } = useContext(Context);
   const [countries, setCountries] = useState([]);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -101,16 +97,8 @@ export default function Register() {
       });
   }
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    navigate(
-      `/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`,
-    );
-    setIsLoadingLanguage(true);
-    setTimeout(() => {
-      setIsLoadingLanguage(false);
-    }, 1500);
-  };
+  // Mesma mudança de idioma do header: mantém o header sincronizado e mostra a animação de carregamento
+  const changeLanguage = useChangeLanguage();
 
   return (
     <div
@@ -153,7 +141,7 @@ export default function Register() {
             <Link
               to={`/${i18n.language}`}
               className="max-w-75 h-auto mx-auto mb-6">
-              <img src={logo} alt="Phormula Logo" />
+              <img src={logo} alt="BIAL Regional Academy Logo" />
             </Link>
             <Form
               form={form}

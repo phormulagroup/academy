@@ -1,18 +1,6 @@
-import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Footer } from "antd/es/layout/layout";
-import {
-  Button,
-  Checkbox,
-  Divider,
-  Dropdown,
-  Form,
-  Input,
-  message,
-} from "antd";
-import { FaChevronRight } from "react-icons/fa";
-import { TfiMicrosoftAlt } from "react-icons/tfi";
-import logoPhormula from "../../assets/logo-phormula.svg";
+import { useContext, useState } from "react";
+import { Link } from "react-router";
+import { Button, Checkbox, Dropdown, Form, Input, message } from "antd";
 
 import { Context } from "../../utils/context";
 
@@ -26,18 +14,16 @@ import bgLogin from "../../assets/Background-login.png";
 
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
+import useChangeLanguage from "../../utils/useChangeLanguage";
 
 export default function Login() {
-  const { setIsLoadingLanguage, login, messageApi, languages, createLog } =
-    useContext(Context);
+  const { login, messageApi, languages, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
-
-  const navigate = useNavigate();
 
   function submit(values, type) {
     setIsButtonLoading(true);
@@ -84,16 +70,7 @@ export default function Login() {
       });
   }
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    navigate(
-      `/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`,
-    );
-    setIsLoadingLanguage(true);
-    setTimeout(() => {
-      setIsLoadingLanguage(false);
-    }, 1500);
-  };
+  const changeLanguage = useChangeLanguage();
 
   return (
     <div
@@ -136,7 +113,7 @@ export default function Login() {
             <Link
               to={`/${i18n.language}`}
               className="max-w-75 h-auto mx-auto mb-6">
-              <img src={logo} alt="Phormula Logo" />
+              <img src={logo} alt="BIAL Regional Academy Logo" />
             </Link>
             <div className="flex justify-center items-center mx-auto max-w-75">
               <p className="text-center text-sm mb-6 font-semibold">

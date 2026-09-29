@@ -21,6 +21,7 @@ import { Footer } from "antd/es/layout/layout";
 import bialLogo from "../assets/BIAL-logo-footer.svg";
 import { AiFillCloseCircle } from "react-icons/ai";
 import dayjs from "dayjs";
+import useChangeLanguage from "../utils/useChangeLanguage";
 
 const { Header, Content } = Layout;
 
@@ -54,13 +55,11 @@ const Main = () => {
     user,
     logout,
     languages,
-    setIsLoadingLanguage,
     windowDimension,
     notifications,
     inbox,
     isLoggedIn,
     selectedLanguage,
-    setSelectedLanguage,
   } = useContext(Context);
   const { t, i18n } = useTranslation();
 
@@ -91,19 +90,8 @@ const Main = () => {
     (item.section === "about" && currentSection === "" && !isLoggedIn) ||
     (item.section === "faqs" && currentSection === "faqs");
 
-  const changeLanguage = (lang) => {
-    const selectedLang = languages.find((l) => l.code === lang);
-    localStorage.setItem("id_lang", selectedLang.id);
-    i18n.changeLanguage(lang);
-    setSelectedLanguage(selectedLang);
-    navigate(
-      `/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`,
-    );
-    setIsLoadingLanguage(true);
-    setTimeout(() => {
-      setIsLoadingLanguage(false);
-    }, 1500);
-  };
+  // Mesma mudança de idioma do header: mantém o header sincronizado e mostra a animação de carregamento
+  const changeLanguage = useChangeLanguage();
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
