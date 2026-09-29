@@ -1,12 +1,14 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { CloseOutlined, LoginOutlined, MenuOutlined } from "@ant-design/icons";
-import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
+import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu, Tooltip } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FaRegUser } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { TbWorld } from "react-icons/tb";
+import { AiOutlineGlobal } from "react-icons/ai";
 
 import { Context } from "../utils/context";
+import LanguageSelector from "../utils/languageSelector";
 import Logout from "../components/logout";
 
 import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
@@ -252,8 +254,8 @@ const Main = () => {
               onClick={() => handleClickMenu({ key: "/admin/perfil" })}>
               <Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
               <div className="flex flex-col">
-                <p className="text-[#0c3c61]">Olá,</p>
-                <p className="text-[#0c3c61]">{user.name}</p>
+                <p className="text-[#163986]">Olá,</p>
+                <p className="text-[#163986]">{user.name}</p>
               </div>
             </div>
             <div className="flex flex-col justify-start items-center p-5">
@@ -279,39 +281,30 @@ const Main = () => {
             <div className="flex justify-end items-center">
               {windowDimension.width > 1080 ? (
                 <div className="flex justify-center items-center">
-                  <Dropdown
-                    menu={{
-                      items: languages.map((item) => ({
-                        key: item.code,
-                        label: (
-                          <div
-                            className={`flex items-center ${selectedLanguage.id === item.id ? "text-[#00B9D6]" : ""}`}
-                            onClick={() => selectLanguage(item)}>
-                            <img
-                              src={item.flag}
-                              className="max-w-5 mr-2"
-                              alt={item.name}
-                            />
-                            <p>{item.name}</p>
-                          </div>
-                        ),
-                      })),
-                    }}
-                    trigger={["click"]}
-                    placement="bottomRight">
-                    <div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
-                      <div
-                        className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                        style={{
-                          backgroundImage: `url(${languages.filter((l) => l.id === selectedLanguage.id)[0].flag})`,
-                        }}></div>
-                      <p>{selectedLanguage.code.toUpperCase()}</p>
-                    </div>
-                  </Dropdown>
+                  {/* Regressar ao website (front) */}
+                  <Tooltip title={t("Go to website")}>
+                    <Link
+                      className="flex items-center mr-4"
+                      to={`/${i18n.language}`}
+                      aria-label={t("Go to website")}>
+                      <AiOutlineGlobal
+                        className="text-[20px]"
+                        style={{ color: "#163986" }}
+                      />
+                    </Link>
+                  </Tooltip>
 
-                  <Link className={`flex items-center`} to={`/admin/inbox`}>
+                  {/* Seletor de idioma: mesmo estilo do header do front (estados ativo e hover em index.css) */}
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={selectLanguage}
+                    className="mr-4"
+                  />
+
+                  <Link className={`flex items-center mr-4`} to={`/admin/inbox`}>
                     <div className="flex items-center">
-                      <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                      <div className="w-5 h-5 flex justify-center items-center">
                         {inbox.filter((n) => n.unread_messages > 0).length >
                         0 ? (
                           <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
@@ -320,13 +313,45 @@ const Main = () => {
                             </p>
                           </div>
                         ) : (
-                          <NotificationIcon className="mr-2" />
+                          <NotificationIcon />
                         )}
                       </div>
                     </div>
                   </Link>
-                  <Avatar icon={<FaRegUser />} />
-                  <p className="text-[12px] ml-2">{user.name}</p>
+
+                  {/* Utilizador: mesmo avatar e cor do nome do header do front */}
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: "logout",
+                          label: (
+                            <div
+                              className="dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]"
+                              onClick={() => setIsOpenLogout(true)}>
+                              <LoginOutlined className="mr-2" />
+                              <p>Logout</p>
+                            </div>
+                          ),
+                        },
+                      ],
+                    }}
+                    trigger={["click"]}
+                    placement="bottomRight">
+                    <div className="flex justify-center items-center cursor-pointer">
+                      <Avatar
+                        icon={<FaRegUser />}
+                        style={{
+                          color: "#FFFFFF",
+                          backgroundColor: "#00B9D6",
+                        }}
+                      />
+                      <p className="text-[12px] ml-2 text-[#163986] font-medium">
+                        {user.name.split(" ")[0]}{" "}
+                        {user.name.split(" ")[user.name.split(" ").length - 1]}
+                      </p>
+                    </div>
+                  </Dropdown>
                 </div>
               ) : (
                 <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />

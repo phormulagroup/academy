@@ -22,6 +22,7 @@ import bialLogo from "../assets/BIAL-logo-footer.svg";
 import { AiFillCloseCircle } from "react-icons/ai";
 import dayjs from "dayjs";
 import useChangeLanguage from "../utils/useChangeLanguage";
+import LanguageSelector from "../utils/languageSelector";
 
 const { Header, Content } = Layout;
 
@@ -208,6 +209,8 @@ const Main = () => {
                             currentSection === "admin" ? "active" : ""
                           }`}
                           to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
                           onClick={() => closeDrawer()}>
                           {t("Go to backoffice")}
                         </Link>
@@ -326,41 +329,12 @@ const Main = () => {
               <div className="flex justify-end items-center">
                 {((user && Object.keys(user).length === 0) ||
                   user?.id_role === 1) && (
-                  <Dropdown
-                    menu={{
-                      items: languages.map((item) => ({
-                        key: item.code,
-                        label: (
-                          <div
-                            className={`dropdown-language-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${
-                              selectedLanguage?.id === item.id
-                                ? "text-[#00B9D6]"
-                                : "text-[#163986]"
-                            }`}
-                            onClick={() => changeLanguage(item.code)}>
-                            <img
-                              src={item.flag}
-                              className="max-w-5 mr-2"
-                              alt={item.name}
-                            />
-                            <p>{item.name}</p>
-                          </div>
-                        ),
-                      })),
-                    }}
-                    trigger={["click"]}
-                    placement="bottomRight">
-                    <div className="flex justify-center items-center cursor-pointer mr-4 border border-[#163986] leading-1 p-2 rounded-full">
-                      <div
-                        className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                        style={{
-                          backgroundImage: `url(${selectedLanguage?.flag})`,
-                        }}></div>
-                      <p className="text-[#163986] text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] font-medium">
-                        {selectedLanguage?.code?.toUpperCase()}
-                      </p>
-                    </div>
-                  </Dropdown>
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={(item) => changeLanguage(item.code)}
+                    className="mr-4"
+                  />
                 )}
 
                 {user && Object.keys(user).length > 0 && (
@@ -373,7 +347,9 @@ const Main = () => {
                             label: (
                               <Link
                                 className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "admin" ? "active" : ""}`}
-                                to="/admin">
+                                to="/admin"
+                                target="_blank"
+                                rel="noopener noreferrer">
                                 <div className="flex items-center">
                                   <div className="w-5 mr-2"></div>
                                   <p>{t("Go to backoffice")}</p>
@@ -504,41 +480,12 @@ const Main = () => {
               </div>
               <div className="flex items-center">
                 {user && user.id_role === 1 && (
-                  <Dropdown
-                    menu={{
-                      items: languages.map((item) => ({
-                        key: item.code,
-                        label: (
-                          <div
-                            className={`dropdown-language-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${
-                              selectedLanguage?.id === item.id
-                                ? "text-[#00B9D6] font-medium"
-                                : "text-[#163986] font-medium"
-                            }`}
-                            onClick={() => changeLanguage(item.code)}>
-                            <img
-                              src={item.flag}
-                              className="max-w-5 mr-2"
-                              alt={item.name}
-                            />
-                            <p>{item.name}</p>
-                          </div>
-                        ),
-                      })),
-                    }}
-                    trigger={["click"]}
-                    placement="bottomRight">
-                    <div className="flex justify-center items-center cursor-pointer mr-4 border border-[#163986] leading-1 p-2 rounded-full">
-                      <div
-                        className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                        style={{
-                          backgroundImage: `url(${selectedLanguage?.flag})`,
-                        }}></div>
-                      <p className="text-[#163986] text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]">
-                        {selectedLanguage?.code?.toUpperCase()}
-                      </p>
-                    </div>
-                  </Dropdown>
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={(item) => changeLanguage(item.code)}
+                    className="mr-4"
+                  />
                 )}
                 <MenuOutlined
                   onClick={() => setIsOpenDrawerMenu(true)}
