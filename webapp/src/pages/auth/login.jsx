@@ -1,20 +1,16 @@
 import { useContext, useState } from "react";
 import { Link } from "react-router";
-import { Button, Checkbox, Dropdown, Form, Input, message } from "antd";
+import { Button, Checkbox, Form, Input } from "antd";
 
 import { Context } from "../../utils/context";
 
-import dayjs from "dayjs";
 import axios from "axios";
 import endpoints from "../../utils/endpoints";
 
-import logo from "../../assets/BIAL-Regional-Academy.png";
-import logoBialFooter from "../../assets/BIAL-logo-footer-Login.svg";
-import bgLogin from "../../assets/Background-login.png";
-
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
-import useChangeLanguage from "../../utils/useChangeLanguage";
+import AuthLayout from "../../layout/auth";
+import { requiredRule } from "../../utils/formFieldError";
 
 export default function Login() {
   const { login, messageApi, languages, createLog } = useContext(Context);
@@ -25,7 +21,7 @@ export default function Login() {
 
   const { t } = useTranslation();
 
-  function submit(values, type) {
+  function submit(values) {
     setIsButtonLoading(true);
     axios
       .post(endpoints.auth.login, { data: values })
@@ -66,163 +62,62 @@ export default function Login() {
       })
       .catch((err) => {
         console.log(err);
+        messageApi.open({
+          type: "error",
+          content: t("Something went wrong, try again later."),
+        });
         setIsButtonLoading(false);
       });
   }
 
-  const changeLanguage = useChangeLanguage();
+  const labelClass = "pb-2 text-center text-[13px] sm:text-sm";
 
   return (
-    <div
-      className={`flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat`}
-      style={{ backgroundImage: `url(${bgLogin})` }}>
-      <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4">
-        <div className="max-w-112.5 bg-white rounded-[5px] shadow-[0_3px_6px_rgba(0,0,0,0.16)] sm:mt-15 relative">
-          <div className="absolute -right-7.5 -top-4.5">
-            <Dropdown
-              menu={{
-                items: languages.map((item) => ({
-                  key: item.code,
-                  label: (
-                    <div
-                      className={`flex items-center ${i18n.language === item.code ? "text-[#00B9D6]" : ""}`}
-                      onClick={() => changeLanguage(item.code)}>
-                      <img
-                        src={item.flag}
-                        className="max-w-5 mr-2"
-                        alt={item.name}
-                      />
-                      <p>{item.name}</p>
-                    </div>
-                  ),
-                })),
-              }}
-              trigger={["click"]}
-              placement="bottomRight">
-              <div className="flex justify-center items-center cursor-pointer border leading-1 p-2 rounded-full bg-white">
-                <div
-                  className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-                  style={{
-                    backgroundImage: `url(${languages.filter((l) => l.code === i18n.language)[0]?.flag})`,
-                  }}></div>
-                <p>{i18n.language.toUpperCase()}</p>
-              </div>
-            </Dropdown>
-          </div>
-          <div className="flex flex-col p-6">
-            <Link
-              to={`/${i18n.language}`}
-              className="max-w-75 h-auto mx-auto mb-6">
-              <img src={logo} alt="BIAL Regional Academy Logo" />
-            </Link>
-            <div className="flex justify-center items-center mx-auto max-w-75">
-              <p className="text-center text-sm mb-6 font-semibold">
-                {t("Welcome to the BIAL Regional Academy e-Learning platform")}
-              </p>
-            </div>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={submit}
-              className="auth-form"
-              validateMessages={{
-                required: t("This field is required"),
-              }}>
-              <p className="pb-2 text-center text-sm">{t("E-mail")}</p>
-              <Form.Item name="email" rules={[{ required: true }]}>
-                <Input size="large" placeholder={t("youremail@domain.com")} />
-              </Form.Item>
-              <p className="pb-2 text-center text-sm">{t("Password")}</p>
-              <Form.Item
-                name="password"
-                rules={[{ required: true }]}
-                className="mb-2!">
-                <Input.Password size="large" placeholder="●●●●●●●" />
-              </Form.Item>
-              <div className="flex justify-between mb-4">
-                <Form.Item
-                  name="remember"
-                  valuePropName="checked"
-                  className="mb-0!">
-                  <Checkbox size="large">
-                    <p className="text-[#707070] text-[12px]">
-                      {t("Remember me")}
-                    </p>
-                  </Checkbox>
-                </Form.Item>
-                <div className="flex justify-end items-center">
-                  <Link
-                    to={`/${i18n.language}/recover`}
-                    className="text-black! hover:text-[#FFC600]! underline!">
-                    <p className="text-[12px]">
-                      <u>{t("Forgot your password?")}</u>
-                    </p>
-                  </Link>
-                </div>
-              </div>
-              <Button
-                htmlType="submit"
-                type="primary"
-                size="large"
-                className="w-full"
-                loading={isButtonLoading}>
-                {t("Login")}
-              </Button>
-              <p className="text-center mt-4">
-                <Link
-                  to={`/${i18n.language}/register`}
-                  className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
-                  « {t("Register")}
-                </Link>
-              </p>
-            </Form>
-
-            <p className="text-center text-xs mt-6 text-[#707070]">
-              {t(
-                "If you are having trouble accessing your account, please contact our support team at",
-              )}{" "}
-              <u className="text-black">help@bial-academy.pt</u>
+    <AuthLayout>
+      <div className="flex justify-center items-center mx-auto max-w-75">
+        <p className="text-center text-[13px] sm:text-sm mb-4 sm:mb-6 font-semibold">
+          {t("Welcome to the BIAL Regional Academy e-Learning platform")}
+        </p>
+      </div>
+      <Form form={form} layout="vertical" onFinish={submit} className="auth-form">
+        <p className={labelClass}>{t("Email")}</p>
+        <Form.Item name="email" rules={[requiredRule]}>
+          <Input size="large" placeholder={t("youremail@domain.com")} />
+        </Form.Item>
+        <p className={labelClass}>{t("Password")}</p>
+        <Form.Item name="password" rules={[requiredRule]} className="mb-2!">
+          <Input.Password size="large" placeholder="●●●●●●●" />
+        </Form.Item>
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
+          <Form.Item name="remember" valuePropName="checked" className="mb-0!">
+            <Checkbox size="large">
+              <p className="text-[#707070] text-[12px]">{t("Remember me")}</p>
+            </Checkbox>
+          </Form.Item>
+          <Link
+            to={`/${i18n.language}/recover`}
+            className="text-[#163986]! hover:text-[#FFC600]! underline!">
+            <p className="text-[12px]">
+              <u>{t("Forgot your password?")}</u>
             </p>
-          </div>
+          </Link>
         </div>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-3 md:col-span-1 p-4 flex justify-center items-center">
-          <img src={logoBialFooter} className="max-w-45" />
-        </div>
-        <div className="col-span-3 md:col-span-1 flex flex-col justify-center items-center p-4">
-          <div className="flex">
-            <div className="pr-3">
-              <Link to={`/${i18n.language}/contact`}>
-                <p className="text-sm text-center text-[#163986]">
-                  {t("Contact Form")}
-                </p>
-              </Link>
-            </div>
-            <div className="border-r border-l border-[#163986] pl-3 pr-3">
-              <Link
-                to={"https://www.bial.com/en/terms-and-conditions"}
-                target="_blank">
-                <p className="text-sm text-center text-[#163986]">
-                  {t("Terms and conditions")}
-                </p>
-              </Link>
-            </div>
-            <div className="pl-3">
-              <Link
-                to={"https://www.bial.com/en/privacy-policy"}
-                target="_blank">
-                <p className="text-sm text-center text-[#163986]">
-                  {t("Privacy policy")}
-                </p>
-              </Link>
-            </div>
-          </div>
-          <p className="text-sm mt-4 text-[#163986]">
-            {dayjs().format("YYYY")} Bial Portugal. All rights reserved
-          </p>
-        </div>
-      </div>
-    </div>
+        <Button
+          htmlType="submit"
+          type="primary"
+          size="large"
+          className="w-full"
+          loading={isButtonLoading}>
+          {t("Login")}
+        </Button>
+        <p className="text-center mt-4 text-[13px] sm:text-sm">
+          <Link
+            to={`/${i18n.language}/register`}
+            className="text-[#163986]! hover:text-[#FFC600]! font-bold underline!">
+            « {t("Register")}
+          </Link>
+        </p>
+      </Form>
+    </AuthLayout>
   );
 }
