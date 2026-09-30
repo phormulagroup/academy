@@ -326,9 +326,11 @@ const ContextProvider = ({ children }) => {
 		if (languagesData.length === 0) return;
 		try {
 			const langStorage = localStorage.getItem("i18nextLng");
-			const auxLanguage = languagesData.filter((_l) =>
-				langStorage ? _l.code === langStorage : _l.is_default === 1,
-			)[0];
+			// i18nextLng pode ainda ter o código do browser (ex.: "pt-PT"): usa o idioma por defeito
+			const auxLanguage =
+				languagesData.find((_l) => _l.code === langStorage) ??
+				languagesData.find((_l) => _l.is_default === 1) ??
+				languagesData[0];
 
 			const res = await axios.get(endpoints.personalization.readByLang, {
 				params: { id_lang: auxLanguage.id },

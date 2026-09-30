@@ -33,12 +33,17 @@ export default function Main() {
         <meta property="og:description" content={`Bial Regional Academy`} />
       </Helmet>
       <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-6 lg:gap-10 w-full">
-        <div className={`flex flex-col justify-center ${showAnimation ? "col-span-2" : "col-span-3"}`}>
-          <p className="text-[22px] sm:text-[26px] lg:text-[30px] font-bold leading-tight" style={{ color: "#163986" }}>
+        <div
+          className={`flex flex-col justify-center ${showAnimation ? "col-span-2" : "col-span-3"}`}>
+          <p
+            className="text-[22px] sm:text-[26px] lg:text-[30px] font-bold leading-tight"
+            style={{ color: "#163986" }}>
             {t("About Bial Regional Academy")}
           </p>
-          <p className="italic text-base sm:text-lg lg:text-xl mt-1" style={{ color: "#163986" }}>
-            {t("Keeping training in mind")}
+          <p
+            className="italic text-base sm:text-lg lg:text-xl mt-1"
+            style={{ color: "#163986" }}>
+            Keeping training in mind
           </p>
           {data?.text ? (
             <div
@@ -59,12 +64,17 @@ export default function Main() {
             {Object.keys(user || {}).length === 0 && (
               <div className="flex items-center">
                 <Link to={`/${i18n.language}/login`}>
-                  <Button type="primary" className="min-w-30 main-cta-button" size="large">
+                  <Button
+                    type="primary"
+                    className="min-w-30 main-cta-button"
+                    size="large">
                     {t("Login")}
                   </Button>
                 </Link>
                 <Link to={`/${i18n.language}/register`}>
-                  <Button className="ml-2 min-w-30 main-secondary-cta-button" size="large">
+                  <Button
+                    className="ml-2 min-w-30 main-secondary-cta-button"
+                    size="large">
                     {t("Register")}
                   </Button>
                 </Link>
@@ -72,14 +82,20 @@ export default function Main() {
             )}
             <div
               className={`flex ${Object.keys(user || {}).length === 0 ? "justify-end" : "justify-start"} items-center w-full`}>
-              <img src={emergingMarket} className="max-w-32 sm:max-w-40 lg:max-w-50" />
+              <img
+                src={emergingMarket}
+                className="max-w-32 sm:max-w-40 lg:max-w-50"
+              />
             </div>
           </div>
         </div>
 
         {showAnimation && (
           <div className="flex justify-center items-center w-full max-w-60 sm:max-w-80 lg:max-w-none mx-auto">
-            <LottieAnim loop={false} onComplete={() => setShowAnimation(false)} />
+            <LottieAnim
+              loop={false}
+              onComplete={() => setShowAnimation(false)}
+            />
           </div>
         )}
       </div>
