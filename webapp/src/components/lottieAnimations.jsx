@@ -10,7 +10,7 @@ export default function LottieAnim(props) {
 			renderer: "svg",
 			loop: props?.loop ?? true,
 			autoplay: true,
-			path: "/animation.json", // 👈 usa path!
+			path: "/animationWithoutLoop.json", // 👈 usa path!
 		});
 
 		// Animação sem loop: avisa quando termina (ex.: para a remover da página)
