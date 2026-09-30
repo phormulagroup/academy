@@ -97,7 +97,9 @@ export default function AppRoutes() {
 		}
 	})();
 
-	const element = finalRoutes ? useRoutes(finalRoutes) : null;
+	// useRoutes é um hook: tem de ser chamado sempre (lista vazia enquanto carrega), senão a ordem dos hooks
+	// muda entre renders e a navegação pode ficar num estado errado até recarregar a página
+	const element = useRoutes(finalRoutes ?? []);
 
 	return (
 		<ConfigProvider
