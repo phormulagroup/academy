@@ -247,7 +247,7 @@ export default function Settings({ course }) {
               <Select
                 size="large"
                 className="w-full"
-                placeholder="Selecione..."
+                placeholder={t("Select...")}
                 allowClear
                 showSearch={{
                   optionFilterProp: ["label"],

@@ -90,14 +90,10 @@
   object-fit: contain;
 }
 
-/* Setas: círculo branco com ícone azul Bial, hover a #00B9D6 */
 .bial-carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
   border-radius: 9999px;
   border: 1px solid #163986;
   background: #ffffff;
@@ -115,23 +111,17 @@
     opacity 0.2s ease;
 }
 
-.bial-carousel-arrow:hover:not(:disabled) {
-  background: #00b9d6;
-  border-color: #00b9d6;
-  color: #ffffff;
+@media (hover: hover) {
+  .bial-carousel-arrow:hover:not(:disabled) {
+    background: #00b9d6;
+    border-color: #00b9d6;
+    color: #ffffff;
+  }
 }
 
 .bial-carousel-arrow:disabled {
   opacity: 0.35;
   cursor: default;
-}
-
-.bial-carousel-arrow-prev {
-  left: 8px;
-}
-
-.bial-carousel-arrow-next {
-  right: 8px;
 }
 
 @media (min-width: 768px) {
@@ -140,33 +130,34 @@
     height: 42px;
     font-size: 20px;
   }
-
-  .bial-carousel-arrow-prev {
-    left: 12px;
-  }
-
-  .bial-carousel-arrow-next {
-    right: 12px;
-  }
 }
 
+/* Indexação (pontos + contador) e, por baixo, setas e ecrã inteiro */
 .bial-carousel-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .bial-carousel-dots {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bial-carousel-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .bial-carousel-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 9999px;
   border: none;
   padding: 0;
@@ -182,13 +173,13 @@
 }
 
 .bial-carousel-dot.active {
-  width: 22px;
+  width: 26px;
   background: #163986;
 }
 
 .bial-carousel-counter {
-  margin-left: 6px;
-  font-size: 12px;
+  margin-left: 8px;
+  font-size: 14px;
   font-weight: 600;
   color: #163986;
 }
@@ -196,8 +187,8 @@
 .bial-carousel-fullscreen {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 600;
   color: #163986;
   cursor: pointer;
@@ -205,40 +196,83 @@
 }
 
 .bial-carousel-fullscreen svg {
-  font-size: 18px;
+  font-size: 22px;
 }
 
 @media (min-width: 768px) {
   .bial-carousel-counter,
   .bial-carousel-fullscreen {
-    font-size: 13px;
+    font-size: 15px;
   }
 }
 
-/* Ecrã inteiro: fundo escuro e slide ajustado à altura do ecrã */
+/* Ecrã inteiro: fundo escuro, sem indexação; por baixo do slide (sem o sobrepor) fica só uma barra
+   fina com setas pequenas e o botão para sair do ecrã inteiro, para o conteúdo ocupar quase todo o ecrã */
 .bial-carousel.is-fullscreen {
+  position: relative;
   background: #0d1b3e;
-  padding: 16px;
-  justify-content: center;
+  padding: 0;
+  gap: 0;
+  height: 100vh;
+  height: 100dvh;
+  justify-content: space-between;
 }
 
+.bial-carousel.is-fullscreen .bial-carousel-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.bial-carousel.is-fullscreen .swiper,
 .bial-carousel.is-fullscreen .swiper-slide {
   background: transparent;
+  border-radius: 0;
 }
 
 .bial-carousel.is-fullscreen .swiper-slide img {
-  max-height: calc(100vh - 90px);
+  max-height: calc(100vh - 36px);
+  max-height: calc(100dvh - 36px);
 }
 
-.bial-carousel.is-fullscreen .bial-carousel-counter,
+.bial-carousel.is-fullscreen .bial-carousel-dots {
+  display: none;
+}
+
+.bial-carousel.is-fullscreen .bial-carousel-footer {
+  flex-shrink: 0;
+  gap: 0;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+}
+
+.bial-carousel.is-fullscreen .bial-carousel-nav {
+  height: 28px;
+  justify-content: center;
+  gap: 16px;
+}
+
+.bial-carousel.is-fullscreen .bial-carousel-arrow {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.9);
+}
+
 .bial-carousel.is-fullscreen .bial-carousel-fullscreen {
   color: #ffffff;
+  font-size: 12px;
+  gap: 6px;
 }
 
-.bial-carousel.is-fullscreen .bial-carousel-dot {
-  background: rgba(255, 255, 255, 0.4);
+.bial-carousel.is-fullscreen .bial-carousel-fullscreen svg {
+  font-size: 16px;
 }
 
-.bial-carousel.is-fullscreen .bial-carousel-dot.active {
-  background: #00b9d6;
+/* Em ecrãs pequenos, no ecrã inteiro, só o ícone e o switch (sem texto) */
+@media (max-width: 1024px) {
+  .bial-carousel.is-fullscreen .bial-carousel-fullscreen span {
+    display: none;
+  }
 }

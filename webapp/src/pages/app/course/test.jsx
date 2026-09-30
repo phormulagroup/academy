@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, Checkbox, Form, Progress } from "antd";
 import {
   AiFillCheckCircle,
@@ -34,8 +35,12 @@ const Test = ({
   updateProgress,
   next,
   onInProgressChange,
+  // Elemento fixo no fundo do eLearning onde fica a navegação entre perguntas durante o teste
+  footerSlot,
 }) => {
-  const { user, messageApi } = useContext(Context);
+  const { user, messageApi, windowDimension } = useContext(Context);
+  // Ecrãs estreitos: labels curtas na barra de navegação do teste
+  const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
@@ -469,7 +474,7 @@ const Test = ({
                     </p>
                     {data.settings.time && (
                       <p className="text-[16px]">
-                        <b>{t("Time")}:</b> {data.settings.time} minutes
+                        <b>{t("Time")}:</b> {data.settings.time} {t("minutes")}
                       </p>
                     )}
                     {data.settings.retries_allowed && (
@@ -758,7 +763,7 @@ const Test = ({
                       {data.question.map((q, i) => (
                         <div
                           className={`${i === currentQuestion ? "flex flex-col" : "hidden"}`}>
-                          <div className={`bg-[#FFF] p-6 `}>
+                          <div className="bg-[#FFF] p-6 rounded-[5px]">
                             <p className="mb-4">
                               <b>{i + 1}</b>. {q.title}
                             </p>
@@ -823,23 +828,40 @@ const Test = ({
                           prevValues[data.question[currentQuestion].title] !==
                           currentValues[data.question[currentQuestion].title]
                         }>
-                        {({ getFieldValue }) => {
-                          return (
-                            <div className="flex justify-between items-center mt-4">
+                        {() => {
+                          const isLastQuestion =
+                            currentQuestion >= data.question.length - 1;
+                          const navigation = (
+                            <div
+                              className={
+                                footerSlot
+                                  ? "test-nav-footer"
+                                  : "flex justify-between items-center mt-4"
+                              }>
                               {currentQuestion > 0 ? (
                                 <Button
                                   size="large"
+                                  className={
+                                    footerSlot ? "main-secondary-cta-button" : ""
+                                  }
                                   onClick={() =>
                                     setCurrentQuestion(currentQuestion - 1)
                                   }
                                   icon={<RxChevronLeft />}>
-                                  {t("Previous question")}
+                                  {shortNavLabels ? t("Previous") : t("Previous question")}
                                 </Button>
                               ) : (
                                 <div></div>
                               )}
-                              {currentQuestion < data.question.length - 1 ? (
-                                <Button className="main-cta-button"
+                              {footerSlot && (
+                                <p className="test-nav-counter">
+                                  <b>{currentQuestion + 1}</b> /{" "}
+                                  {data.question.length}
+                                </p>
+                              )}
+                              {!isLastQuestion ? (
+                                <Button
+                                  className="main-cta-button"
                                   size="large"
                                   type="primary"
                                   onClick={() =>
@@ -847,10 +869,11 @@ const Test = ({
                                   }
                                   icon={<RxChevronRight />}
                                   iconPlacement="end">
-                                  {t("Next question")}
+                                  {shortNavLabels ? t("Next") : t("Next question")}
                                 </Button>
                               ) : (
-                                <Button className="main-cta-button"
+                                <Button
+                                  className="main-cta-button"
                                   size="large"
                                   type="primary"
                                   onClick={form.submit}>
@@ -859,6 +882,11 @@ const Test = ({
                               )}
                             </div>
                           );
+                          // Fixa no fundo do ecrã (fora do scroll), para avançar sem procurar os botões
+                          // em perguntas com muitas opções
+                          return footerSlot
+                            ? createPortal(navigation, footerSlot)
+                            : navigation;
                         }}
                       </Form.Item>
                     </div>

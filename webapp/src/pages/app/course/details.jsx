@@ -183,6 +183,32 @@ export default function CourseDetails() {
     getData();
   }, [slug, user, languages, navigate, t, messageApi, canAccess]);
 
+  // Nº de tópicos/testes (não apagados) concluídos; cada item conta uma só vez, mesmo com registos repetidos
+  function countCompletedItems() {
+    const completed = new Set(
+      progress
+        .filter(
+          (p) =>
+            p.is_completed === 1 &&
+            p.is_deleted !== 1 &&
+            ((p.activity_type === "topic" &&
+              data?.topics?.some(
+                (t) => t.id === p.id_course_topic && t.is_deleted !== 1,
+              )) ||
+              (p.activity_type === "test" &&
+                data?.tests?.some(
+                  (t) => t.id === p.id_course_test && t.is_deleted !== 1,
+                ))),
+        )
+        .map((p) =>
+          p.activity_type === "topic"
+            ? `topic_${p.id_course_topic}`
+            : `test_${p.id_course_test}`,
+        ),
+    );
+    return completed.size;
+  }
+
   function calcCourseProgress(a, b, c) {
     let progressPercentage = (100 * a) / (b + c);
     const isInteger = progressPercentage % 1 === 0;
@@ -335,26 +361,7 @@ export default function CourseDetails() {
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start mb-3 gap-2 sm:gap-4">
                             <p className="text-[#163986] font-bold uppercase whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-xl">
                               {calcCourseProgress(
-                                progress.filter(
-                                  (p) =>
-                                    p.is_completed === 1 &&
-                                    p.is_deleted !== 1 &&
-                                    p.activity_type !== "module" &&
-                                    p.activity_type !== "course" &&
-                                    p.activity_type !== "enroll" &&
-                                    ((p.activity_type === "topic" &&
-                                      data?.topics?.some(
-                                        (t) =>
-                                          t.id === p.id_course_topic &&
-                                          t.is_deleted !== 1,
-                                      )) ||
-                                      (p.activity_type === "test" &&
-                                        data?.tests?.some(
-                                          (t) =>
-                                            t.id === p.id_course_test &&
-                                            t.is_deleted !== 1,
-                                        ))),
-                                ).length,
+                                countCompletedItems(),
                                 data?.topics?.filter((t) => t.is_deleted !== 1)
                                   ?.length || 0,
                                 data?.tests?.filter((t) => t.is_deleted !== 1)
@@ -378,26 +385,7 @@ export default function CourseDetails() {
                             railColor={"#FFF"}
                             percent={
                               (100 *
-                                progress.filter(
-                                  (p) =>
-                                    p.is_completed === 1 &&
-                                    p.is_deleted !== 1 &&
-                                    p.activity_type !== "module" &&
-                                    p.activity_type !== "course" &&
-                                    p.activity_type !== "enroll" &&
-                                    ((p.activity_type === "topic" &&
-                                      data?.topics?.some(
-                                        (t) =>
-                                          t.id === p.id_course_topic &&
-                                          t.is_deleted !== 1,
-                                      )) ||
-                                      (p.activity_type === "test" &&
-                                        data?.tests?.some(
-                                          (t) =>
-                                            t.id === p.id_course_test &&
-                                            t.is_deleted !== 1,
-                                        ))),
-                                ).length) /
+                                countCompletedItems()) /
                               ((data?.topics?.filter((t) => t.is_deleted !== 1)
                                 ?.length || 0) +
                                 (data?.tests?.filter((t) => t.is_deleted !== 1)
@@ -408,26 +396,7 @@ export default function CourseDetails() {
                           />
                         </div>
                         {calcCourseProgress(
-                          progress.filter(
-                            (p) =>
-                              p.is_completed === 1 &&
-                              p.is_deleted !== 1 &&
-                              p.activity_type !== "module" &&
-                              p.activity_type !== "course" &&
-                              p.activity_type !== "enroll" &&
-                              ((p.activity_type === "topic" &&
-                                data?.topics?.some(
-                                  (t) =>
-                                    t.id === p.id_course_topic &&
-                                    t.is_deleted !== 1,
-                                )) ||
-                                (p.activity_type === "test" &&
-                                  data?.tests?.some(
-                                    (t) =>
-                                      t.id === p.id_course_test &&
-                                      t.is_deleted !== 1,
-                                  ))),
-                          ).length,
+                          countCompletedItems(),
                           data?.topics?.filter((t) => t.is_deleted !== 1)
                             ?.length || 0,
                           data?.tests?.filter((t) => t.is_deleted !== 1)

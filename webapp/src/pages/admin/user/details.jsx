@@ -420,7 +420,7 @@ export default function UserDetails() {
                     label={t("Password")}
                     name="password"
                     className="mb-0!">
-                    <Input.Password size="large" placeholder="●●●●●●●" />
+                    <Input.Password size="large" placeholder={t("Enter a new password")} />
                   </Form.Item>
                 </div>
                 <div>
@@ -435,7 +435,7 @@ export default function UserDetails() {
                       ),
                     ]}
                     className="mb-0!">
-                    <Input.Password size="large" placeholder="●●●●●●●" />
+                    <Input.Password size="large" placeholder={t("Repeat the new password")} />
                   </Form.Item>
                 </div>
                 <div className="flex justify-end items-end">

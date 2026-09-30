@@ -6,7 +6,7 @@ import { useContext } from "react";
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import dayjs from "dayjs";
 import Lottie from "lottie-react";
@@ -33,6 +33,7 @@ import { RxChevronUp } from "react-icons/rx";
 
 export default function CourseDetails() {
   const { t, user, windowDimension, selectedLanguage } = useContext(Context);
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
@@ -185,18 +186,23 @@ export default function CourseDetails() {
       });
 
       let steps = visibleItems.size;
-      let completed = items.filter(
-        (p) =>
-          p.is_completed === 1 &&
-          p.is_deleted !== 1 &&
-          p.activity_type !== "module" &&
-          p.activity_type !== "course" &&
-          p.activity_type !== "enroll" &&
-          ((p.activity_type === "topic" &&
-            visibleItems.has(`topic_${p.id_course_topic}`)) ||
-            (p.activity_type === "test" &&
-              visibleItems.has(`test_${p.id_course_test}`))),
-      ).length;
+      // Conta cada item uma só vez (podem existir registos de conclusão repetidos do mesmo item)
+      const completedItems = new Set(
+        items
+          .filter(
+            (p) =>
+              p.is_completed === 1 &&
+              p.is_deleted !== 1 &&
+              (p.activity_type === "topic" || p.activity_type === "test"),
+          )
+          .map((p) =>
+            p.activity_type === "topic"
+              ? `topic_${p.id_course_topic}`
+              : `test_${p.id_course_test}`,
+          )
+          .filter((key) => visibleItems.has(key)),
+      );
+      let completed = completedItems.size;
 
       let progressPercentage = steps > 0 ? (100 * completed) / steps : 0;
       return progressPercentage === 100
@@ -204,6 +210,28 @@ export default function CourseDetails() {
         : parseFloat(progressPercentage).toFixed(2);
     }
     return 0;
+  }
+
+  // "Iniciar" no card: inscreve logo o utilizador no curso (activity_type enroll, is_completed = 1),
+  // para que o detalhe do curso já o mostre como inscrito, sem ter de voltar a carregar em Iniciar
+  function startCourse(e, item) {
+    const isEnrolled = item.progress?.some((p) => p.activity_type === "enroll");
+    if (isEnrolled || calcProgress(item.progress, item.modules) !== 0) return;
+    e.preventDefault();
+    const enrollData = {
+      id_course: item.course.id,
+      id_user: user.id,
+      activity_type: "enroll",
+      is_completed: 1,
+      created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    };
+    axios
+      .post(endpoints.course.updateProgress, { data: [enrollData] })
+      .catch((err) => console.log(err))
+      .finally(() =>
+        navigate(`/${i18n.language}/courses/${item.course.slug}`),
+      );
   }
 
   function handleDownloadCertificate(item, progress) {
@@ -775,6 +803,7 @@ export default function CourseDetails() {
                       {canAccess(item.course) || item.is_available ? (
                         <Link
                           to={`/${i18n.language}/courses/${item.course.slug}`}
+                          onClick={(e) => startCourse(e, item)}
                           className="w-full! block">
                           {calcProgress(item.progress, item.modules) === 100 ? (
                             <Button

@@ -6,10 +6,7 @@ import axios from "axios";
 
 import endpoints from "../../../utils/endpoints";
 
-import {
-  TbLayoutSidebarLeftCollapse,
-  TbLayoutSidebarLeftExpand,
-} from "react-icons/tb";
+import { RiMenuFold4Line, RiMenuUnfold4Line } from "react-icons/ri";
 import { Context } from "../../../utils/context";
 
 import Logout from "../../../components/logout";
@@ -61,6 +58,8 @@ const Learning = () => {
   const [allItems, setAllItems] = useState(null);
   // Teste a decorrer (iniciado e não terminado): bloqueia a navegação entre itens
   const [isTestInProgress, setIsTestInProgress] = useState(false);
+  // Elemento no fundo do ecrã onde o Test coloca a navegação entre perguntas (fixa durante o teste)
+  const [testFooterSlot, setTestFooterSlot] = useState(null);
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
@@ -76,13 +75,16 @@ const Learning = () => {
 
   const { slug } = useParams();
 
+  // Espera pelos idiomas: o admin abre o curso no idioma da interface (ao abrir/recarregar a página
+  // diretamente os idiomas ainda não estavam carregados e o curso ficava vazio)
+  const languagesLoaded = languages?.length > 0;
   useEffect(() => {
-    getData();
-  }, [slug]);
+    if (languagesLoaded) getData();
+  }, [slug, languagesLoaded]);
 
   useEffect(() => {
     calcProgress();
-  }, [progress]);
+  }, [progress, allItems]);
 
   useEffect(() => {
     if (selectedCourseItem)
@@ -99,7 +101,7 @@ const Learning = () => {
       // Users are restricted to their assigned language
       const isAdmin = user.id_role === 1;
       const selectedLangId = isAdmin
-        ? languages.filter((_l) => _l.code === i18n.language)[0].id
+        ? (languages.find((_l) => _l.code === i18n.language)?.id ?? user.id_lang)
         : user.id_lang;
 
       const res = await axios.get(endpoints.course.readBySlug, {
@@ -264,69 +266,30 @@ const Learning = () => {
     return false;
   }
 
-  // Check if a module is truly completed based on its actual items
-  function isModuleCompleted(module) {
-    if (!module || !module.items || module.items.length === 0) {
-      return false; // Module with no items is not completed
-    }
-
-    // All items in the module must be completed
-    return module.items.every((item) => {
-      const itemProgress = progress?.filter(
-        (p) =>
-          p.is_completed === 1 &&
-          p.is_deleted !== 1 &&
-          p.activity_type === item.type &&
-          p[`id_course_${item.type}`] === item.id,
-      );
-      return itemProgress && itemProgress.length > 0;
-    });
+  // Um tópico/teste está concluído quando existe um registo de conclusão (não apagado) desse item
+  function isItemCompleted(item, progressToCheck = progress) {
+    return (progressToCheck || []).some(
+      (p) =>
+        p.is_completed === 1 &&
+        p.is_deleted !== 1 &&
+        p.activity_type === item.type &&
+        p[`id_course_${item.type}`] === item.id,
+    );
   }
 
+  // Módulo concluído: todos os seus itens concluídos (módulo sem itens não conta como concluído)
+  function isModuleCompleted(module, progressToCheck = progress) {
+    if (!module || !module.items || module.items.length === 0) return false;
+    return module.items.every((item) => isItemCompleted(item, progressToCheck));
+  }
+
+  // Curso concluído: todos os tópicos/testes visíveis concluídos (cada item conta uma só vez,
+  // por isso registos repetidos já não fazem o curso terminar antes do tempo)
   function isCourseCompleted(simulatedProgress = null) {
-    if (!data || !modules || !allItems) {
-      return false;
-    }
-
-    // Determinar o progresso a ser verificado (simulado ou atual)
+    if (!data || !modules || !allItems || allItems.length === 0) return false;
     const progressToCheck = simulatedProgress || progress;
-
-    if (!progressToCheck) {
-      return false;
-    }
-
-    const completedModules = modules.filter((module) =>
-      isModuleCompleted(module),
-    ).length;
-    const completedTopics = progressToCheck.filter(
-      (p) => p.activity_type === "topic" && p.is_completed === 1,
-    ).length;
-    const completedTests = progressToCheck.filter(
-      (p) => p.activity_type === "test" && p.is_completed === 1,
-    ).length;
-
-    const totalModules = modules.length;
-    // Count topics and tests from allItems (already filtered based on user role)
-    const totalTopics = allItems.filter((item) => item.type === "topic").length;
-    const totalTests = allItems.filter((item) => item.type === "test").length;
-
-    // Determinar se é necessário verificar a conclusão de módulos, tópicos e testes
-    const needToCheckModules = totalModules > 0;
-    const needToCheckTopics = totalTopics > 0;
-    const needToCheckTests = totalTests > 0;
-
-    const allModulesCompleted =
-      !needToCheckModules || completedModules === totalModules;
-    const allTopicsCompleted =
-      !needToCheckTopics || completedTopics === totalTopics;
-    const allTestsCompleted =
-      !needToCheckTests || completedTests === totalTests;
-
-    /**
-     * Retorna verdadeiro apenas se todos os módulos, tópicos e testes necessários estiverem concluídosRetorna verdadeiro apenas se todos os módulos, tópicos e testes necessários estiverem concluídos
-     * course is_completed = 1
-     */
-    return allModulesCompleted && allTopicsCompleted && allTestsCompleted;
+    if (!progressToCheck) return false;
+    return allItems.every((item) => isItemCompleted(item, progressToCheck));
   }
 
   function selectCourseItem(item) {
@@ -358,139 +321,102 @@ const Learning = () => {
   }
 
   function next(changeItem, itemMetaData) {
-    let auxData = [];
+    // Um teste só fica concluído quando é aprovado (o Test chama next com o resultado); o botão
+    // Próximo nunca marca um teste como concluído, apenas avança (ex.: admin a rever o curso)
+    if (
+      isItemCompleted(selectedCourseItem) ||
+      (selectedCourseItem.type === "test" && !itemMetaData)
+    ) {
+      goToNextItem();
+      return;
+    }
+
     const moduleSelectedCourseItem = modules.filter(
       (m) => m.id === selectedCourseItem.id_course_module,
     )[0];
-    let findInProgress = progress.filter(
+    const now = dayjs();
+    const auxData = [
+      {
+        id_course: data.course.id,
+        id_user: user.id,
+        activity_type: selectedCourseItem.type === "topic" ? "topic" : "test",
+        id_course_topic:
+          selectedCourseItem.type === "topic" ? selectedCourseItem.id : null,
+        id_course_test:
+          selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
+        id_course_module: moduleSelectedCourseItem.id,
+        is_completed: 1,
+        meta_data: itemMetaData ? JSON.stringify(itemMetaData) : null,
+        created_at: now.format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: now.format("YYYY-MM-DD HH:mm:ss"),
+      },
+    ];
+
+    // Progresso simulado com o item atual, para saber se o módulo e o curso ficam concluídos
+    let simulatedProgress = [...progress, ...auxData];
+    const moduleAlreadyCompleted = progress.some(
       (p) =>
-        p[`id_course_${selectedCourseItem.type}`] === selectedCourseItem.id &&
+        p.activity_type === "module" &&
+        p.id_course_module === moduleSelectedCourseItem.id &&
         p.is_completed === 1 &&
         p.is_deleted !== 1,
     );
-    let courseCompleted = false;
-    if (findInProgress.length === 0) {
-      // contar os itens completados no módulo após adicionar o item atual
-      const completedItemsInModule =
-        progress.filter(
-          (p) =>
-            p.id_course_module === moduleSelectedCourseItem.id &&
-            p.activity_type !== "module" &&
-            p.is_completed === 1 &&
-            p.is_deleted !== 1,
-        ).length + 1; // +1 para incluir o item atual
-
-      // Verifica se todos os itens do módulo serão completados após adicionar o item atual
-      const allModuleItemsCompleted =
-        completedItemsInModule === moduleSelectedCourseItem.items.length;
-
-      // Verifica se o módulo ainda não foi marcado como completo
-      const moduleNotYetCompleted =
-        progress.filter(
-          (p) =>
-            p.id_course_module === moduleSelectedCourseItem.id &&
-            p.activity_type === "module" &&
-            p.is_completed === 1 &&
-            p.is_deleted !== 1,
-        ).length === 0;
-
-      if (allModuleItemsCompleted && moduleNotYetCompleted) {
-        // Marcar o módulo como completo apenas quando TODOS os itens estiverem concluídos
-        auxData = [
-          {
-            id_course: data.course.id,
-            id_user: user.id,
-            activity_type:
-              selectedCourseItem.type === "topic" ? "topic" : "test",
-            id_course_topic:
-              selectedCourseItem.type === "topic"
-                ? selectedCourseItem.id
-                : null,
-            id_course_test:
-              selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
-            id_course_module: moduleSelectedCourseItem.id,
-            is_completed: 1,
-            meta_data: itemMetaData ? JSON.stringify(itemMetaData) : null,
-            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          },
-          {
-            id_course: data.course.id,
-            id_user: user.id,
-            activity_type: "module",
-            id_course_topic: null,
-            id_course_test: null,
-            id_course_module: moduleSelectedCourseItem.id,
-            is_completed: 1,
-            created_at: dayjs().add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
-          },
-        ];
-
-        // Verifica se este é o último módulo do curso
-        // Simula o progresso após adicionar o item atual para verificar conclusão do curso
-        const simulatedProgress = [...progress, ...auxData];
-        if (isCourseCompleted(simulatedProgress)) {
-          auxData.push({
-            id_course: data.course.id,
-            id_user: user.id,
-            activity_type: "course",
-            id_course_topic: null,
-            id_course_test: null,
-            id_course_module: null,
-            is_completed: 1,
-            created_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
-          });
-
-          courseCompleted = true;
-        }
-
-      } else {
-        auxData = [
-          {
-            id_course: data.course.id,
-            id_user: user.id,
-            activity_type:
-              selectedCourseItem.type === "topic" ? "topic" : "test",
-            id_course_topic:
-              selectedCourseItem.type === "topic"
-                ? selectedCourseItem.id
-                : null,
-            id_course_test:
-              selectedCourseItem.type === "test" ? selectedCourseItem.id : null,
-            id_course_module: moduleSelectedCourseItem.id,
-            is_completed: 1,
-            meta_data: itemMetaData ? JSON.stringify(itemMetaData) : null,
-            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          },
-        ];
-      }
-
-      axios
-        .post(endpoints.course.updateProgress, {
-          data: auxData,
-        })
-        .then((res) => {
-          let newProgress = Object.assign([], progress);
-          newProgress = [...newProgress, ...auxData];
-          if (changeItem === undefined || changeItem !== false) {
-            // Último item do curso concluído: volta à página do curso
-            if (!goToNextItem() && courseCompleted)
-              navigate(`/${i18n.language}/courses/${slug}`, {
-                replace: true,
-              });
-          }
-          setProgress(newProgress);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } else {
-      // O item já está concluído: apenas avança para o item seguinte do curso
-      goToNextItem();
+    if (
+      !moduleAlreadyCompleted &&
+      isModuleCompleted(moduleSelectedCourseItem, simulatedProgress)
+    ) {
+      auxData.push({
+        id_course: data.course.id,
+        id_user: user.id,
+        activity_type: "module",
+        id_course_topic: null,
+        id_course_test: null,
+        id_course_module: moduleSelectedCourseItem.id,
+        is_completed: 1,
+        meta_data: null,
+        created_at: now.add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: now.add(2, "s").format("YYYY-MM-DD HH:mm:ss"),
+      });
     }
+
+    let courseCompleted = false;
+    const courseAlreadyCompleted = progress.some(
+      (p) =>
+        p.activity_type === "course" && p.is_completed === 1 && p.is_deleted !== 1,
+    );
+    if (!courseAlreadyCompleted && isCourseCompleted(simulatedProgress)) {
+      auxData.push({
+        id_course: data.course.id,
+        id_user: user.id,
+        activity_type: "course",
+        id_course_topic: null,
+        id_course_test: null,
+        id_course_module: null,
+        is_completed: 1,
+        meta_data: null,
+        created_at: now.add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: now.add(5, "s").format("YYYY-MM-DD HH:mm:ss"),
+      });
+      courseCompleted = true;
+    }
+
+    axios
+      .post(endpoints.course.updateProgress, {
+        data: auxData,
+      })
+      .then(() => {
+        if (changeItem === undefined || changeItem !== false) {
+          // Último item do curso concluído: volta à página do curso
+          if (!goToNextItem() && courseCompleted)
+            navigate(`/${i18n.language}/courses/${slug}`, {
+              replace: true,
+            });
+        }
+        setProgress((prev) => [...prev, ...auxData]);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 
   // Item anterior na ordem do curso; no primeiro item pergunta se quer voltar à página do curso
@@ -514,30 +440,27 @@ const Learning = () => {
     }
   }
 
+  // Percentagem de itens (tópicos/testes) concluídos; cada item conta uma só vez, nunca passa de 100%
   function calcProgress() {
-    const completed = progress?.filter(
-      (p) =>
-        (p.activity_type === "topic" || p.activity_type === "test") &&
-        p.is_completed === 1 &&
-        p.is_deleted !== 1 &&
-        ((p.activity_type === "topic" &&
-          data?.topics?.some(
-            (t) => t.id === p.id_course_topic && t.is_deleted !== 1,
-          )) ||
-          (p.activity_type === "test" &&
-            data?.tests?.some(
-              (t) => t.id === p.id_course_test && t.is_deleted !== 1,
-            ))),
-    ).length;
     const total = allItems?.length || 0;
-    setProgressPercentage(
-      total > 0 ? ((100 * completed) / total).toFixed(2) : 0,
-    );
+    const completed = (allItems || []).filter((item) => isItemCompleted(item)).length;
+    const percentage = total > 0 ? Math.min(100, (100 * completed) / total) : 0;
+    setProgressPercentage(percentage === 100 ? 100 : Number(percentage.toFixed(2)));
   }
 
   function updateProgress(newObj) {
-    setProgress([...progress, newObj]);
+    setProgress((prev) => [...prev, newObj]);
   }
+
+  // Primeiro/último item do curso: no primeiro não há Anterior; no último não há Próximo
+  // (se for um tópico ainda por concluir, mostra-se Terminar para registar a conclusão do curso)
+  const currentIndex = selectedCourseItem?.type ? indexInCourse(selectedCourseItem) : -1;
+  const isFirstItem = currentIndex === 0;
+  const isLastItem = allItems?.length > 0 && currentIndex === allItems.length - 1;
+  const showNext =
+    !isLastItem ||
+    (selectedCourseItem?.type === "topic" && !isItemCompleted(selectedCourseItem));
+  const nextLabel = isLastItem ? t("Finish") : t("Next");
 
   // Ecrãs compactos: telemóvel ou telemóvel/tablet rodado na horizontal (ecrã tátil)
   const isLandscapeTouch =
@@ -589,7 +512,8 @@ const Learning = () => {
   }
 
   return (
-    <Layout>
+    // Altura do ecrã: header e footer ficam fixos e só o conteúdo faz scroll
+    <Layout className="h-dvh overflow-hidden">
       {!selectedCourseItem && data?.course && (
         <Helmet>
           <meta charSet="utf-8" />
@@ -686,9 +610,7 @@ const Learning = () => {
                 </Button>
                 {selectedCourseItem?.type && (
                   <>
-                    {allItems &&
-                      allItems.length > 0 &&
-                      selectedCourseItem.id !== allItems[0].id && (
+                    {!isFirstItem && (
                         <Button
                           size="large"
                           icon={<RxChevronLeft />}
@@ -701,20 +623,22 @@ const Learning = () => {
                             : t("Previous")}
                         </Button>
                       )}
-                    <Button
-                      size="large"
-                      icon={<RxChevronRight />}
-                      iconPlacement="end"
-                      className="button-learning-header"
-                      onClick={() => next()}
-                      disabled={
-                        isTestInProgress || (!allowNext && user.id_role !== 1)
-                      }>
-                      {windowDimension.width >= 1081 &&
-                      windowDimension.width < 1270
-                        ? ""
-                        : t("Next")}
-                    </Button>
+                    {showNext && (
+                      <Button
+                        size="large"
+                        icon={<RxChevronRight />}
+                        iconPlacement="end"
+                        className="button-learning-header"
+                        onClick={() => next()}
+                        disabled={
+                          isTestInProgress || (!allowNext && user.id_role !== 1)
+                        }>
+                        {windowDimension.width >= 1081 &&
+                        windowDimension.width < 1270
+                          ? ""
+                          : nextLabel}
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -886,7 +810,7 @@ const Learning = () => {
         </div>
       </Header>
 
-      <Layout>
+      <Layout className="min-h-0">
         {windowDimension.width > 1080 ? (
           <Sider
             width={windowDimension.width > 1225 ? 400 : 350}
@@ -1056,8 +980,13 @@ const Learning = () => {
           </Sider>
         ) : null}
         <Layout
-          style={{ flex: 1, flexDirection: "column", position: "relative" }}>
-          <Content style={{ flex: 1, overflow: "hidden" }}>
+          style={{
+            flex: 1,
+            flexDirection: "column",
+            position: "relative",
+            minHeight: 0,
+          }}>
+          <Content style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
             <div className="flex-1 flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
               <Drawer
                 open={isOpenDrawerMenu}
@@ -1333,6 +1262,7 @@ const Learning = () => {
                                 updateProgress={updateProgress}
                                 next={next}
                                 onInProgressChange={setIsTestInProgress}
+                                footerSlot={testFooterSlot}
                               />
                             ),
                         },
@@ -1372,6 +1302,7 @@ const Learning = () => {
                       updateProgress={updateProgress}
                       next={next}
                       onInProgressChange={setIsTestInProgress}
+                      footerSlot={testFooterSlot}
                     />
                   ) : null}
                   {selectedCourseItem &&
@@ -1391,52 +1322,51 @@ const Learning = () => {
               </div>
             </div>
           </Content>
-          {/* Barra inferior: à esquerda o switch do menu do curso (Sider, desktop); à direita Anterior e Próximo.
-              Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo) e nunca
-              durante o teste (no desktop seriam redundantes com a navegação do topo). */}
+          {/* Navegação entre perguntas do teste: o Test coloca-a aqui (portal) enquanto decorre */}
+          <div ref={setTestFooterSlot} className="shrink-0" />
+          {/* Barra inferior (fixa): à esquerda o switch do menu do curso (Sider, desktop); à direita Anterior e
+              Próximo. Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo).
+              Durante o teste é substituída pela navegação entre perguntas. */}
           {selectedCourseItem &&
-            (windowDimension.width > 1080 ||
-              selectedCourseItem.type === "topic" ||
-              (selectedCourseItem.type === "test" && !isTestInProgress)) && (
-              <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
-                <div className="flex items-center">
-                  {windowDimension.width > 1080 && (
-                    <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
-                      {collapsed ? (
-                        <TbLayoutSidebarLeftExpand className="w-5 h-5" />
-                      ) : (
-                        <TbLayoutSidebarLeftCollapse className="w-5 h-5" />
-                      )}
-                      <span>
-                        {collapsed ? t("Show course menu") : t("Hide course menu")}
-                      </span>
-                      <Switch
-                        size="small"
-                        checked={!collapsed}
-                        onChange={(checked) => setCollapsed(!checked)}
-                      />
-                    </label>
+            !isTestInProgress &&
+            (windowDimension.width > 1080 || selectedCourseItem.type) && (
+            <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
+              <div className="flex items-center">
+                {windowDimension.width > 1080 && (
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
+                    {collapsed ? (
+                      <RiMenuUnfold4Line className="w-5 h-5" />
+                    ) : (
+                      <RiMenuFold4Line className="w-5 h-5" />
+                    )}
+                    <span>
+                      {collapsed ? t("Show course menu") : t("Hide course menu")}
+                    </span>
+                    <Switch
+                      size="small"
+                      checked={!collapsed}
+                      onChange={(checked) => setCollapsed(!checked)}
+                    />
+                  </label>
+                )}
+              </div>
+              {(selectedCourseItem.type === "topic" ||
+                windowDimension.width <= 1080) && (
+                // Em mobile também com as labels Anterior/Próximo, como no header
+                <div className="flex items-center gap-2">
+                  {!isFirstItem && (
+                    <Button
+                      icon={<RxChevronLeft />}
+                      className={
+                        windowDimension.width <= 425
+                          ? "course-button-previous-mobile"
+                          : "course-button-previous"
+                      }
+                      onClick={() => previous()}>
+                      {t("Previous")}
+                    </Button>
                   )}
-                </div>
-                {(selectedCourseItem.type === "topic" ||
-                  (selectedCourseItem.type === "test" &&
-                    windowDimension.width <= 1080 &&
-                    !isTestInProgress)) && (
-                  <div className="flex items-center gap-2">
-                    {allItems &&
-                      allItems.length > 0 &&
-                      selectedCourseItem.id !== allItems[0].id && (
-                        <Button
-                          icon={<RxChevronLeft />}
-                          className={
-                            windowDimension.width <= 425
-                              ? "course-button-previous-mobile"
-                              : "course-button-previous"
-                          }
-                          onClick={() => previous()}>
-                          {windowDimension.width > 425 && t("Previous")}
-                        </Button>
-                      )}
+                  {showNext && (
                     <Button
                       icon={<RxChevronRight />}
                       iconPlacement="end"
@@ -1444,12 +1374,13 @@ const Learning = () => {
                       disabled={!allowNext && user.id_role !== 1}
                       size="small"
                       className="course-button-next">
-                      {windowDimension.width > 425 && t("Next")}
+                      {nextLabel}
                     </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </Layout>
       </Layout>
     </Layout>

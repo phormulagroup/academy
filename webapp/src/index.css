@@ -737,7 +737,8 @@ select {
 .test-form-item-multiple .ant-checkbox-wrapper {
   width: 100%;
   padding: 20px;
-  border: 1px solid #707070;
+  border: 1px dashed #00b9d6;
+  border-radius: 5px;
   margin-bottom: 10px;
 }
 
@@ -971,12 +972,6 @@ select {
   transition: all 0.3s ease !important;
 }
 
-.course-button-previous:hover {
-  background-color: #163986 !important;
-  color: #ffffff !important;
-  border: 2px solid #163986 !important;
-}
-
 .course-button-previous-mobile {
   border: 2px solid #ffffff !important;
   background-color: transparent !important;
@@ -991,12 +986,6 @@ select {
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
-}
-
-.course-button-previous-mobile:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border: 2px solid #ffffff !important;
-  color: #ffffff !important;
 }
 
 .course-button-next {
@@ -1015,11 +1004,64 @@ select {
   transition: all 0.3s ease !important;
 }
 
-.course-button-next:hover {
-  background-color: #ffffff !important;
-  border: 2px solid #163986 !important;
-  color: #163986 !important;
-  font-weight: 600 !important;
+/* Hover só em dispositivos com rato: em ecrãs táteis o hover ficava "preso" depois do toque
+   e o Anterior ficava azul ao mesmo tempo que o Próximo */
+@media (hover: hover) {
+  .course-button-previous:hover {
+    background-color: #163986 !important;
+    color: #ffffff !important;
+    border: 2px solid #163986 !important;
+  }
+  .course-button-previous-mobile:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid #ffffff !important;
+    color: #ffffff !important;
+  }
+  .course-button-next:hover {
+    background-color: #ffffff !important;
+    border: 2px solid #163986 !important;
+    color: #163986 !important;
+    font-weight: 600 !important;
+  }
+}
+
+/* Próximo desativado (item ainda por concluir): não pode parecer ativo */
+.course-button-next:disabled,
+.course-button-next:disabled:hover {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  border-color: transparent !important;
+  color: rgba(22, 57, 134, 0.55) !important;
+  cursor: not-allowed !important;
+}
+
+/* Barra de navegação das perguntas do teste (fixa no fundo durante o teste) */
+.test-nav-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background-color: #163986;
+  box-shadow: 0 -4px 16px rgba(22, 57, 134, 0.25);
+}
+
+.test-nav-footer .test-nav-counter {
+  color: #ffffff;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.test-nav-footer .ant-btn {
+  height: 38px !important;
+  border-radius: 5px !important;
+  border-width: 2px !important;
+}
+
+@media (min-width: 640px) {
+  .test-nav-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }
 
 .ant-dropdown-menu {
@@ -1193,13 +1235,15 @@ iframe {
     hue-rotate(215deg) brightness(96%) contrast(93%) !important;
 }
 
+/* Teste em mobile: as tabs ficam escondidas; esconde-se a barra inteira (incluindo a linha/divider)
+   para não sobrar espaço entre o título do item e o teste */
 @media screen and (max-width: 768px) {
-  .tabs-test .ant-tabs-nav-wrap {
+  .tabs-test > .ant-tabs-nav {
     display: none !important;
   }
 
   .tabs-test .ant-tabs-content-holder {
-    margin-top: 30px !important;
+    margin-top: 0 !important;
   }
 }
 

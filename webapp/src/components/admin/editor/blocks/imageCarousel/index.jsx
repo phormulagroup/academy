@@ -108,31 +108,10 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
               </SwiperSlide>
             ))}
           </Swiper>
-
-          {slides.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="bial-carousel-arrow bial-carousel-arrow-prev"
-                onClick={() => swiperRef.current?.slidePrev()}
-                disabled={activeIndex === 0}
-                aria-label={t("Previous")}>
-                <RxChevronLeft />
-              </button>
-              <button
-                type="button"
-                className="bial-carousel-arrow bial-carousel-arrow-next"
-                onClick={() => swiperRef.current?.slideNext()}
-                disabled={activeIndex === slides.length - 1}
-                aria-label={t("Next")}>
-                <RxChevronRight />
-              </button>
-            </>
-          )}
         </div>
 
+        {/* */}
         <div className="bial-carousel-footer">
-          {/* Indexação: um ponto por slide (o ativo alonga-se) e contador */}
           <div className="bial-carousel-dots">
             {slides.length > 1 &&
               slides.map((_, i) => (
@@ -148,15 +127,42 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
               {activeIndex + 1} / {slides.length}
             </span>
           </div>
-          <label className="bial-carousel-fullscreen">
-            {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
-            <span>{t("Fullscreen")}</span>
-            <Switch
-              size="small"
-              checked={isFullscreen}
-              onChange={toggleFullscreen}
-            />
-          </label>
+          <div className="bial-carousel-nav">
+            {slides.length > 1 ? (
+              <button
+                type="button"
+                className="bial-carousel-arrow"
+                onClick={() => swiperRef.current?.slidePrev()}
+                disabled={activeIndex === 0}
+                aria-label={t("Previous")}>
+                <RxChevronLeft />
+              </button>
+            ) : (
+              <span />
+            )}
+            <label className="bial-carousel-fullscreen">
+              {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
+              <span>{t("Fullscreen")}</span>
+              <Switch
+                size="small"
+                aria-label={t("Fullscreen")}
+                checked={isFullscreen}
+                onChange={toggleFullscreen}
+              />
+            </label>
+            {slides.length > 1 ? (
+              <button
+                type="button"
+                className="bial-carousel-arrow"
+                onClick={() => swiperRef.current?.slideNext()}
+                disabled={activeIndex === slides.length - 1}
+                aria-label={t("Next")}>
+                <RxChevronRight />
+              </button>
+            ) : (
+              <span />
+            )}
+          </div>
         </div>
       </div>
     </Section>
