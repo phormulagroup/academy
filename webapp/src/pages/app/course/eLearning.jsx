@@ -1,6 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 import { MenuOutlined } from "@ant-design/icons";
-import { Button, Collapse, Drawer, Layout, Modal, Progress, Tabs, Switch } from "antd";
+import {
+  Button,
+  Collapse,
+  Drawer,
+  Layout,
+  Modal,
+  Progress,
+  Tabs,
+  Switch,
+} from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -38,6 +47,7 @@ import Test from "./test";
 
 import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
+import CourseCompleted from "./completed";
 
 import CourseMaterial from "./material";
 import CourseObjection from "./objection/objection";
@@ -66,6 +76,8 @@ const Learning = () => {
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
+  // Ecrã de parabéns mostrado quando o último tópico/teste conclui o curso
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const { t, i18n } = useTranslation();
 
@@ -88,11 +100,13 @@ const Learning = () => {
 
   useEffect(() => {
     if (selectedCourseItem)
-      setActiveModule([
-        selectedCourseItem?.type
+      // Garante que o módulo do item atual está aberto, sem fechar os restantes
+      setActiveModule((prev) => {
+        const moduleId = selectedCourseItem?.type
           ? selectedCourseItem.id_course_module
-          : selectedCourseItem.id,
-      ]);
+          : selectedCourseItem.id;
+        return prev.includes(moduleId) ? prev : [...prev, moduleId];
+      });
   }, [selectedCourseItem]);
 
   async function getData() {
@@ -101,7 +115,8 @@ const Learning = () => {
       // Users are restricted to their assigned language
       const isAdmin = user.id_role === 1;
       const selectedLangId = isAdmin
-        ? (languages.find((_l) => _l.code === i18n.language)?.id ?? user.id_lang)
+        ? (languages.find((_l) => _l.code === i18n.language)?.id ??
+          user.id_lang)
         : user.id_lang;
 
       const res = await axios.get(endpoints.course.readBySlug, {
@@ -308,15 +323,12 @@ const Learning = () => {
     );
   }
 
-  // Avança para o item seguinte do curso; ao mudar de módulo mostra primeiro a página desse módulo.
-  // Devolve false quando já é o último item.
+  // Avança para o item seguinte do curso; ao mudar de módulo vai direto para o primeiro item do
+  // módulo seguinte. Devolve false quando já é o último item.
   function goToNextItem() {
     const nextItem = allItems?.[indexInCourse(selectedCourseItem) + 1];
     if (!nextItem) return false;
-    if (nextItem.id_course_module !== selectedCourseItem.id_course_module) {
-      const nextModule = modules.find((m) => m.id === nextItem.id_course_module);
-      setSelectedCourseItem(nextModule || nextItem);
-    } else setSelectedCourseItem(nextItem);
+    setSelectedCourseItem(nextItem);
     return true;
   }
 
@@ -382,7 +394,9 @@ const Learning = () => {
     let courseCompleted = false;
     const courseAlreadyCompleted = progress.some(
       (p) =>
-        p.activity_type === "course" && p.is_completed === 1 && p.is_deleted !== 1,
+        p.activity_type === "course" &&
+        p.is_completed === 1 &&
+        p.is_deleted !== 1,
     );
     if (!courseAlreadyCompleted && isCourseCompleted(simulatedProgress)) {
       auxData.push({
@@ -406,11 +420,8 @@ const Learning = () => {
       })
       .then(() => {
         if (changeItem === undefined || changeItem !== false) {
-          // Último item do curso concluído: volta à página do curso
-          if (!goToNextItem() && courseCompleted)
-            navigate(`/${i18n.language}/courses/${slug}`, {
-              replace: true,
-            });
+          // Último item do curso concluído: mostra o ecrã de curso concluído
+          if (!goToNextItem() && courseCompleted) setShowCompleted(true);
         }
         setProgress((prev) => [...prev, ...auxData]);
       })
@@ -443,9 +454,13 @@ const Learning = () => {
   // Percentagem de itens (tópicos/testes) concluídos; cada item conta uma só vez, nunca passa de 100%
   function calcProgress() {
     const total = allItems?.length || 0;
-    const completed = (allItems || []).filter((item) => isItemCompleted(item)).length;
+    const completed = (allItems || []).filter((item) =>
+      isItemCompleted(item),
+    ).length;
     const percentage = total > 0 ? Math.min(100, (100 * completed) / total) : 0;
-    setProgressPercentage(percentage === 100 ? 100 : Number(percentage.toFixed(2)));
+    setProgressPercentage(
+      percentage === 100 ? 100 : Number(percentage.toFixed(2)),
+    );
   }
 
   function updateProgress(newObj) {
@@ -454,12 +469,16 @@ const Learning = () => {
 
   // Primeiro/último item do curso: no primeiro não há Anterior; no último não há Próximo
   // (se for um tópico ainda por concluir, mostra-se Terminar para registar a conclusão do curso)
-  const currentIndex = selectedCourseItem?.type ? indexInCourse(selectedCourseItem) : -1;
+  const currentIndex = selectedCourseItem?.type
+    ? indexInCourse(selectedCourseItem)
+    : -1;
   const isFirstItem = currentIndex === 0;
-  const isLastItem = allItems?.length > 0 && currentIndex === allItems.length - 1;
+  const isLastItem =
+    allItems?.length > 0 && currentIndex === allItems.length - 1;
   const showNext =
     !isLastItem ||
-    (selectedCourseItem?.type === "topic" && !isItemCompleted(selectedCourseItem));
+    (selectedCourseItem?.type === "topic" &&
+      !isItemCompleted(selectedCourseItem));
   const nextLabel = isLastItem ? t("Finish") : t("Next");
 
   // Ecrãs compactos: telemóvel ou telemóvel/tablet rodado na horizontal (ecrã tátil)
@@ -469,7 +488,8 @@ const Learning = () => {
     window.matchMedia?.("(pointer: coarse)").matches;
   const compactTabs = windowDimension.width < 768 || isLandscapeTouch;
 
-  const capitalize = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : text);
+  const capitalize = (text) =>
+    text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 
   // Label das tabs (Topic, Materials, Objection books): em ecrãs compactos só o ícone
   function tabLabel(key, Icon, text) {
@@ -481,12 +501,15 @@ const Learning = () => {
       <div
         className="group flex items-center justify-center p-1 sm:p-2"
         title={text}
-        aria-label={text}>
+        aria-label={text}
+      >
         <Icon
           className={`transition w-5 h-5 md:w-6 md:h-6 shrink-0 ${compactTabs ? "" : "mr-2"} ${color}`}
         />
         {!compactTabs && (
-          <p className={`font-bold transition text-[14px] lg:text-[16px] xl:text-[17px] ${color}`}>
+          <p
+            className={`font-bold transition text-[14px] lg:text-[16px] xl:text-[17px] ${color}`}
+          >
             {text}
           </p>
         )}
@@ -497,7 +520,8 @@ const Learning = () => {
   // Largura da coluna do conteúdo: o maior maxWidth dos blocos do tópico (ex.: vídeo de 1000px)
   const contentMaxWidth = (() => {
     try {
-      const blocks = JSON.parse(selectedCourseItem?.content || "{}")?.content || [];
+      const blocks =
+        JSON.parse(selectedCourseItem?.content || "{}")?.content || [];
       const widths = blocks
         .map((b) => Number(b?.props?.maxWidth))
         .filter((w) => w > 0);
@@ -545,7 +569,8 @@ const Learning = () => {
                 : "16px",
           height: "auto",
           minHeight: windowDimension.width > 1080 ? "80px" : "auto",
-        }}>
+        }}
+      >
         <div className="flex justify-center items-center w-full">
           {windowDimension.width > 1080 ? (
             <div className="grid grid-cols-3 gap-4 w-full">
@@ -573,7 +598,8 @@ const Learning = () => {
                             : windowDimension.width >= 1081
                               ? "20px"
                               : "18px",
-                    }}>
+                    }}
+                  >
                     {progressPercentage}% {t("Completed")}
                   </p>
                   <p className="leading-1 text-[12px] lg:text-[14px] text-[#8B9CC3]">
@@ -605,24 +631,26 @@ const Learning = () => {
                   size="large"
                   icon={<RxChevronLeft />}
                   className="button-back-learning-header mr-4"
-                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
+                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}
+                >
                   {t("Back to course")}
                 </Button>
                 {selectedCourseItem?.type && (
                   <>
                     {!isFirstItem && (
-                        <Button
-                          size="large"
-                          icon={<RxChevronLeft />}
-                          className="button-learning-header mr-2"
-                          onClick={() => previous()}
-                          disabled={isTestInProgress}>
-                          {windowDimension.width >= 1081 &&
-                          windowDimension.width < 1270
-                            ? ""
-                            : t("Previous")}
-                        </Button>
-                      )}
+                      <Button
+                        size="large"
+                        icon={<RxChevronLeft />}
+                        className="button-learning-header mr-2"
+                        onClick={() => previous()}
+                        disabled={isTestInProgress}
+                      >
+                        {windowDimension.width >= 1081 &&
+                        windowDimension.width < 1270
+                          ? ""
+                          : t("Previous")}
+                      </Button>
+                    )}
                     {showNext && (
                       <Button
                         size="large"
@@ -632,7 +660,8 @@ const Learning = () => {
                         onClick={() => next()}
                         disabled={
                           isTestInProgress || (!allowNext && user.id_role !== 1)
-                        }>
+                        }
+                      >
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
                           ? ""
@@ -667,7 +696,8 @@ const Learning = () => {
                               ? "250px"
                               : "50px",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <div
                     className="h-full bg-[#2F8351] transition-all"
                     style={{ width: `${progressPercentage}%` }}
@@ -686,7 +716,8 @@ const Learning = () => {
                           : windowDimension.width < 640
                             ? "14px"
                             : "15px",
-                  }}>
+                  }}
+                >
                   {progressPercentage}% {t("Completed")}
                 </p>
 
@@ -696,7 +727,8 @@ const Learning = () => {
                     className="text-[#8B9CC3] shrink-0 font-medium"
                     style={{
                       fontSize: "13px",
-                    }}>
+                    }}
+                  >
                     {allItems?.filter((item) =>
                       progress?.some(
                         (p) =>
@@ -746,7 +778,8 @@ const Learning = () => {
                               ? "280px"
                               : "300px",
                     flexShrink: 0,
-                  }}>
+                  }}
+                >
                   <div
                     className="h-full bg-[#2F8351] transition-all"
                     style={{ width: `${progressPercentage}%` }}
@@ -767,7 +800,8 @@ const Learning = () => {
                             : windowDimension.width < 1081
                               ? "18px"
                               : "20px",
-                  }}>
+                  }}
+                >
                   {progressPercentage}% {t("Completed")}
                 </p>
 
@@ -777,7 +811,8 @@ const Learning = () => {
                     className="text-[#8B9CC3] shrink-0 font-medium"
                     style={{
                       fontSize: "13px",
-                    }}>
+                    }}
+                  >
                     {allItems?.filter((item) =>
                       progress?.some(
                         (p) =>
@@ -817,7 +852,8 @@ const Learning = () => {
             className="bg-white! overflow-auto learning-sider"
             // Recolhido fica totalmente escondido (sem faixa branca); abre/fecha no switch da barra inferior
             collapsedWidth={0}
-            collapsed={collapsed}>
+            collapsed={collapsed}
+          >
             {!collapsed && (
               <div className="flex flex-col h-full">
                 <div className="flex flex-col w-full p-6 bg-[#163986]">
@@ -833,11 +869,7 @@ const Learning = () => {
                       size="large"
                       bordered={false}
                       activeKey={activeModule}
-                      onChange={(keys) =>
-                        setActiveModule(
-                          keys.length > 0 ? keys[keys.length - 1] : [],
-                        )
-                      }
+                      onChange={(keys) => setActiveModule(keys)}
                       items={modules.map((item, mInd) => {
                         return {
                           key: item.id,
@@ -846,16 +878,19 @@ const Learning = () => {
                               <div className="p-2 cursor-pointer flex items-center">
                                 {isModuleCompleted(item) ? (
                                   <div
-                                    className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                                    className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
+                                  >
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
                                   <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}
+                                  ></div>
                                 )}
                                 <p
                                   className={`text-sm text-[#163986] ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
-                                  onClick={() => selectCourseItem(item)}>
+                                  onClick={() => selectCourseItem(item)}
+                                >
                                   {item.title}
                                 </p>
                                 {data?.course?.settings.progression_type ===
@@ -880,7 +915,8 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2">
+                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2"
+                                >
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -889,18 +925,21 @@ const Learning = () => {
                                       p[`id_course_${_t.type}`] === _t.id,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
+                                    >
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
+                                    ></div>
                                   )}
                                   {_t.type === "test" && (
                                     <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                   )}
                                   <p
-                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
+                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}
+                                  >
                                     {_t.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
@@ -953,9 +992,7 @@ const Learning = () => {
                           (_t) => _t.type === "test",
                         );
                         return (
-                          <div
-                            className="flex justify-center items-center"
-                            onClick={() => setActiveModule(content.id)}>
+                          <div className="flex justify-center items-center">
                             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
                               {panelProps.isActive ? (
                                 <AiOutlineArrowUp className="w-3.75 h-3.75 text-black" />
@@ -981,22 +1018,23 @@ const Learning = () => {
         ) : null}
         <Layout
           style={{
-            flex: 1,
             flexDirection: "column",
             position: "relative",
             minHeight: 0,
-          }}>
-          <Content style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
-            <div className="flex-1 flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
+          }}
+        >
+          <Content style={{ overflow: "hidden", minHeight: 0 }}>
+            <div className="flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
               <Drawer
                 open={isOpenDrawerMenu}
                 size={"80%"}
                 onClose={closeDrawer}
-                maskClosable={false}
+                maskClosable
                 extra={[]}
-                className="drawer-learning">
-                <div className="flex flex-col h-full">
-                  <div className="absolute top-5 right-5 flex justify-end">
+                className="drawer-learning"
+              >
+                <div className="flex flex-col h-full relative overflow-hidden">
+                  <div className="absolute top-5 right-5 z-10 flex justify-end cursor-pointer">
                     <AiFillCloseCircle
                       className="text-white text-3xl"
                       onClick={closeDrawer}
@@ -1005,33 +1043,32 @@ const Learning = () => {
                   {/* Em mobile o nome do curso serve para voltar à página do curso */}
                   <button
                     type="button"
-                    className="group flex flex-col items-start text-left w-full p-6 bg-[#163986] cursor-pointer"
+                    className="group flex flex-col items-start text-left w-full p-6 pr-14 bg-[#163986] cursor-pointer shrink-0"
                     onClick={() => {
                       closeDrawer();
                       navigate(`/${i18n.language}/courses/${slug}`);
                     }}
-                    aria-label={t("Back to course")}>
+                    aria-label={t("Back to course")}
+                  >
                     <span className="flex items-center gap-1 text-white/80 text-[12px] group-hover:text-[#00B9D6] transition-colors">
                       <RxChevronLeft className="w-3.5 h-3.5" />
                       {t("Back to course")}
                     </span>
-                    <span className="text-white text-[13px] mt-1">{t("Course")}</span>
+                    <span className="text-white text-[13px] mt-1">
+                      {t("Course")}
+                    </span>
                     <span className="text-[20px] font-bold text-white group-hover:underline">
                       {data?.course?.name}
                     </span>
                   </button>
-                  <div className="w-full">
+                  <div className="w-full flex-1 min-h-0 overflow-y-auto">
                     {modules?.length > 0 && (
                       <Collapse
                         className="collapse-learning"
                         size="large"
                         bordered={false}
                         activeKey={activeModule}
-                        onChange={(keys) =>
-                          setActiveModule(
-                            keys.length > 0 ? keys[keys.length - 1] : [],
-                          )
-                        }
+                        onChange={(keys) => setActiveModule(keys)}
                         items={modules.map((item, mInd) => {
                           return {
                             key: item.id,
@@ -1047,19 +1084,22 @@ const Learning = () => {
                                       p.is_deleted !== 1,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
+                                    >
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
+                                    ></div>
                                   )}
                                   <p
                                     className={`text-sm ml-2 text-[#163986] ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       selectCourseItem(item);
-                                    }}>
+                                    }}
+                                  >
                                     {item.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
@@ -1086,7 +1126,8 @@ const Learning = () => {
                                 {item.items.map((_t, _i) => (
                                   <div
                                     onClick={() => selectCourseItem(_t)}
-                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2">
+                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2"
+                                  >
                                     {progress.length > 0 &&
                                     progress.filter(
                                       (p) =>
@@ -1096,18 +1137,21 @@ const Learning = () => {
                                         p[`id_course_${_t.type}`] === _t.id,
                                     ).length > 0 ? (
                                       <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
+                                      >
                                         <AiOutlineCheck className="text-white" />
                                       </div>
                                     ) : (
                                       <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
+                                      ></div>
                                     )}
                                     {_t.type === "test" && (
                                       <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     )}
                                     <p
-                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
+                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}
+                                    >
                                       {_t.title}
                                     </p>
                                     {data?.course?.settings.progression_type ===
@@ -1188,138 +1232,172 @@ const Learning = () => {
                   </div>
                 </div>
               </Drawer>
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-                  {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
-                  <div
-                    className="elearning-column mx-auto w-full"
-                    style={{ maxWidth: contentMaxWidth }}>
-                  {progress?.length > 0 &&
-                  progress.filter(
-                    (p) =>
-                      p.activity_type === selectedCourseItem?.type &&
-                      p[`id_course_${selectedCourseItem?.type}`] ===
-                        selectedCourseItem?.id &&
-                      p.is_completed === 1 &&
-                      p.is_deleted !== 1,
-                  ).length > 0 ? (
-                    // Title of the module preview
-                    <div className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}>
-                      <p className="text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
-                        {selectedCourseItem?.title}
-                      </p>
-                      <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
-                        <p className="text-white text-[11px] sm:text-[12px] lg:text-[13px]">
-                          {t("Completed")}
+              {showCompleted ? (
+                <CourseCompleted
+                  course={data?.course}
+                  modules={modules}
+                  itemsCount={allItems?.length || 0}
+                  onBack={() => navigate(`/${i18n.language}/courses/${slug}`)}
+                  onReview={() => {
+                    setShowCompleted(false);
+                    setSelectedCourseItem(allItems?.[0]);
+                  }}
+                />
+              ) : (
+                <div className="overflow-y-auto">
+                  <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+                    {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
+                    <div
+                      className="elearning-column mx-auto w-full"
+                      style={{ maxWidth: contentMaxWidth }}
+                    >
+                      {progress?.length > 0 &&
+                      progress.filter(
+                        (p) =>
+                          p.activity_type === selectedCourseItem?.type &&
+                          p[`id_course_${selectedCourseItem?.type}`] ===
+                            selectedCourseItem?.id &&
+                          p.is_completed === 1 &&
+                          p.is_deleted !== 1,
+                      ).length > 0 ? (
+                        // Title of the module preview
+                        <div
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}
+                        >
+                          <p className="text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
+                            {selectedCourseItem?.title}
+                          </p>
+                          <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
+                            <p className="text-white text-[11px] sm:text-[12px] lg:text-[13px]">
+                              {t("Completed")}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p
+                          className={`text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}
+                        >
+                          {selectedCourseItem?.title}
                         </p>
-                      </div>
+                      )}
+                      {selectedCourseItem &&
+                      Object.keys(selectedCourseItem).length > 0 &&
+                      (selectedCourseItem.type === "topic" ||
+                        selectedCourseItem.type === "test") &&
+                      (data?.course?.material || data?.course?.objection) ? (
+                        <Tabs
+                          activeKey={activeKey}
+                          onChange={(key) => setActiveKey(key)}
+                          // Telemóvel/tablet na horizontal: tabs na lateral, só com ícones
+                          tabPosition={isLandscapeTouch ? "left" : "top"}
+                          size={compactTabs ? "small" : "middle"}
+                          centered={
+                            windowDimension.width < 768 && !isLandscapeTouch
+                          }
+                          className={`tabs-${selectedCourseItem.type}`}
+                          items={[
+                            {
+                              key: "1",
+                              // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
+                              label: tabLabel(
+                                "1",
+                                PiFileTextLight,
+                                capitalize(t("topic")),
+                              ),
+                              forceRender: true,
+                              children:
+                                selectedCourseItem.type === "topic" ? (
+                                  <Topic
+                                    course={data.course}
+                                    progress={progress}
+                                    selectedCourseItem={selectedCourseItem}
+                                    setAllowNext={setAllowNext}
+                                    modules={modules}
+                                    allItems={allItems}
+                                    collapsed={collapsed}
+                                  />
+                                ) : (
+                                  <Test
+                                    course={data.course}
+                                    progress={progress}
+                                    selectedCourseItem={selectedCourseItem}
+                                    setAllowNext={setAllowNext}
+                                    modules={modules}
+                                    allItems={allItems}
+                                    metaData={metaData}
+                                    setMetaData={setMetaData}
+                                    updateProgress={updateProgress}
+                                    next={next}
+                                    onInProgressChange={setIsTestInProgress}
+                                    footerSlot={testFooterSlot}
+                                  />
+                                ),
+                            },
+                            data.course.material &&
+                              data.course.material.length > 0 && {
+                                key: "2",
+                                label: tabLabel(
+                                  "2",
+                                  PiBookBookmark,
+                                  t("Materials"),
+                                ),
+                                children: <CourseMaterial data={data.course} />,
+                              },
+                            data.course.objection?.tabs &&
+                              data.course.objection?.tabs.length > 0 && {
+                                key: "3",
+                                label: tabLabel(
+                                  "3",
+                                  PiBookOpenLight,
+                                  t("Objection books"),
+                                ),
+                                children: (
+                                  <CourseObjection data={data.course} />
+                                ),
+                              },
+                          ].filter(Boolean)}
+                        />
+                      ) : selectedCourseItem?.type === "topic" ? (
+                        <Topic
+                          course={data.course}
+                          progress={progress}
+                          selectedCourseItem={selectedCourseItem}
+                          setAllowNext={setAllowNext}
+                          modules={modules}
+                          allItems={allItems}
+                        />
+                      ) : selectedCourseItem?.type === "test" ? (
+                        <Test
+                          course={data?.course}
+                          progress={progress}
+                          selectedCourseItem={selectedCourseItem}
+                          setAllowNext={setAllowNext}
+                          modules={modules}
+                          allItems={allItems}
+                          metaData={metaData}
+                          setMetaData={setMetaData}
+                          updateProgress={updateProgress}
+                          next={next}
+                          onInProgressChange={setIsTestInProgress}
+                          footerSlot={testFooterSlot}
+                        />
+                      ) : null}
+                      {selectedCourseItem &&
+                        Object.keys(selectedCourseItem).length > 0 &&
+                        !selectedCourseItem.type && (
+                          <Module
+                            course={data.course}
+                            progress={progress}
+                            selectedCourseItem={selectedCourseItem}
+                            modules={modules}
+                            allItems={allItems}
+                            selectCourseItem={selectCourseItem}
+                          />
+                        )}
                     </div>
-                  ) : (
-                    <p className={`text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}>
-                      {selectedCourseItem?.title}
-                    </p>
-                  )}
-                  {selectedCourseItem &&
-                  Object.keys(selectedCourseItem).length > 0 &&
-                  (selectedCourseItem.type === "topic" ||
-                    selectedCourseItem.type === "test") &&
-                  (data?.course?.material || data?.course?.objection) ? (
-                    <Tabs
-                      activeKey={activeKey}
-                      onChange={(key) => setActiveKey(key)}
-                      // Telemóvel/tablet na horizontal: tabs na lateral, só com ícones
-                      tabPosition={isLandscapeTouch ? "left" : "top"}
-                      size={compactTabs ? "small" : "middle"}
-                      centered={windowDimension.width < 768 && !isLandscapeTouch}
-                      className={`tabs-${selectedCourseItem.type}`}
-                      items={[
-                        {
-                          key: "1",
-                          // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
-                          label: tabLabel("1", PiFileTextLight, capitalize(t("topic"))),
-                          forceRender: true,
-                          children:
-                            selectedCourseItem.type === "topic" ? (
-                              <Topic
-                                course={data.course}
-                                progress={progress}
-                                selectedCourseItem={selectedCourseItem}
-                                setAllowNext={setAllowNext}
-                                modules={modules}
-                                allItems={allItems}
-                                collapsed={collapsed}
-                              />
-                            ) : (
-                              <Test
-                                course={data.course}
-                                progress={progress}
-                                selectedCourseItem={selectedCourseItem}
-                                setAllowNext={setAllowNext}
-                                modules={modules}
-                                allItems={allItems}
-                                metaData={metaData}
-                                setMetaData={setMetaData}
-                                updateProgress={updateProgress}
-                                next={next}
-                                onInProgressChange={setIsTestInProgress}
-                                footerSlot={testFooterSlot}
-                              />
-                            ),
-                        },
-                        data.course.material &&
-                          data.course.material.length > 0 && {
-                            key: "2",
-                            label: tabLabel("2", PiBookBookmark, t("Materials")),
-                            children: <CourseMaterial data={data.course} />,
-                          },
-                        data.course.objection?.tabs &&
-                          data.course.objection?.tabs.length > 0 && {
-                            key: "3",
-                            label: tabLabel("3", PiBookOpenLight, t("Objection books")),
-                            children: <CourseObjection data={data.course} />,
-                          },
-                      ].filter(Boolean)}
-                    />
-                  ) : selectedCourseItem?.type === "topic" ? (
-                    <Topic
-                      course={data.course}
-                      progress={progress}
-                      selectedCourseItem={selectedCourseItem}
-                      setAllowNext={setAllowNext}
-                      modules={modules}
-                      allItems={allItems}
-                    />
-                  ) : selectedCourseItem?.type === "test" ? (
-                    <Test
-                      course={data?.course}
-                      progress={progress}
-                      selectedCourseItem={selectedCourseItem}
-                      setAllowNext={setAllowNext}
-                      modules={modules}
-                      allItems={allItems}
-                      metaData={metaData}
-                      setMetaData={setMetaData}
-                      updateProgress={updateProgress}
-                      next={next}
-                      onInProgressChange={setIsTestInProgress}
-                      footerSlot={testFooterSlot}
-                    />
-                  ) : null}
-                  {selectedCourseItem &&
-                    Object.keys(selectedCourseItem).length > 0 &&
-                    !selectedCourseItem.type && (
-                      <Module
-                        course={data.course}
-                        progress={progress}
-                        selectedCourseItem={selectedCourseItem}
-                        modules={modules}
-                        allItems={allItems}
-                        selectCourseItem={selectCourseItem}
-                      />
-                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </Content>
           {/* Navegação entre perguntas do teste: o Test coloca-a aqui (portal) enquanto decorre */}
@@ -1328,59 +1406,64 @@ const Learning = () => {
               Próximo. Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo).
               Durante o teste é substituída pela navegação entre perguntas. */}
           {selectedCourseItem &&
+            !showCompleted &&
             !isTestInProgress &&
             (windowDimension.width > 1080 || selectedCourseItem.type) && (
-            <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
-              <div className="flex items-center">
-                {windowDimension.width > 1080 && (
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
-                    {collapsed ? (
-                      <RiMenuUnfold4Line className="w-5 h-5" />
-                    ) : (
-                      <RiMenuFold4Line className="w-5 h-5" />
-                    )}
-                    <span>
-                      {collapsed ? t("Show course menu") : t("Hide course menu")}
-                    </span>
-                    <Switch
-                      size="small"
-                      checked={!collapsed}
-                      onChange={(checked) => setCollapsed(!checked)}
-                    />
-                  </label>
-                )}
-              </div>
-              {(selectedCourseItem.type === "topic" ||
-                windowDimension.width <= 1080) && (
-                // Em mobile também com as labels Anterior/Próximo, como no header
-                <div className="flex items-center gap-2">
-                  {!isFirstItem && (
-                    <Button
-                      icon={<RxChevronLeft />}
-                      className={
-                        windowDimension.width <= 425
-                          ? "course-button-previous-mobile"
-                          : "course-button-previous"
-                      }
-                      onClick={() => previous()}>
-                      {t("Previous")}
-                    </Button>
-                  )}
-                  {showNext && (
-                    <Button
-                      icon={<RxChevronRight />}
-                      iconPlacement="end"
-                      onClick={() => next()}
-                      disabled={!allowNext && user.id_role !== 1}
-                      size="small"
-                      className="course-button-next">
-                      {nextLabel}
-                    </Button>
+              <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
+                <div className="flex items-center">
+                  {windowDimension.width > 1080 && (
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
+                      {collapsed ? (
+                        <RiMenuUnfold4Line className="w-5 h-5" />
+                      ) : (
+                        <RiMenuFold4Line className="w-5 h-5" />
+                      )}
+                      <span>
+                        {collapsed
+                          ? t("Show course menu")
+                          : t("Hide course menu")}
+                      </span>
+                      <Switch
+                        size="small"
+                        checked={!collapsed}
+                        onChange={(checked) => setCollapsed(!checked)}
+                      />
+                    </label>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+                {(selectedCourseItem.type === "topic" ||
+                  windowDimension.width <= 1080) && (
+                  // Em mobile também com as labels Anterior/Próximo, como no header
+                  <div className="flex items-center gap-2">
+                    {!isFirstItem && (
+                      <Button
+                        icon={<RxChevronLeft />}
+                        className={
+                          windowDimension.width <= 425
+                            ? "course-button-previous-mobile"
+                            : "course-button-previous"
+                        }
+                        onClick={() => previous()}
+                      >
+                        {t("Previous")}
+                      </Button>
+                    )}
+                    {showNext && (
+                      <Button
+                        icon={<RxChevronRight />}
+                        iconPlacement="end"
+                        onClick={() => next()}
+                        disabled={!allowNext && user.id_role !== 1}
+                        size="small"
+                        className="course-button-next"
+                      >
+                        {nextLabel}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
         </Layout>
       </Layout>
     </Layout>

@@ -1,6 +1,6 @@
 import React, { useContext, useMemo, useState } from "react";
 import { LogoutOutlined, MenuOutlined } from "@ant-design/icons";
-import { Button, Avatar, Divider, Drawer, Dropdown, Layout } from "antd";
+import { Button, Avatar, Drawer, Dropdown, Layout } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/BIAL-Regional-Academy.png";
 
@@ -19,7 +19,22 @@ import { useTranslation } from "react-i18next";
 import { Footer } from "antd/es/layout/layout";
 
 import bialLogo from "../assets/BIAL-logo-footer.svg";
-import { AiFillCloseCircle } from "react-icons/ai";
+import {
+  MdChevronRight,
+  MdClose,
+  MdInfoOutline,
+  MdLogin,
+  MdLogout,
+  MdOutlineAdminPanelSettings,
+  MdOutlineAssessment,
+  MdOutlineDescription,
+  MdOutlineFileDownload,
+  MdOutlineHelpOutline,
+  MdOutlineMailOutline,
+  MdOutlinePersonOutline,
+  MdOutlineSchool,
+  MdPersonAddAlt,
+} from "react-icons/md";
 import dayjs from "dayjs";
 import useChangeLanguage from "../utils/useChangeLanguage";
 import LanguageSelector from "../utils/languageSelector";
@@ -50,6 +65,27 @@ const MENU_ITEMS = [
   },
   { label: "FAQs", section: "faqs", loggedIn: false, hideOnLoggedIn: false },
 ];
+
+const DRAWER_ICONS = {
+  about: MdInfoOutline,
+  "": MdOutlineSchool,
+  documents: MdOutlineDescription,
+  downloads: MdOutlineFileDownload,
+  faqs: MdOutlineHelpOutline,
+};
+
+// Link do drawer mobile: ícone, label e (opcional) contador de não lidos
+const DrawerLink = ({ to, icon: Icon, active, badge, children, onClick, ...rest }) => (
+  <Link
+    to={to}
+    onClick={onClick}
+    className={`dm-link ${active ? "dm-link-active" : ""}`}
+    {...rest}>
+    {React.createElement(Icon, { className: "dm-link-icon" })}
+    <span className="dm-link-label">{children}</span>
+    {badge > 0 && <span className="dm-badge">{badge}</span>}
+  </Link>
+);
 
 const Main = () => {
   const {
@@ -94,6 +130,19 @@ const Main = () => {
   // Mesma mudança de idioma do header: mantém o header sincronizado e mostra a animação de carregamento
   const changeLanguage = useChangeLanguage();
 
+  const nameParts = user?.name?.split(" ") ?? [];
+  const userShortName =
+    nameParts.length > 1
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}`
+      : (nameParts[0] ?? "");
+  const unreadNotifications = (notifications ?? []).filter(
+    (n) => n.is_read === 0,
+  ).length;
+  const unreadMessages = (inbox ?? []).reduce(
+    (sum, n) => sum + (n.unread_messages || 0),
+    0,
+  );
+
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
   }
@@ -109,188 +158,145 @@ const Main = () => {
         <Header className="sticky top-0 z-100! shrink-0 bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center px-0! h-16! sm:h-20! lg:h-25! max-h-25">
           <Drawer
             open={isOpenDrawerMenu}
-            size={"80%"}
+            size={"85%"}
             onClose={closeDrawer}
             maskClosable={true}
             extra={[]}
-            className="drawer-learning">
-            <div className="flex flex-col justify-between h-full">
-              <div className="flex flex-col h-full">
-                <div className="absolute top-5 right-5 flex justify-end">
-                  <AiFillCloseCircle
-                    className="text-3xl cursor-pointer"
-                    style={{ color: "#FFFFFF" }}
-                    onClick={closeDrawer}
-                  />
-                </div>
-                <div>
-                  {user && Object.keys(user).length === 0 ? (
-                    <div className="bg-[#163986] p-6 pt-10">
-                      <div className="flex justify-start items-center cursor-pointer">
-                        <Link
-                          to={`/${i18n.language}/login`}
-                          className="flex justify-center items-center"
-                          onClick={() => closeDrawer()}>
-                          <Avatar
-                            className="w-8 sm:w-9 md:w-10 lg:w-11"
-                            icon={<FaRegUser />}
-                            style={{
-                              color: "#163986",
-                              backgroundColor: "#FFFFFF",
-                            }}
-                          />
-                          <p className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px] ml-2 text-[#FFFFFF] font-medium drawer-label-text">
-                            {t("Login")}
-                          </p>
-                        </Link>
-                      </div>
+            className="drawer-learning drawer-main">
+            <div className="dm-root">
+              <div className="dm-header">
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="dm-close"
+                  onClick={closeDrawer}>
+                  <MdClose />
+                </button>
+                {isLoggedIn ? (
+                  <Link
+                    to={`/${i18n.language}/account`}
+                    className="dm-user"
+                    onClick={closeDrawer}>
+                    <Avatar
+                      size={44}
+                      icon={<FaRegUser />}
+                      style={{ color: "#163986", backgroundColor: "#FFFFFF" }}
+                    />
+                    <div className="dm-user-text">
+                      <span className="dm-user-name">
+                        {userShortName}
+                      </span>
+                      {user.email && (
+                        <span className="dm-user-email">{user.email}</span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="bg-[#163F90] p-6 pt-16">
-                      <div className="flex justify-start items-center cursor-pointer">
-                        <Link
-                          to={`/${i18n.language}/account`}
-                          className="flex justify-center items-center"
-                          onClick={() => closeDrawer()}>
-                          <Avatar
-                            className="w-8 sm:w-9 md:w-10 lg:w-11"
-                            icon={<FaRegUser />}
-                            style={{
-                              color: "#163986",
-                              backgroundColor: "#FFFFFF",
-                            }}
-                          />
-                          <p className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px] ml-2 text-[#FFFFFF] font-medium drawer-label-text">
-                            {user.name.split(" ")[0]}{" "}
-                            {
-                              user.name.split(" ")[
-                                user.name.split(" ").length - 1
-                              ]
-                            }
-                          </p>
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col mt-2 p-4 pb-0">
-                    {menuItems.map((item) =>
-                      isLoggedIn
-                        ? !item.hideOnLoggedIn && (
-                            <Link
-                              key={item.path}
-                              className={`m-2 text-center text-[16px] ${
-                                isActiveItem(item) ? "active" : ""
-                              }`}
-                              to={item.path}
-                              onClick={() => closeDrawer()}>
-                              {t(item.label)}
-                            </Link>
-                          )
-                        : !item.loggedIn && (
-                            <Link
-                              key={item.path}
-                              className={`m-2 text-center text-[16px] ${
-                                isActiveItem(item) ? "active" : ""
-                              }`}
-                              to={item.path}
-                              onClick={() => closeDrawer()}>
-                              {t(item.label)}
-                            </Link>
-                          ),
-                    )}
+                    <MdChevronRight className="dm-user-arrow" />
+                  </Link>
+                ) : (
+                  <div className="dm-guest">
+                    <Link
+                      to={`/${i18n.language}/login`}
+                      className="dm-btn dm-btn-solid"
+                      onClick={closeDrawer}>
+                      <MdLogin />
+                      {t("Login")}
+                    </Link>
+                    <Link
+                      to={`/${i18n.language}/register`}
+                      className="dm-btn dm-btn-outline"
+                      onClick={closeDrawer}>
+                      <MdPersonAddAlt />
+                      {t("Register")}
+                    </Link>
                   </div>
-                  {isLoggedIn && (
-                    <div className="flex flex-col p-4 pt-0">
-                      <Divider />
+                )}
+              </div>
+
+              <nav className="dm-body">
+                <div className="dm-nav">
+                  {menuItems
+                    .filter((item) =>
+                      isLoggedIn
+                        ? !item.hideOnLoggedIn
+                        : !item.loggedIn && !item.hideOnLoggedIn,
+                    )
+                    .map((item) => (
+                      <DrawerLink
+                        key={item.path}
+                        to={item.path}
+                        icon={DRAWER_ICONS[item.section ?? ""] ?? MdOutlineSchool}
+                        active={isActiveItem(item)}
+                        onClick={closeDrawer}>
+                        {t(item.label)}
+                      </DrawerLink>
+                    ))}
+                </div>
+
+                {isLoggedIn && (
+                  <>
+                    <p className="dm-section-title">{t("My account")}</p>
+                    <div className="dm-nav">
                       {user.id_role === 1 && (
-                        <Link
-                          className={`m-2 text-center text-[16px] ${
-                            currentSection === "admin" ? "active" : ""
-                          }`}
+                        <DrawerLink
                           to="/admin"
+                          icon={MdOutlineAdminPanelSettings}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={() => closeDrawer()}>
+                          onClick={closeDrawer}>
                           {t("Go to backoffice")}
-                        </Link>
+                        </DrawerLink>
                       )}
-                      <Link
-                        className={`m-2 text-center text-[16px] ${
-                          currentSection === "account" ? "active" : ""
-                        }`}
+                      <DrawerLink
                         to={`/${i18n.language}/account`}
-                        onClick={() => closeDrawer()}>
+                        icon={MdOutlinePersonOutline}
+                        active={currentSection === "account"}
+                        onClick={closeDrawer}>
                         {t("My account")}
-                      </Link>
-                      <Link
-                        className={`m-2 text-center text-[16px] ${
-                          currentSection === "result" ? "active" : ""
-                        }`}
+                      </DrawerLink>
+                      <DrawerLink
                         to={`/${i18n.language}/result`}
-                        onClick={() => closeDrawer()}>
+                        icon={MdOutlineAssessment}
+                        active={currentSection === "result"}
+                        onClick={closeDrawer}>
                         {t("Results")}
-                      </Link>
-                      <Link
-                        className={`m-2 text-center text-[16px] ${
-                          currentSection === "notifications" ? "active" : ""
-                        }`}
+                      </DrawerLink>
+                      <DrawerLink
                         to={`/${i18n.language}/notifications`}
-                        onClick={() => closeDrawer()}>
-                        <div className="flex justify-center items-center">
-                          {notifications.filter((n) => n.is_read === 0).length >
-                          0 ? (
-                            <div className="w-5 h-5 mr-2 flex justify-center items-center">
-                              <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                                <p className="text-white">
-                                  {
-                                    notifications.filter((n) => n.is_read === 0)
-                                      .length
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          ) : null}
-                          <p>{t("Notifications")}</p>
-                        </div>
-                      </Link>
-                      <Link
-                        className={`m-2 text-center text-[16px] ${
-                          currentSection === "inbox" ? "active" : ""
-                        }`}
+                        icon={MdNotificationsNone}
+                        active={currentSection === "notifications"}
+                        badge={unreadNotifications}
+                        onClick={closeDrawer}>
+                        {t("Notifications")}
+                      </DrawerLink>
+                      <DrawerLink
                         to={
                           user.id_role === 1
                             ? "/admin/inbox"
                             : `/${i18n.language}/inbox`
                         }
-                        onClick={() => closeDrawer()}>
-                        <div className="flex justify-center items-center">
-                          {inbox.filter((n) => n.unread_messages > 0).length >
-                          0 ? (
-                            <div className="w-5 h-5 mr-2 flex justify-center items-center">
-                              <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                                <p className="text-white text-[10px]">
-                                  {inbox.map((n) => n.unread_messages)}
-                                </p>
-                              </div>
-                            </div>
-                          ) : null}
-                          <p>{t("Inbox")}</p>
-                        </div>
-                      </Link>
+                        icon={MdOutlineMailOutline}
+                        active={currentSection === "inbox"}
+                        badge={unreadMessages}
+                        onClick={closeDrawer}>
+                        {t("Inbox")}
+                      </DrawerLink>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </>
+                )}
+              </nav>
+
               {isLoggedIn && (
-                <div className="p-4 pb-10">
-                  <div
-                    className="flex justify-center items-center cursor-pointer m-2 text-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px]"
+                <div className="dm-footer">
+                  <button
+                    type="button"
+                    className="dm-logout"
                     onClick={() => {
                       closeDrawer();
                       setIsOpenLogout(true);
                     }}>
-                    <p className="text-center">{t("Logout")}</p>
-                  </div>
+                    <MdLogout />
+                    {t("Logout")}
+                  </button>
                 </div>
               )}
             </div>

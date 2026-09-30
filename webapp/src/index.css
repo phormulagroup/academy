@@ -19,6 +19,7 @@ a {
 #root {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   font-family: "Poppins";
   /* Cor base do texto (front e backoffice), identidade Bial */
   color: #163986;
@@ -1248,3 +1249,230 @@ iframe {
 }
 
 @import "tailwindcss";
+
+/* Drawer do menu principal (layout main, mobile) */
+.drawer-main .ant-drawer-content {
+  border-radius: 0 24px 24px 0;
+  overflow: hidden;
+  background: #f4f8fd;
+}
+
+.drawer-main .ant-drawer-body {
+  overflow: hidden !important;
+}
+
+.drawer-main .dm-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawer-main .dm-header {
+  position: relative;
+  flex-shrink: 0;
+  padding: 64px 20px 24px;
+  padding-top: max(64px, calc(env(safe-area-inset-top) + 44px));
+  background: #ff9e83;
+  border-radius: 0 0 24px 0;
+}
+
+.drawer-main .dm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  color: #163986;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.drawer-main .dm-close:active {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.drawer-main .dm-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 14px;
+  color: #163986 !important;
+}
+
+.drawer-main .dm-user-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.drawer-main .dm-user-name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.drawer-main .dm-user-email {
+  font-size: 12px;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-main .dm-user-arrow {
+  font-size: 22px;
+  opacity: 0.8;
+}
+
+.drawer-main .dm-guest {
+  display: flex;
+  gap: 10px;
+}
+
+.drawer-main .dm-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.drawer-main .dm-btn-solid {
+  background: #fff;
+  color: #163986 !important;
+}
+
+.drawer-main .dm-btn-outline {
+  border: 1px solid #163986;
+  color: #163986 !important;
+}
+
+.drawer-main .dm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+}
+
+.drawer-main .dm-section-title {
+  margin: 20px 12px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b9cc3;
+}
+
+.drawer-main .dm-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-main .dm-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #163986 !important;
+  transition: background-color 0.15s;
+}
+
+.drawer-main .dm-link:active {
+  background: #e3ebf7;
+}
+
+.drawer-main .dm-link-icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: #163986;
+}
+
+.drawer-main .dm-link-label {
+  flex: 1;
+}
+
+.drawer-main .dm-link-active {
+  background: #00b9d6;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 185, 214, 0.35);
+}
+
+.drawer-main .dm-link-active .dm-link-icon {
+  color: #fff;
+}
+
+.drawer-main .dm-link-active:active {
+  background: #00b9d6;
+}
+
+.drawer-main .dm-badge {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #00b9d6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.drawer-main .dm-link-active .dm-badge {
+  background: #fff;
+  color: #00b9d6;
+}
+
+.drawer-main .dm-footer {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid #dbe3f0;
+  background: #f4f8fd;
+}
+
+.drawer-main .dm-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #dbe3f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #163986;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.drawer-main .dm-logout:active {
+  background: #e3ebf7;
+}
+
+/* Ecrã de curso concluído */
+@keyframes completed-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.completed-pop {
+  animation: completed-pop 0.6s ease-out;
+}

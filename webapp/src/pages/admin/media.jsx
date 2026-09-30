@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CopyOutlined,
   DeleteOutlined,
   FilePdfOutlined,
   FilePptOutlined,
+  FileOutlined,
+  VideoCameraOutlined,
   InboxOutlined,
 } from "@ant-design/icons";
-import { Upload, Card, Pagination } from "antd";
+import { Upload, Card, Pagination, Input, Segmented } from "antd";
 import axios from "axios";
 
 import config from "../../utils/config";
@@ -20,6 +22,18 @@ import { Context } from "../../utils/context";
 const { Dragger } = Upload;
 const { Meta } = Card;
 
+const EXTENSIONS = {
+  image: ["jpg", "jpeg", "png", "gif", "webp", "svg", "avif", "bmp"],
+  pdf: ["pdf"],
+  presentation: ["ppt", "pptx"],
+  video: ["mp4", "mov", "webm", "avi", "mkv"],
+};
+
+function getFileType(name = "") {
+  const ext = name.split(".").pop().toLowerCase();
+  return Object.keys(EXTENSIONS).find((k) => EXTENSIONS[k].includes(ext)) || "other";
+}
+
 function Media() {
   const { user, t, messageApi } = useContext(Context);
   const [selectedMedia, setSelectedMedia] = useState(false);
@@ -30,8 +44,20 @@ function Media() {
   const [media, setMedia] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(32);
-  const [minValue, setMinValue] = useState(0);
-  const [maxValue, setMaxValue] = useState(32);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const filteredMedia = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return media.filter(
+      (item) =>
+        (typeFilter === "all" || getFileType(item.name) === typeFilter) &&
+        (!term || item.name.toLowerCase().includes(term)),
+    );
+  }, [media, search, typeFilter]);
+
+  const minValue = (currentPage - 1) * itemsPerPage;
+  const maxValue = minValue + itemsPerPage;
 
   useEffect(() => {
     getData();
@@ -147,15 +173,16 @@ function Media() {
 
   function handleChangePage(e) {
     setCurrentPage(e);
-    if (e <= 1) {
-      setMinValue(0);
-      setMaxValue(itemsPerPage);
-    } else {
-      let newMinValue = itemsPerPage * (e - 1);
-      let newMaxValue = newMinValue + itemsPerPage;
-      setMinValue(newMinValue);
-      setMaxValue(newMaxValue);
-    }
+  }
+
+  function handleSearch(e) {
+    setSearch(e.target.value);
+    setCurrentPage(1);
+  }
+
+  function handleTypeFilter(value) {
+    setTypeFilter(value);
+    setCurrentPage(1);
   }
 
   return (
@@ -187,20 +214,49 @@ function Media() {
           </p>
         </Dragger>
       </div>
-      <div className="grid grid-cols-8 gap-4 mt-6">
-        {media?.slice(minValue, maxValue).map((item) => {
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
+        <Segmented
+          value={typeFilter}
+          onChange={handleTypeFilter}
+          options={[
+            { label: t("All"), value: "all" },
+            { label: t("Images"), value: "image" },
+            { label: "PDF", value: "pdf" },
+            { label: t("Presentations"), value: "presentation" },
+            { label: t("Videos"), value: "video" },
+            { label: t("Other"), value: "other" },
+          ]}
+        />
+        <Input.Search
+          allowClear
+          className="max-w-xs"
+          placeholder={t("Search by file name")}
+          value={search}
+          onChange={handleSearch}
+        />
+      </div>
+      <div className="grid grid-cols-8 gap-4 mt-4">
+        {filteredMedia.slice(minValue, maxValue).map((item) => {
           return (
             <div key={item.id}>
               <Card
                 className="media-card"
                 cover={
-                  item.name.includes("pdf") ? (
+                  getFileType(item.name) === "pdf" ? (
                     <div className="flex! justify-center items-center min-h-25">
                       <FilePdfOutlined className="text-[50px]" />
                     </div>
-                  ) : item.name.includes("pptx") ? (
+                  ) : getFileType(item.name) === "presentation" ? (
                     <div className="flex! justify-center items-center min-h-25">
                       <FilePptOutlined className="text-[50px]" />
+                    </div>
+                  ) : getFileType(item.name) === "video" ? (
+                    <div className="flex! justify-center items-center min-h-25">
+                      <VideoCameraOutlined className="text-[50px]" />
+                    </div>
+                  ) : getFileType(item.name) === "other" ? (
+                    <div className="flex! justify-center items-center min-h-25">
+                      <FileOutlined className="text-[50px]" />
                     </div>
                   ) : (
                     <div
@@ -229,7 +285,12 @@ function Media() {
             </div>
           );
         })}
-        {media.length > 0 && (
+        {media.length > 0 && filteredMedia.length === 0 && (
+          <p className="col-span-8 text-center text-gray-500 py-8">
+            {t("No files found")}
+          </p>
+        )}
+        {filteredMedia.length > 0 && (
           <div className="col-span-8 mt-4">
             <Pagination
               align="center"
@@ -238,7 +299,7 @@ function Media() {
               pageSize={itemsPerPage}
               defaultCurrent={1}
               current={currentPage}
-              total={media.length}
+              total={filteredMedia.length}
             />
           </div>
         )}
