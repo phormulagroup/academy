@@ -100,7 +100,7 @@ export default function Login() {
         </Form.Item>
         <p className={labelClass}>{t("Password")}</p>
         <Form.Item name="password" rules={[requiredRule]} className="mb-2!">
-          <Input.Password size="large" placeholder="●●●●●●●" />
+          <Input.Password size="large" placeholder={t("Enter your password")} />
         </Form.Item>
         <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
           <Form.Item name="remember" valuePropName="checked" className="mb-0!">

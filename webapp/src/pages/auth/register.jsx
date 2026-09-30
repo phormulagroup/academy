@@ -233,7 +233,7 @@ export default function Register() {
               name="password"
               rules={[requiredRule]}
               className="mb-0!">
-              <Input.Password size="large" placeholder="●●●●●●●" />
+              <Input.Password size="large" placeholder={t("Enter your password")} />
             </Form.Item>
           </div>
           <div className="col-span-2 md:col-span-1">
@@ -246,7 +246,7 @@ export default function Register() {
                 matchFieldRule("password", t("The passwords does not match!")),
               ]}
               className="mb-0!">
-              <Input.Password size="large" placeholder="●●●●●●●" />
+              <Input.Password size="large" placeholder={t("Repeat your password")} />
             </Form.Item>
           </div>
           <div className="col-span-2">

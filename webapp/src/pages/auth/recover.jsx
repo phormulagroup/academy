@@ -218,7 +218,7 @@ export default function Recover() {
               name="password"
               rules={[requiredRule]}
               className="mb-4!">
-              <Input.Password size="large" placeholder="●●●●●●●" />
+              <Input.Password size="large" placeholder={t("Enter your new password")} />
             </Form.Item>
             <Form.Item
               label={t("Confirm password")}
@@ -229,7 +229,7 @@ export default function Recover() {
                 matchFieldRule("password", t("The passwords does not match!")),
               ]}
               className="mb-4!">
-              <Input.Password size="large" placeholder="●●●●●●●" />
+              <Input.Password size="large" placeholder={t("Repeat your new password")} />
             </Form.Item>
             <Button
               htmlType="submit"
