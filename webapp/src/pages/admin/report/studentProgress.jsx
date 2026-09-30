@@ -102,16 +102,16 @@ export default function StudentProgress({ data }) {
                   style={{ backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none", backgroundColor: u.img ? "transparent" : "#ccc" }}
                 >
                   {!u.img && (
-                    <p className="text-black">
+                    <p className="text-[#163986]">
                       {u.name.split(" ")[0][0]}
                       {u.name.split(" ")[1][0]}
                     </p>
                   )}
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-black">{u.name}</p>
-                  <p className="text-[11px] text-black underline">{u.email}</p>
-                  <p className="text-[11px] text-black">ID: {u.id}</p>
+                  <p className="text-[#163986]">{u.name}</p>
+                  <p className="text-[11px] text-[#163986] underline">{u.email}</p>
+                  <p className="text-[11px] text-[#163986]">ID: {u.id}</p>
                 </div>
               </div>
             </Link>

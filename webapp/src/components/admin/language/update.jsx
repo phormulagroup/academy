@@ -3,9 +3,10 @@ import { Button, Drawer, Form, Input, Select } from "antd";
 import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
+import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Update({ data, open, close, submit }) {
-  const { update } = useContext(Context);
+  const { update, getLanguages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [languageOptions, setLanguageOptions] = useState([
     { flag: "https://flagcdn.com/es.svg", name: "Español" },
@@ -33,6 +34,8 @@ export default function Update({ data, open, close, submit }) {
     setIsButtonLoading(true);
     try {
       await update({ data: values, table: "language" });
+      // Atualiza idiomas/países na app (seletores de país e de idioma)
+      await getLanguages();
       setIsButtonLoading(false);
       close(true);
       form.resetFields();
@@ -53,28 +56,25 @@ export default function Update({ data, open, close, submit }) {
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
           Atualizar
         </Button>,
-      ]}
-    >
-      <Form
-        form={form}
-        onFinish={submit}
-        layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
-      >
+      ]}>
+      <Form form={form} onFinish={submit} layout="vertical">
         <Form.Item name="id" hidden>
           <Input />
         </Form.Item>
         <Form.Item name="flag" hidden>
           <Input />
         </Form.Item>
-        <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
+        <Form.Item name="name" label="Nome" rules={[requiredSelectRule]}>
           <Select
             size="large"
             className="w-full"
             placeholder="Selecione..."
-            onChange={(e) => form.setFieldValue("flag", languageOptions.filter((i) => i.name === e)[0].flag)}
+            onChange={(e) =>
+              form.setFieldValue(
+                "flag",
+                languageOptions.filter((i) => i.name === e)[0].flag,
+              )
+            }
             showSearch={{
               optionFilterProp: "label",
             }}
@@ -89,7 +89,10 @@ export default function Update({ data, open, close, submit }) {
             }))}
           />
         </Form.Item>
-        <Form.Item name="country" label="Países" rules={[{ required: true }]}>
+        <Form.Item
+          name="country"
+          label="Países"
+          rules={[requiredSelectRule]}>
           <Select
             mode="multiple"
             size="large"

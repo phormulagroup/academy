@@ -1,11 +1,12 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { Button, Drawer, Form, Input, Select, Divider, Switch, Modal } from "antd";
+import { useContext, useState } from "react";
+import { Button, Form, Select, Modal } from "antd";
 
 import { useTranslation } from "react-i18next";
 import axios from "axios";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
+import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Status({ data, open, close, status }) {
   const { createLog, selectedLanguage, user, messageApi } = useContext(Context);
@@ -22,8 +23,16 @@ export default function Status({ data, open, close, status }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      const res = await axios.post(endpoints.user.changeStatus, { data: { ...data, status: values.status } });
-      await createLog({ id_user: user.id, action: "status", table_name: "user", meta_data: JSON.stringify({ ...data, status: values.status }), id_lang: selectedLanguage.id });
+      const res = await axios.post(endpoints.user.changeStatus, {
+        data: { ...data, status: values.status },
+      });
+      await createLog({
+        id_user: user.id,
+        action: "status",
+        table_name: "user",
+        meta_data: JSON.stringify({ ...data, status: values.status }),
+        id_lang: selectedLanguage.id,
+      });
       console.log(res);
       setIsButtonLoading(false);
       messageApi.success(t("User status updated successfully"));
@@ -49,20 +58,28 @@ export default function Status({ data, open, close, status }) {
         <Button loading={isButtonLoading} type="primary" onClick={form.submit}>
           {t("Yes")}
         </Button>,
-      ]}
-    >
+      ]}>
       <div className="p-2 pb-0">
         <p className="text-[16px] font-bold">{t("Change user status")}</p>
         <div className="flex flex-col mt-4">
-          <p>{t("Are you sure that you want to change status of this user?")}</p>
+          <p>
+            {t("Are you sure that you want to change status of this user?")}
+          </p>
           <p className="mt-4">
             <b>{t("Name")}</b>: {data.name}
           </p>
           <p>
             <b>{t("E-mail")}</b>: {data.email}
           </p>
-          <Form form={form} onFinish={submit} layout="vertical" className="mt-6!">
-            <Form.Item name="status" label={t("New status")}>
+          <Form
+            form={form}
+            onFinish={submit}
+            layout="vertical"
+            className="mt-6!">
+            <Form.Item
+              rules={[requiredSelectRule]}
+              name="status"
+              label={t("New status")}>
               <Select
                 size="large"
                 className="w-full"

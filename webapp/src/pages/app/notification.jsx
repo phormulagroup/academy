@@ -72,7 +72,7 @@ export default function Notifications() {
 
   return (
     <div className="p-10 bg-[#EAEAEA] min-h-full">
-      <div className="container m-auto">
+      <div className="page-frame">
         <div className="bg-[#F7F7F7] flex flex-col justify-center items-center p-10 shadow-lg">
           <p className="text-center font-bold text-2xl mb-4">{t("Notifications")}</p>
           {notifications.length > 0 ? (

@@ -1,15 +1,6 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import {
-	Avatar,
-	Button,
-	Divider,
-	Empty,
-	Image,
-	Progress,
-	Skeleton,
-	Tabs,
-} from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { Button, Empty, Progress, Tabs } from "antd";
 import { useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -22,496 +13,633 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
+import useScrollToTop from "../../../utils/scrollToTop";
 
-import DurationIcon from "../../../assets/Duracao.svg?react";
-import CertificateIcon from "../../../assets/Certificado.svg?react";
-import TrainerIcon from "../../../assets/Formador.svg?react";
-import VideosIcon from "../../../assets/Videos.svg?react";
-import FlagIcon from "../../../assets/Flag.svg?react";
 import i18n from "../../../utils/i18n";
-import CourseIcon from "../../../assets/Curso.svg?react";
-import MaterialIcon from "../../../assets/Materiais.svg?react";
-import ObjectionIcon from "../../../assets/Livro-Objecoes-On.svg?react";
+import {
+  PiFlagLight,
+  PiFileTextLight,
+  PiBookBookmark,
+  PiBookOpenLight,
+} from "react-icons/pi";
+import { RxChevronUp } from "react-icons/rx";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
 import CourseObjection from "./objection/objection";
-import { computeClosable } from "antd/es/_util/hooks";
 import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
-	const { user, languages, messageApi, windowDimension } = useContext(Context);
+  const { user, languages, messageApi, windowDimension } = useContext(Context);
+  const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
 
-	const [isLoading, setIsLoading] = useState(true);
-	const [isEnrolling, setIsEnrolling] = useState(false);
-	const [data, setData] = useState({});
-	const [modules, setModules] = useState([]);
-	const [progress, setProgress] = useState([]);
-	const [activeKey, setActiveKey] = useState("1");
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState({});
+  const [modules, setModules] = useState([]);
+  const [progress, setProgress] = useState([]);
+  const [activeKey, setActiveKey] = useState("1");
 
-	let { slug } = useParams();
-	const { t } = useTranslation();
-	const navigate = useNavigate();
+  let { slug } = useParams();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-	useEffect(() => {
-		getData();
-	}, []);
+  const canAccess = useCallback(
+    (obj) => {
+      let settings = obj.settings;
+      console.log(user);
+      if (user.id_role === 1) return true;
+      if (settings.course_access_expiration) {
+        let today = dayjs();
+        if (
+          today.diff(
+            dayjs(settings.course_access_expiration_dates.start_date).diff(
+              today,
+            ),
+          ) > 0 &&
+          today.diff(dayjs(settings.course_access_expiration_dates.end_date)) <
+            0
+        ) {
+          return true;
+        } else {
+          return false;
+        }
+      } else return true;
+    },
+    [user],
+  );
 
-	async function getData() {
-		try {
-			const res = await axios.get(endpoints.course.readBySlug, {
-				params: {
-					slug,
-					id_user: user.id,
-					id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id,
-				},
-			});
+  useEffect(() => {
+    async function getData() {
+      try {
+        const res = await axios.get(endpoints.course.readBySlug, {
+          params: {
+            slug,
+            id_user: user.id,
+            id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id,
+            id_role: user.id_role,
+          },
+        });
 
-			if (res.data.course.length > 0) {
-				let auxCourse = res.data.course[0];
-				auxCourse.settings = auxCourse.settings
-					? JSON.parse(auxCourse.settings)
-					: null;
-				if (
-					auxCourse.settings &&
-					auxCourse.settings.country_limit &&
-					!auxCourse.settings.country.includes(user.country) &&
-					user.id_role !== 1
-				)
-					auxCourse = null;
-				if (!canAccess(auxCourse)) auxCourse = null;
-				if (auxCourse) {
-					auxCourse.material = auxCourse.material
-						? JSON.parse(auxCourse.material)
-						: null;
-					auxCourse.objection = auxCourse.objection
-						? JSON.parse(auxCourse.objection)
-						: null;
+        if (res.data.course.length > 0) {
+          let auxCourse = res.data.course[0];
+          auxCourse.settings = auxCourse.settings
+            ? JSON.parse(auxCourse.settings)
+            : null;
+          if (
+            auxCourse.settings &&
+            auxCourse.settings.country_limit &&
+            !auxCourse.settings.country.includes(user.country) &&
+            user.id_role !== 1
+          )
+            auxCourse = null;
+          if (!canAccess(auxCourse)) auxCourse = null;
+          if (auxCourse) {
+            auxCourse.material = auxCourse.material
+              ? JSON.parse(auxCourse.material)
+              : null;
+            auxCourse.objection = auxCourse.objection
+              ? JSON.parse(auxCourse.objection)
+              : null;
 
-					if (res.data.modules.length > 0) {
-						let auxModules = res.data.modules;
-						let newModules = [];
-						for (let i = 0; i < auxModules.length; i++) {
-							auxModules[i].items = auxModules[i].items
-								? JSON.parse(auxModules[i].items)
-								: null;
-							if (auxModules[i].items) {
-								for (let y = 0; y < auxModules[i].items.length; y++) {
-									if (auxModules[i].items[y].type === "topic")
-										auxModules[i].items[y] = {
-											type: auxModules[i].items[y].type,
-											...res.data.topics.filter(
-												(_t) => _t.id === auxModules[i].items[y].id,
-											)[0],
-										};
-									if (auxModules[i].items[y].type === "test")
-										auxModules[i].items[y] = {
-											type: auxModules[i].items[y].type,
-											...res.data.tests.filter(
-												(_t) => _t.id === auxModules[i].items[y].id,
-											)[0],
-										};
-								}
-								newModules.push(auxModules[i]);
-							}
-						}
+            if (res.data.modules.length > 0) {
+              let auxModules = res.data.modules;
+              let newModules = [];
+              for (let i = 0; i < auxModules.length; i++) {
+                auxModules[i].items = auxModules[i].items
+                  ? JSON.parse(auxModules[i].items)
+                  : null;
+                if (auxModules[i].items) {
+                  let filteredItems = [];
+                  for (let y = 0; y < auxModules[i].items.length; y++) {
+                    let itemToAdd = null;
 
-						setModules(newModules);
-						setProgress(res.data.progress);
-					}
+                    if (auxModules[i].items[y].type === "topic") {
+                      const topicData = res.data.topics.filter(
+                        (_t) => _t.id === auxModules[i].items[y].id,
+                      )[0];
+                      if (topicData) {
+                        itemToAdd = {
+                          type: auxModules[i].items[y].type,
+                          ...topicData,
+                        };
+                      }
+                    }
 
-					console.log(auxCourse);
-					setData({
-						course: auxCourse,
-						modules: res.data.modules,
-						topics: res.data.topics,
-						tests: res.data.tests,
-					});
-				} else {
-					messageApi.open({
-						type: "info",
-						content: t(
-							"This course is not available in your country or your access period has expired.",
-						),
-					});
-					navigate(`/${i18n.language}/courses`, { replace: true });
-				}
-			} else {
-				navigate(`/${i18n.language}/courses`, { replace: true });
-			}
-			setTimeout(() => {
-				setIsLoading(false);
-			}, 1500);
-		} catch (err) {
-			console.log(err);
-		}
-	}
+                    if (auxModules[i].items[y].type === "test") {
+                      const testData = res.data.tests.filter(
+                        (_t) => _t.id === auxModules[i].items[y].id,
+                      )[0];
+                      if (testData) {
+                        itemToAdd = {
+                          type: auxModules[i].items[y].type,
+                          ...testData,
+                        };
+                      }
+                    }
 
-	function calcCourseProgress(a, b, c) {
-		let progressPercentage = (100 * a) / (b + c);
-		const isInteger = progressPercentage % 1 === 0;
-		return !isInteger
-			? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-			: progressPercentage;
-	}
+                    if (itemToAdd) {
+                      filteredItems.push(itemToAdd);
+                    }
+                  }
 
-	function enroll() {
-		setIsEnrolling(true);
-		let auxData = [
-			{
-				id_course: data.course.id,
-				id_user: user.id,
-				activity_type: "enroll",
-				is_completed: 1,
-				created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-				modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-			},
-		];
+                  // Only add module if it has items after filtering
+                  if (filteredItems.length > 0) {
+                    auxModules[i].items = filteredItems;
+                    newModules.push(auxModules[i]);
+                  }
+                }
+              }
 
-		axios
-			.post(endpoints.course.updateProgress, {
-				data: auxData,
-			})
-			.then((res) => {
-				console.log(res);
-				setIsEnrolling(false);
-				setProgress((prev) => [
-					...prev,
-					{
-						id_course: data.course.id,
-						id_user: user.id,
-						activity_type: "enroll",
-						is_completed: 1,
-						created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-						modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-					},
-				]);
-				navigate(`/${i18n.language}/courses/${slug}/learning`);
-			})
-			.catch((err) => {
-				console.log(err);
-				setIsEnrolling(false);
-			});
-	}
+              setModules(newModules);
+              setProgress(res.data.progress);
+            }
 
-	function canAccess(obj) {
-		let settings = obj.settings;
-		console.log(user);
-		if (user.id_role === 1) return true;
-		if (settings.course_access_expiration) {
-			let today = dayjs();
-			if (
-				today.diff(
-					dayjs(settings.course_access_expiration_dates.start_date).diff(today),
-				) > 0 &&
-				today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0
-			) {
-				return true;
-			} else {
-				return false;
-			}
-		} else return true;
-	}
+            console.log(auxCourse);
+            setData({
+              course: auxCourse,
+              modules: res.data.modules,
+              topics: res.data.topics,
+              tests: res.data.tests,
+            });
+          } else {
+            messageApi.open({
+              type: "info",
+              content: t(
+                "This course is not available in your country or your access period has expired.",
+              ),
+            });
+            navigate(`/${i18n.language}/courses`, { replace: true });
+          }
+        } else {
+          navigate(`/${i18n.language}/courses`, { replace: true });
+        }
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+      } catch (err) {
+        console.log(err);
+      }
+    }
 
-	return (
-		<div className="bg-[#FFFFFF] relative">
-			{data.course && (
-				<Helmet>
-					<meta charSet="utf-8" />
-					<title>{data.course.name} - Bial Regional Academy</title>
-					<meta name="description" content={data.course.name} />
-					<meta property="og:title" content={data.course.name} />
-					<meta property="og:description" content={data.course.name} />
-				</Helmet>
-			)}
-			{isLoading ? (
-				<div className="flex justify-center items-center w-full min-h-75 col-span-3">
-					<Lottie
-						animationData={trailLoadingAnimation}
-						loop={true}
-						className="max-w-30"
-					/>
-				</div>
-			) : data.course ? (
-				<div>
-					<div className="container m-auto grid grid-cols-3 mb-0 sm:mb-6 sm:min-h-150 z-10 xl:absolute top-0 left-0 right-0">
-						<div className="flex flex-col justify-center items-center xl:pt-10 pb-10 col-span-3 xl:col-span-1">
-							<div className="pt-6 xl:p-0 flex flex-col-reverse lg:flex-row justify-between p-6">
-								<div className="mb-10">
-									<p className="text-[#163986]">{t("Course")}</p>
-									<p
-										className={`${windowDimension.width > 1080 ? "text-[40px]" : "text-[24px]"} font-bold text-[#163986]`}
-									>
-										{data.course?.name}
-									</p>
-								</div>
-								<div
-									className="flex lg:hidden justify-center items-center mb-6 lg:mb-0"
-									onClick={() => navigate(`/${i18n.language}/courses`)}
-								>
-									<p>{t("Go back")}</p>
-								</div>
-							</div>
-							<div className="flex xl:hidden justify-center items-center">
-								<img
-									src={`${config.server_ip}/media/${data.course?.img}`}
-									className="h-full!"
-								/>
-							</div>
-							<div className="bg-[#C5CEE1] sm:bg-transparent p-6 sm:p-0">
-								{data.course.settings?.show_info_on_course_page && (
-									<div className="bg-[#8B9CC3] flex flex-col p-5 mt-0 lg:mt-4 rounded-[5px]">
-										<div className="flex items-center">
-											<Avatar className="w-10! h-10!" />
-											<div className="ml-2">
-												<p className="text-white font-semibold">
-													Cláudia Meneses
-												</p>
-												<p className="text-white text-[12px]">
-													Cláudia Meneses
-												</p>
-											</div>
-										</div>
-										<Divider
-											variant="dashed"
-											className="mt-6! mb-6! border-white!"
-										/>
-										<div className="grid grid-cols-2 gap-4">
-											{data.course?.id_course_certificate && (
-												<div className="flex items-center col-span-2 sm:col-span-1">
-													<CertificateIcon className="mr-1 brightness-[0] invert-[1]" />
-													<p className="text-[16px] text-white">
-														{t("With certificate")}
-													</p>
-												</div>
-											)}
-											{(data.course?.settings?.duration_hours ||
-												data.course?.settings?.duration_minutes) && (
-												<div className="flex items-center col-span-2 sm:col-span-1">
-													<DurationIcon className="mr-1 brightness-[0] invert-[1]" />
-													<p className="text-[16px] text-white">
-														{data.course.settings.duration_hours} h{" "}
-														{data.course.settings.duration_minutes
-															? `${data.course.settings.duration_minutes}m`
-															: ""}
-													</p>
-												</div>
-											)}
-											{data.course?.settings?.video && (
-												<div className="flex items-center col-span-2 sm:col-span-1">
-													<VideosIcon className="mr-1 brightness-[0] invert-[1]" />
-													<p className="text-[16px] text-white">
-														{data.course.settings.video} videos
-													</p>
-												</div>
-											)}
-											{data.course?.settings?.trainer && (
-												<div className="flex items-center col-span-2 sm:col-span-1">
-													<TrainerIcon className="mr-1" />
-													<p className="text-[16px]">
-														{data.course.settings.trainer}
-													</p>
-												</div>
-											)}
-										</div>
-									</div>
-								)}
-							</div>
-						</div>
-					</div>
-					<div className="hidden xl:grid grid-cols-8 max-h-150 min-h-150">
-						<div className="col-span-4"></div>
-						<div
-							className="col-span-4 pl-10 flex justify-center items-center bg-center bg-cover"
-							style={{
-								backgroundImage: `url(${config.server_ip}/media/${data.course?.img})`,
-							}}
-						></div>
-					</div>
-					<div className="container m-auto xl:-mt-10 relative z-10">
-						<div className="bg-[#C5CEE1] p-6 flex flex-col sm:flex-row gap-8 mb-5">
-							<div className="hidden sm:flex p-2 pr-0">
-								<FlagIcon
-									className="max-w-12.5"
-									style={{
-										filter:
-											"brightness(0) saturate(100%) invert(12%) sepia(71%) saturate(4132%) hue-rotate(221deg) brightness(84%) contrast(85%)",
-									}}
-								/>
-							</div>
-							{progress.length > 0 ? (
-								<div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full">
-									<div className="flex flex-col sm:flex-row items-center justify-start mb-2">
-										<p className="text-[#163986] text-[20px] font-bold uppercase">
-											{calcCourseProgress(
-												progress.filter(
-													(p) =>
-														p.is_completed === 1 &&
-														p.activity_type !== "module" &&
-														p.activity_type !== "course" &&
-														p.activity_type !== "enroll",
-												).length,
-												data?.topics?.length,
-												data?.tests?.length,
-											)}
-											% {t("Completed")}
-										</p>
-										{progress.length > 0 && (
-											<p className="text-[#163986] text-sm ml-4">
-												{t("Last activity at")}{" "}
-												{progress[progress.length - 1]
-													? dayjs(
-															progress[progress.length - 1].created_at,
-														).format("DD/MM/YYYY HH:mm")
-													: ""}
-											</p>
-										)}
-									</div>
-									<Progress
-										strokeColor={"#2F8351"}
-										railColor={"#FFF"}
-										percent={
-											(100 *
-												progress.filter(
-													(p) =>
-														p.is_completed === 1 &&
-														p.activity_type !== "module" &&
-														p.activity_type !== "course" &&
-														p.activity_type !== "enroll",
-												).length) /
-											(data?.topics?.length + data?.tests?.length)
-										}
-										className="w-full!"
-										showInfo={false}
-									/>
-								</div>
-							) : (
-								<div className="p-2 sm:pl-6 border-0 sm:border-l border-l-[#163986] flex flex-col w-full justify-center items-start">
-									<div className="flex items-center justify-start mb-2">
-										<p className="font-bold text-[20px]">{t("Not enrolled")}</p>
-									</div>
-								</div>
-							)}
-							<div className="p-2 flex justify-center items-center">
-								{calcCourseProgress(
-									progress.filter(
-										(p) =>
-											p.is_completed === 1 &&
-											p.activity_type !== "module" &&
-											p.activity_type !== "course" &&
-											p.activity_type !== "enroll",
-									).length,
-									data?.topics?.length,
-									data?.tests?.length,
-								) === 100 ? (
-									<Button
-										className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
-										color="#163986"
-										variant="solid"
-										size="large"
-										onClick={() =>
-											navigate(`/${i18n.language}/courses/${slug}/learning`)
-										}
-									>
-										{t("Review")}
-									</Button>
-								) : progress.filter((p) => p.activity_type === "enroll")
-										.length === 0 ? (
-									<Button
-										className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
-										variant="solid"
-										size="large"
-										onClick={() => enroll()}
-									>
-										{t("Initiate")}
-									</Button>
-								) : (
-									<Button
-										className="min-w-50 bg-[#163986]! text-white! hover:bg-[#FFFFFF]! hover:text-[#163986]!"
-										color="black"
-										variant="solid"
-										size="large"
-										onClick={() =>
-											navigate(`/${i18n.language}/courses/${slug}/learning`)
-										}
-									>
-										{t("Enter")}
-									</Button>
-								)}
-							</div>
-						</div>
-					</div>
+    getData();
+  }, [slug, user, languages, navigate, t, messageApi, canAccess]);
 
-					<div className="container m-auto p-2 sm:p-0">
-						<Tabs
-							defaultActiveKey={activeKey}
-							centered={windowDimension.width < 768}
-							items={[
-								{
-									key: "1",
-									label: (
-										<div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-											<CourseIcon
-												className={`filter transition group-hover:[filter:brightness(0)_saturate(100%)_invert(13%)_sepia(96%)_saturate(2090%)_hue-rotate(215deg)_brightness(96%)_contrast(93%)] w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 ${activeKey === "1" ? "icon-blue" : ""}`}
-											/>
-											<p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-												{t("Course")}
-											</p>
-										</div>
-									),
-									children: (
-										<CourseContent
-											modules={modules}
-											progress={progress}
-											data={data}
-										/>
-									),
-								},
-								data.course.material &&
-									data.course.material.length > 0 && {
-										key: "2",
-										label: (
-											<div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-												<MaterialIcon
-													className={`filter transition group-hover:[filter:brightness(0)_saturate(100%)_invert(13%)_sepia(96%)_saturate(2090%)_hue-rotate(215deg)_brightness(96%)_contrast(93%)] w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 ${activeKey === "2" ? "icon-blue" : ""}`}
-												/>
-												<p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-													{t("Materials")}
-												</p>
-											</div>
-										),
-										children: <CourseMaterial data={data.course} />,
-									},
-								data.course.objection?.tabs &&
-									data.course.objection.tabs?.length > 0 && {
-										key: "3",
-										label: (
-											<div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-												<ObjectionIcon
-													className={`filter transition group-hover:[filter:brightness(0)_saturate(100%)_invert(13%)_sepia(96%)_saturate(2090%)_hue-rotate(215deg)_brightness(96%)_contrast(93%)] w-4 h-4 sm:w-6 sm:h-6 sm:mr-2 ${activeKey === "3" ? "icon-blue" : ""}`}
-												/>
-												<p className="font-bold text-[14px] mt-2 sm:mt-0 sm:text-[20px]">
-													{t("Objection books")}
-												</p>
-											</div>
-										),
-										children: <CourseObjection data={data.course} />,
-									},
-							].filter(Boolean)}
-							onChange={(key) => setActiveKey(key)}
-							indicator={{ size: (origin) => origin - 20, align: "center" }}
-						/>
-					</div>
-					<div className="flex w-full bg-[#F7F7F7]">
-						<div className="container m-auto">
-							<div className="flex flex-col"></div>
-						</div>
-					</div>
-				</div>
-			) : (
-				<div>
-					<Empty />
-				</div>
-			)}
-		</div>
-	);
+  function calcCourseProgress(a, b, c) {
+    let progressPercentage = (100 * a) / (b + c);
+    const isInteger = progressPercentage % 1 === 0;
+    return !isInteger
+      ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
+      : progressPercentage;
+  }
+
+  function enroll() {
+    let auxData = [
+      {
+        id_course: data.course.id,
+        id_user: user.id,
+        activity_type: "enroll",
+        is_completed: 1,
+        created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+      },
+    ];
+
+    axios
+      .post(endpoints.course.updateProgress, {
+        data: auxData,
+      })
+      .then((res) => {
+        console.log(res);
+        setProgress((prev) => [
+          ...prev,
+          {
+            id_course: data.course.id,
+            id_user: user.id,
+            activity_type: "enroll",
+            is_completed: 1,
+            created_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+            modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          },
+        ]);
+        navigate(`/${i18n.language}/courses/${slug}/learning`);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  // Validar se a tab Course deve aparecer (módulos com items)
+  function hasCourseContent() {
+    return modules && modules.length > 0;
+  }
+
+  // Validar se a tab Materials deve aparecer
+  function hasMaterialContent() {
+    if (!data.course || !data.course.material) return false;
+    const material = data.course.material;
+    if (!Array.isArray(material) || material.length === 0) return false;
+    // Verificar se há pelo menos um material com arquivo válido
+    return material.some(
+      (m) => m && m.file && typeof m.file === "string" && m.file.trim() !== "",
+    );
+  }
+
+  // Validar se a tab Objection deve aparecer
+  function hasObjectionContent() {
+    if (!data.course || !data.course.objection) return false;
+    const objection = data.course.objection;
+    if (!objection.tabs || !Array.isArray(objection.tabs)) return false;
+    // Verificar se há pelo menos uma tab com items contendo conteúdo válido
+    return objection.tabs.some(
+      (tab) =>
+        tab &&
+        tab.items &&
+        Array.isArray(tab.items) &&
+        tab.items.length > 0 &&
+        tab.items.some(
+          (item) =>
+            item &&
+            item.title &&
+            typeof item.title === "string" &&
+            item.title.trim() !== "" &&
+            item.text &&
+            typeof item.text === "string" &&
+            item.text.trim() !== "",
+        ),
+    );
+  }
+
+
+  return (
+    <div className="bg-[#FFFFFF] relative">
+      {data.course && (
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>{data.course.name} - Bial Regional Academy</title>
+          <meta name="description" content={data.course.name} />
+          <meta property="og:title" content={data.course.name} />
+          <meta property="og:description" content={data.course.name} />
+        </Helmet>
+      )}
+      {isLoading ? (
+        <div className="flex justify-center items-center w-full min-h-75 col-span-3">
+          <Lottie
+            animationData={trailLoadingAnimation}
+            loop={true}
+            className="max-w-30"
+          />
+        </div>
+      ) : data.course ? (
+        <div>
+          <div
+            className={`page-frame`}>
+            {/* Primeiro Container */}
+            <div className="relative z-10 pt-4 sm:pt-8 lg:pt-10 mb-6 sm:mb-10">
+              {/* Grupo 1: Nome do Curso + Thumbnail */}
+              <div
+                className={`grid gap-4 sm:gap-8 mb-6 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-3" : "grid-cols-1"}`}>
+                {/* Nome do Curso - 30% no desktop */}
+                <div className="flex flex-col justify-center col-span-1">
+                  <p className="text-[#163986] uppercase text-[13px] sm:text-base md:text-lg lg:text-[20px]">
+                    {t("Course")}
+                  </p>
+                  <p className="font-bold text-[#163986] mt-1 sm:mt-2 line-clamp-3 leading-[1.2] text-[20px] sm:text-[24px] md:text-[26px] lg:text-[32px] xl:text-[42px]">
+                    {data.course?.name}
+                  </p>
+                </div>
+
+                {/* Thumbnail - 70% no desktop - altura dinâmica */}
+                {/* Banner 12:5 na proporção natural (sem altura fixa nem object-cover, a imagem não é cortada) */}
+                <div className="col-span-2">
+                  <img
+                    src={`${config.server_ip}/media/${data.course?.img}`}
+                    className="w-full h-auto rounded-[5px]"
+                    alt={data.course?.name}
+                  />
+                </div>
+              </div>
+
+              {/* Grupo 2: Progress Bar */}
+              <div className="bg-[#C5CEE1] p-3 sm:p-5 lg:p-6 rounded-[5px]">
+                <div className="flex flex-col gap-4 sm:gap-6">
+                  {/* Flex row para icon + progress content */}
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
+                    {/* Flag Icon */}
+                    <div className="hidden sm:flex">
+                      <PiFlagLight className="text-[#163986] w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12" />
+                    </div>
+
+                    {/* Progress Content */}
+                    {progress.length > 0 ? (
+                      <div className="flex-1 flex flex-col lg:flex-row w-full gap-4 lg:gap-6 items-center border-0 sm:border-l sm:pl-6 border-l-[#163986]">
+                        <div className="flex-1 flex flex-col w-full">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start mb-3 gap-2 sm:gap-4">
+                            <p className="text-[#163986] font-bold uppercase whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-xl">
+                              {calcCourseProgress(
+                                progress.filter(
+                                  (p) =>
+                                    p.is_completed === 1 &&
+                                    p.is_deleted !== 1 &&
+                                    p.activity_type !== "module" &&
+                                    p.activity_type !== "course" &&
+                                    p.activity_type !== "enroll" &&
+                                    ((p.activity_type === "topic" &&
+                                      data?.topics?.some(
+                                        (t) =>
+                                          t.id === p.id_course_topic &&
+                                          t.is_deleted !== 1,
+                                      )) ||
+                                      (p.activity_type === "test" &&
+                                        data?.tests?.some(
+                                          (t) =>
+                                            t.id === p.id_course_test &&
+                                            t.is_deleted !== 1,
+                                        ))),
+                                ).length,
+                                data?.topics?.filter((t) => t.is_deleted !== 1)
+                                  ?.length || 0,
+                                data?.tests?.filter((t) => t.is_deleted !== 1)
+                                  ?.length || 0,
+                              )}
+                              % {t("Completed")}
+                            </p>
+                            {progress.length > 0 && (
+                              <p className="text-[#163986] whitespace-nowrap text-xs sm:text-[12px] md:text-[13px] lg:text-[14px]">
+                                {t("Last activity at")}{" "}
+                                {progress[progress.length - 1]
+                                  ? dayjs(
+                                      progress[progress.length - 1].created_at,
+                                    ).format("DD/MM/YYYY HH:mm")
+                                  : ""}
+                              </p>
+                            )}
+                          </div>
+                          <Progress
+                            strokeColor={"#2F8351"}
+                            railColor={"#FFF"}
+                            percent={
+                              (100 *
+                                progress.filter(
+                                  (p) =>
+                                    p.is_completed === 1 &&
+                                    p.is_deleted !== 1 &&
+                                    p.activity_type !== "module" &&
+                                    p.activity_type !== "course" &&
+                                    p.activity_type !== "enroll" &&
+                                    ((p.activity_type === "topic" &&
+                                      data?.topics?.some(
+                                        (t) =>
+                                          t.id === p.id_course_topic &&
+                                          t.is_deleted !== 1,
+                                      )) ||
+                                      (p.activity_type === "test" &&
+                                        data?.tests?.some(
+                                          (t) =>
+                                            t.id === p.id_course_test &&
+                                            t.is_deleted !== 1,
+                                        ))),
+                                ).length) /
+                              ((data?.topics?.filter((t) => t.is_deleted !== 1)
+                                ?.length || 0) +
+                                (data?.tests?.filter((t) => t.is_deleted !== 1)
+                                  ?.length || 0))
+                            }
+                            className="w-full!"
+                            showInfo={false}
+                          />
+                        </div>
+                        {calcCourseProgress(
+                          progress.filter(
+                            (p) =>
+                              p.is_completed === 1 &&
+                              p.is_deleted !== 1 &&
+                              p.activity_type !== "module" &&
+                              p.activity_type !== "course" &&
+                              p.activity_type !== "enroll" &&
+                              ((p.activity_type === "topic" &&
+                                data?.topics?.some(
+                                  (t) =>
+                                    t.id === p.id_course_topic &&
+                                    t.is_deleted !== 1,
+                                )) ||
+                                (p.activity_type === "test" &&
+                                  data?.tests?.some(
+                                    (t) =>
+                                      t.id === p.id_course_test &&
+                                      t.is_deleted !== 1,
+                                  ))),
+                          ).length,
+                          data?.topics?.filter((t) => t.is_deleted !== 1)
+                            ?.length || 0,
+                          data?.tests?.filter((t) => t.is_deleted !== 1)
+                            ?.length || 0,
+                        ) === 100 ? (
+                          <Button
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
+                            color="#163986"
+                            variant="solid"
+                            size="large"
+                            onClick={() =>
+                              navigate(
+                                `/${i18n.language}/courses/${slug}/learning`,
+                              )
+                            }>
+                            {t("Review")}
+                          </Button>
+                        ) : progress.filter((p) => p.activity_type === "enroll")
+                            .length === 0 ? (
+                          <Button
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
+                            variant="solid"
+                            size="large"
+                            onClick={() => enroll()}>
+                            {t("Start")}
+                          </Button>
+                        ) : (
+                          <Button
+                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
+                            color="black"
+                            variant="solid"
+                            size="large"
+                            onClick={() =>
+                              navigate(
+                                `/${i18n.language}/courses/${slug}/learning`,
+                              )
+                            }>
+                            {t("Enter")}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col sm:flex-row w-full justify-start sm:justify-between items-center sm:items-center gap-4 border-0 sm:border-l sm:pl-6 border-l-[#163986]">
+                        <p className="font-bold text-[#163986] text-sm sm:text-base md:text-lg lg:text-xl">
+                          {t("Not enrolled")}
+                        </p>
+                        <Button
+                          className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
+                          variant="solid"
+                          size="large"
+                          onClick={() => enroll()}>
+                          {t("Start")}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Segundo container */}
+            {(hasCourseContent() ||
+              hasMaterialContent() ||
+              hasObjectionContent()) && (
+              <div className="mt-6 sm:mt-8">
+                <Tabs
+                  defaultActiveKey={
+                    hasCourseContent() ? "1" : hasMaterialContent() ? "2" : "3"
+                  }
+                  centered={windowDimension.width < 768}
+                  items={[
+                    ...(hasCourseContent()
+                      ? [
+                          {
+                            key: "1",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiFileTextLight
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Course")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseContent
+                                  modules={modules}
+                                  progress={progress}
+                                  data={data}
+                                />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(hasMaterialContent()
+                      ? [
+                          {
+                            key: "2",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
+                                <PiBookBookmark
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Materials")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseMaterial data={data.course} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(hasObjectionContent()
+                      ? [
+                          {
+                            key: "3",
+                            label: (
+                              <div className="group flex flex-col lg:flex-row p-2 justify center items-center">
+                                <PiBookOpenLight
+                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                />
+                                <p
+                                  className={`font-bold mt-2 sm:mt-0 text-[14px] md:text-base transition ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  style={{
+                                    fontSize:
+                                      windowDimension.width >= 1225
+                                        ? "20px"
+                                        : windowDimension.width >= 768 &&
+                                            windowDimension.width < 1225
+                                          ? "18px"
+                                          : windowDimension.width >= 425 &&
+                                              windowDimension.width < 768
+                                            ? "16px"
+                                            : "",
+                                  }}>
+                                  {t("Objection books")}
+                                </p>
+                              </div>
+                            ),
+                            children: (
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                                <CourseObjection data={data.course} />
+                              </div>
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                  onChange={(key) => {
+                    setActiveKey(key);
+                  }}
+                  indicator={{ size: (origin) => origin - 20, align: "center" }}
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex w-full bg-[#F7F7F7]">
+            <div className="page-frame">
+              <div className="flex flex-col"></div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <Empty
+            style={{ color: "#163986", textAlign: "center", padding: "2rem" }}
+          />
+        </div>
+      )}
+      {/* Scroll to Top Button */}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTop}
+          style={{ backgroundColor: "#FFC600" }}
+          className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
+          title="Scroll to top">
+          <RxChevronUp className="w-6! h-6! text-black!" />
+        </button>
+      )}
+    </div>
+  );
 }

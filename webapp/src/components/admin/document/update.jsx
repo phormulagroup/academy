@@ -1,184 +1,171 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Drawer, Form, Input, Select } from "antd";
-import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
 import Media from "../media/media";
 import { useTranslation } from "react-i18next";
-import config from "../../../utils/config";
-import { AiOutlineFile } from "react-icons/ai";
+import { fileTypeRule } from "../../../utils/fileValidation";
+import { requiredRule } from "../../../utils/formFieldError";
+import useMediaPicker from "../../../utils/useMediaPicker";
+import useFormErrors from "../../../utils/useFormErrors";
+import MediaField from "../../../utils/mediaField";
 
-export default function Update({ data, open, close, submit }) {
-	const { update, selectedLanguage, languages } = useContext(Context);
-	const [isButtonLoading, setIsButtonLoading] = useState(false);
-	const [mediaKey, setMediaKey] = useState(null);
-	const [isOpenMedia, setIsOpenMedia] = useState(false);
+// Tipo de ficheiro aceite por cada campo da Multimédia
+const FIELD_TYPES = { img: "image", file: "pdf" };
 
-	const { t } = useTranslation();
+export default function Update({ data, open, close, nameRule }) {
+  const { update, selectedLanguage, languages } = useContext(Context);
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
 
-	const [form] = Form.useForm();
+  const { t } = useTranslation();
 
-	useEffect(() => {
-		if (open) {
-			form.setFieldsValue(data);
-		}
-	}, [open]);
+  const [form] = Form.useForm();
+  const name = Form.useWatch("name", form);
+  const media = useMediaPicker(form, FIELD_TYPES, t);
+  const errors = useFormErrors(form);
 
-	function onClose() {
-		form.resetFields();
-		close();
-	}
+  useEffect(() => {
+    if (open) {
+      form.setFieldsValue(data);
+    }
+  }, [open]);
 
-	async function submit(values) {
-		setIsButtonLoading(true);
-		try {
-			await update({ data: values, table: "document" });
-			setIsButtonLoading(false);
-			close(true);
-			form.resetFields();
-		} catch (err) {
-			console.log(err);
-			setIsButtonLoading(false);
-		}
-	}
+  function resetState() {
+    form.resetFields();
+    errors.reset();
+    media.resetSelectionErrors();
+  }
 
-	function openMedia(k) {
-		setMediaKey(k);
-		setIsOpenMedia(true);
-	}
+  function onClose() {
+    resetState();
+    close();
+  }
 
-	function closeMedia(res) {
-		if (res) {
-			form.setFieldValue(mediaKey, res[mediaKey]);
-		}
+  async function handleSubmit(values) {
+    setIsButtonLoading(true);
+    try {
+      await update({ data: values, table: "document" });
+      setIsButtonLoading(false);
+      resetState();
+      close(true);
+    } catch (err) {
+      console.log(err);
+      setIsButtonLoading(false);
+    }
+  }
 
-		setMediaKey(null);
-		setIsOpenMedia(false);
-	}
-
-	return (
-		<Drawer
-			open={open}
-			size={800}
-			onClose={onClose}
-			maskClosable={false}
-			title={`Update document`}
-			extra={[
-				<Button
-					type="primary"
-					size="large"
-					loading={isButtonLoading}
-					onClick={form.submit}
-				>
-					Atualizar
-				</Button>,
-			]}
-		>
-			<Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
-			<Form
-				form={form}
-				onFinish={submit}
-				layout="vertical"
-				validateMessages={{
-					required: "Este campo é obrigatório!",
-				}}
-			>
-				<Form.Item name="id" hidden>
-					<Input />
-				</Form.Item>
-				<Form.Item name="name" label="Nome" required>
-					<Input size="large" placeholder="Nome do documento" />
-				</Form.Item>
-				<Form.Item name="country" label={t("Country")}>
-					<Select
-						mode="multiple"
-						size="large"
-						placeholder="País..."
-						allowClear
-						options={languages
-							.filter((lang) => lang.id === selectedLanguage.id)
-							.flatMap((l) =>
-								JSON.parse(l.country).map((c) => ({
-									value: c,
-									label: t(`${c}`),
-									id_lang: l.id,
-								})),
-							)
-							.sort((a, b) => a.label.localeCompare(b.label))}
-					/>
-				</Form.Item>
-				<Form.Item
-					noStyle
-					shouldUpdate={(prevValues, currentValues) =>
-						prevValues.img !== currentValues.img
-					}
-				>
-					{({ getFieldValue }) => (
-						<>
-							<p className="pb-2">{t("Cover image")}</p>
-							<div
-								className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-								onClick={() => openMedia("img")}
-								style={{
-									backgroundImage: `url(${config.server_ip}/media/${getFieldValue("img")})`,
-									backgroundSize: "contain",
-									backgroundRepeat: "no-repeat",
-									backgroundPosition: "center",
-								}}
-							>
-								{!getFieldValue("img") ? (
-									<div className="flex justify-center items-center flex-col p-10">
-										<AiOutlineFile className="text-[30px]" />{" "}
-										<p className="text-[11px] text-center mt-2">
-											{t("Add multimedia")}
-										</p>
-									</div>
-								) : null}
-							</div>
-
-							<Form.Item name="img" hidden>
-								<Input />
-							</Form.Item>
-						</>
-					)}
-				</Form.Item>
-				<Form.Item
-					noStyle
-					shouldUpdate={(prevValues, currentValues) =>
-						prevValues.file !== currentValues.file
-					}
-				>
-					{({ getFieldValue }) => (
-						<>
-							<p className="pb-2">{t("Document")}</p>
-							<div
-								className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-								onClick={() => openMedia("file")}
-							>
-								{!getFieldValue("file") ? (
-									<div className="flex justify-center items-center flex-col p-10">
-										<AiOutlineFile className="text-[30px]" />{" "}
-										<p className="text-[11px] text-center mt-2">
-											{t("Add file")}
-										</p>
-									</div>
-								) : (
-									<div className="flex justify-center items-center flex-col p-10">
-										<AiOutlineFile className="text-[30px]" />{" "}
-										<p className="text-[11px] text-center mt-2">
-											{getFieldValue("file")}
-										</p>
-									</div>
-								)}
-							</div>
-
-							<Form.Item name="file" hidden>
-								<Input />
-							</Form.Item>
-						</>
-					)}
-				</Form.Item>
-			</Form>
-		</Drawer>
-	);
+  return (
+    <Drawer
+      open={open}
+      size={800}
+      onClose={onClose}
+      maskClosable={false}
+      title={`Update document`}
+      extra={[
+        <Button
+          key="submit"
+          type="primary"
+          size="large"
+          loading={isButtonLoading}
+          onClick={errors.submit}>
+          Atualizar
+        </Button>,
+      ]}>
+      <Media
+        mediaKey={media.mediaKey}
+        open={media.isOpenMedia}
+        close={media.closeMedia}
+      />
+      <Form
+        form={form}
+        onFinish={handleSubmit}
+        onFieldsChange={errors.onFieldsChange}
+        layout="vertical">
+        <Form.Item name="id" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="name"
+          {...errors.labelErrorProps("name", name, "Nome")}
+          rules={[requiredRule, nameRule(data?.id)]}>
+          <Input size="large" placeholder="Nome do documento" />
+        </Form.Item>
+        <Form.Item name="country" label={t("Country")}>
+          <Select
+            mode="multiple"
+            size="large"
+            placeholder="País..."
+            allowClear
+            options={languages
+              .filter((lang) => lang.id === selectedLanguage.id)
+              .flatMap((l) =>
+                JSON.parse(l.country).map((c) => ({
+                  value: c,
+                  label: t(`${c}`),
+                  id_lang: l.id,
+                })),
+              )
+              .sort((a, b) => a.label.localeCompare(b.label))}
+          />
+        </Form.Item>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) =>
+            prevValues.img !== currentValues.img
+          }>
+          {({ getFieldValue }) => (
+            <>
+              <MediaField
+                label={t("Cover image")}
+                value={getFieldValue("img")}
+                error={
+                  media.selectionError("img") ||
+                  errors.errorOf("img", getFieldValue("img"))
+                }
+                placeholder={t("Add multimedia")}
+                onOpen={() => media.openMedia("img")}
+                onRemove={() => media.setMediaValue("img", null)}
+              />
+              <Form.Item
+                name="img"
+                hidden
+                validateTrigger="onChange"
+                rules={[requiredRule, fileTypeRule("image", t)]}>
+                <Input />
+              </Form.Item>
+            </>
+          )}
+        </Form.Item>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) =>
+            prevValues.file !== currentValues.file
+          }>
+          {({ getFieldValue }) => (
+            <>
+              <MediaField
+                type="file"
+                label={t("Document")}
+                value={getFieldValue("file")}
+                error={
+                  media.selectionError("file") ||
+                  errors.errorOf("file", getFieldValue("file"))
+                }
+                placeholder={t("Add file")}
+                onOpen={() => media.openMedia("file")}
+                onRemove={() => media.setMediaValue("file", null)}
+              />
+              <Form.Item
+                name="file"
+                hidden
+                validateTrigger="onChange"
+                rules={[requiredRule, fileTypeRule("pdf", t)]}>
+                <Input />
+              </Form.Item>
+            </>
+          )}
+        </Form.Item>
+      </Form>
+    </Drawer>
+  );
 }

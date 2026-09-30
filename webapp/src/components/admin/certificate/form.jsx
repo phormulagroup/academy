@@ -1,75 +1,62 @@
-import { useContext, useEffect, useState } from "react";
-import { Button, Drawer, Form, Input, Modal, Select } from "antd";
-import countries from "../../../utils/countries.json";
+import { Form, Input } from "antd";
 
-import { Context } from "../../../utils/context";
 import Media from "../media/media";
 import { useTranslation } from "react-i18next";
 import TipTapFormField from "../tipTap/tipTapFormField";
-import { AiOutlineFile } from "react-icons/ai";
-import config from "../../../utils/config";
+import { fileTypeRule } from "../../../utils/fileValidation";
+import { requiredRule } from "../../../utils/formFieldError";
+import useMediaPicker from "../../../utils/useMediaPicker";
+import MediaField from "../../../utils/mediaField";
 
-export default function CertificateForm({ form, data, submit, preview }) {
-  const { create } = useContext(Context);
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [mediaKey, setMediaKey] = useState(null);
-  const [isOpenMedia, setIsOpenMedia] = useState(false);
+// Tipo de ficheiro aceite por cada campo da Multimédia
+const FIELD_TYPES = { background: "image" };
 
+// errors = useFormErrors(form) do CertificateDetails: o botão Save (fora do formulário) usa errors.submit
+export default function CertificateForm({ form, submit, preview, errors }) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
-
-  function openMedia(key) {
-    setMediaKey(key);
-    setIsOpenMedia(true);
-  }
-
-  function closeMedia(res) {
-    if (res) {
-      form.setFieldValue(mediaKey, res[mediaKey]);
-    }
-
-    setMediaKey(null);
-    setIsOpenMedia(false);
-  }
+  const media = useMediaPicker(form, FIELD_TYPES, t);
 
   return (
     <div className="flex flex-col">
-      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
+      <Media
+        mediaKey={media.mediaKey}
+        open={media.isOpenMedia}
+        close={media.closeMedia}
+      />
       <Form
         form={form}
         onFinish={submit}
+        onFieldsChange={errors.onFieldsChange}
         layout="vertical"
-        validateMessages={{
-          required: t("This field is required"),
-        }}
-        onValuesChange={preview}
-      >
+        onValuesChange={preview}>
         <Form.Item name="id" hidden>
           <Input size="large" />
         </Form.Item>
-        <Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
+        <Form.Item name="name" label={t("Name")} rules={[requiredRule]}>
           <Input size="large" />
         </Form.Item>
-        <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.background !== currentValues.background}>
+        <Form.Item
+          noStyle
+          shouldUpdate={(prevValues, currentValues) =>
+            prevValues.background !== currentValues.background
+          }>
           {({ getFieldValue }) => (
             <>
-              <p className="pb-2">{t("Background")}</p>
-              <div
-                className="border border-dashed border-gray-300 rounded-lg mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden bg-contain! bg-center! bg-no-repeat!"
-                onClick={() => openMedia("background")}
-                style={{ background: `url(${config.server_ip}/media/${getFieldValue("background")})` }}
-              >
-                {!getFieldValue("background") ? (
-                  <div className="flex justify-center items-center flex-col p-10">
-                    <AiOutlineFile className="text-[30px]" /> <p className="text-[11px] text-center mt-2">{t("Add multimedia")}</p>
-                  </div>
-                ) : null}
-              </div>
-
-              <Form.Item name="background" hidden>
+              <MediaField
+                label={t("Background")}
+                value={getFieldValue("background")}
+                error={
+                  media.selectionError("background") ||
+                  errors.errorOf("background", getFieldValue("background"))
+                }
+                placeholder={t("Add multimedia")}
+                onOpen={() => media.openMedia("background")}
+                onRemove={() => media.setMediaValue("background", null)}
+              />
+              <Form.Item
+                name="background"
+                hidden
+                rules={[requiredRule, fileTypeRule("image", t)]}>
                 <Input />
               </Form.Item>
             </>

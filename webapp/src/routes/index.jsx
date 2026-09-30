@@ -97,13 +97,19 @@ export default function AppRoutes() {
 		}
 	})();
 
-	const element = finalRoutes ? useRoutes(finalRoutes) : null;
+	// useRoutes é um hook: tem de ser chamado sempre (lista vazia enquanto carrega), senão a ordem dos hooks
+	// muda entre renders e a navegação pode ficar num estado errado até recarregar a página
+	const element = useRoutes(finalRoutes ?? []);
 
 	return (
 		<ConfigProvider
 			theme={{
 				token: {
 					colorPrimary: "#163986",
+					// Texto, títulos/labels e placeholders dos componentes antd (front e backoffice)
+					colorText: "#163986",
+					colorTextHeading: "#163986",
+					colorTextPlaceholder: "#8b9cc3",
 					fontFamily: "Poppins",
 					blue: "#00b9d6",
 					controlInteractiveSize: 20,

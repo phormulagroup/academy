@@ -7,15 +7,13 @@ import {
 	Select,
 } from "antd";
 
-import Media from "../media/media";
 import { Context } from "../../../utils/context";
 import { useNavigate } from "react-router-dom";
+import { requiredRule, requiredSelectRule } from "../../../utils/formFieldError";
 
-export default function Update({ data, open, close, products, validateInternalName }) {
+export default function Update({ data, open, close, products, nameRule, internalNameRule }) {
 	const { update, t, selectedLanguage } = useContext(Context);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
-	const [mediaKey, setMediaKey] = useState(null);
-	const [isOpenMedia, setIsOpenMedia] = useState(false);
 
 	const [form] = Form.useForm();
 
@@ -45,19 +43,7 @@ export default function Update({ data, open, close, products, validateInternalNa
 		}
 	}
 
-	function openMedia(key) {
-		setMediaKey(key);
-		setIsOpenMedia(true);
-	}
 
-	function closeMedia(res) {
-		if (res) {
-			form.setFieldValue(mediaKey, res[mediaKey]);
-		}
-
-		setMediaKey(null);
-		setIsOpenMedia(false);
-	}
 
 	return (
     <Modal
@@ -74,36 +60,29 @@ export default function Update({ data, open, close, products, validateInternalNa
         </Button>,
       ]}
     >
-      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
       <p className="text-[16px] font-bold mb-4">{t("Update Course")}</p>
       <Form
         form={form}
         onFinish={submit}
         layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
       >
         <Form.Item name="id" hidden>
           <Input />
         </Form.Item>
-        <Form.Item name="name" label={t("Name")} rules={[{ required: true }]}>
+        <Form.Item name="name" label={t("Name")} rules={[requiredRule, nameRule(data?.id)]}>
           <Input size="large" placeholder={t("Enter course name")} />
         </Form.Item>
         <Form.Item
           name="internal_name"
           label={t("Internal name")}
-          rules={[
-            { required: true },
-            { validator: (_, value) => validateInternalName(_, value, data?.id), validateTrigger: ["onChange", "onBlur"] },
-          ]}
+          rules={[requiredRule, internalNameRule(data?.id)]}
         >
           <Input size="large" placeholder={t("Enter internal course name")} />
         </Form.Item>
         <Form.Item
           name="status"
           label={t("Status")}
-          rules={[{ required: true }]}
+          rules={[requiredSelectRule]}
         >
           <Select
             size="large"
@@ -127,7 +106,7 @@ export default function Update({ data, open, close, products, validateInternalNa
         <Form.Item
           name="id_product"
           label={t("Product")}
-          rules={[{ required: true }]}
+          rules={[requiredSelectRule]}
         >
           <Select
             size="large"

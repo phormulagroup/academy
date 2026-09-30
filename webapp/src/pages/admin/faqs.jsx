@@ -9,6 +9,7 @@ import Table from "../../components/admin/table";
 import Create from "../../components/admin/faqs/create";
 import Update from "../../components/admin/faqs/update";
 import Delete from "../../components/admin/delete";
+import { uniqueRule } from "../../utils/formFieldError";
 
 import { Context } from "../../utils/context";
 
@@ -129,10 +130,15 @@ export default function Faqs() {
     setIsOpenDelete(false);
   }
 
+  // Título único (usado pelo Create e pelo Update): não pode existir outra FAQ ativa neste idioma com o
+  // mesmo título; no Update ignora a própria FAQ (excludeId)
+  const nameRule = (excludeId = null) =>
+    uniqueRule(data, t("A faq with this title already exists"), { field: "title", excludeId });
+
   return (
     <div className="p-2">
-      <Create open={isOpenCreate} close={closeAction} />
-      <Update data={selectedData} open={isOpenUpdate} close={closeAction} />
+      <Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
+      <Update data={selectedData} open={isOpenUpdate} close={closeAction} nameRule={nameRule} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="faqs" />
       <div className="flex justify-between items-center mb-4">
         <div>

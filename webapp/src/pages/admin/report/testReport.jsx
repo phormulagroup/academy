@@ -17,8 +17,6 @@ import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
 import SearchIcon from "../../../assets/Backoffice/search.svg?react";
 import { getTestReportColumns } from "../../../utils/columns";
 
-
-
 export default function TestReport({ data }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
@@ -50,7 +48,6 @@ export default function TestReport({ data }) {
     );
   }, [selectedLanguage]);
 
-
   function formatAvgTime(seconds) {
     const hours = Math.floor(seconds / 3600);
 
@@ -78,23 +75,32 @@ export default function TestReport({ data }) {
     if (!test || !test.settings) {
       return false;
     }
-    
-    let testSettings = typeof test.settings === "string" ? JSON.parse(test.settings) : test.settings;
-    
+
+    let testSettings =
+      typeof test.settings === "string"
+        ? JSON.parse(test.settings)
+        : test.settings;
+
     // Apenas marca como reprovado se retries_allowed for um número válido
-    if (!testSettings || !testSettings.retries_allowed || testSettings.retries_allowed <= 0) {
+    if (
+      !testSettings ||
+      !testSettings.retries_allowed ||
+      testSettings.retries_allowed <= 0
+    ) {
       return false;
     }
-    
+
     // Verificar se o aluno passou no teste
     const testPassed = testAttempts.some((a) => a.is_completed === 1);
     if (testPassed) {
       return false; // Se passou, não é reprovado
     }
-    
+
     // Contar tentativas falhadas
-    const failedAttempts = testAttempts.filter((a) => a.is_completed === 0).length;
-    
+    const failedAttempts = testAttempts.filter(
+      (a) => a.is_completed === 0,
+    ).length;
+
     // Apenas reprovado se tiver tentativas falhadas e se o número de tentativas falhadas for >= permitido
     return failedAttempts > 0 && failedAttempts >= testSettings.retries_allowed;
   };
@@ -104,9 +110,14 @@ export default function TestReport({ data }) {
     if (obj.users && obj.activity && obj.activity.length > 0) {
       // Filtra apenas os utilizadores regulares (id_role = 2) com status aprovado e as suas atividades de teste não eliminadas
       // Exclui testes de cursos em draft - que só devem ser vistos pelo admin
-      let regularUsers = obj.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
+      let regularUsers = obj.users.filter(
+        (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
+      );
       let testsActivity = obj.activity.filter(
-        (a) => a.activity_type === "test" && a.is_deleted === 0 && regularUsers.some((u) => u.id === a.id_user),
+        (a) =>
+          a.activity_type === "test" &&
+          a.is_deleted === 0 &&
+          regularUsers.some((u) => u.id === a.id_user),
       );
 
       // Agrupa as atividades por utilizador e teste, para calcular médias e outras métricas
@@ -153,11 +164,11 @@ export default function TestReport({ data }) {
         const test = obj.tests.filter(
           (t) => t.id === attemptSample.id_course_test,
         )[0];
-        
-        // Não mostra testes de cursos em draft
+
+        // Não mostra testes de cursos deletados - admins veem draft e published courses/tests
         const module = obj.modules.find((m) => m.id === test?.id_course_module);
         const course = obj.courses.find((c) => c.id === module?.id_course);
-        if (course?.status === "draft") continue;
+        if (course?.is_deleted === 1) continue;
 
         const testSettings =
           test.settings && typeof test.settings === "string"
@@ -198,10 +209,12 @@ export default function TestReport({ data }) {
         const avgTime = formatAvgTime(avgTimeInSeconds);
 
         // Debug status: Approved se passou na última tentativa, Repproved se esgotou as tentativas permitidas
-        const sortedAttempts = [...activityAttempts].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const sortedAttempts = [...activityAttempts].sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        );
         const lastAttempt = sortedAttempts[sortedAttempts.length - 1];
         let Status;
-        
+
         if (lastAttempt.is_completed === 1) {
           Status = "Approved";
         } else if (isTestRepproved(activityAttempts, test)) {
@@ -247,11 +260,15 @@ export default function TestReport({ data }) {
 
   function filterData(values) {
     // Começar com as atividades de teste (ignorar outros tipos de atividade)
-    let testsActivity = activity.filter((a) => a.activity_type === "test" && a.is_deleted === 0);
+    let testsActivity = activity.filter(
+      (a) => a.activity_type === "test" && a.is_deleted === 0,
+    );
 
     // Filtrar por curso se selecionado
     if (values.course) {
-      testsActivity = testsActivity.filter((a) => a.id_course === values.course);
+      testsActivity = testsActivity.filter(
+        (a) => a.id_course === values.course,
+      );
     }
 
     // Filtrar por país se selecionado
@@ -263,7 +280,13 @@ export default function TestReport({ data }) {
 
         // Se country_limit é true, apenas incluir se o país corresponder
         if (course.settings.country_limit) {
-          return course.settings.country && Array.isArray(course.settings.country) && course.settings.country.some((item) => values.country.includes(item));
+          return (
+            course.settings.country &&
+            Array.isArray(course.settings.country) &&
+            course.settings.country.some((item) =>
+              values.country.includes(item),
+            )
+          );
         }
         return false;
       });
@@ -320,7 +343,6 @@ export default function TestReport({ data }) {
       },
     ];
 
-    
     // Filtra as atividades para o utilizador e teste específicos, excluindo admins
     const regularUsers = data.users.filter((u) => u.id_role === 2);
     const testsActivity = data.activity.filter(
@@ -333,7 +355,9 @@ export default function TestReport({ data }) {
     );
 
     //Ordena as tentativas por data
-    testsActivity.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    testsActivity.sort(
+      (a, b) => new Date(a.created_at) - new Date(b.created_at),
+    );
 
     const dataExpanded = [];
 
@@ -351,7 +375,9 @@ export default function TestReport({ data }) {
       const totalItems = attempt.meta_data.items.length;
       const score = `${correctCount}/${totalItems}`;
       const percentage =
-        totalItems > 0 ? `${((correctCount * 100) / totalItems).toFixed(2)}%` : "0%";
+        totalItems > 0
+          ? `${((correctCount * 100) / totalItems).toFixed(2)}%`
+          : "0%";
       const time = formatAvgTime(attempt.meta_data.time);
 
       dataExpanded.push({
@@ -391,8 +417,7 @@ export default function TestReport({ data }) {
             color="blue"
             disabled={dataExpanded.length === 0}
             onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<DownloadIcon />}
-          >
+            icon={<DownloadIcon />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -400,9 +425,12 @@ export default function TestReport({ data }) {
           className="expanded_table"
           columns={columnsExpanded}
           dataSource={dataExpanded}
-          expandable={{ 
+          expandable={{
             expandedRowRender: expandedQuestionRowRender,
-            rowExpandable: (record) => record.meta_data && record.meta_data.items && record.meta_data.items.length > 0
+            rowExpandable: (record) =>
+              record.meta_data &&
+              record.meta_data.items &&
+              record.meta_data.items.length > 0,
           }}
           pagination={{
             pageSize: 5,
@@ -466,8 +494,7 @@ export default function TestReport({ data }) {
             color="blue"
             disabled={dataExpanded.length === 0}
             onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<DownloadIcon />}
-          >
+            icon={<DownloadIcon />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -504,10 +531,12 @@ export default function TestReport({ data }) {
               // Quando não existe dados na tabela, o botão de exportar é desativado
               disabled={tableData.length === 0}
               onClick={() =>
-                openExport(filteredData.length > 0 ? filteredData : tableData, getTestReportColumns(t))
+                openExport(
+                  filteredData.length > 0 ? filteredData : tableData,
+                  getTestReportColumns(t),
+                )
               }
-              icon={<DownloadIcon />}
-            >
+              icon={<DownloadIcon />}>
               {t("Export excel")}
             </Button>
           </div>
@@ -545,8 +574,7 @@ export default function TestReport({ data }) {
               size="large"
               onClick={form.submit}
               type="primary"
-              icon={<SearchIcon />}
-            >
+              icon={<SearchIcon />}>
               {t("Search")}
             </Button>
           </div>
@@ -556,7 +584,10 @@ export default function TestReport({ data }) {
         <Table
           rowKey="id"
           onChange={onChange}
-          expandable={{ expandedRowRender: expandedAttemptRowRender, rowExpandable: (record) => record.attempts > 0 }}
+          expandable={{
+            expandedRowRender: expandedAttemptRowRender,
+            rowExpandable: (record) => record.attempts > 0,
+          }}
           dataSource={tableData}
           pagination={{
             pageSize: 5, // máximo 5 por página

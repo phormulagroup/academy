@@ -173,7 +173,7 @@ export default function Main() {
     for (let u = 0; u < obj.users.length; u++) {
       auxUsers.push({
         name: (
-          <Link to={`/admin/users/${obj.users[u].id}`} className="text-[#252525]! underline!">
+          <Link to={`/admin/users/${obj.users[u].id}`} className="text-[#163986]! underline!">
             {obj.users[u].name}
           </Link>
         ),
@@ -393,7 +393,7 @@ export default function Main() {
                 />
               </div>
               <div>
-                <Link to="/admin/users" className="text-[#010202]! underline! text-[10px]">
+                <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
                   {t("Show all")} »
                 </Link>
               </div>
@@ -550,7 +550,7 @@ export default function Main() {
                 <p className="mb-4 mt-1">{t("The most recent submissions made through the registration form are listed here.")}</p>
               </div>
               <div>
-                <Link to="/admin/users" className="text-[#010202]! underline! text-[10px]">
+                <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
                   {t("Show all")} »
                 </Link>
               </div>
@@ -606,7 +606,7 @@ export default function Main() {
                 <p className="text-lg font-bold mb-4">{t("Best students")}</p>
               </div>
               <div>
-                <Link to="/admin/users" className="text-[#010202]! underline! text-[10px]">
+                <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
                   {t("Show all")} »
                 </Link>
               </div>
@@ -631,16 +631,16 @@ export default function Main() {
                         }}
                       >
                         {!u.img && (
-                          <p className="text-black">
+                          <p className="text-[#163986]">
                             {u.user_name.split(" ")[0][0]}
                             {u.user_name.split(" ")[1][0]}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <p className="text-black">{u.user_name}</p>
-                        <p className="text-[11px] text-black underline">{u.user_email}</p>
-                        <p className="text-[11px] text-black mt-1">ID: {u.id_user}</p>
+                        <p className="text-[#163986]">{u.user_name}</p>
+                        <p className="text-[11px] text-[#163986] underline">{u.user_email}</p>
+                        <p className="text-[11px] text-[#163986] mt-1">ID: {u.id_user}</p>
                       </div>
                     </div>
                   </Link>
@@ -672,7 +672,7 @@ export default function Main() {
                 <p className="text-lg font-bold mb-4">{t("Access logs")}</p>
               </div>
               <div>
-                <Link to="/admin/users" className="text-[#010202]! underline! text-[10px]">
+                <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
                   {t("Show all")} »
                 </Link>
               </div>

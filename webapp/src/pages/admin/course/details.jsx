@@ -31,7 +31,8 @@ export default function CourseDetails() {
       })
       .then((res) => {
         console.log(res);
-        if (res.data.course && res.data.course.length > 0) setData(res.data.course[0]);
+        if (res.data.course && res.data.course.length > 0)
+          setData(res.data.course[0]);
       })
       .catch((err) => {
         console.log(err);

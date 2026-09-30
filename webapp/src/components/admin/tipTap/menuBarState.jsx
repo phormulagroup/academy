@@ -25,6 +25,13 @@ export function menuBarStateSelector(ctx) {
     isCodeBlock: ctx.editor.isActive("codeBlock") ?? false,
     isBlockquote: ctx.editor.isActive("blockquote") ?? false,
 
+    // Tables
+    isTable: ctx.editor.isActive("table") ?? false,
+
+    // Subscript and Superscript
+    isSubscript: ctx.editor.isActive("subscript") ?? false,
+    isSuperscript: ctx.editor.isActive("superscript") ?? false,
+
     // History
     canUndo: ctx.editor.can().chain().undo().run() ?? false,
     canRedo: ctx.editor.can().chain().redo().run() ?? false,

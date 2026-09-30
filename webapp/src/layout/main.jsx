@@ -1,594 +1,578 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-	CloseOutlined,
-	DashboardOutlined,
-	DashOutlined,
-	DownOutlined,
-	LoginOutlined,
-	LogoutOutlined,
-	MenuOutlined,
-	ProfileOutlined,
-	UserOutlined,
-} from "@ant-design/icons";
-import { Avatar, Button, Divider, Drawer, Dropdown, Layout, Menu } from "antd";
+import React, { useContext, useMemo, useState } from "react";
+import { LogoutOutlined, MenuOutlined } from "@ant-design/icons";
+import { Avatar, Divider, Drawer, Dropdown, Layout } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import logo from "../assets/BIAL-Regional-Academy.png";
-
-import endpoints from "../utils/endpoints";
-import config from "../utils/config";
 
 import { Context } from "../utils/context";
 
 import Logout from "../components/logout";
 import { FaRegUser } from "react-icons/fa";
+import {
+  FaFacebook,
+  FaLinkedin,
+  FaInstagram,
+  FaYoutube,
+} from "react-icons/fa6";
+import { MdNotificationsNone } from "react-icons/md";
 import { useTranslation } from "react-i18next";
-import { TbWorld } from "react-icons/tb";
 import { Footer } from "antd/es/layout/layout";
 
 import bialLogo from "../assets/BIAL-logo-footer.svg";
-import bialFooterBg from "../assets/Footer.png";
-import bialFooterMobileBg from "../assets/Footer-mobile.png";
-import NotificationIcon from "../assets/Notifications-off.svg?react";
-import FacebookIcon from "../assets/facebook.svg?react";
-import LinkedInIcon from "../assets/Linkedin.svg?react";
 import { AiFillCloseCircle } from "react-icons/ai";
 import dayjs from "dayjs";
+import useChangeLanguage from "../utils/useChangeLanguage";
+import LanguageSelector from "../utils/languageSelector";
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content } = Layout;
+
+const MENU_ITEMS = [
+  { label: "About", section: "about", loggedIn: false, hideOnLoggedIn: false },
+  { label: "Login", section: "login", loggedIn: false, hideOnLoggedIn: true },
+  {
+    label: "Register",
+    section: "register",
+    loggedIn: false,
+    hideOnLoggedIn: true,
+  },
+  { label: "Courses", section: "", loggedIn: true, hideOnLoggedIn: false },
+  {
+    label: "Documents",
+    section: "documents",
+    loggedIn: true,
+    hideOnLoggedIn: false,
+  },
+  {
+    label: "Downloads",
+    section: "downloads",
+    loggedIn: true,
+    hideOnLoggedIn: false,
+  },
+  { label: "FAQs", section: "faqs", loggedIn: false, hideOnLoggedIn: false },
+];
 
 const Main = () => {
-	const {
-		user,
-		logout,
-		languages,
-		setIsLoadingLanguage,
-		windowDimension,
-		notifications,
-		inbox,
-		isLoggedIn,
-		selectedLanguage,
-		setSelectedLanguage,
-	} = useContext(Context);
-	const { t, i18n } = useTranslation();
+  const {
+    user,
+    logout,
+    languages,
+    windowDimension,
+    notifications,
+    inbox,
+    isLoggedIn,
+    selectedLanguage,
+  } = useContext(Context);
+  const { t, i18n } = useTranslation();
 
-	const [current, setCurrent] = useState("");
-	const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
-	const [isOpenLogout, setIsOpenLogout] = useState(false);
-	const [menuItems] = useState([
-		{
-			label: t("About"),
-			path: `/${i18n.language}/about`,
-			loggedIn: false,
-			hideOnLoggedIn: false,
-		},
-		{
-			label: t("Login"),
-			path: `/${i18n.language}/login`,
-			loggedIn: false,
-			hideOnLoggedIn: true,
-		},
-		{
-			label: t("Register"),
-			path: `/${i18n.language}/register`,
-			loggedIn: false,
-			hideOnLoggedIn: true,
-		},
-		{
-			label: t("Courses"),
-			path: `/${i18n.language}`,
-			loggedIn: true,
-			hideOnLoggedIn: false,
-		},
-		{
-			label: t("Documents"),
-			path: `/${i18n.language}/documents`,
-			loggedIn: true,
-			hideOnLoggedIn: false,
-		},
-		{
-			label: t("Downloads"),
-			path: `/${i18n.language}/downloads`,
-			loggedIn: true,
-			hideOnLoggedIn: false,
-		},
-		{
-			label: t("Faqs"),
-			path: `/${i18n.language}/faqs`,
-			loggedIn: false,
-			hideOnLoggedIn: false,
-		},
-	]);
+  const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
+  const [isOpenLogout, setIsOpenLogout] = useState(false);
 
-	const location = useLocation();
-	const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-	const changeLanguage = (lang) => {
-		const selectedLang = languages.find((l) => l.code === lang);
-		localStorage.setItem("id_lang", selectedLang.id);
-		i18n.changeLanguage(lang);
-		setSelectedLanguage(selectedLang);
-		navigate(
-			`/${lang}/${window.location.pathname.split("/").slice(2).join("/")}`,
-		);
-		setIsLoadingLanguage(true);
-		setTimeout(() => {
-			setIsLoadingLanguage(false);
-		}, 1500);
-	};
+  // Paths are derived from the current language so they stay in sync after changeLanguage
+  const menuItems = useMemo(
+    () =>
+      MENU_ITEMS.map((item) => ({
+        ...item,
+        path: item.section
+          ? `/${i18n.language}/${item.section}`
+          : `/${i18n.language}`,
+      })),
+    [i18n.language],
+  );
 
-	useEffect(() => {
-		let pathname = location.pathname.split("/");
-		if (pathname.length > 2) {
-			setCurrent(`/${i18n.language}/${pathname[2]}`);
-		} else {
-			setCurrent(`/${i18n.language}`);
-		}
-	}, [location]);
+  // Section of the current URL (/:lang/:section/...), independent of the language prefix
+  const currentSection = location.pathname.split("/")[2] || "";
 
-	function closeDrawer() {
-		setIsOpenDrawerMenu(false);
-	}
+  const isActiveItem = (item) =>
+    item.section === currentSection ||
+    (item.section === "" && currentSection === "courses") ||
+    (item.section === "about" && currentSection === "" && !isLoggedIn) ||
+    (item.section === "faqs" && currentSection === "faqs");
 
-	return (
-		<Layout className="min-h-100vh">
-			<Logout
-				open={isOpenLogout}
-				close={() => setIsOpenLogout(false)}
-				submit={logout}
-			/>
-			<Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-full!">
-				<Drawer
-					open={isOpenDrawerMenu}
-					size={"80%"}
-					onClose={closeDrawer}
-					maskClosable={false}
-					extra={[]}
-					className="drawer-learning"
-				>
-					<div className="flex flex-col justify-between h-full">
-						<div className="flex flex-col h-full">
-							<div className="absolute top-5 right-5 flex justify-end">
-								<AiFillCloseCircle
-									className="text-white text-3xl"
-									onClick={closeDrawer}
-								/>
-							</div>
-							<div>
-								{user && Object.keys(user).length === 0 ? (
-									<div className="bg-[#c1c1c1] p-6 pt-10">
-										<div className="flex justify-start items-center cursor-pointer">
-											<Link
-												to={`/${i18n.language}/login`}
-												className="flex justify-center items-center"
-												onClick={() => closeDrawer()}
-											>
-												<Avatar icon={<FaRegUser />} />
-												<p className="text-[16px] ml-2">Login</p>
-											</Link>
-										</div>
-									</div>
-								) : (
-									<div className="bg-[#c1c1c1] p-6 pt-16">
-										<div className="flex justify-start items-center cursor-pointer">
-											<Link
-												to={`/${i18n.language}/account`}
-												className="flex justify-center items-center"
-												onClick={() => closeDrawer()}
-											>
-												<Avatar className="w-10! h-10!" icon={<FaRegUser />} />
-												<p className="text-[16px] ml-2">
-													{user.name.split(" ")[0]}{" "}
-													{
-														user.name.split(" ")[
-															user.name.split(" ").length - 1
-														]
-													}
-												</p>
-											</Link>
-										</div>
-									</div>
-								)}
-								<div className="flex flex-col mt-2 p-4 pb-0">
-									{menuItems.map((item) =>
-										isLoggedIn
-											? !item.hideOnLoggedIn && (
-													<Link
-														key={item.path}
-														className="m-2 text-center text-[16px]"
-														to={item.path}
-														onClick={() => closeDrawer()}
-													>
-														{item.label}
-													</Link>
-												)
-											: !item.loggedIn && (
-													<Link
-														key={item.path}
-														className="m-2 text-center text-[16px]"
-														to={item.path}
-														onClick={() => closeDrawer()}
-													>
-														{item.label}
-													</Link>
-												),
-									)}
-								</div>
-								<div className="flex flex-col p-4 pt-0">
-									<Divider />
-									{user.id_role === 1 && (
-										<Link
-											className={`m-2 text-center text-[16px]`}
-											to="/admin"
-											onClick={() => closeDrawer()}
-										>
-											<p>{t("Go to backoffice")}</p>
-										</Link>
-									)}
-									<Link
-										className="m-2 text-center text-[16px]"
-										to={`/${i18n.language}/account`}
-										onClick={() => closeDrawer()}
-									>
-										<p>{t("Account")}</p>
-									</Link>
-									<Link
-										className={`m-2 text-center text-[16px]`}
-										to={`/${i18n.language}/result`}
-										onClick={() => closeDrawer()}
-									>
-										<p>{t("Results")}</p>
-									</Link>
-									<Link
-										className={`m-2 text-center text-[16px]`}
-										to={`/${i18n.language}/notifications`}
-										onClick={() => closeDrawer()}
-									>
-										{notifications.filter((n) => n.is_read === 0).length > 0 ? (
-											<div className="w-5 h-5 mr-2 flex justify-center items-center">
-												<div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-													<p className="text-white">
-														{
-															notifications.filter((n) => n.is_read === 0)
-																.length
-														}
-													</p>
-												</div>
-											</div>
-										) : null}
-										<p>{t("Notifications")}</p>
-									</Link>
-									<Link
-										className={`m-2 text-center text-[16px]`}
-										to={
-											user.id_role === 1
-												? "/admin/inbox"
-												: `/${i18n.language}/inbox`
-										}
-										onClick={() => closeDrawer()}
-									>
-										{inbox.filter((n) => n.unread_messages > 0).length > 0 ? (
-											<div className="w-5 h-5 mr-2 flex justify-center items-center">
-												<div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-													<p className="text-white text-[10px]">
-														{inbox.map((n) => n.unread_messages)}
-													</p>
-												</div>
-											</div>
-										) : null}
-										<p>{t("Inbox")}</p>
-									</Link>
-								</div>
-							</div>
-						</div>
-						<div className="p-4 pb-10">
-							<div
-								className="flex justify-center items-center cursor-pointer"
-								onClick={() => setIsOpenLogout(true)}
-							>
-								<p className="text-center text-[16px]">Logout</p>
-							</div>
-						</div>
-					</div>
-				</Drawer>
-				{windowDimension.width > 1334 ? (
-					<div className="grid grid-cols-5 w-full container mx-auto pl-6 pr-6">
-						<div
-							onClick={() => navigate(`/${i18n.language}`)}
-							className="cursor-pointer"
-						>
-							<img src={logo} className="max-h-15" />
-						</div>
-						<div className="col-span-3 flex justify-center items-center">
-							{menuItems.map((item) =>
-								isLoggedIn
-									? !item.hideOnLoggedIn && (
-											<Link
-												key={item.path}
-												className={`nav-link ${item.path === `/${i18n.language}` && current.includes("courses") ? "active" : current === item.path ? "active" : ""}`}
-												to={item.path}
-												onClick={() => closeDrawer()}
-											>
-												{t(item.label)}
-											</Link>
-										)
-									: !item.loggedIn && (
-											<Link
-												key={item.path}
-												className="nav-link"
-												to={item.path}
-												onClick={() => closeDrawer()}
-											>
-												{t(item.label)}
-											</Link>
-										),
-							)}
-						</div>
-						<div className="flex justify-end items-center">
-							{((user && Object.keys(user).length === 0) ||
-								user?.id_role === 1) && (
-								<Dropdown
-									menu={{
-										items: languages.map((item) => ({
-											key: item.code,
-											label: (
-												<div
-													className={`flex items-center ${selectedLanguage?.id === item.id ? "text-[#00B9D6]" : ""}`}
-													onClick={() => changeLanguage(item.code)}
-												>
-													<img
-														src={item.flag}
-														className="max-w-5 mr-2"
-														alt={item.name}
-													/>
-													<p>{item.name}</p>
-												</div>
-											),
-										})),
-									}}
-									trigger={["click"]}
-									placement="bottomRight"
-								>
-									<div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
-										<div
-											className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-											style={{
-												backgroundImage: `url(${selectedLanguage?.flag})`,
-											}}
-										></div>
-										<p>{selectedLanguage?.code?.toUpperCase()}</p>
-									</div>
-								</Dropdown>
-							)}
+  // Mesma mudança de idioma do header: mantém o header sincronizado e mostra a animação de carregamento
+  const changeLanguage = useChangeLanguage();
 
-							{user && Object.keys(user).length > 0 && (
-								<div className="flex">
-									<Dropdown
-										menu={{
-											items: [
-												user.id_role === 1 && {
-													key: "backoffice",
-													label: (
-														<Link className={`flex items-center`} to="/admin">
-															<div className="flex items-center">
-																<div className="w-5 mr-2"></div>
-																<p>{t("Go to backoffice")}</p>
-															</div>
-														</Link>
-													),
-												},
-												{
-													key: "account",
-													label: (
-														<Link
-															className={`flex items-center`}
-															to={`/${i18n.language}/account`}
-														>
-															<div className="flex items-center">
-																<div className="w-5 mr-2"></div>
-																<p>{t("My account")}</p>
-															</div>
-														</Link>
-													),
-												},
-												{
-													key: "result",
-													label: (
-														<Link
-															className={`flex items-center`}
-															to={`/${i18n.language}/result`}
-														>
-															<div className="flex items-center">
-																<div className="w-5 mr-2"></div>
-																<p>{t("Results")}</p>
-															</div>
-														</Link>
-													),
-												},
-												{
-													key: "inbox",
-													label: (
-														<Link
-															className={`flex items-center`}
-															to={
-																user.id_role === 1
-																	? "/admin/inbox"
-																	: `/${i18n.language}/inbox`
-															}
-														>
-															<div className="flex items-center">
-																<div className="w-5 h-5 mr-2 flex justify-center items-center">
-																	{inbox.filter((n) => n.unread_messages > 0)
-																		.length > 0 ? (
-																		<div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-																			<p className="text-white text-[10px]">
-																				{inbox.map((n) => n.unread_messages)}
-																			</p>
-																		</div>
-																	) : (
-																		<NotificationIcon className="mr-2" />
-																	)}
-																</div>
-																<p>{t("Inbox")}</p>
-															</div>
-														</Link>
-													),
-												},
-												{
-													key: "notification",
-													label: (
-														<Link
-															className={`flex items-center`}
-															to={`/${i18n.language}/notifications`}
-														>
-															<div className="flex items-center">
-																<div className="w-5 h-5 mr-2 flex justify-center items-center">
-																	{notifications.filter((n) => n.is_read === 0)
-																		.length > 0 ? (
-																		<div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-																			<p className="text-white text-[10px]">
-																				{
-																					notifications.filter(
-																						(n) => n.is_read === 0,
-																					).length
-																				}
-																			</p>
-																		</div>
-																	) : (
-																		<NotificationIcon className="mr-2" />
-																	)}
-																</div>
-																<p>{t("Notifications")}</p>
-															</div>
-														</Link>
-													),
-												},
-											],
-										}}
-										trigger={["click"]}
-										placement="bottomLeft"
-									>
-										<div className="flex justify-center items-center cursor-pointer">
-											<Avatar icon={<FaRegUser />} />
-											<p className="text-[12px] ml-2">
-												{user.name.split(" ")[0]}{" "}
-												{user.name.split(" ")[user.name.split(" ").length - 1]}
-											</p>
-										</div>
-									</Dropdown>
-									<div
-										className="flex items-center ml-6 cursor-pointer"
-										onClick={() => setIsOpenLogout(true)}
-									>
-										<LogoutOutlined />
-									</div>
-								</div>
-							)}
-						</div>
-					</div>
-				) : (
-					<div className="flex justify-between items-center w-full container mx-auto">
-						<div
-							onClick={() => navigate(`/${i18n.language}`)}
-							className="cursor-pointer"
-						>
-							<img src={logo} className="max-h-15" />
-						</div>
-						<div className="flex items-center">
-							{user && user.id_role === 1 && (
-								<Dropdown
-									menu={{
-										items: languages.map((item) => ({
-											key: item.code,
-											label: (
-												<div
-													className={`flex items-center ${selectedLanguage?.id === item.id ? "text-[#00B9D6]" : ""}`}
-													onClick={() => changeLanguage(item.code)}
-												>
-													<img
-														src={item.flag}
-														className="max-w-5 mr-2"
-														alt={item.name}
-													/>
-													<p>{item.name}</p>
-												</div>
-											),
-										})),
-									}}
-									trigger={["click"]}
-									placement="bottomRight"
-								>
-									<div className="flex justify-center items-center cursor-pointer mr-4 border leading-1 p-2 rounded-full">
-										<div
-											className={`w-5 h-5 rounded-full bg-cover bg-center mr-2`}
-											style={{
-												backgroundImage: `url(${selectedLanguage?.flag})`,
-											}}
-										></div>
-										<p>{selectedLanguage?.code?.toUpperCase()}</p>
-									</div>
-								</Dropdown>
-							)}
-							<MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
-						</div>
-					</div>
-				)}
-			</Header>
-			<Content className="bg-white min-h-[unset]!">
-				<Outlet />
-			</Content>
-			<Footer
-				className="bg-center! bg-cover!"
-				style={{
-					background:
-						windowDimension < 768
-							? `url(${bialFooterMobileBg})`
-							: `url(${bialFooterBg})`,
-				}}
-			>
-				<div className="container flex flex-col md:flex-row justify-between items-end m-auto gap-8">
-					<div className="w-full">
-						<div className="mb-4 flex justify-center md:justify-start items-center">
-							<p className="text-white mr-4">{t("Follow us")}</p>
-							<Link
-								to={"https://facebook.com/"}
-								target="_blank"
-								className="mr-2"
-							>
-								<FacebookIcon className="max-w-7.5" />
-							</Link>
-							<Link to={"https://linkedin.com/"} target="_blank">
-								<LinkedInIcon className="max-w-7.5" />
-							</Link>
-						</div>
-						<div className="flex justify-center md:justify-start items-center gap-4">
-							<Link to={`/${i18n.language}/contact`}>
-								<p className="text-white text-sm underline text-center md:text-left">
-									{t("Contact Form")}
-								</p>
-							</Link>
-							<p className="text-white">|</p>
-							<p className="text-white text-sm underline text-center md:text-left">
-								{t("Terms and conditions")}
-							</p>
-							<p className="text-white">|</p>
-							<p className="text-white text-sm underline text-center md:text-left">
-								{t("Privacy policy")}
-							</p>
-						</div>
-					</div>
-					<div className="flex flex-col justify-center items-center md:items-end w-full">
-						<img
-							src={bialLogo}
-							className="max-h-10 invert-[1] brightness-[0]"
-						/>
-						<p className="text-white text-sm mt-6!">
-							© {dayjs().year()} BIAL. All rights reserved.
-						</p>
-					</div>
-				</div>
-			</Footer>
-		</Layout>
-	);
+  function closeDrawer() {
+    setIsOpenDrawerMenu(false);
+  }
+
+  return (
+    <>
+      <Layout className="h-auto! min-h-screen!">
+        <Logout
+          open={isOpenLogout}
+          close={() => setIsOpenLogout(false)}
+          submit={logout}
+        />
+        <Header className="sticky top-0 z-100! shrink-0 bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center px-0! h-16! sm:h-20! lg:h-25! max-h-25">
+          <Drawer
+            open={isOpenDrawerMenu}
+            size={"80%"}
+            onClose={closeDrawer}
+            maskClosable={true}
+            extra={[]}
+            className="drawer-learning">
+            <div className="flex flex-col justify-between h-full">
+              <div className="flex flex-col h-full">
+                <div className="absolute top-5 right-5 flex justify-end">
+                  <AiFillCloseCircle
+                    className="text-3xl cursor-pointer"
+                    style={{ color: "#FFFFFF" }}
+                    onClick={closeDrawer}
+                  />
+                </div>
+                <div>
+                  {user && Object.keys(user).length === 0 ? (
+                    <div className="bg-[#163986] p-6 pt-10">
+                      <div className="flex justify-start items-center cursor-pointer">
+                        <Link
+                          to={`/${i18n.language}/login`}
+                          className="flex justify-center items-center"
+                          onClick={() => closeDrawer()}>
+                          <Avatar
+                            className="w-8 sm:w-9 md:w-10 lg:w-11"
+                            icon={<FaRegUser />}
+                            style={{
+                              color: "#163986",
+                              backgroundColor: "#FFFFFF",
+                            }}
+                          />
+                          <p className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px] ml-2 text-[#FFFFFF] font-medium drawer-label-text">
+                            Login
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#163F90] p-6 pt-16">
+                      <div className="flex justify-start items-center cursor-pointer">
+                        <Link
+                          to={`/${i18n.language}/account`}
+                          className="flex justify-center items-center"
+                          onClick={() => closeDrawer()}>
+                          <Avatar
+                            className="w-8 sm:w-9 md:w-10 lg:w-11"
+                            icon={<FaRegUser />}
+                            style={{
+                              color: "#163986",
+                              backgroundColor: "#FFFFFF",
+                            }}
+                          />
+                          <p className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px] ml-2 text-[#FFFFFF] font-medium drawer-label-text">
+                            {user.name.split(" ")[0]}{" "}
+                            {
+                              user.name.split(" ")[
+                                user.name.split(" ").length - 1
+                              ]
+                            }
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-col mt-2 p-4 pb-0">
+                    {menuItems.map((item) =>
+                      isLoggedIn
+                        ? !item.hideOnLoggedIn && (
+                            <Link
+                              key={item.path}
+                              className={`m-2 text-center text-[16px] ${
+                                isActiveItem(item) ? "active" : ""
+                              }`}
+                              to={item.path}
+                              onClick={() => closeDrawer()}>
+                              {t(item.label)}
+                            </Link>
+                          )
+                        : !item.loggedIn && (
+                            <Link
+                              key={item.path}
+                              className={`m-2 text-center text-[16px] ${
+                                isActiveItem(item) ? "active" : ""
+                              }`}
+                              to={item.path}
+                              onClick={() => closeDrawer()}>
+                              {t(item.label)}
+                            </Link>
+                          ),
+                    )}
+                  </div>
+                  {isLoggedIn && (
+                    <div className="flex flex-col p-4 pt-0">
+                      <Divider />
+                      {user.id_role === 1 && (
+                        <Link
+                          className={`m-2 text-center text-[16px] ${
+                            currentSection === "admin" ? "active" : ""
+                          }`}
+                          to="/admin"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => closeDrawer()}>
+                          {t("Go to backoffice")}
+                        </Link>
+                      )}
+                      <Link
+                        className={`m-2 text-center text-[16px] ${
+                          currentSection === "account" ? "active" : ""
+                        }`}
+                        to={`/${i18n.language}/account`}
+                        onClick={() => closeDrawer()}>
+                        {t("My account")}
+                      </Link>
+                      <Link
+                        className={`m-2 text-center text-[16px] ${
+                          currentSection === "result" ? "active" : ""
+                        }`}
+                        to={`/${i18n.language}/result`}
+                        onClick={() => closeDrawer()}>
+                        {t("Results")}
+                      </Link>
+                      <Link
+                        className={`m-2 text-center text-[16px] ${
+                          currentSection === "notifications" ? "active" : ""
+                        }`}
+                        to={`/${i18n.language}/notifications`}
+                        onClick={() => closeDrawer()}>
+                        <div className="flex justify-center items-center">
+                          {notifications.filter((n) => n.is_read === 0).length >
+                          0 ? (
+                            <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                              <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                                <p className="text-white">
+                                  {
+                                    notifications.filter((n) => n.is_read === 0)
+                                      .length
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          ) : null}
+                          <p>{t("Notifications")}</p>
+                        </div>
+                      </Link>
+                      <Link
+                        className={`m-2 text-center text-[16px] ${
+                          currentSection === "inbox" ? "active" : ""
+                        }`}
+                        to={
+                          user.id_role === 1
+                            ? "/admin/inbox"
+                            : `/${i18n.language}/inbox`
+                        }
+                        onClick={() => closeDrawer()}>
+                        <div className="flex justify-center items-center">
+                          {inbox.filter((n) => n.unread_messages > 0).length >
+                          0 ? (
+                            <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                              <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                                <p className="text-white text-[10px]">
+                                  {inbox.map((n) => n.unread_messages)}
+                                </p>
+                              </div>
+                            </div>
+                          ) : null}
+                          <p>{t("Inbox")}</p>
+                        </div>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {isLoggedIn && (
+                <div className="p-4 pb-10">
+                  <div
+                    className="flex justify-center items-center cursor-pointer m-2 text-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px]"
+                    onClick={() => {
+                      closeDrawer();
+                      setIsOpenLogout(true);
+                    }}>
+                    <p className="text-center">{t("Logout")}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Drawer>
+          {windowDimension.width > 1334 ? (
+            <div className="grid grid-cols-5 page-frame">
+              <div
+                onClick={() => navigate(`/${i18n.language}`)}
+                className="cursor-pointer">
+                <img src={logo} className="max-h-10 sm:max-h-12 lg:max-h-15" />
+              </div>
+              <div className="col-span-3 flex justify-center items-center">
+                {menuItems.map((item) =>
+                  isLoggedIn
+                    ? !item.hideOnLoggedIn && (
+                        <Link
+                          key={item.path}
+                          className={`nav-link ${isActiveItem(item) ? "active" : ""}`}
+                          to={item.path}
+                          onClick={() => closeDrawer()}>
+                          {t(item.label)}
+                        </Link>
+                      )
+                    : !item.loggedIn && (
+                        <Link
+                          key={item.path}
+                          className={`nav-link ${isActiveItem(item) ? "active" : ""}`}
+                          to={item.path}
+                          onClick={() => closeDrawer()}>
+                          {t(item.label)}
+                        </Link>
+                      ),
+                )}
+              </div>
+              <div className="flex justify-end items-center">
+                {((user && Object.keys(user).length === 0) ||
+                  user?.id_role === 1) && (
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={(item) => changeLanguage(item.code)}
+                    className="mr-4"
+                  />
+                )}
+
+                {user && Object.keys(user).length > 0 && (
+                  <div className="flex">
+                    <Dropdown
+                      menu={{
+                        items: [
+                          user.id_role === 1 && {
+                            key: "backoffice",
+                            label: (
+                              <Link
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "admin" ? "active" : ""}`}
+                                to="/admin"
+                                target="_blank"
+                                rel="noopener noreferrer">
+                                <div className="flex items-center">
+                                  <div className="w-5 mr-2"></div>
+                                  <p>{t("Go to backoffice")}</p>
+                                </div>
+                              </Link>
+                            ),
+                          },
+                          {
+                            key: "account",
+                            label: (
+                              <Link
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "account" ? "active" : ""}`}
+                                to={`/${i18n.language}/account`}>
+                                <div className="flex items-center">
+                                  <div className="w-5 mr-2"></div>
+                                  <p>{t("My account")}</p>
+                                </div>
+                              </Link>
+                            ),
+                          },
+                          {
+                            key: "result",
+                            label: (
+                              <Link
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "result" ? "active" : ""}`}
+                                to={`/${i18n.language}/result`}>
+                                <div className="flex items-center">
+                                  <div className="w-5 mr-2"></div>
+                                  <p>{t("Results")}</p>
+                                </div>
+                              </Link>
+                            ),
+                          },
+                          {
+                            key: "inbox",
+                            label: (
+                              <Link
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "inbox" ? "active" : ""}`}
+                                to={
+                                  user.id_role === 1
+                                    ? "/admin/inbox"
+                                    : `/${i18n.language}/inbox`
+                                }>
+                                <div className="flex items-center">
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                    {inbox.filter((n) => n.unread_messages > 0)
+                                      .length > 0 ? (
+                                      <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                                        <p className="text-white text-[10px]">
+                                          {inbox.map((n) => n.unread_messages)}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
+                                    )}
+                                  </div>
+                                  <p>{t("Inbox")}</p>
+                                </div>
+                              </Link>
+                            ),
+                          },
+                          {
+                            key: "notification",
+                            label: (
+                              <Link
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "notifications" ? "active" : ""}`}
+                                to={`/${i18n.language}/notifications`}>
+                                <div className="flex items-center">
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                    {notifications.filter(
+                                      (n) => n.is_read === 0,
+                                    ).length > 0 ? (
+                                      <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
+                                        <p className="text-white text-[10px]">
+                                          {
+                                            notifications.filter(
+                                              (n) => n.is_read === 0,
+                                            ).length
+                                          }
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
+                                    )}
+                                  </div>
+                                  <p>{t("Notifications")}</p>
+                                </div>
+                              </Link>
+                            ),
+                          },
+                        ],
+                      }}
+                      trigger={["click"]}
+                      placement="bottomLeft">
+                      <div className="flex justify-center items-center cursor-pointer">
+                        <Avatar
+                          icon={<FaRegUser />}
+                          style={{
+                            color: "#FFFFFF",
+                            backgroundColor: "#00B9D6",
+                          }}
+                        />
+                        <p className="text-[12px] ml-2 text-[#163986] font-medium">
+                          {user.name.split(" ")[0]}{" "}
+                          {
+                            user.name.split(" ")[
+                              user.name.split(" ").length - 1
+                            ]
+                          }
+                        </p>
+                      </div>
+                    </Dropdown>
+                    <div
+                      className="flex items-center ml-6 cursor-pointer"
+                      onClick={() => setIsOpenLogout(true)}>
+                      <LogoutOutlined style={{ color: "#163986" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center page-frame">
+              <div
+                onClick={() => navigate(`/${i18n.language}`)}
+                className="cursor-pointer">
+                <img src={logo} className="max-h-10 sm:max-h-12 lg:max-h-15" />
+              </div>
+              <div className="flex items-center">
+                {((user && Object.keys(user).length === 0) ||
+                  user?.id_role === 1) && (
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={(item) => changeLanguage(item.code)}
+                    className="mr-4"
+                  />
+                )}
+                <MenuOutlined
+                  onClick={() => setIsOpenDrawerMenu(true)}
+                  style={{ color: "#163986" }}
+                />
+              </div>
+            </div>
+          )}
+        </Header>
+        <Content className="bg-white min-h-[unset]!">
+          <Outlet />
+        </Content>
+        <Footer
+          className="px-0! py-6! md:py-8!"
+          style={{ backgroundColor: "#163986" }}>
+          {/* Mesma moldura (.page-frame) do header e do conteúdo */}
+          <div className="page-frame flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-8">
+            <div className="w-full">
+              <div className="mb-5 md:mb-8 flex justify-center md:justify-start items-center">
+                <p className="text-white text-[12px] sm:text-[13px] md:text-[14px] lg:text-[15px] mr-3 md:mr-4">
+                  {t("Follow us")}
+                </p>
+                <Link
+                  to={"https://www.facebook.com/bial.farmaceutica/"}
+                  target="_blank"
+                  className="mr-3 md:mr-4">
+                  <FaFacebook className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
+                </Link>
+                <Link
+                  to={"https://www.linkedin.com/company/bial/home/"}
+                  target="_blank"
+                  className="mr-3 md:mr-4">
+                  <FaLinkedin className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
+                </Link>
+                <Link
+                  to={"https://www.instagram.com/bialpharmaceutical/"}
+                  target="_blank"
+                  className="mr-3 md:mr-4">
+                  <FaInstagram className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
+                </Link>
+                <Link
+                  to={
+                    "https://www.youtube.com/channel/UCcoeRBF4Ivdm4aCwTDZdYIA"
+                  }
+                  target="_blank">
+                  <FaYoutube className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
+                </Link>
+              </div>
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-3 gap-y-1 md:gap-4">
+                <Link to={`/${i18n.language}/contact`}>
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
+                    {t("Contact Form")}
+                  </p>
+                </Link>
+                <p className="text-white">|</p>
+                <Link
+                  to={`https://www.bial.com/en/terms-and-conditions`}
+                  target="_blank">
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
+                    {t("Terms and conditions")}
+                  </p>
+                </Link>
+                <p className="text-white">|</p>
+                <Link
+                  to={"https://www.bial.com/en/privacy-policy"}
+                  target="_blank">
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
+                    {t("Privacy policy")}
+                  </p>
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-col justify-center items-center md:items-end w-full mt-2">
+              <Link to={"https://www.bial.com/en"} target="_blank">
+                <img
+                  src={bialLogo}
+                  className="max-h-8 sm:max-h-9 md:max-h-10 invert-[1] brightness-[0] cursor-pointer"
+                />
+              </Link>
+              <p className="text-white text-[11px] sm:text-[11.5px] md:text-[12px] mt-4! md:mt-6!">
+                © {dayjs().year()} Bial. {t("All rights reserved.")}
+              </p>
+            </div>
+          </div>
+        </Footer>
+      </Layout>
+    </>
+  );
 };
 export default Main;

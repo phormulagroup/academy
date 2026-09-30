@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button, Col, Row, Modal } from "antd";
+import { Button, Modal } from "antd";
 import { useTranslation } from "react-i18next";
 
 function Logout({ open, close, submit }) {
@@ -11,16 +10,20 @@ function Logout({ open, close, submit }) {
       style={{ top: 20 }}
       onCancel={close}
       open={open}
-      maskClosable={false}
+      maskClosable={true}
+      className="modal-logout"
       footer={[
-        <Button onClick={close}>{t("No")}</Button>,
-        <Button type="primary" onClick={submit}>
+        <Button className="main-secondary-cta-button" onClick={close}>
+          {t("No")}
+        </Button>,
+        <Button className="main-cta-button" type="primary" onClick={submit}>
           {t("Yes, log me out")}
         </Button>,
-      ]}
-    >
-      <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">{t("Are you sure you want to log out?")}</p>
+      ]}>
+      <div className="modal-logout-body">
+        <p className="modal-logout-title">
+          {t("Are you sure you want to log out?")}
+        </p>
       </div>
     </Modal>
   );

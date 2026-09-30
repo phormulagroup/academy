@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
+import { Button, Dropdown } from "antd";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
@@ -9,6 +9,8 @@ import Table from "../../components/admin/table";
 import Create from "../../components/admin/download/create";
 import Update from "../../components/admin/download/update";
 import Delete from "../../components/admin/delete";
+import StatusTag from "../../utils/statusTag";
+import { uniqueRule } from "../../utils/formFieldError";
 
 import { Context } from "../../utils/context";
 
@@ -41,7 +43,8 @@ export default function Download() {
 		setIsLoading(true);
 		axios
 			.get(endpoints.download.readByLang, {
-				params: { id_lang: selectedLanguage.id },
+				// O backoffice lista também os downloads inativos (apagados)
+				params: { id_lang: selectedLanguage.id, include_deleted: 1 },
 			})
 			.then((res) => {
 				let downloads = res.data[0];
@@ -109,15 +112,7 @@ export default function Download() {
 								</div>
 							))
 						: 0,
-				is_deleted: array[i].is_deleted ? (
-					<Tag variant="outlined" color={"red"}>
-						Inativo
-					</Tag>
-				) : (
-					<Tag variant="outlined" color={"green"}>
-						Ativo
-					</Tag>
-				),
+				is_deleted: <StatusTag isDeleted={array[i].is_deleted} />,
 				full_data: array[i],
 				actions: (
 					<div className="flex justify-end items-center">
@@ -164,6 +159,11 @@ export default function Download() {
 		setIsOpenDelete(true);
 	}
 
+	// Nome único (usado pelo Create e pelo Update): não pode existir outro download ativo neste idioma
+	// com o mesmo nome; no Update ignora o próprio download (excludeId)
+	const nameRule = (excludeId = null) =>
+		uniqueRule(data, t("A download with this name already exists"), { excludeId });
+
 	function closeAction(c) {
 		if (c) {
 			getData();
@@ -175,13 +175,13 @@ export default function Download() {
 
 	return (
 		<div className="p-2">
-			<Create open={isOpenCreate} close={closeAction} />
-			<Update data={selectedData} open={isOpenUpdate} close={closeAction} />
+			<Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
+			<Update data={selectedData} open={isOpenUpdate} close={closeAction} nameRule={nameRule} />
 			<Delete
 				data={selectedData}
 				open={isOpenDelete}
 				close={closeAction}
-				table="document"
+				table="download"
 			/>
 			<div className="flex justify-between items-center mb-4">
 				<div>
@@ -220,13 +220,23 @@ export default function Download() {
 						sort: true,
 						sortType: "text",
 						search: "name",
-						width: "50%",
+						width: "35%",
 					},
 					{
 						title: "File",
 						dataIndex: "files",
 						key: "files",
-						width: "50%",
+						width: "45%",
+					},
+					{
+						title: t("Status"),
+						dataIndex: "is_deleted",
+						key: "is_deleted",
+						width: "150px",
+						filters: [
+							{ text: t("Active"), value: 0 },
+							{ text: t("Inactive"), value: 1 },
+						],
 					},
 					{
 						title: "",

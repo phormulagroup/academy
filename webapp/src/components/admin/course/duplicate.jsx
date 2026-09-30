@@ -10,18 +10,16 @@ import {
 } from "antd";
 import axios from "axios";
 
-import Media from "../media/media";
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { FaRegEdit } from "react-icons/fa";
 import i18n from "../../../utils/i18n";
 import { useNavigate } from "react-router-dom";
+import { requiredRule } from "../../../utils/formFieldError";
 
-export default function Duplicate({ data, open, close, submit, products, validateInternalName }) {
+export default function Duplicate({ data, open, close, submit, products, nameRule, internalNameRule }) {
 	const { t, selectedLanguage, languages, setSelectedLanguage } = useContext(Context);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
-	const [mediaKey, setMediaKey] = useState(null);
-	const [isOpenMedia, setIsOpenMedia] = useState(false);
 	const [formLanguageId, setFormLanguageId] = useState(null);
 
 	const [form] = Form.useForm();
@@ -103,31 +101,17 @@ export default function Duplicate({ data, open, close, submit, products, validat
 		}
 	}
 
-	function openMedia(key) {
-		setMediaKey(key);
-		setIsOpenMedia(true);
-	}
 
-	function closeMedia(res) {
-		if (res) {
-			form.setFieldValue(mediaKey, res[mediaKey]);
-		}
-
-		setMediaKey(null);
-		setIsOpenMedia(false);
-	}
 
 	// Lidar com a mudança de idioma no formulário - atualizar formLanguageId para validação
 	const handleLanguageChange = (langId) => {
 		setFormLanguageId(langId);
-		// Acionar revalidação de nome_interno quando o idioma muda
-		form.validateFields(['internal_name']);
+		// Acionar revalidação do nome e do nome interno quando o idioma muda
+		form.validateFields(["name", "internal_name"]);
 	};
 
-	// Wrapper para validateInternalName que inclui o idioma selecionado do formulário
-	const validateInternalNameForForm = (_, value) => {
-		return validateInternalName(_, value, null, formLanguageId || selectedLanguage.id);
-	};
+	// Os nomes são únicos no idioma escolhido no formulário
+	const targetLanguageId = formLanguageId || selectedLanguage.id;
 
 	return (
     <Modal
@@ -144,7 +128,6 @@ export default function Duplicate({ data, open, close, submit, products, validat
         </Button>,
       ]}
     >
-      <Media mediaKey={mediaKey} open={isOpenMedia} close={closeMedia} />
       <p className="text-[16px] font-bold mb-4">{t("Duplicate Course")}</p>
       <p>{t("Are you sure you want to duplicate this course?")}</p>
       <p className="mb-4">
@@ -154,14 +137,11 @@ export default function Duplicate({ data, open, close, submit, products, validat
         form={form}
         onFinish={submit}
         layout="vertical"
-        validateMessages={{
-          required: "Este campo é obrigatório!",
-        }}
       >
         <Form.Item
           name="name"
           label={t("New name")}
-          rules={[{ required: true }]}
+          rules={[requiredRule, nameRule(null, targetLanguageId)]}
         >
           <Input 
             size="large" 
@@ -171,13 +151,7 @@ export default function Duplicate({ data, open, close, submit, products, validat
         <Form.Item
           name="internal_name"
           label={t("New internal name")}
-          rules={[
-            { required: true },
-            {
-              validator: validateInternalNameForForm,
-              validateTrigger: ["onChange", "onBlur"],
-            },
-          ]}
+          rules={[requiredRule, internalNameRule(null, targetLanguageId)]}
         >
           <Input 
             size="large" 
