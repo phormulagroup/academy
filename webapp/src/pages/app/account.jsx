@@ -32,15 +32,28 @@ import { useTranslation } from "react-i18next";
 import UserCard from "../../components/app/user/card";
 import dayjs from "dayjs";
 import {
+  emailFieldProps,
+  emailRule,
   matchFieldRule,
+  requiredDateRule,
   requiredRule,
   requiredSelectRule,
+  userEmailRule,
 } from "../../utils/formFieldError";
+import {
+  academicBackgroundOptions,
+  genderOptions,
+  namePlaceholders,
+  splitName,
+} from "../../utils/userFields";
 
 export default function Account() {
-  const { user, setUser, languages, selectedLanguage, messageApi } = useContext(Context);
+  const { user, setUser, languages, selectedLanguage, messageApi } =
+    useContext(Context);
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Exemplos de Nome e Apelido no idioma atual
+  const placeholders = namePlaceholders(i18n.language);
   // Apenas os países do idioma selecionado (como nos formulários do backoffice)
   const countries = useMemo(
     () =>
@@ -62,18 +75,16 @@ export default function Account() {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    const formObjUser = Object.assign({}, user);
+    const formObjUser = { ...user, ...splitName(user?.name) };
     delete formObjUser.password;
+    delete formObjUser.name;
     form.setFieldsValue(formObjUser);
   }, [user]);
 
   function submit(values) {
-    if (!values.password) {
-      delete values.password;
-      delete values.confirm_password;
-    }
-
-    console.log(values);
+    if (values.password) values.new_password = values.password;
+    delete values.password;
+    delete values.confirm_password;
 
     axios
       .post(endpoints.user.update, {
@@ -123,11 +134,34 @@ export default function Account() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                   <Form.Item
-                    name="name"
-                    label={t("Name")}
+                    name="first_name"
+                    label={t("First Name")}
                     rules={[requiredRule]}
                     className="mb-0!">
-                    <Input size="large" placeholder="John Doe" />
+                    <Input size="large" placeholder={placeholders.first_name} />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    name="last_name"
+                    label={t("Last Name")}
+                    rules={[requiredRule]}
+                    className="mb-0!">
+                    <Input size="large" placeholder={placeholders.last_name} />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    name="gender"
+                    label={t("Gender")}
+                    rules={[requiredSelectRule]}
+                    className="mb-0!">
+                    <Select
+                      size="large"
+                      placeholder={t("Gender")}
+                      allowClear
+                      options={genderOptions(t, i18n.language)}
+                    />
                   </Form.Item>
                 </div>
                 <div>
@@ -159,41 +193,44 @@ export default function Account() {
                       placeholder={t("Academic background")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
-                      options={[
-                        {
-                          label: "Secondary School",
-                          value: "Secondary School",
-                        },
-                        {
-                          label: "University Degree",
-                          value: "University Degree",
-                        },
-                        { label: "PhD", value: "PhD" },
-                      ]}
+                      options={academicBackgroundOptions(t)}
                     />
                   </Form.Item>
                 </div>
                 <div>
+                  {/* Formato do e-mail e não usado por outra conta (o próprio é ignorado) */}
                   <Form.Item
                     name="email"
                     label={t("E-mail")}
-                    rules={[requiredRule]}
+                    {...emailFieldProps}
+                    rules={[
+                      requiredRule,
+                      emailRule,
+                      userEmailRule({
+                        shouldExist: false,
+                        excludeId: user?.id,
+                      }),
+                    ]}
                     className="mb-0!">
-                    <Input type="email" size="large" placeholder="E-mail" />
+                    <Input
+                      type="email"
+                      size="large"
+                      placeholder={t("youremail@domain.com")}
+                    />
                   </Form.Item>
                 </div>
                 <div>
                   <Form.Item
                     label={t("Birth date")}
                     name="birth_date"
-                    rules={[requiredRule]}
+                    rules={[requiredDateRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
                     })}>
                     <DatePicker
                       size="large"
-                      placeholder="Select birth date"
+                      placeholder={t("Select birth date")}
                       className="w-full"
                     />
                   </Form.Item>
@@ -202,14 +239,14 @@ export default function Account() {
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
-                    rules={[requiredRule]}
+                    rules={[requiredDateRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
                     })}>
                     <DatePicker
                       size="large"
-                      placeholder="Select Bial's starting date"
+                      placeholder={t("Select Bial's starting date")}
                       className="w-full"
                     />
                   </Form.Item>

@@ -12,11 +12,20 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
 import {
+  emailFieldProps,
+  emailRule,
   matchFieldRule,
   requiredCheckboxRule,
+  requiredDateRule,
   requiredRule,
   requiredSelectRule,
+  setFieldError,
 } from "../../utils/formFieldError";
+import {
+  academicBackgroundOptions,
+  genderOptions,
+  namePlaceholders,
+} from "../../utils/userFields";
 
 export default function Register() {
   const { t } = useTranslation();
@@ -27,6 +36,8 @@ export default function Register() {
 
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  // Exemplos de Nome e Apelido no idioma atual
+  const placeholders = namePlaceholders(i18n.language);
 
   useEffect(() => {
     let auxCountries = JSON.parse(
@@ -51,6 +62,7 @@ export default function Register() {
     values.id_lang = countries.filter(
       (c) => c.value === values.country,
     )[0].id_lang;
+    // first_name + last_name seguem para o servidor, que os junta na coluna name (server/utils/userName.js)
     delete values.confirm_password;
     delete values.knowledge;
     axios
@@ -69,6 +81,14 @@ export default function Register() {
             navigate(`/${i18n.language}/login`, { replace: true });
             setIsButtonLoading(false);
           }, 1500);
+        } else if (res.data.message === "This e-mail already exists in our database!") {
+          // E-mail já registado: mensagem traduzida no próprio campo
+          setFieldError(
+            form,
+            "email",
+            t("This e-mail is already associated with another account"),
+          );
+          setIsButtonLoading(false);
         } else {
           messageApi.open({
             type: "error",
@@ -104,11 +124,61 @@ export default function Register() {
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="col-span-2 md:col-span-1">
             <Form.Item
-              name="name"
-              label={t("Name")}
+              name="first_name"
+              label={t("First Name")}
               rules={[requiredRule]}
               className="mb-0!">
-              <Input size="large" placeholder="John Doe" />
+              <Input size="large" placeholder={placeholders.first_name} />
+            </Form.Item>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <Form.Item
+              name="last_name"
+              label={t("Last Name")}
+              rules={[requiredRule]}
+              className="mb-0!">
+              <Input size="large" placeholder={placeholders.last_name} />
+            </Form.Item>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            {/* Formato do e-mail; se já estiver registado, o erro do servidor aparece no campo ao submeter */}
+            <Form.Item
+              name="email"
+              label={t("E-mail")}
+              {...emailFieldProps}
+              rules={[requiredRule, emailRule]}
+              className="mb-0!">
+              <Input type="email" size="large" placeholder={t("youremail@domain.com")} />
+            </Form.Item>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <Form.Item
+              name="gender"
+              label={t("Gender")}
+              rules={[requiredSelectRule]}
+              className="mb-0!">
+              <Select
+                size="large"
+                placeholder={t("Gender")}
+                allowClear
+                options={genderOptions(t, i18n.language)}
+              />
+            </Form.Item>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <Form.Item
+              label={t("Birth date")}
+              name="birth_date"
+              rules={[requiredDateRule]}
+              className="mb-0!"
+              getValueProps={(value) => ({
+                value: value && dayjs(value),
+              })}>
+              <DatePicker
+                size="large"
+                placeholder={t("Select birth date")}
+                className="w-full"
+              />
             </Form.Item>
           </div>
           <div className="col-span-2 md:col-span-1">
@@ -137,42 +207,7 @@ export default function Register() {
                 placeholder={t("Academic background")}
                 showSearch={{ optionFilterProp: "label" }}
                 allowClear
-                options={[
-                  {
-                    label: t("Secondary School"),
-                    value: "Secondary School",
-                  },
-                  {
-                    label: t("University Degree"),
-                    value: "University Degree",
-                  },
-                  { label: t("PhD"), value: "PhD" },
-                ]}
-              />
-            </Form.Item>
-          </div>
-          <div className="col-span-2 md:col-span-1">
-            <Form.Item
-              name="email"
-              label={t("E-mail")}
-              rules={[requiredRule]}
-              className="mb-0!">
-              <Input type="email" size="large" placeholder={t("E-mail")} />
-            </Form.Item>
-          </div>
-          <div className="col-span-2 md:col-span-1">
-            <Form.Item
-              label={t("Birth date")}
-              name="birth_date"
-              rules={[requiredRule]}
-              className="mb-0!"
-              getValueProps={(value) => ({
-                value: value && dayjs(value),
-              })}>
-              <DatePicker
-                size="large"
-                placeholder={t("Select birth date")}
-                className="w-full"
+                options={academicBackgroundOptions(t)}
               />
             </Form.Item>
           </div>
@@ -180,7 +215,7 @@ export default function Register() {
             <Form.Item
               label={t("Bial's starting date")}
               name="bial_starting_date"
-              rules={[requiredRule]}
+              rules={[requiredDateRule]}
               className="mb-0!"
               getValueProps={(value) => ({
                 value: value && dayjs(value),

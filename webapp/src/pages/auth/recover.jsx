@@ -10,7 +10,13 @@ import endpoints from "../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
-import { matchFieldRule, requiredRule } from "../../utils/formFieldError";
+import {
+  emailFieldProps,
+  emailRule,
+  matchFieldRule,
+  requiredRule,
+  setFieldError,
+} from "../../utils/formFieldError";
 
 export default function Recover() {
   const { messageApi, createLog } = useContext(Context);
@@ -70,6 +76,9 @@ export default function Recover() {
           });
           formCode.setFieldValue("email", values.email);
           setCurrentStep(currentStep + 1);
+        } else if (res.data.message === "This e-mail does not exists in our database!") {
+          // E-mail sem conta: mensagem traduzida no próprio campo
+          setFieldError(form, "email", t("There is no account with this e-mail"));
         } else if (res.data.message) {
           messageApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
@@ -139,7 +148,11 @@ export default function Recover() {
             onFinish={sendCode}
             className="auth-form">
             <p className={labelClass}>{t("E-mail")}</p>
-            <Form.Item name="email" rules={[requiredRule]}>
+            {/* Formato do e-mail; se não houver conta, o erro do servidor aparece no campo ao submeter */}
+            <Form.Item
+              name="email"
+              {...emailFieldProps}
+              rules={[requiredRule, emailRule]}>
               <Input size="large" placeholder={t("youremail@domain.com")} />
             </Form.Item>
             <Button

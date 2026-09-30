@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const { generatePassword } = require("../utils/email");
 const email = require("../utils/email");
@@ -92,7 +93,8 @@ router.get("/readByEmail", async (req, res) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const rows = await query(
-			"SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE email = ?",
+			// Rota pública usada para verificar e-mails nos formulários: sem password nem recover_code
+			"SELECT user.id, user.name, user.email, user.status, user.id_role, user.is_deleted, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE email = ?",
 			req.query.email,
 		);
 		res.send(rows);
@@ -135,7 +137,8 @@ router.post("/create", async (req, res, next) => {
 router.post("/update", async (req, res, next) => {
 	console.log("//// UPDATE USER ////");
 	try {
-		let data = req.body.data;
+		// Nome + Apelido do formulário → coluna name
+		let data = mergeName(req.body.data);
 		let whereId = data.id;
 		delete data.id;
 

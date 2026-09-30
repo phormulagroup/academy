@@ -10,7 +10,12 @@ import endpoints from "../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
-import { requiredRule } from "../../utils/formFieldError";
+import {
+  emailFieldProps,
+  emailRule,
+  requiredRule,
+  setFieldError,
+} from "../../utils/formFieldError";
 
 export default function Login() {
   const { login, messageApi, languages, createLog } = useContext(Context);
@@ -52,6 +57,11 @@ export default function Login() {
                 "This user was denied from our administration. If you have some complaints contact us through email",
               ),
             });
+        } else if (res.data.message === "This user does not exist on our database!") {
+          // E-mail sem conta: mensagem traduzida no próprio campo
+          setFieldError(form, "email", t("There is no account with this e-mail"));
+        } else if (res.data.message === "The password is not correct, try again.") {
+          setFieldError(form, "password", t("The password is not correct, try again."));
         } else {
           messageApi.open({
             type: "error",
@@ -80,8 +90,12 @@ export default function Login() {
         </p>
       </div>
       <Form form={form} layout="vertical" onFinish={submit} className="auth-form">
-        <p className={labelClass}>{t("Email")}</p>
-        <Form.Item name="email" rules={[requiredRule]}>
+        <p className={labelClass}>{t("E-mail")}</p>
+        {/* Formato do e-mail; se não houver conta, o erro do servidor aparece no campo ao submeter */}
+        <Form.Item
+          name="email"
+          {...emailFieldProps}
+          rules={[requiredRule, emailRule]}>
           <Input size="large" placeholder={t("youremail@domain.com")} />
         </Form.Item>
         <p className={labelClass}>{t("Password")}</p>

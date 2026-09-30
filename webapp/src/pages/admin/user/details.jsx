@@ -35,19 +35,37 @@ import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
 import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
 import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
 import CourseProgress from "./progress";
-import { matchFieldRule, requiredRule, requiredSelectRule } from "../../../utils/formFieldError";
+import {
+  emailFieldProps,
+  emailRule,
+  matchFieldRule,
+  requiredDateRule,
+  requiredRule,
+  requiredSelectRule,
+  uniqueRule,
+} from "../../../utils/formFieldError";
+import {
+  academicBackgroundOptions,
+  genderOptions,
+  namePlaceholders,
+  splitName,
+} from "../../../utils/userFields";
 
 export default function UserDetails() {
-  const { user, languages } = useContext(Context);
+  const { user, languages, messageApi } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [courseData, setCourseData] = useState([]);
   const [countries, setCountries] = useState([]);
+  // Utilizadores existentes, para o uniqueRule do e-mail
+  const [users, setUsers] = useState([]);
 
   const resultsRef = useRef();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
+  // Exemplos de Nome e Apelido no idioma atual
+  const placeholders = namePlaceholders(i18n.language);
   const [form] = Form.useForm();
 
   const navigate = useNavigate();
@@ -55,6 +73,13 @@ export default function UserDetails() {
   useEffect(() => {
     getData();
   }, [id]);
+
+  useEffect(() => {
+    axios
+      .get(endpoints.user.read)
+      .then((res) => setUsers(res.data))
+      .catch((err) => console.log(err));
+  }, []);
 
   function getData() {
     setIsLoading(true);
@@ -77,7 +102,11 @@ export default function UserDetails() {
           );
 
           delete res.data.user.password;
-          form.setFieldsValue(res.data.user);
+          // A BD guarda só name: é dividido em Nome + Apelido para editar
+          form.setFieldsValue({
+            ...res.data.user,
+            ...splitName(res.data.user.name),
+          });
 
           prepareData(res);
         }
@@ -170,7 +199,34 @@ export default function UserDetails() {
   }
 
   function submit(values) {
-    console.log(values);
+    const data = { ...values, id };
+    if (data.password) data.new_password = data.password;
+    delete data.password;
+    delete data.confirm_password;
+
+    axios
+      .post(endpoints.user.update, { data })
+      .then((res) => {
+        if (res.data.user) {
+          messageApi.open({
+            type: "success",
+            content: t("Account updated successfully!"),
+          });
+          getData();
+        } else {
+          messageApi.open({
+            type: "error",
+            content: t("Something wrong happened, try again please."),
+          });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        messageApi.open({
+          type: "error",
+          content: t("Something wrong happened, try again please."),
+        });
+      });
   }
 
   function scrollToResults() {
@@ -235,11 +291,34 @@ export default function UserDetails() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                   <Form.Item
-                    name="name"
-                    label={t("Name")}
+                    name="first_name"
+                    label={t("First Name")}
                     rules={[requiredRule]}
                     className="mb-0!">
-                    <Input size="large" placeholder="John Doe" />
+                    <Input size="large" placeholder={placeholders.first_name} />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    name="last_name"
+                    label={t("Last Name")}
+                    rules={[requiredRule]}
+                    className="mb-0!">
+                    <Input size="large" placeholder={placeholders.last_name} />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    name="gender"
+                    label={t("Gender")}
+                    rules={[requiredSelectRule]}
+                    className="mb-0!">
+                    <Select
+                      size="large"
+                      placeholder={t("Gender")}
+                      allowClear
+                      options={genderOptions(t, i18n.language)}
+                    />
                   </Form.Item>
                 </div>
                 <div>
@@ -271,41 +350,47 @@ export default function UserDetails() {
                       placeholder={t("Academic background")}
                       showSearch={{ optionFilterProp: "label" }}
                       allowClear
-                      options={[
-                        {
-                          label: "Secondary School",
-                          value: "Secondary School",
-                        },
-                        {
-                          label: "University Degree",
-                          value: "University Degree",
-                        },
-                        { label: "PhD", value: "PhD" },
-                      ]}
+                      options={academicBackgroundOptions(t)}
                     />
                   </Form.Item>
                 </div>
                 <div>
+                  {/* Formato do e-mail e não usado por outra conta (a do próprio aluno é ignorada) */}
                   <Form.Item
                     name="email"
                     label={t("E-mail")}
-                    rules={[requiredRule]}
+                    {...emailFieldProps}
+                    rules={[
+                      requiredRule,
+                      emailRule,
+                      uniqueRule(
+                        users,
+                        t(
+                          "This e-mail is already associated with another account",
+                        ),
+                        { field: "email", excludeId: Number(id) },
+                      ),
+                    ]}
                     className="mb-0!">
-                    <Input type="email" size="large" placeholder="E-mail" />
+                    <Input
+                      type="email"
+                      size="large"
+                      placeholder={t("youremail@domain.com")}
+                    />
                   </Form.Item>
                 </div>
                 <div>
                   <Form.Item
                     label={t("Birth date")}
                     name="birth_date"
-                    rules={[requiredRule]}
+                    rules={[requiredDateRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
                     })}>
                     <DatePicker
                       size="large"
-                      placeholder="Select birth date"
+                      placeholder={t("Select birth date")}
                       className="w-full"
                     />
                   </Form.Item>
@@ -314,14 +399,14 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
-                    rules={[requiredRule]}
+                    rules={[requiredDateRule]}
                     className="mb-0!"
                     getValueProps={(value) => ({
                       value: value && dayjs(value),
                     })}>
                     <DatePicker
                       size="large"
-                      placeholder="Select Bial's starting date"
+                      placeholder={t("Select Bial's starting date")}
                       className="w-full"
                     />
                   </Form.Item>
@@ -339,7 +424,12 @@ export default function UserDetails() {
                     label={t("Confirm password")}
                     name="confirm_password"
                     dependencies={["password"]}
-                    rules={[matchFieldRule("password", t("The passwords does not match!"))]}
+                    rules={[
+                      matchFieldRule(
+                        "password",
+                        t("The passwords does not match!"),
+                      ),
+                    ]}
                     className="mb-0!">
                     <Input.Password size="large" placeholder="●●●●●●●" />
                   </Form.Item>

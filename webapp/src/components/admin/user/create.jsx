@@ -6,8 +6,10 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
-import validator from "validator";
 import {
+  emailFieldProps,
+  emailRule,
+  requiredDateRule,
   requiredRule,
   requiredSelectRule,
   uniqueRule,
@@ -16,6 +18,7 @@ import {
 export default function Create({ open, close }) {
   const { create, roles, languages, selectedLanguage } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  // Utilizadores existentes, para o uniqueRule do e-mail
   const [users, setUsers] = useState([]);
 
   const [form] = Form.useForm();
@@ -26,9 +29,7 @@ export default function Create({ open, close }) {
     if (open) {
       axios
         .get(endpoints.user.read)
-        .then((res) => {
-          setUsers(res.data);
-        })
+        .then((res) => setUsers(res.data))
         .catch((err) => console.log(err));
     }
   }, [open]);
@@ -66,25 +67,16 @@ export default function Create({ open, close }) {
         <Form.Item
           name="email"
           label="E-mail"
-          validateDebounce={1000}
+          {...emailFieldProps}
           rules={[
             requiredRule,
-            {
-              validator: async (_, value) => {
-                if (value && !validator.isEmail(value)) {
-                  throw new Error(t("The e-mail must be valid"));
-                }
-              },
-            },
+            emailRule,
             uniqueRule(
               users,
               t("This e-mail is already associated with another account"),
-              {
-                field: "email",
-              },
+              { field: "email" },
             ),
-          ]}
-          hasFeedback>
+          ]}>
           <Input
             type="email"
             placeholder="nome@phormulagroup.com"
@@ -137,7 +129,7 @@ export default function Create({ open, close }) {
           <Form.Item
             label={t("Bial's starting date")}
             name="bial_starting_date"
-            rules={[requiredSelectRule]}
+            rules={[requiredDateRule]}
             getValueProps={(value) => ({
               value: value && dayjs(value),
             })}>
@@ -150,7 +142,7 @@ export default function Create({ open, close }) {
           <Form.Item
             label={t("Birth date")}
             name="birth_date"
-            rules={[requiredSelectRule]}
+            rules={[requiredDateRule]}
             getValueProps={(value) => ({
               value: value && dayjs(value),
             })}>

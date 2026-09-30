@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 var db = require("../utils/database");
 const { verifyToken, createToken } = require("../utils/token");
 const email = require("../utils/email");
+const { mergeName } = require("../utils/userName");
 
 const saltRounds = 10;
 
@@ -121,7 +122,8 @@ router.post("/register", async (req, res, next) => {
     const rollback = util.promisify(conn.rollback).bind(conn);
     try {
       await transaction();
-      let data = req.body.data;
+      // Nome + Apelido do formulário → coluna name
+      let data = mergeName(req.body.data);
       const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
       if (user.length > 0) {
         res.send({ message: "This e-mail already exists in our database!" });
