@@ -274,18 +274,18 @@ export default function DownloadDetails({ themePreference = "light" }) {
         <div>
           <Helmet>
             <meta charSet="utf-8" />
-            <title>Download not found - Bial Regional Academy</title>
+            <title>{t("Download not found")} - Bial Regional Academy</title>
             <meta
               name="description"
-              content={`Download not found - Bial Regional Academy`}
+              content={`${t("Download not found")} - Bial Regional Academy`}
             />
             <meta
               property="og:title"
-              content={`Download not found} - Bial Regional Academy`}
+              content={`${t("Download not found")} - Bial Regional Academy`}
             />
             <meta
               property="og:description"
-              content={`Download not found - Bial Regional Academy`}
+              content={`${t("Download not found")} - Bial Regional Academy`}
             />
           </Helmet>
           <p>{t("Download not found")}</p>

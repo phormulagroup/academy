@@ -43,8 +43,8 @@ export default function Create({ open, close, submit }) {
       maskClosable={false}
       footer={[
         <div className="flex justify-end items-center">
-          <Button className="mr-2">Cancel</Button>
-          <Button onClick={form.submit}>Send</Button>
+          <Button className="mr-2">{t("Cancel")}</Button>
+          <Button onClick={form.submit}>{t("Send")}</Button>
         </div>,
       ]}
       title={t("New thread")}
@@ -54,13 +54,13 @@ export default function Create({ open, close, submit }) {
         onFinish={submit}
         layout="vertical"
         validateMessages={{
-          required: "Este campo é obrigatório!",
+          required: t("This field is required"),
         }}
       >
         <Form.Item name="title" label={t("Title")}>
           <Input size="large" />
         </Form.Item>
-        <Form.Item name="text" label={t("Title")}>
+        <Form.Item name="text" label={t("Message")}>
           <TipTapFormField />
         </Form.Item>
       </Form>

@@ -308,6 +308,31 @@ export default function UserDetails() {
                   </Form.Item>
                 </div>
                 <div>
+                  {/* Formato do e-mail e não usado por outra conta (a do próprio aluno é ignorada) */}
+                  <Form.Item
+                    name="email"
+                    label={t("E-mail")}
+                    {...emailFieldProps}
+                    rules={[
+                      requiredRule,
+                      emailRule,
+                      uniqueRule(
+                        users,
+                        t(
+                          "This e-mail is already associated with another account",
+                        ),
+                        { field: "email", excludeId: Number(id) },
+                      ),
+                    ]}
+                    className="mb-0!">
+                    <Input
+                      type="email"
+                      size="large"
+                      placeholder={t("youremail@domain.com")}
+                    />
+                  </Form.Item>
+                </div>
+                <div>
                   <Form.Item
                     name="gender"
                     label={t("Gender")}
@@ -318,6 +343,22 @@ export default function UserDetails() {
                       placeholder={t("Gender")}
                       allowClear
                       options={genderOptions(t, i18n.language)}
+                    />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    label={t("Birth date")}
+                    name="birth_date"
+                    rules={[requiredDateRule]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder={t("Select birth date")}
+                      className="w-full"
                     />
                   </Form.Item>
                 </div>
@@ -355,47 +396,6 @@ export default function UserDetails() {
                   </Form.Item>
                 </div>
                 <div>
-                  {/* Formato do e-mail e não usado por outra conta (a do próprio aluno é ignorada) */}
-                  <Form.Item
-                    name="email"
-                    label={t("E-mail")}
-                    {...emailFieldProps}
-                    rules={[
-                      requiredRule,
-                      emailRule,
-                      uniqueRule(
-                        users,
-                        t(
-                          "This e-mail is already associated with another account",
-                        ),
-                        { field: "email", excludeId: Number(id) },
-                      ),
-                    ]}
-                    className="mb-0!">
-                    <Input
-                      type="email"
-                      size="large"
-                      placeholder={t("youremail@domain.com")}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Birth date")}
-                    name="birth_date"
-                    rules={[requiredDateRule]}
-                    className="mb-0!"
-                    getValueProps={(value) => ({
-                      value: value && dayjs(value),
-                    })}>
-                    <DatePicker
-                      size="large"
-                      placeholder={t("Select birth date")}
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-                <div>
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
@@ -410,6 +410,10 @@ export default function UserDetails() {
                       className="w-full"
                     />
                   </Form.Item>
+                </div>
+                {/* Divide os dados pessoais das passwords */}
+                <div className="col-span-full">
+                  <Divider className="my-0!" style={{ borderColor: "#8b9cc3" }} />
                 </div>
                 <div>
                   <Form.Item
@@ -495,7 +499,7 @@ export default function UserDetails() {
                       <div className="flex flex-col w-full!">
                         <div className="grid grid-cols-5 mb-6">
                           <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="italic text-[11px]">Status</p>
+                            <p className="italic text-[11px]">{t("Status")}</p>
                             {c.progress.filter(
                               (_p) =>
                                 _p.activity_type === "test" &&
@@ -516,8 +520,8 @@ export default function UserDetails() {
                                             _p.id_course_test === _t.id &&
                                             _p.is_completed === 0,
                                         ).length === maxTries
-                                      ? "Not passed"
-                                      : "In progress"}
+                                      ? t("Not passed")
+                                      : t("In progress")}
                                 </p>
                               </>
                             ) : (

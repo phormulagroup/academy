@@ -153,18 +153,18 @@ export default function DocumentDetails({ themePreference = "light" }) {
         <div>
           <Helmet>
             <meta charSet="utf-8" />
-            <title>Document not found - Bial Regional Academy</title>
+            <title>{t("Document not found")} - Bial Regional Academy</title>
             <meta
               name="description"
-              content={`Document not found - Bial Regional Academy`}
+              content={`${t("Document not found")} - Bial Regional Academy`}
             />
             <meta
               property="og:title"
-              content={`Document not found} - Bial Regional Academy`}
+              content={`${t("Document not found")} - Bial Regional Academy`}
             />
             <meta
               property="og:description"
-              content={`Document not found - Bial Regional Academy`}
+              content={`${t("Document not found")} - Bial Regional Academy`}
             />
           </Helmet>
           <p>{t("Document not found")}</p>

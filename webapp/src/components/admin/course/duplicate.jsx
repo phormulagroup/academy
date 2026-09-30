@@ -55,12 +55,12 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 			});
 			console.log("Duplicate response:", res.data);
 			if (!res.data.insertId) {
-				throw new Error("No insertId returned from duplicate endpoint");
+				throw new Error(t("No insertId returned from duplicate endpoint"));
 			}
 
 			// Obter o nome do idioma para notificação
 			const duplicatedLanguage = languages.find(l => l.id === values.id_lang);
-			const languageName = duplicatedLanguage?.code.toUpperCase() || 'Desconhecido';
+			const languageName = duplicatedLanguage?.code.toUpperCase() || t("Unknown");
 
 			// Mostrar notificação de sucesso com botão Detalhes
 			notification.success({
@@ -165,7 +165,7 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
           <Select
             size="large"
             className="w-full"
-            placeholder="Selecione..."
+            placeholder={t("Select...")}
             onChange={handleLanguageChange}
             showSearch={{
               optionFilterProp: ["label"],

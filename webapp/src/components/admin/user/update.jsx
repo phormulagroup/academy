@@ -1,6 +1,8 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Drawer, Form, Input, Select } from "antd";
 
+import { useTranslation } from "react-i18next";
+
 import { Context } from "../../../utils/context";
 import {
   requiredRule,
@@ -9,6 +11,7 @@ import {
 
 export default function Update({ data, open, close, submit }) {
   const { update, roles } = useContext(Context);
+  const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -42,10 +45,10 @@ export default function Update({ data, open, close, submit }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Editar utilizador"
+      title={t("Edit user")}
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          Editar
+          {t("Edit")}
         </Button>,
       ]}>
       <Form form={form} onFinish={submit} layout="vertical">
@@ -53,20 +56,20 @@ export default function Update({ data, open, close, submit }) {
           <Input />
         </Form.Item>
 
-        <Form.Item name="name" label="Nome" rules={[requiredRule]}>
+        <Form.Item name="name" label={t("Name")} rules={[requiredRule]}>
           <Input placeholder="John Doe" size="large" />
         </Form.Item>
-        <Form.Item name="email" label="E-mail" rules={[requiredRule]}>
+        <Form.Item name="email" label={t("E-mail")} rules={[requiredRule]}>
           <Input
             type="email"
             placeholder="nome@phormulagroup.com"
             size="large"
           />
         </Form.Item>
-        <Form.Item name="id_role" label="Role" rules={[requiredSelectRule]}>
+        <Form.Item name="id_role" label={t("Role")} rules={[requiredSelectRule]}>
           <Select
             size="large"
-            placeholder="Role..."
+            placeholder={t("Role...")}
             showSearch={{
               optionFilterProp: "label",
             }}

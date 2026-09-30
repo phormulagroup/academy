@@ -93,7 +93,7 @@ export default function Settings({ data }) {
             </Form.Item>
 
             <Form.Item name="time" label={t("Time limit")}>
-              <InputNumber size="large" suffix="min" className="w-full!" />
+              <InputNumber size="large" suffix={t("min")} className="w-full!" />
             </Form.Item>
 
             <Form.Item name="retries_allowed" label={t("Retries allowed")}>
@@ -181,7 +181,7 @@ export default function Settings({ data }) {
           size="large"
           onClick={form.submit}
           className="mt-4">
-          Save
+          {t("Save")}
         </Button>
       </div>
     </div>

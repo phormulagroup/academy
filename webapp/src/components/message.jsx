@@ -186,8 +186,8 @@ export default function Message({ open, close }) {
                   </Form.Item>
                 </Form>
                 <div className="flex justify-end items-center">
-                  <Button className="mr-2">Cancel</Button>
-                  <Button onClick={form.submit}>Send</Button>
+                  <Button className="mr-2">{t("Cancel")}</Button>
+                  <Button onClick={form.submit}>{t("Send")}</Button>
                 </div>
               </div>
             )
@@ -199,8 +199,8 @@ export default function Message({ open, close }) {
                 </Form.Item>
               </Form>
               <div className="flex justify-end items-center">
-                <Button className="mr-2">Cancel</Button>
-                <Button onClick={form.submit}>Send</Button>
+                <Button className="mr-2">{t("Cancel")}</Button>
+                <Button onClick={form.submit}>{t("Send")}</Button>
               </div>
             </div>
           )}

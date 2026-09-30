@@ -90,11 +90,11 @@ export default function CourseProgress({ data, user }) {
                         </div>
                         <div>
                           <Popconfirm
-                            title="Delete the task"
-                            description="Are you sure to delete this task?"
+                            title={t("Delete the task")}
+                            description={t("Are you sure to delete this task?")}
                             onConfirm={() => confirm(item, _t, data.course)}
-                            okText="Yes"
-                            cancelText="No"
+                            okText={t("Yes")}
+                            cancelText={t("No")}
                           >
                             <IoMdClose className="cursor-pointer" />
                           </Popconfirm>

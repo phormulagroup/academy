@@ -80,15 +80,15 @@ export default function Create({ open, close, nameRule }) {
         layout="vertical">
         <Form.Item
           name="name"
-          {...errors.labelErrorProps("name", name, "Nome")}
+          {...errors.labelErrorProps("name", name, t("Name"))}
           rules={[requiredRule, nameRule()]}>
-          <Input size="large" placeholder="Nome do documento" />
+          <Input size="large" placeholder={t("Document name")} />
         </Form.Item>
         <Form.Item name="country" label={t("Country")}>
           <Select
             mode="multiple"
             size="large"
-            placeholder="País..."
+            placeholder={t("Country...")}
             allowClear
             options={languages
               .filter((lang) => lang.id === selectedLanguage.id)

@@ -472,7 +472,7 @@ export default function CourseDetails() {
                     ) : (
                       <div className="flex-1 flex flex-col sm:flex-row w-full justify-start sm:justify-between items-center sm:items-center gap-4 border-0 sm:border-l sm:pl-6 border-l-[#163986]">
                         <p className="font-bold text-[#163986] text-sm sm:text-base md:text-lg lg:text-xl">
-                          {t("Not enrolled")}
+                          {t("Not started")}
                         </p>
                         <Button
                           className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
@@ -636,7 +636,7 @@ export default function CourseDetails() {
           onClick={scrollToTop}
           style={{ backgroundColor: "#FFC600" }}
           className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
-          title="Scroll to top">
+          title={t("Scroll to top")}>
           <RxChevronUp className="w-6! h-6! text-black!" />
         </button>
       )}

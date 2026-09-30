@@ -34,7 +34,7 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
       if (onDeleteSuccess) {
         onDeleteSuccess(data);
       } else {
-        messageApi.success(`${tablesName[table]} foi apagado com sucesso, é considerado como inativo.`);
+        messageApi.success(`${tablesName[table]} ${t("was successfully deleted and is considered inactive.")}`);
       }
       setIsButtonLoading(false);
     } catch (err) {
@@ -52,10 +52,10 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
       maskClosable={false}
       footer={[
         <Button disabled={isButtonLoading} onClick={onClose}>
-          Não
+          {t("No")}
         </Button>,
         <Button loading={isButtonLoading} type="primary" onClick={submit}>
-          Sim
+          {t("Yes")}
         </Button>,
       ]}
     >

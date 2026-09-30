@@ -357,7 +357,7 @@ export default function Main() {
   return (
     <div className="p-2">
       <Status data={selectedUser} open={isOpenStatus} close={closeSatus} />
-      <p className="text-[18px] font-bold mb-4">Overview e-Learning</p>
+      <p className="text-[18px] font-bold mb-4">{t("Overview e-Learning")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="flex justify-between items-center bg-[#FFF]">
@@ -382,7 +382,7 @@ export default function Main() {
           <div className="flex flex-col bg-[#FFF] p-6 border border-[#C0C0C0] rounded-[5px] mt-4">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
-                <p className="font-bold mr-2">{"Course progress"}</p>
+                <p className="font-bold mr-2">{t("Course progress")}</p>
                 <Select
                   className="min-w-50"
                   placeholder={t("Choose a course")}
@@ -400,7 +400,7 @@ export default function Main() {
             </div>
             <div className="grid grid-cols-2 gap-10 w-full">
               <div className="flex flex-col">
-                <p className="font-bold mb-4">Distribuição de progresso</p>
+                <p className="font-bold mb-4">{t("Progress distribution")}</p>
                 <div className="flex justify-between items-center gap-4 w-full!">
                   <div className="w-1/2">
                     <Doughnut
@@ -440,7 +440,7 @@ export default function Main() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <p className="font-bold mb-4">Percentagem de Progresso</p>
+                <p className="font-bold mb-4">{t("Progress Percentage")}</p>
                 <div className="flex justify-between items-center gap-4 w-full!">
                   <div className="w-1/2">
                     <Doughnut
@@ -519,18 +519,18 @@ export default function Main() {
                 width: 240,
               },
               {
-                title: "Progress",
+                title: t("Progress"),
                 dataIndex: "progress",
                 key: "progress",
               },
               {
-                title: "Satus",
+                title: t("Status"),
                 dataIndex: "status",
                 key: "status",
                 width: "80px",
               },
               {
-                title: "Date",
+                title: t("Date"),
                 dataIndex: "date",
                 key: "date",
                 width: "170px",
@@ -575,7 +575,7 @@ export default function Main() {
                   width: "200px",
                 },
                 {
-                  title: "Satus",
+                  title: t("Status"),
                   dataIndex: "status",
                   key: "status",
                   width: "80px",

@@ -85,7 +85,7 @@ function Library({ mediaKey, option, close }) {
         {data.length > 0 ? (
           <Form form={form} onFinish={handleSubmit} onValuesChange={handleSearch}>
             <Form.Item name="search" className="mt-4!">
-              <Input size="large" placeholder="Procure aqui pelo nome da imagem ou documento..." prefix={<SearchOutlined />} allowClear />
+              <Input size="large" placeholder={t("Search here by image or document name...")} prefix={<SearchOutlined />} allowClear />
             </Form.Item>
             <Form.Item name={mediaKey}>
               {filteredData.length > 0 ? (

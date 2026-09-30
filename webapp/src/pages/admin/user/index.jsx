@@ -70,11 +70,11 @@ export default function User() {
 				country: array[i].country,
 				is_deleted: array[i].is_deleted ? (
 					<Tag variant="outlined" color={"#F04C4B"}>
-						Inativo
+						{t("Inactive")}
 					</Tag>
 				) : (
 					<Tag variant="outlined" color={"#06D186"}>
-						Ativo
+						{t("Active")}
 					</Tag>
 				),
 				status_tag:
@@ -183,7 +183,7 @@ export default function User() {
 			/>
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">Utilizadores</p>
+					<p className="text-xl font-bold">{t("Users")}</p>
 				</div>
 				<div className="flex justify-center">
 					<Button size="large" className="mr-2" onClick={() => getData()}>
@@ -206,7 +206,7 @@ export default function User() {
 				loading={isLoading}
 				columns={[
 					{
-						title: "Nome",
+						title: t("Name"),
 						dataIndex: "name",
 						key: "name",
 						sort: true,
@@ -214,7 +214,7 @@ export default function User() {
 						search: "name",
 					},
 					{
-						title: "E-mail",
+						title: t("E-mail"),
 						dataIndex: "email",
 						key: "email",
 						sort: true,
@@ -222,17 +222,17 @@ export default function User() {
 						search: "email",
 					},
 					{
-						title: "Language",
+						title: t("Language"),
 						dataIndex: "language",
 						key: "language",
 					},
 					{
-						title: "Country",
+						title: t("Country"),
 						dataIndex: "country",
 						key: "country",
 					},
 					{
-						title: "Papel",
+						title: t("Role"),
 						dataIndex: "role_name",
 						key: "role_name",
 						sort: true,
@@ -254,7 +254,7 @@ export default function User() {
 								: null,
 					},
 					{
-						title: "Status",
+						title: t("Status"),
 						dataIndex: "status",
 						key: "status_tag",
 						sort: true,

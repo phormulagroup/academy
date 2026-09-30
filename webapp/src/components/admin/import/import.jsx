@@ -8,8 +8,10 @@ import MatchColumns from "./match";
 import Submit from "./submit";
 
 import endpoints from "../../../utils/endpoints";
+import { useTranslation } from "react-i18next";
 
 function Import({ open, close, table }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [originalTableData, setOriginalTableData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -36,13 +38,13 @@ function Import({ open, close, table }) {
 
   const steps = [
     {
-      title: "Upload file",
+      title: t("Upload file"),
     },
     {
-      title: "Match columns",
+      title: t("Match columns"),
     },
     {
-      title: "Import",
+      title: t("Import"),
     },
   ];
 
@@ -104,8 +106,8 @@ function Import({ open, close, table }) {
   }
 
   return (
-    <Drawer className="drawer-user" key={`drawer-import`} title="Importar" size={1200} onClose={handleClose} open={open}>
-      <Spin spinning={isLoading} tip="Uploading..." indicator={<AiOutlineLoading spin />}>
+    <Drawer className="drawer-user" key={`drawer-import`} title={t("Import")} size={1200} onClose={handleClose} open={open}>
+      <Spin spinning={isLoading} tip={t("Uploading...")} indicator={<AiOutlineLoading spin />}>
         <Steps current={currentStep} items={steps} />
         <div className="mt-6">{stepsContent[currentStep]}</div>
       </Spin>

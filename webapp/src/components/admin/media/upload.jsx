@@ -7,9 +7,11 @@ import Dragger from "antd/es/upload/Dragger";
 import endpoints from "../../../utils/endpoints";
 import upload from "../../../utils/upload";
 import { Context } from "../../../utils/context";
+import { useTranslation } from "react-i18next";
 
 function Upload() {
   const { selectedEventAdmin } = useContext(Context);
+  const { t } = useTranslation();
   const props = {
     name: "file",
     multiple: true,
@@ -21,9 +23,9 @@ function Upload() {
         console.log(info.file, info.fileList);
       }
       if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
+        message.success(`${info.file.name} ${t("file uploaded successfully.")}`);
       } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
+        message.error(`${info.file.name} ${t("file upload failed.")}`);
       }
     },
     beforeUpload: (file) => {
@@ -70,8 +72,8 @@ function Upload() {
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
-        <p className="ant-upload-text">Click or drag file to this area to upload</p>
-        <p className="ant-upload-hint">Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.</p>
+        <p className="ant-upload-text">{t("Click or drag file to this area to upload")}</p>
+        <p className="ant-upload-hint">{t("Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.")}</p>
       </Dragger>
     </div>
   );

@@ -35,7 +35,7 @@ export default function Error404() {
           loop={true}
           className="max-w-[300px]"
         />
-        <p className="text-center">Page not found</p>
+        <p className="text-center">{t("Page not found")}</p>
         <Button
           type="primary"
           size="large"

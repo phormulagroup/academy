@@ -65,11 +65,11 @@ export default function Language() {
         ),
         is_deleted: array[i].is_deleted ? (
           <Tag variant="outlined" color={"red"}>
-            Inativo
+            {t("Inactive")}
           </Tag>
         ) : (
           <Tag variant="outlined" color={"green"}>
-            Ativo
+            {t("Active")}
           </Tag>
         ),
         full_data: array[i],
@@ -81,19 +81,19 @@ export default function Language() {
               menu={{
                 items: [
                   {
-                    label: "Update",
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
                   array[i].is_default !== 1 && {
-                    label: "Translations",
+                    label: t("Translations"),
                     key: `${array[i].id}-translations`,
                     icon: <FaRegFile />,
                     onClick: () => openTranslations(array[i]),
                   },
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -194,7 +194,7 @@ export default function Language() {
             width: "40px",
           },
           {
-            title: "Nome",
+            title: t("Name"),
             dataIndex: "name",
             key: "name",
             sort: true,

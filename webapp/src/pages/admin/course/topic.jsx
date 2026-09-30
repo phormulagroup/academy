@@ -45,7 +45,7 @@ export default function Topic() {
       })
       .then((res) => {
         console.log(res);
-        messageApi.open({ type: "success", content: "Topic was successfully saved!" });
+        messageApi.open({ type: "success", content: t("Topic was successfully saved!") });
       })
       .catch((err) => {
         console.log(err);

@@ -13,6 +13,8 @@ import emergingMarket from "../../assets/Emerging-Markets.svg";
 export default function Main() {
   const { user, personalization, t } = useContext(Context);
   const [data, setData] = useState(null);
+  // A animação só aparece enquanto corre; no fim é removida (não fica espaço vazio em mobile)
+  const [showAnimation, setShowAnimation] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function Main() {
   }, [personalization]);
 
   return (
-    <div className="page-frame py-6 h-full">
+    <div className="page-frame py-6 flex-1 flex items-center">
       <Helmet>
         <meta charSet="utf-8" />
         <title>Bial Regional Academy</title>
@@ -30,8 +32,8 @@ export default function Main() {
         <meta property="og:title" content={`Bial Regional Academy`} />
         <meta property="og:description" content={`Bial Regional Academy`} />
       </Helmet>
-      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-6 lg:gap-10 h-full">
-        <div className="flex flex-col justify-center h-full col-span-2">
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-6 lg:gap-10 w-full">
+        <div className={`flex flex-col justify-center ${showAnimation ? "col-span-2" : "col-span-3"}`}>
           <p className="text-[22px] sm:text-[26px] lg:text-[30px] font-bold leading-tight" style={{ color: "#163986" }}>
             {t("About Bial Regional Academy")}
           </p>
@@ -75,9 +77,11 @@ export default function Main() {
           </div>
         </div>
 
-        <div className="flex justify-center items-center w-full max-w-60 sm:max-w-80 lg:max-w-none mx-auto">
-          <LottieAnim loop={false} />
-        </div>
+        {showAnimation && (
+          <div className="flex justify-center items-center w-full max-w-60 sm:max-w-80 lg:max-w-none mx-auto">
+            <LottieAnim loop={false} onComplete={() => setShowAnimation(false)} />
+          </div>
+        )}
       </div>
     </div>
   );

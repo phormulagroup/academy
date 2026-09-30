@@ -41,7 +41,7 @@ export default function Login() {
             });
             messageApi.open({
               type: "success",
-              content: res.data.message,
+              content: `${t("Welcome")} ${res.data.user.name}!`,
             });
           } else if (res.data.user.status === "pending")
             messageApi.open({

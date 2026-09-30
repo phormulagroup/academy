@@ -85,10 +85,10 @@ export default function ExportTable({ open, close, data, table, columns = [] }) 
       );
 
       // Adiciona as colunas de metadados na ordem exata: user_name, user_email, test_name, course, lang
-      finalColumnsToExport.push({ title: "Name", dataIndex: "user_name" });
+      finalColumnsToExport.push({ title: t("Name"), dataIndex: "user_name" });
       finalColumnsToExport.push({ title: "E-mail", dataIndex: "user_email" });
-      finalColumnsToExport.push({ title: "Test", dataIndex: "test_name" });
-      finalColumnsToExport.push({ title: "Course", dataIndex: "course" });
+      finalColumnsToExport.push({ title: t("Test"), dataIndex: "test_name" });
+      finalColumnsToExport.push({ title: t("Course"), dataIndex: "course" });
       if (dataToExport.length > 0 && "lang" in dataToExport[0]) {
         finalColumnsToExport.push({ title: "lang", dataIndex: "lang" });
       }
@@ -191,7 +191,7 @@ export default function ExportTable({ open, close, data, table, columns = [] }) 
   return (
     <Drawer
       key="drawer-export"
-      title="Exportar"
+      title={t("Export")}
       size={800}
       onClose={handleClose}
       open={open}
@@ -216,7 +216,7 @@ export default function ExportTable({ open, close, data, table, columns = [] }) 
                 type="primary"
                 onClick={handleExport}
               >
-                Exportar
+                {t("Export")}
               </Button>
             </>
           )}
@@ -231,10 +231,10 @@ export default function ExportTable({ open, close, data, table, columns = [] }) 
             className="register-steps"
             items={[
               {
-                title: "Escolher colunas",
+                title: t("Choose columns"),
               },
               {
-                title: "Exportar dados",
+                title: t("Export data"),
               },
             ]}
           />

@@ -57,7 +57,7 @@ export default function CertificateDetails() {
     axios
       .post(endpoints.course_certificate.update, { data: values })
       .then((res) => {
-        messageApi.open({ type: "success", content: "Certificado atualizado com sucesso!" });
+        messageApi.open({ type: "success", content: t("Certificate updated successfully!") });
       })
       .catch((err) => {
         console.log(err);
@@ -77,7 +77,7 @@ export default function CertificateDetails() {
           </p>
         </div>
       </div>
-      <p className="font-bold text-[20px]">Certificate details</p>
+      <p className="font-bold text-[20px]">{t("Certificate details")}</p>
       <div className="grid grid-cols-2 gap-8 mt-4">
         <CertificateForm form={form} submit={submit} errors={errors} />
         <CertificatePreview data={previewData} />
@@ -85,10 +85,10 @@ export default function CertificateDetails() {
       <div className="mt-4">
         {/* Valida o formulário antes de gravar (o onFinish do CertificateForm é o submit) */}
         <Button size="large" type="primary" onClick={errors.submit}>
-          Save
+          {t("Save")}
         </Button>
         <Button className="ml-2" size="large" onClick={() => preview()}>
-          Preview
+          {t("Preview")}
         </Button>
       </div>
     </div>

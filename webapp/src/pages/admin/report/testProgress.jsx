@@ -344,14 +344,14 @@ export default function TestProgress({ data, products, languages }) {
         </div>
       </Form>
       <div className="p-4 bg-white rounded-[5px]">
-        <p className="font-bold">Progresso teste</p>
+        <p className="font-bold">{t("Test progress")}</p>
         <div className="grid grid-cols-2 gap-16 mt-4">
           <div>
-            <p className="font-bold mb-2">Global</p>
+            <p className="font-bold mb-2">{t("Global")}</p>
             <div className="p-4 border border-[#C0C0C0] rounded-[5px] flex flex-col">
               <div className="grid grid-cols-2 gap-10 w-full">
                 <div className="flex flex-col">
-                  <p className="font-bold mb-4">Distribuição de status</p>
+                  <p className="font-bold mb-4">{t("Status distribution")}</p>
                   <div className="flex justify-between items-center gap-4 w-full!">
                     <div className="w-1/2">
                       <Doughnut
@@ -416,7 +416,7 @@ export default function TestProgress({ data, products, languages }) {
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <p className="font-bold mb-4">Percentagem de score</p>
+                  <p className="font-bold mb-4">{t("Score percentage")}</p>
                   <div className="flex justify-between items-center gap-4 w-full!">
                     <div className="w-1/2">
                       <Doughnut
@@ -487,7 +487,7 @@ export default function TestProgress({ data, products, languages }) {
             </div>
           </div>
           <div>
-            <p className="font-bold mb-2">Score médio por idioma</p>
+            <p className="font-bold mb-2">{t("Average score by language")}</p>
             <div className="p-4 border border-[#C0C0C0] rounded-[5px]">
               {graphicAvgScoreByLang && graphicAvgScoreByLang.length > 0 ? (
                 <div className="flex flex-col gap-3">

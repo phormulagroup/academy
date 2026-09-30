@@ -7,9 +7,11 @@ import SelectLanguages from "./selectLanguages";
 import ImportProcess from "./importProcess";
 
 import { Context } from "../../../../utils/context";
+import { useTranslation } from "react-i18next";
 
 function TranslationsImport({ open, close }) {
   const { languages, selectedLanguage } = useContext(Context);
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedData, setUploadedData] = useState(null);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
@@ -58,21 +60,21 @@ function TranslationsImport({ open, close }) {
   };
 
   const formatInfo = [
-    "Coluna Key (identificador da tradução)",
-    "Coluna English (idioma de referência)",
-    "Colunas de idiomas: Português, Español, Français, etc.",
-    "Formato do ficheiro: XLSX",
+    t("Key column (translation identifier)"),
+    t("English column (reference language)"),
+    `${t("Language columns")}: Português, Español, Français, etc.`,
+    `${t("File format")}: XLSX`,
   ];
 
   const steps = [
     {
-      title: "Upload do Ficheiro",
+      title: t("File Upload"),
     },
     {
-      title: "Selecionar Idiomas",
+      title: t("Select Languages"),
     },
     {
-      title: "Importar",
+      title: t("Import"),
     },
   ];
 
@@ -81,10 +83,10 @@ function TranslationsImport({ open, close }) {
       key="upload"
       next={handleUploadComplete}
       requiredColumns={["Key", "English"]}
-      title="Upload de Ficheiro"
-      description="Selecione um ficheiro Excel com as traduções a importar"
+      title={t("File Upload")}
+      description={t("Select an Excel file with the translations to import")}
       mode="button"
-      successMessage="Ficheiro carregado com sucesso!"
+      successMessage={t("File uploaded successfully!")}
       formatInfo={formatInfo}
       resetTrigger={resetCounter}
     />,
@@ -115,7 +117,7 @@ function TranslationsImport({ open, close }) {
       onClose={handleDrawerClose}
       maskClosable={false}
       size="large"
-      title="Importar Traduções"
+      title={t("Import Translations")}
       extra={[]}
     >
       <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
@@ -134,14 +136,14 @@ function TranslationsImport({ open, close }) {
               onClick={handlePrevious}
               disabled={currentStep === 0}
             >
-              Anterior
+              {t("Previous")}
             </Button>
             <Button 
               type="primary" 
               onClick={handleNext}
               disabled={currentStep === 0 ? !uploadedData : currentStep === 1 ? selectedLanguages.length === 0 : false}
             >
-              Seguinte
+              {t("Next")}
             </Button>
           </div>
         )}

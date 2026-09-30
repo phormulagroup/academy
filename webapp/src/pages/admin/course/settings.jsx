@@ -216,14 +216,14 @@ export default function Settings({ course }) {
 
           <div className="grid grid-cols-3 gap-8">
             <div>
-              <p className="pb-2">Duration</p>
+              <p className="pb-2">{t("Duration")}</p>
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item
                   name={["settings", "duration_hours"]}
                   className="mb-0!">
                   <InputNumber
                     size="large"
-                    suffix="hours"
+                    suffix={t("hours")}
                     className="w-full!"
                   />
                 </Form.Item>
@@ -232,7 +232,7 @@ export default function Settings({ course }) {
                   className="mb-0!">
                   <InputNumber
                     size="large"
-                    suffix="minutes"
+                    suffix={t("minutes")}
                     className="w-full!"
                   />
                 </Form.Item>
@@ -281,7 +281,7 @@ export default function Settings({ course }) {
               <Select
                 size="large"
                 className="w-full"
-                placeholder="Selecione..."
+                placeholder={t("Select...")}
                 allowClear
                 showSearch={{
                   optionFilterProp: ["label"],
@@ -381,7 +381,7 @@ export default function Settings({ course }) {
                           mode="multiple"
                           size="large"
                           className="w-full"
-                          placeholder="Selecione..."
+                          placeholder={t("Select...")}
                           allowClear
                           showSearch={{
                             optionFilterProp: ["label"],
@@ -419,7 +419,7 @@ export default function Settings({ course }) {
             {renderImageField("img", t("Banner image"))}
             {renderImageField("thumbnail", t("Thumbnail"))}
           </div>
-          <p>Materials</p>
+          <p>{t("Materials")}</p>
           <Form.List name="material">
             {(fields, { add, remove }) => (
               <div className="grid grid-cols-4 gap-8 mt-4">
@@ -573,7 +573,7 @@ export default function Settings({ course }) {
               <Select
                 size="large"
                 className="w-full"
-                placeholder="Selecione..."
+                placeholder={t("Select...")}
                 allowClear
                 showSearch={{
                   optionFilterProp: ["label"],
@@ -589,7 +589,7 @@ export default function Settings({ course }) {
             name={["objection", "text"]}
             className="mb-0!"
             label={t("Description")}>
-            <TiptapFormField placeholder="Escreva o conteúdo..." richMedia />
+            <TiptapFormField placeholder={t("Write the content...")} richMedia />
           </Form.Item>
           <div className="mt-4">
             <Form.List name={["objection", "tabs"]}>
@@ -598,7 +598,7 @@ export default function Settings({ course }) {
                   key: field.name.toString(),
                   label: (
                     <div className="flex justify-center items-center">
-                      Objection nº {(field.name + 1).toString()}{" "}
+                      {t("Objection no.")} {(field.name + 1).toString()}{" "}
                       <RxTrash
                         className="ml-2"
                         onClick={() => {
@@ -613,7 +613,7 @@ export default function Settings({ course }) {
                   children: (
                     <Card>
                       {/* Form List interno */}
-                      <Form.Item name={[field.name, "label"]} label="Label">
+                      <Form.Item name={[field.name, "label"]} label={t("Label")}>
                         <Input size="large" />
                       </Form.Item>
                       <Form.List name={[field.name, "items"]}>
@@ -631,7 +631,7 @@ export default function Settings({ course }) {
                                   name={[sub.name, "text"]}
                                   className="w-full!"
                                   label={t("Text")}>
-                                  <TiptapFormField placeholder="Escreva o conteúdo..." richMedia />
+                                  <TiptapFormField placeholder={t("Write the content...")} richMedia />
                                 </Form.Item>
                                 <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                   <Button
@@ -694,7 +694,7 @@ export default function Settings({ course }) {
           size="large"
           type="primary"
           onClick={form.submit}>
-          Save
+          {t("Save")}
         </Button>
       </div>
     </div>

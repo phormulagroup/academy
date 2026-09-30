@@ -60,7 +60,7 @@ export default function Update({ data, open, close, nameRule }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title={`Update document`}
+      title={`${t("Update document")}`}
       extra={[
         <Button
           key="submit"
@@ -68,7 +68,7 @@ export default function Update({ data, open, close, nameRule }) {
           size="large"
           loading={isButtonLoading}
           onClick={errors.submit}>
-          Atualizar
+          {t("Update")}
         </Button>,
       ]}>
       <Media
@@ -86,15 +86,15 @@ export default function Update({ data, open, close, nameRule }) {
         </Form.Item>
         <Form.Item
           name="name"
-          {...errors.labelErrorProps("name", name, "Nome")}
+          {...errors.labelErrorProps("name", name, t("Name"))}
           rules={[requiredRule, nameRule(data?.id)]}>
-          <Input size="large" placeholder="Nome do documento" />
+          <Input size="large" placeholder={t("Document name")} />
         </Form.Item>
         <Form.Item name="country" label={t("Country")}>
           <Select
             mode="multiple"
             size="large"
-            placeholder="País..."
+            placeholder={t("Country...")}
             allowClear
             options={languages
               .filter((lang) => lang.id === selectedLanguage.id)

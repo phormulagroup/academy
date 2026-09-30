@@ -82,19 +82,19 @@ export default function Template() {
               menu={{
                 items: [
                   {
-                    label: "Update",
+                    label: t("Update"),
                     key: `${array[i].id}-update`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
                   {
-                    label: "Details",
+                    label: t("Details"),
                     key: `${array[i].id}-details`,
                     icon: <FaRegFile />,
                     onClick: () => navigate(`/admin/templates/${array[i].id}`),
                   },
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),

@@ -13,7 +13,14 @@ export default function LottieAnim(props) {
 			path: "/animation.json", // 👈 usa path!
 		});
 
-		return () => anim.destroy();
+		// Animação sem loop: avisa quando termina (ex.: para a remover da página)
+		const onComplete = () => props?.onComplete?.();
+		anim.addEventListener("complete", onComplete);
+
+		return () => {
+			anim.removeEventListener("complete", onComplete);
+			anim.destroy();
+		};
 	}, []);
 
 	return <div ref={ref} />;

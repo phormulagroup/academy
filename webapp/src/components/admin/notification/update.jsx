@@ -49,10 +49,10 @@ export default function Update({ data, open, close, submit }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Editar notificação"
+      title={t("Edit notification")}
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          Atualizar
+          {t("Update")}
         </Button>,
       ]}>
       <Form form={form} onFinish={submit} layout="vertical">

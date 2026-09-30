@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Checkbox, Divider, Form } from "antd";
+import { useTranslation } from "react-i18next";
 
 function ChooseColumns({ form, handleSubmit, onFormChange, columnMapping = {}, columns = [], translate }) {
+  const { t } = useTranslation();
   const [indeterminate, setIndeterminate] = useState(false);
   const [checkAll, setCheckAll] = useState(false);
 
@@ -48,10 +50,10 @@ function ChooseColumns({ form, handleSubmit, onFormChange, columnMapping = {}, c
   return (
     <div className="flex flex-col justify-center items-center p-2">
       <p className="font-bold blue text-[20px] mb-6 mt-6">
-        Escolha as colunas que deseja exportar
+        {t("Choose the columns you want to export")}
       </p>
       <p className="text-gray-500 text-[13px] italic mb-4 text-center">
-       Nota: O ficheiro Excel exportado poderá incluir colunas adicionais com informações complementares.
+       {t("Note: The exported Excel file may include additional columns with complementary information.")}
       </p>
       <Form
         form={form}
@@ -63,7 +65,7 @@ function ChooseColumns({ form, handleSubmit, onFormChange, columnMapping = {}, c
           onChange={handleCheckAll}
           checked={indeterminate ? false : checkAll}
         >
-          Check all
+          {t("Check all")}
         </Checkbox>
         <Divider />
         <Form.Item name="columns">

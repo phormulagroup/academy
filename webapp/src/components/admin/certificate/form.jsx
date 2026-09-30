@@ -63,7 +63,7 @@ export default function CertificateForm({ form, submit, preview, errors }) {
           )}
         </Form.Item>
         <Form.Item name={"text"} className="mb-0!" label={t("Text")}>
-          <TipTapFormField placeholder="Escreva o conteúdo..." />
+          <TipTapFormField placeholder={t("Write the content...")} />
         </Form.Item>
       </Form>
     </div>

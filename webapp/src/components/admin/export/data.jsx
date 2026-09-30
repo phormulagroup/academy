@@ -1,6 +1,8 @@
 import { Table } from "antd";
+import { useTranslation } from "react-i18next";
 
 function ExportData({ data, columns, columnMapping = {}, translate }) {
+  const { t } = useTranslation();
 
   const filteredColumns = columns
     .map((col) => ({
@@ -11,7 +13,7 @@ function ExportData({ data, columns, columnMapping = {}, translate }) {
     })); // Aplica widths específicas conforme configuração
   return (
     <div className="flex flex-col justify-center items-center p-2">
-      <p className="blue text-[20px] mt-6">Vão ser exportados:</p>
+      <p className="blue text-[20px] mt-6">{t("To be exported")}:</p>
       <p className="font-bold blue text-[40px] mt-2 mb-2">{data.length}</p>
       <Table
         columns={filteredColumns}

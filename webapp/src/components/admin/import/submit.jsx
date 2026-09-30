@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Button, Col, Form, InputNumber, Row, Table, Progress, Select, Segmented } from "antd";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import { FaRegCheckCircle } from "react-icons/fa";
 import endpoints from "../../../utils/endpoints";
 
 function Submit({ step, prev, dataToImport, table }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [isTableLoading, setIsTableLoading] = useState(false);
@@ -117,17 +119,17 @@ function Submit({ step, prev, dataToImport, table }) {
         </div>
       ) : showResult ? (
         <div className="flex flex-col justify-center items-center w-full">
-          <p className="text-[26px] font-bold text-center mb-0">Sucesso!</p>
-          <p className="text-center mt-2">Os dados foram importados com sucesso</p>
+          <p className="text-[26px] font-bold text-center mb-0">{t("Success!")}</p>
+          <p className="text-center mt-2">{t("The data was imported successfully")}</p>
           <div className="grid grid-cols-2 w-full max-w-[400px]">
             <div className="flex flex-col justify-center items-center">
-              <p className="m-0 text-[12px] text-center">Atualizados</p>
+              <p className="m-0 text-[12px] text-center">{t("Updated")}</p>
               <div className="import-data updated">
                 <p className="text-[40px] font-bold m-0 text-center orange">{dataToImport.length - results.insertedData?.inserted?.length}</p>
               </div>
             </div>
             <div className="flex flex-col justify-center items-center">
-              <p className="m-0 text-[12px] text-center">Novos</p>
+              <p className="m-0 text-[12px] text-center">{t("New")}</p>
               <div className="import-data inserted">
                 <p className="text-[40px] font-bold m-0 text-center green">{results.insertedData?.inserted?.length}</p>
               </div>
@@ -139,7 +141,7 @@ function Submit({ step, prev, dataToImport, table }) {
             columns={[
               ...tableColumns,
               {
-                title: "status",
+                title: t("Status"),
                 dataIndex: "status",
                 key: "status",
               },
@@ -159,8 +161,8 @@ function Submit({ step, prev, dataToImport, table }) {
         </div>
       ) : (
         <div>
-          <p className="text-[26px] font-bold text-center mb-0">Importar dados</p>
-          <p className="text-center mt-2 mb-4">Verifique se os dados estão todos corretos</p>
+          <p className="text-[26px] font-bold text-center mb-0">{t("Import data")}</p>
+          <p className="text-center mt-2 mb-4">{t("Check that all the data is correct")}</p>
           <Table
             className="import-table"
             columns={tableColumns}
@@ -173,21 +175,21 @@ function Submit({ step, prev, dataToImport, table }) {
           />
 
           <div className="flex flex-col justify-center items-center">
-            <p className="mb-0">Nº de linhas a importar:</p>
+            <p className="mb-0">{t("Number of rows to import")}:</p>
             <p className="text-[24px] font-bold mb-4">{dataToImport.length}</p>
           </div>
           <Form form={form} id="form-import" onFinish={handleSubmit} className="form w-full" autoComplete="off" layout="vertical">
-            <Form.Item label="Limit bulk" name="limit_bulk">
+            <Form.Item label={t("Limit bulk")} name="limit_bulk">
               <InputNumber className="w-full" size="large" placeholder="0" />
             </Form.Item>
           </Form>
           {!showResult && (
             <div className="flex justify-center items-center mt-6">
               <Button className="mr-2" onClick={prev} loading={isButtonLoading}>
-                Anterior
+                {t("Previous")}
               </Button>
               <Button type="primary" onClick={form.submit} loading={isButtonLoading}>
-                Importar
+                {t("Import")}
               </Button>
             </div>
           )}

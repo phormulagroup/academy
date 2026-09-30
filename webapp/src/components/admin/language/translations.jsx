@@ -15,11 +15,14 @@ import { PlusOutlined } from "@ant-design/icons";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
+import { useTranslation } from "react-i18next";
+
 import { Context } from "../../../utils/context";
 import { requiredRule } from "../../../utils/formFieldError";
 
 export default function Translations({ data, defaultLanguage, open, close }) {
   const { update, getLanguages } = useContext(Context);
+  const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [form] = Form.useForm();
 
@@ -151,13 +154,13 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       // Validar que todas as linhas tém key e value
       for (const trans of translationsToUpdate) {
         if (!trans.key || !trans.value) {
-          message.error("All rows must have a Key and Translation value");
+          message.error(t("All rows must have a Key and Translation value"));
           return;
         }
       }
 
       if (translationsToUpdate.length === 0) {
-        message.error("At least one translation is required");
+        message.error(t("At least one translation is required"));
         return;
       }
 
@@ -190,7 +193,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       }
     } catch (err) {
       console.error("Erro ao salvar traduções:", err);
-      message.error("Erro ao salvar traduções");
+      message.error(t("Error saving translations"));
     }
   }
 
@@ -219,7 +222,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
   // Configuração das colunas da tabela
   const columns = [
     {
-      title: "Key",
+      title: t("Key"),
       dataIndex: "key",
       key: "key",
       width: "40%",
@@ -228,7 +231,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
         const isEdited = isEditing(record);
         return isEdited ? (
           <Form.Item name="key" rules={[requiredRule]} style={{ margin: 0 }}>
-            <Input.TextArea placeholder="Translation key" rows={2} />
+            <Input.TextArea placeholder={t("Translation key")} rows={2} />
           </Form.Item>
         ) : (
           <span>{text}</span>
@@ -236,7 +239,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       },
     },
     {
-      title: `${data?.name || "Translation"}`,
+      title: `${data?.name || t("Translation")}`,
       dataIndex: "value",
       key: "value",
       width: "50%",
@@ -245,7 +248,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
         const isEdited = isEditing(record);
         return isEdited ? (
           <Form.Item name="value" rules={[requiredRule]} style={{ margin: 0 }}>
-            <Input.TextArea placeholder="Translation value" rows={2} />
+            <Input.TextArea placeholder={t("Translation value")} rows={2} />
           </Form.Item>
         ) : (
           <span>{text}</span>
@@ -253,7 +256,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       },
     },
     {
-      title: "Ações",
+      title: t("Actions"),
       key: "actions",
       width: "10%",
       render: (_, record) => {
@@ -266,10 +269,10 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                 type="primary"
                 size="small"
                 onClick={() => save(record.id)}>
-                Save
+                {t("Save")}
               </Button>
               <Button size="small" onClick={cancel}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </Space>
           );
@@ -277,13 +280,13 @@ export default function Translations({ data, defaultLanguage, open, close }) {
 
         const items = [
           {
-            label: "Update",
+            label: t("Update"),
             key: `${record.id}-edit`,
             icon: <FaRegEdit />,
             onClick: () => edit(record),
           },
           {
-            label: "Delete",
+            label: t("Delete"),
             key: `${record.id}-delete`,
             icon: <FaRegTrashAlt />,
             onClick: () => setDeleteConfirmRecord(record),
@@ -312,7 +315,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       size={1000}
       onClose={onClose}
       maskClosable={false}
-      title={`Traduções - ${data?.name || "Language"}`}
+      title={`${t("Translations")} - ${data?.name || t("Language")}`}
       extra={[]}>
       {data && defaultLanguage ? (
         <div>
@@ -333,7 +336,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
             {translations.length > 0 && (
               <div className="flex justify-between items-center mb-4">
                 <span>
-                  Total de registos: <strong>{translations.length}</strong>
+                  {t("Total records")}: <strong>{translations.length}</strong>
                 </span>
                 <Pagination
                   current={currentPage}
@@ -350,7 +353,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                   }}
                   showSizeChanger
                   showTotal={(total, range) =>
-                    `${range[0]}-${range[1]} de ${total}`
+                    `${range[0]}-${range[1]} ${t("of")} ${total}`
                   }
                 />
               </div>
@@ -364,19 +367,19 @@ export default function Translations({ data, defaultLanguage, open, close }) {
                 onClick={addRow}
                 size="large"
                 block>
-                Add Translation
+                {t("Add Translation")}
               </Button>
             </div>
 
             {/* Botão Guardar */}
             <div className="flex justify-end gap-2">
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>{t("Cancel")}</Button>
               <Button
                 type="primary"
                 loading={isButtonLoading}
                 onClick={submit}
                 size="large">
-                Save All Translations
+                {t("Save All Translations")}
               </Button>
             </div>
           </Form>
@@ -384,18 +387,18 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           {/* Modal de Confirmação de Deleção */}
           {deleteConfirmRecord && (
             <Popconfirm
-              title="Delete Translation"
-              description="Are you sure you want to delete this translation?"
+              title={t("Delete Translation")}
+              description={t("Are you sure you want to delete this translation?")}
               open={!!deleteConfirmRecord}
-              okText="Yes"
-              cancelText="No"
+              okText={t("Yes")}
+              cancelText={t("No")}
               onConfirm={handleDeleteConfirm}
               onCancel={() => setDeleteConfirmRecord(null)}
             />
           )}
         </div>
       ) : (
-        <p>Loading...</p>
+        <p>{t("Loading...")}</p>
       )}
     </Drawer>
   );

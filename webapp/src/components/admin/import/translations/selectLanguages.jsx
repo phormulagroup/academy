@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button, message, Spin } from "antd";
 import { AiOutlineLoading } from "react-icons/ai";
+import { useTranslation } from "react-i18next";
 
 function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideButtons, headerSelectedLanguage }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -59,7 +61,7 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
 
   const handleNext = () => {
     if (selectedLanguages.length === 0) {
-      message.error("Por favor, selecione pelo menos um idioma");
+      message.error(t("Please select at least one language"));
       return;
     }
     next(selectedLanguages);
@@ -69,10 +71,10 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
     <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
       <div>
         <p className="text-[26px] font-bold text-center mb-0">
-          Selecionar Idiomas
+          {t("Select Languages")}
         </p>
         <p className="text-center mt-2 mb-6">
-          Escolha os idiomas que deseja importar do ficheiro
+          {t("Choose the languages you want to import from the file")}
         </p>
 
         {availableLanguages.length > 0 ? (
@@ -119,7 +121,7 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
             {/* Summary */}
             <div className="bg-blue-50 p-3 rounded border border-blue-200 mb-6">
               <p className="font-semibold text-sm">
-                Idiomas Selecionados:{" "}
+                {t("Selected Languages:")}{" "}
                 <strong>{selectedLanguages.length}</strong>
               </p>
               {selectedLanguages.length > 0 && (
@@ -138,9 +140,9 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
             {/* Action Buttons - hidden if parent handles navigation */}
             {!hideButtons && (
               <div className="flex justify-center items-center mt-6 gap-2">
-                <Button onClick={prev}>Anterior</Button>
+                <Button onClick={prev}>{t("Previous")}</Button>
                 <Button type="primary" onClick={handleNext} size="large">
-                  Seguinte
+                  {t("Next")}
                 </Button>
               </div>
             )}
@@ -148,14 +150,12 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
         ) : (
           <div className="text-center py-8">
             <p className="text-red-500 mb-4">
-              Nenhum idioma encontrado no ficheiro que corresponda à base de
-              dados.
+              {t("No language found in the file that matches the database.")}
             </p>
             <p className="text-gray-500 text-sm mb-4">
-              Certifique-se de que os nomes das colunas no Excel correspondem
-              aos nomes dos idiomas configurados.
+              {t("Make sure the column names in the Excel file match the names of the configured languages.")}
             </p>
-            {!hideButtons && <Button onClick={prev}>Anterior</Button>}
+            {!hideButtons && <Button onClick={prev}>{t("Previous")}</Button>}
           </div>
         )}
       </div>

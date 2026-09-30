@@ -403,7 +403,7 @@ const ContextProvider = ({ children }) => {
 			} catch (err) {
 				messageApi.open({
 					type: "error",
-					content: t(`Somethins went wrong, please try again.`),
+					content: t("Something went wrong, please try again"),
 				});
 				reject(err);
 			}
@@ -431,7 +431,7 @@ const ContextProvider = ({ children }) => {
 			} catch (err) {
 				messageApi.open({
 					type: "error",
-					content: t(`Somethins went wrong, please try again.`),
+					content: t("Something went wrong, please try again"),
 				});
 				reject(err);
 			}

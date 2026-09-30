@@ -4,10 +4,12 @@ import axios from "axios";
 import endpoints from "../../utils/endpoints";
 import Table from "./table";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 import { DiffEditor } from "@monaco-editor/react";
 
 export default function Logs({ table, id_client, id_project, id_account, open, close }) {
+  const { t } = useTranslation();
   const [tableData, setTableData] = useState([]);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -63,7 +65,7 @@ export default function Logs({ table, id_client, id_project, id_account, open, c
   }
 
   return (
-    <Drawer open={open} size={800} onClose={onClose} maskClosable={false} title="Alterações efetuadas" extra={[]}>
+    <Drawer open={open} size={800} onClose={onClose} maskClosable={false} title={t("Changes made")} extra={[]}>
       <Table
         dataSource={tableData}
         loading={isLoading}
@@ -90,17 +92,17 @@ export default function Logs({ table, id_client, id_project, id_account, open, c
             width: 80,
           },
           {
-            title: "Ação",
+            title: t("Action"),
             dataIndex: "action",
             key: "action",
           },
           {
-            title: "Utilizador",
+            title: t("User"),
             dataIndex: "name",
             key: "name",
           },
           {
-            title: "Data",
+            title: t("Date"),
             dataIndex: "date",
             key: "date",
           },

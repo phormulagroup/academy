@@ -3,8 +3,10 @@ import { Avatar, Button, Col, Divider, Empty, Form, Input, Row, Select, Space, S
 import { useRef, useState } from "react";
 import { SearchOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
+import { useTranslation } from "react-i18next";
 
 const CustomTable = (props) => {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef(null);
@@ -40,7 +42,7 @@ const CustomTable = (props) => {
               <Input
                 size="large"
                 ref={searchInput}
-                placeholder={`Procurar...`}
+                placeholder={t("Search...")}
                 value={selectedKeys[0]}
                 onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                 onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
@@ -51,7 +53,7 @@ const CustomTable = (props) => {
               />
               <Space>
                 <Button type="primary" onClick={() => handleSearch(selectedKeys, confirm, dataIndex)} icon={<SearchOutlined />}>
-                  Search
+                  {t("Search")}
                 </Button>
                 <Button
                   onClick={() => clearFilters && handleReset(clearFilters, confirm)}
@@ -59,7 +61,7 @@ const CustomTable = (props) => {
                     width: 90,
                   }}
                 >
-                  Reset
+                  {t("Reset")}
                 </Button>
               </Space>
             </div>

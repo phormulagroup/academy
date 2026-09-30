@@ -64,7 +64,7 @@ const Main = () => {
     () => [
       {
         key: "grp-admin",
-        label: "Admin",
+        label: t("Admin"),
         type: "group",
         children: [
           { key: "/admin/", label: t("Dashboard"), icon: <DashboardIcon /> },
@@ -72,7 +72,7 @@ const Main = () => {
       },
       {
         key: "grp-web",
-        label: "Website",
+        label: t("Website"),
         type: "group",
         children: [
           { key: "/admin/menus", label: t("Menus"), icon: <MenusIcon /> },
@@ -97,7 +97,7 @@ const Main = () => {
       },
       {
         key: "grp-learning",
-        label: "e-Learning",
+        label: t("e-Learning"),
         type: "group",
         children: [
           { key: "/admin/courses", label: t("Courses"), icon: <CourseIcon /> },
@@ -126,7 +126,7 @@ const Main = () => {
       },
       {
         key: "grp-manage",
-        label: "Gestão",
+        label: t("Management"),
         type: "group",
         children: [
           { key: "/admin/users", label: t("Users"), icon: <UsersIcon /> },
@@ -144,7 +144,7 @@ const Main = () => {
       },
       {
         key: "grp-forms",
-        label: "Gestão",
+        label: t("Management"),
         type: "group",
         children: [
           { key: "/admin/forms", label: t("Forms"), icon: <FormsIcon /> },
@@ -153,7 +153,7 @@ const Main = () => {
       },
       {
         key: "grp-email",
-        label: "E-mail",
+        label: t("E-mail"),
         type: "group",
         children: [
           {
@@ -166,7 +166,7 @@ const Main = () => {
       },
       {
         key: "grp-option",
-        label: "Opções",
+        label: t("Options"),
         type: "group",
         children: [
           { key: "/admin/apis", label: t("APIS"), icon: <APIsIcon /> },
@@ -267,7 +267,7 @@ const Main = () => {
               onClick={() => handleClickMenu({ key: "/admin/perfil" })}>
               <Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
               <div className="flex flex-col">
-                <p className="text-[#163986]">Olá,</p>
+                <p className="text-[#163986]">{t("Hello")},</p>
                 <p className="text-[#163986]">{user.name}</p>
               </div>
             </div>
@@ -283,7 +283,7 @@ const Main = () => {
               <a
                 className={`dropdown-item flex items-center w-full min-h-11.25 pl-6`}
                 onClick={() => setIsOpenLogout(true)}>
-                <LoginOutlined className="mr-2" /> Logout
+                <LoginOutlined className="mr-2" /> {t("Logout")}
               </a>
             </div>
           </Drawer>
@@ -343,7 +343,7 @@ const Main = () => {
                               className="dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]"
                               onClick={() => setIsOpenLogout(true)}>
                               <LoginOutlined className="mr-2" />
-                              <p>Logout</p>
+                              <p>{t("Logout")}</p>
                             </div>
                           ),
                         },

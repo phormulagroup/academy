@@ -82,7 +82,7 @@ export default function Create({ open, close, products, nameRule, internalNameRu
 					<Select
 						size="large"
 						className="w-full"
-						placeholder="Selecione..."
+						placeholder={t("Select...")}
 						showSearch={{
 							optionFilterProp: ["label"],
 						}}
@@ -96,18 +96,18 @@ export default function Create({ open, close, products, nameRule, internalNameRu
 					<Select
 						size="large"
 						className="w-full"
-						placeholder="Selecione..."
+						placeholder={t("Select...")}
 						showSearch={{
 							optionFilterProp: ["label"],
 						}}
 						defaultValue={"draft"}
 						options={[
 							{
-								label: "Draft",
+								label: t("Draft"),
 								value: "draft",
 							},
 							{
-								label: "Published",
+								label: t("Published"),
 								value: "published",
 							},
 						]}

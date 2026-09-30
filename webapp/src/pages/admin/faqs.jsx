@@ -85,13 +85,13 @@ export default function Faqs() {
               menu={{
                 items: [
                   {
-                    label: "Update",
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -156,7 +156,7 @@ export default function Faqs() {
         loading={isLoading}
         columns={[
           {
-            title: "Title",
+            title: t("Title"),
             dataIndex: "title",
             key: "title",
             sort: true,
@@ -165,12 +165,12 @@ export default function Faqs() {
             width: "400px",
           },
           {
-            title: "Description",
+            title: t("Description"),
             dataIndex: "description",
             key: "description",
           },
           {
-            title: "Images",
+            title: t("Images"),
             dataIndex: "images",
             key: "images",
           },

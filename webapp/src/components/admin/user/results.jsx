@@ -22,7 +22,7 @@ export default function Card({ user, courses, scrollToResults }) {
       <p>ID</p>
       <p className="text-[25px]">{user.id}</p>
       <Button size="large" className="mt-4!" onClick={scrollToResults}>
-        Resultados
+        {t("Results")}
       </Button>
       <div className="flex justify-center items-center gap-4 mt-6!">
         <div className="flex flex-col justify-start items-center">

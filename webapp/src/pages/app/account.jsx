@@ -152,6 +152,28 @@ export default function Account() {
                   </Form.Item>
                 </div>
                 <div>
+                  {/* Formato do e-mail e não usado por outra conta (o próprio é ignorado) */}
+                  <Form.Item
+                    name="email"
+                    label={t("E-mail")}
+                    {...emailFieldProps}
+                    rules={[
+                      requiredRule,
+                      emailRule,
+                      userEmailRule({
+                        shouldExist: false,
+                        excludeId: user?.id,
+                      }),
+                    ]}
+                    className="mb-0!">
+                    <Input
+                      type="email"
+                      size="large"
+                      placeholder={t("youremail@domain.com")}
+                    />
+                  </Form.Item>
+                </div>
+                <div>
                   <Form.Item
                     name="gender"
                     label={t("Gender")}
@@ -162,6 +184,22 @@ export default function Account() {
                       placeholder={t("Gender")}
                       allowClear
                       options={genderOptions(t, i18n.language)}
+                    />
+                  </Form.Item>
+                </div>
+                <div>
+                  <Form.Item
+                    label={t("Birth date")}
+                    name="birth_date"
+                    rules={[requiredDateRule]}
+                    className="mb-0!"
+                    getValueProps={(value) => ({
+                      value: value && dayjs(value),
+                    })}>
+                    <DatePicker
+                      size="large"
+                      placeholder={t("Select birth date")}
+                      className="w-full"
                     />
                   </Form.Item>
                 </div>
@@ -199,44 +237,6 @@ export default function Account() {
                   </Form.Item>
                 </div>
                 <div>
-                  {/* Formato do e-mail e não usado por outra conta (o próprio é ignorado) */}
-                  <Form.Item
-                    name="email"
-                    label={t("E-mail")}
-                    {...emailFieldProps}
-                    rules={[
-                      requiredRule,
-                      emailRule,
-                      userEmailRule({
-                        shouldExist: false,
-                        excludeId: user?.id,
-                      }),
-                    ]}
-                    className="mb-0!">
-                    <Input
-                      type="email"
-                      size="large"
-                      placeholder={t("youremail@domain.com")}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Birth date")}
-                    name="birth_date"
-                    rules={[requiredDateRule]}
-                    className="mb-0!"
-                    getValueProps={(value) => ({
-                      value: value && dayjs(value),
-                    })}>
-                    <DatePicker
-                      size="large"
-                      placeholder={t("Select birth date")}
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-                <div>
                   <Form.Item
                     label={t("Bial's starting date")}
                     name="bial_starting_date"
@@ -251,6 +251,10 @@ export default function Account() {
                       className="w-full"
                     />
                   </Form.Item>
+                </div>
+                {/* Divide os dados pessoais das passwords */}
+                <div className="col-span-full">
+                  <Divider className="my-0!" style={{ borderColor: "#8b9cc3" }} />
                 </div>
                 <div>
                   <Form.Item

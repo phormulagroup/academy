@@ -66,19 +66,19 @@ export default function Notification() {
               menu={{
                 items: [
                   {
-                    label: "Send",
+                    label: t("Send"),
                     key: `${array[i].id}-send`,
                     icon: <FaArrowAltCircleRight />,
                     onClick: () => sendNotification(array[i]),
                   },
                   {
-                    label: "Update",
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -153,12 +153,12 @@ export default function Notification() {
         loading={isLoading}
         columns={[
           {
-            title: "Title",
+            title: t("Title"),
             dataIndex: "title",
             key: "title",
           },
           {
-            title: "Description",
+            title: t("Description"),
             dataIndex: "description",
             key: "description",
           },

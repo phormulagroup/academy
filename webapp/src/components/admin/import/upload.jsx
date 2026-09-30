@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Form, Upload, Spin, Button, message } from "antd";
 
 import * as XLSX from "xlsx";
+import { useTranslation } from "react-i18next";
 import {
   UploadOutlined,
   InboxOutlined,
@@ -13,13 +14,14 @@ const { Dragger } = Upload;
 function UploadFile({
   next,
   requiredColumns = [],
-  title = "Importar ficheiro",
-  description = "Faça importação do ficheiro em XLSX",
+  title,
+  description,
   mode = "dragger",
   successMessage = null,
   formatInfo = null,
   resetTrigger = null,
 }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [validatedData, setValidatedData] = useState(null);
@@ -67,7 +69,7 @@ function UploadFile({
     const isValidFormat = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
     
     if (!isValidFormat) {
-      message.error("Ficheiro tem formato inválido. Apenas ficheiros .xlsx são aceitos");
+      message.error(t("File has an invalid format. Only .xlsx files are accepted"));
       setFileList([file]);
       setValidatedData(null);
       next(null);
@@ -78,7 +80,7 @@ function UploadFile({
     const reader = new FileReader();
     
     reader.onerror = () => {
-      message.error("Erro ao ler o ficheiro. Por favor, verifique o formato.");
+      message.error(t("Error reading the file. Please check the format."));
       setIsLoading(false);
       setFileList([file]);
       setValidatedData(null);
@@ -101,7 +103,7 @@ function UploadFile({
         // Validar colunas obrigatórias
         if (requiredColumns.length > 0) {
           if (jsonData.length === 0) {
-            message.error("O ficheiro não contém dados ou está vazio");
+            message.error(t("The file contains no data or is empty"));
             setIsLoading(false);
             setValidatedData(null);
             next(null);
@@ -115,7 +117,7 @@ function UploadFile({
 
           if (missingColumns.length > 0) {
             message.error(
-              `O ficheiro não contém as colunas obrigatórias.`,
+              t("The file does not contain the required columns."),
             );
             setIsLoading(false);
             setValidatedData(null);
@@ -126,14 +128,14 @@ function UploadFile({
 
         const successMsg =
           successMessage ||
-          `Ficheiro carregado com sucesso! ${jsonData.length} linhas encontradas`;
+          `${t("File uploaded successfully!")} ${jsonData.length} ${t("rows found")}`;
         message.success(successMsg);
         setValidatedData(jsonData);
         setIsLoading(false);
         next(jsonData);
       } catch (err) {
         console.error("Error parsing file:", err);
-        message.error("Erro ao ler o ficheiro Excel. Verifique o formato.");
+        message.error(t("Error reading the Excel file. Check the format."));
         setIsLoading(false);
         setValidatedData(null);
         next(null);
@@ -152,7 +154,7 @@ function UploadFile({
   return (
     <Spin
       spinning={isLoading}
-      tip={mode === "dragger" ? "Uploading..." : undefined}
+      tip={mode === "dragger" ? t("Uploading...") : undefined}
       indicator={<LoadingOutlined spin />}
     >
       <div>
@@ -163,7 +165,7 @@ function UploadFile({
               : "text-[26px] font-bold text-center mb-0"
           }
         >
-          {title}
+          {title ?? t("Import file")}
         </p>
         <p
           className={
@@ -172,7 +174,7 @@ function UploadFile({
               : "text-center mt-2 mb-6"
           }
         >
-          {description}
+          {description ?? t("Import the file in XLSX format")}
         </p>
 
         {mode === "dragger" ? (
@@ -185,17 +187,17 @@ function UploadFile({
               <InboxOutlined />
             </p>
             <p className="text-[16px]">
-              Click or drag file to this area to upload
+              {t("Click or drag file to this area to upload")}
             </p>
             <p className="text-[12px] mt-2">
-              Import a <b>XLSX</b> file
+              {t("Import a")} <b>XLSX</b> {t("file")}
             </p>
           </Dragger>
         ) : (
           <div className="flex justify-center mb-6">
             <Upload {...uploadProps}>
               <Button icon={<UploadOutlined />} size="large">
-                Selecionar Ficheiro
+                {t("Select File")}
               </Button>
             </Upload>
           </div>
@@ -203,7 +205,7 @@ function UploadFile({
 
         {fileList.length > 0 && mode === "button" && (
           <div className="mb-6">
-            <p className="font-semibold mb-2">Ficheiro selecionado:</p>
+            <p className="font-semibold mb-2">{t("Selected file:")}</p>
             <div className={`p-3 rounded border flex justify-between items-center ${
               validatedData 
                 ? "bg-gray-50 border-gray-200" 
@@ -213,12 +215,12 @@ function UploadFile({
                 <span className="text-sm">{fileList[0].name}</span>
                 {validatedData && (
                   <p className="text-xs text-green-600 mt-1">
-                    ✓ {validatedData.length} linhas validadas
+                    ✓ {validatedData.length} {t("rows validated")}
                   </p>
                 )}
                 {!validatedData && (
                   <p className="text-xs text-red-600 mt-1">
-                    ⚠ Ficheiro inválido
+                    ⚠ {t("Invalid file")}
                   </p>
                 )}
               </div>
@@ -231,7 +233,7 @@ function UploadFile({
                   next(null);
                 }}
               >
-                Remover
+                {t("Remove")}
               </Button>
             </div>
           </div>
@@ -239,7 +241,7 @@ function UploadFile({
 
         {formatInfo && (
           <div className="bg-blue-50 p-4 rounded border border-blue-200">
-            <p className="font-semibold mb-2">Formato esperado:</p>
+            <p className="font-semibold mb-2">{t("Expected format:")}</p>
             <ul className="list-disc list-inside space-y-1 text-sm">
               {formatInfo.map((info, idx) => (
                 <li key={idx}>{info}</li>

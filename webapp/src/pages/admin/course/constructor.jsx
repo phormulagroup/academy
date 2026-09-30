@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -102,6 +103,7 @@ function SortableTopic({
   overId,
 }) {
   const { setNodeRef, attributes, listeners } = useSortable({ id: item.id });
+  const { t } = useTranslation();
 
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(item.title);
@@ -142,7 +144,7 @@ function SortableTopic({
           <Grip
             attributes={editing ? {} : attributes}
             listeners={editing ? {} : listeners}
-            title="Arrastar topic/test"
+            title={t("Drag topic/test")}
             style={{
               cursor: isBeingDragged ? "grabbing" : "grab",
             }}
@@ -197,10 +199,12 @@ function SortableTopic({
                   disabled={!item.id || item.id.split("-")[0].startsWith("new")}
                   title={
                     !item.id
-                      ? "Item inválido"
+                      ? t("Invalid item")
                       : item.id.split("-")[0].startsWith("new")
-                        ? `Salve o ${item.type === "test" ? "teste" : "tópico"} primeiro para editar este item`
-                        : "Editar item"
+                        ? item.type === "test"
+                          ? t("Save the test first to edit this item")
+                          : t("Save the topic first to edit this item")
+                        : t("Edit item")
                   }
                   onClick={() =>
                     navigate(
@@ -275,6 +279,7 @@ function SortableModule({
   overId,
 }) {
   const { setNodeRef, attributes, listeners } = useSortable({ id: module.id });
+  const { t } = useTranslation();
 
   const [editing, setEditing] = useState(false);
   const isDropTarget = overId === module.id;
@@ -288,7 +293,7 @@ function SortableModule({
             <Grip
               attributes={attributes}
               listeners={listeners}
-              title="Arrastar módulo"
+              title={t("Drag module")}
             />
 
             {editing ? (
@@ -309,7 +314,7 @@ function SortableModule({
               <span
                 className="cursor-text font-medium"
                 onClick={() => setEditing(true)}
-                title="Editar título do módulo">
+                title={t("Edit module title")}>
                 {module.title}
               </span>
             )}
@@ -329,9 +334,9 @@ function SortableModule({
             </Space>
 
             <Popconfirm
-              title="Apagar módulo?"
-              okText="Sim"
-              cancelText="Não"
+              title={t("Delete module?")}
+              okText={t("Yes")}
+              cancelText={t("No")}
               onConfirm={() => onDeleteModule(module.id)}>
               <Button danger icon={<AiOutlineDelete />} />
             </Popconfirm>
@@ -349,9 +354,9 @@ function SortableModule({
         bodyStyle={{ paddingTop: 12 }}>
         <Space>
           <Button type="primary" onClick={() => onAddTopic(module.id)}>
-            + Tópico
+            + {t("Topic")}
           </Button>
-          <Button onClick={() => onAddTest(module.id)}>+ Teste</Button>
+          <Button onClick={() => onAddTest(module.id)}>+ {t("Test")}</Button>
         </Space>
 
         <div className="mt-3">{children}</div>
@@ -651,10 +656,10 @@ export default function Constructor({ course }) {
       setHistory([]);
       setFuture([]);
 
-      message.success("Estado guardado!");
+      message.success(t("State saved!"));
     } catch (err) {
       console.log(err);
-      message.error("Falha ao guardar.");
+      message.error(t("Failed to save."));
     } finally {
       setIsSaving(false);
     }
@@ -802,7 +807,7 @@ export default function Constructor({ course }) {
     pushHistory(modules);
     setModules((p) => [
       ...p,
-      { id: makeId("newmod-"), title: "Novo módulo", items: [] },
+      { id: makeId("newmod-"), title: t("New module"), items: [] },
     ]);
   }
 
@@ -815,7 +820,7 @@ export default function Constructor({ course }) {
               ...m,
               items: [
                 ...m.items,
-                { id: makeId("newtopic-"), title: "Novo topic", type: "topic" },
+                { id: makeId("newtopic-"), title: t("New topic"), type: "topic" },
               ],
             }
           : m,
@@ -832,7 +837,7 @@ export default function Constructor({ course }) {
               ...m,
               items: [
                 ...m.items,
-                { id: makeId("newtest-"), title: "Novo test", type: "test" },
+                { id: makeId("newtest-"), title: t("New test"), type: "test" },
               ],
             }
           : m,
@@ -1156,17 +1161,17 @@ export default function Constructor({ course }) {
       <Space wrap>
         <Button onClick={addModule}>+ {t("New module")}</Button>
         <Button onClick={undo} disabled={!history.length || isSaving}>
-          Undo
+          {t("Undo")}
         </Button>
         <Button onClick={redo} disabled={!future.length || isSaving}>
-          Redo
+          {t("Redo")}
         </Button>
         <Button
           type="primary"
           onClick={save}
           disabled={!isUnsaved || isSaving}
           loading={isSaving}>
-          Guardar
+          {t("Save")}
         </Button>
       </Space>
 
@@ -1229,7 +1234,7 @@ export default function Constructor({ course }) {
                         }>
                         {!mod.items || mod.items.length === 0 ? (
                           <div className="text-gray-400 text-sm p-3 border border-dashed rounded bg-gray-50">
-                            Solta tópicos/testes aqui
+                            {t("Drop topics/tests here")}
                           </div>
                         ) : (
                           mod.items.map((item, itemIndex) => {

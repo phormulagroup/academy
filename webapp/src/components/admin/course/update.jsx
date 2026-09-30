@@ -87,17 +87,17 @@ export default function Update({ data, open, close, products, nameRule, internal
           <Select
             size="large"
             className="w-full"
-            placeholder="Selecione..."
+            placeholder={t("Select...")}
             showSearch={{
               optionFilterProp: ["label"],
             }}
             options={[
               {
-                label: "Draft",
+                label: t("Draft"),
                 value: "draft",
               },
               {
-                label: "Published",
+                label: t("Published"),
                 value: "published",
               },
             ]}
@@ -111,7 +111,7 @@ export default function Update({ data, open, close, products, nameRule, internal
           <Select
             size="large"
             className="w-full"
-            placeholder="Selecione..."
+            placeholder={t("Select...")}
             showSearch={{
               optionFilterProp: ["label"],
             }}

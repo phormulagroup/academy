@@ -57,40 +57,54 @@ export default function Create({ open, close }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Adicionar utilizador"
+      title={t("Add user")}
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          Adicionar
+          {t("Add")}
         </Button>,
       ]}>
       <Form form={form} onFinish={submit} layout="vertical">
-        <Form.Item
-          name="email"
-          label="E-mail"
-          {...emailFieldProps}
-          rules={[
-            requiredRule,
-            emailRule,
-            uniqueRule(
-              users,
-              t("This e-mail is already associated with another account"),
-              { field: "email" },
-            ),
-          ]}>
-          <Input
-            type="email"
-            placeholder="nome@phormulagroup.com"
-            size="large"
-          />
-        </Form.Item>
+        {/* Mesma ordem do registo: nome, e-mail, data de nascimento, país, formação, início na Bial */}
         <div className="grid grid-cols-2 gap-x-4">
-          <Form.Item name="name" label="Nome" rules={[requiredRule]}>
+          <Form.Item name="name" label={t("Name")} rules={[requiredRule]}>
             <Input placeholder="John Doe" size="large" />
           </Form.Item>
-          <Form.Item name="country" label="País" rules={[requiredSelectRule]}>
+          <Form.Item
+            name="email"
+            label={t("E-mail")}
+            {...emailFieldProps}
+            rules={[
+              requiredRule,
+              emailRule,
+              uniqueRule(
+                users,
+                t("This e-mail is already associated with another account"),
+                { field: "email" },
+              ),
+            ]}>
+            <Input
+              type="email"
+              placeholder="nome@phormulagroup.com"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            label={t("Birth date")}
+            name="birth_date"
+            rules={[requiredDateRule]}
+            getValueProps={(value) => ({
+              value: value && dayjs(value),
+            })}>
+            <DatePicker
+              size="large"
+              placeholder={t("Select birth date")}
+              className="w-full"
+            />
+          </Form.Item>
+          <Form.Item name="country" label={t("Country")} rules={[requiredSelectRule]}>
             <Select
               size="large"
-              placeholder="País..."
+              placeholder={t("Country...")}
               allowClear
               options={languages
                 .filter((lang) => lang.id === selectedLanguage.id)
@@ -139,23 +153,10 @@ export default function Create({ open, close }) {
               className="w-full"
             />
           </Form.Item>
-          <Form.Item
-            label={t("Birth date")}
-            name="birth_date"
-            rules={[requiredDateRule]}
-            getValueProps={(value) => ({
-              value: value && dayjs(value),
-            })}>
-            <DatePicker
-              size="large"
-              placeholder={t("Select birth date")}
-              className="w-full"
-            />
-          </Form.Item>
-          <Form.Item name="id_role" label="Role" rules={[requiredSelectRule]}>
+          <Form.Item name="id_role" label={t("Role")} rules={[requiredSelectRule]}>
             <Select
               size="large"
-              placeholder="Role..."
+              placeholder={t("Role...")}
               allowClear
               options={roles.map((item) => ({
                 label: item.name,

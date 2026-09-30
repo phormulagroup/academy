@@ -67,7 +67,7 @@ export default function FormSubmission() {
               menu={{
                 items: [
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),

@@ -158,7 +158,7 @@ export default function Certificate() {
             className="mr-2"
           />
           <Button size="large" onClick={() => setIsOpenCreate(true)}>
-            Adicionar
+            {t("Add")}
           </Button>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function Certificate() {
         pagination={{ pageSize: 10 }}
         columns={[
           {
-            title: "Nome",
+            title: t("Name"),
             dataIndex: "name",
             key: "name",
             sort: true,

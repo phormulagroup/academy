@@ -119,7 +119,7 @@ export default function TemplateDetails() {
 				console.log(err);
 				messageApi.open({
 					type: "error",
-					content: t("Something went wrong, try again later!"),
+					content: t("Something went wrong, try again later."),
 				});
 				setIsButtonLoading(false);
 			});
@@ -156,7 +156,7 @@ export default function TemplateDetails() {
 						size="large"
 						onClick={exportHtml}
 					>
-						Export HTML
+						{t("Export HTML")}
 					</Button>
 					<Button
 						loading={isButtonLoading}
@@ -164,7 +164,7 @@ export default function TemplateDetails() {
 						size="large"
 						onClick={submit}
 					>
-						Guardar
+						{t("Save")}
 					</Button>
 				</div>
 			</div>

@@ -4,6 +4,7 @@ import { AiOutlineLoading } from "react-icons/ai";
 import axios from "axios";
 import { Context } from "../../../../utils/context";
 import endpoints from "../../../../utils/endpoints";
+import { useTranslation } from "react-i18next";
 
 function ImportProcess({
   step,
@@ -14,6 +15,7 @@ function ImportProcess({
   close,
 }) {
   const { getLanguages } = useContext(Context);
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
 
@@ -31,7 +33,7 @@ function ImportProcess({
         );
 
         if (!targetLanguage) {
-          message.warning(`Idioma ${langCode} não encontrado, a saltar...`);
+          message.warning(`${t("Language")} ${langCode} ${t("not found, skipping...")}`);
           continue;
         }
 
@@ -106,7 +108,7 @@ function ImportProcess({
       }, 3500);
     } catch (err) {
       console.error("Erro ao importar traduções:", err);
-      message.error("Erro ao importar traduções. Por favor, tente novamente.");
+      message.error(t("Error importing translations. Please try again."));
       setIsLoading(false);
     }
   };
@@ -115,39 +117,39 @@ function ImportProcess({
     <Spin
       spinning={isLoading}
       indicator={<AiOutlineLoading spin />}
-      tip="Importando traduções..."
+      tip={t("Importing translations...")}
     >
       <div>
         {importSuccess ? (
           <Result
             status="success"
-            title="Traduções Importadas com Sucesso!"
-            subTitle={`${selectedLanguages.length} idioma(s) atualizado(s) com ${uploadedData?.length || 0} traduções`}
+            title={t("Translations Imported Successfully!")}
+            subTitle={`${selectedLanguages.length} ${t("language(s) updated with")} ${uploadedData?.length || 0} ${t("translations")}`}
             extra={
               <Button type="primary" onClick={() => close(true)}>
-                Fechar
+                {t("Close")}
               </Button>
             }
           />
         ) : (
           <div>
             <p className="text-[26px] font-bold text-center mb-0">
-              Confirmar Importação
+              {t("Confirm Import")}
             </p>
             <p className="text-center mt-2 mb-6">
-              Está pronto para importar as traduções?
+              {t("Are you ready to import the translations?")}
             </p>
 
             {/* Summary */}
             <div className="bg-blue-50 p-4 rounded border border-blue-200 mb-6">
-              <p className="font-semibold mb-2">Resumo da Importação:</p>
+              <p className="font-semibold mb-2">{t("Import Summary:")}</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
-                  Registos a importar:{" "}
+                  {t("Records to import:")}{" "}
                   <strong>{uploadedData?.length || 0}</strong>
                 </li>
                 <li>
-                  Idiomas a atualizar:{" "}
+                  {t("Languages to update:")}{" "}
                   <strong>
                     {selectedLanguages
                       .map(
@@ -163,9 +165,9 @@ function ImportProcess({
 
             {/* Action Buttons */}
             <div className="flex justify-center items-center mt-6 gap-2">
-              <Button onClick={prev}>Anterior</Button>
+              <Button onClick={prev}>{t("Previous")}</Button>
               <Button type="primary" onClick={handleImport} size="large">
-                Importar Traduções
+                {t("Import Translations")}
               </Button>
             </div>
           </div>

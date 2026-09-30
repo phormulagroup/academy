@@ -6,12 +6,43 @@ import { Context } from "../utils/context";
 
 export default function LanguageWrapper() {
 	const { lang } = useParams();
-	const { languages, user } = useContext(Context);
+	const { languages, user, selectedLanguage, setSelectedLanguage } =
+		useContext(Context);
 	const location = useLocation();
 
 	// 1) valida o idioma do URL
 	const isSupported =
 		!!lang && languages.filter((l) => l.code === lang).length > 0;
+
+	// Mantém o i18n, o idioma do header (selectedLanguage) e o id_lang guardado iguais ao idioma indicado,
+	// também quando o idioma muda à mão no URL (ex.: /pt → /fr) e não pelo seletor
+	function syncLanguage(code) {
+		const language = languages.find((l) => l.code === code);
+		if (!language) return;
+		if (i18n.language !== code) i18n.changeLanguage(code);
+		if (selectedLanguage?.id !== language.id) setSelectedLanguage(language);
+		if (localStorage.getItem("id_lang") !== String(language.id))
+			localStorage.setItem("id_lang", language.id);
+	}
+
+	// 3) sincronizar com o :lang do URL (antes de qualquer return: regra dos hooks)
+	useEffect(() => {
+		if (!isSupported) return;
+
+		// Aluno: o idioma é sempre o do seu registo
+		if (user && Object.keys(user).length > 0 && user.id_role !== 1) {
+			const userLang =
+				languages.filter((l) => l.id === user.id_lang)[0]?.code || "en";
+			if (lang !== userLang) {
+				const to = `/${userLang}/${location.pathname.split("/").slice(2).join("/")}${location.search}${location.hash}`;
+				syncLanguage(userLang);
+				window.history.replaceState(null, "", to); // muda o URL sem recarregar
+				return;
+			}
+		}
+
+		syncLanguage(lang);
+	}, [lang, user, languages, isSupported]);
 
 	// 2) se não for suportado, redireciona preservando o resto do caminho
 	if (!isSupported) {
@@ -29,23 +60,6 @@ export default function LanguageWrapper() {
 		const to = `/${fallback}${rest ? `/${rest}` : ""}${location.search}${location.hash}`;
 		return <Navigate to={to} replace />;
 	}
-
-	// 3) sincronizar i18next com o :lang do URL
-	useEffect(() => {
-		if (lang && i18n.language !== lang) {
-			i18n.changeLanguage(lang);
-		}
-
-		if (user && Object.keys(user).length > 0) {
-			const userLang =
-				languages.filter((l) => l.id === user.id_lang)[0]?.code || "en";
-			if (lang !== userLang && user.id_role !== 1) {
-				const to = `/${userLang}/${location.pathname.split("/").slice(2).join("/")}${location.search}${location.hash}`;
-				i18n.changeLanguage(userLang);
-				window.history.replaceState(null, "", to); // muda o URL sem recarregar
-			}
-		}
-	}, [lang, user]);
 
 	// 4) ***ESSENCIAL: renderizar as rotas-filhas***
 	return <Outlet />;

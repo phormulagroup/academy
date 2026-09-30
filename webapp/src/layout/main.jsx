@@ -1,6 +1,6 @@
 import React, { useContext, useMemo, useState } from "react";
 import { LogoutOutlined, MenuOutlined } from "@ant-design/icons";
-import { Avatar, Divider, Drawer, Dropdown, Layout } from "antd";
+import { Button, Avatar, Divider, Drawer, Dropdown, Layout } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/BIAL-Regional-Academy.png";
 
@@ -140,7 +140,7 @@ const Main = () => {
                             }}
                           />
                           <p className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[16px] ml-2 text-[#FFFFFF] font-medium drawer-label-text">
-                            Login
+                            {t("Login")}
                           </p>
                         </Link>
                       </div>
@@ -314,7 +314,9 @@ const Main = () => {
                           {t(item.label)}
                         </Link>
                       )
-                    : !item.loggedIn && (
+                    : // Visitantes: no centro só About e FAQs (Login e Register ficam à direita)
+                      !item.loggedIn &&
+                      !item.hideOnLoggedIn && (
                         <Link
                           key={item.path}
                           className={`nav-link ${isActiveItem(item) ? "active" : ""}`}
@@ -334,6 +336,20 @@ const Main = () => {
                     onSelect={(item) => changeLanguage(item.code)}
                     className="mr-4"
                   />
+                )}
+
+                {/* Visitantes: Login e Register ao lado do seletor de idioma */}
+                {!isLoggedIn && (
+                  <div className="flex items-center gap-2">
+                    <Link to={`/${i18n.language}/login`}>
+                      <Button className="main-secondary-cta-button">{t("Login")}</Button>
+                    </Link>
+                    <Link to={`/${i18n.language}/register`}>
+                      <Button type="primary" className="main-cta-button">
+                        {t("Register")}
+                      </Button>
+                    </Link>
+                  </div>
                 )}
 
                 {user && Object.keys(user).length > 0 && (
@@ -495,7 +511,8 @@ const Main = () => {
             </div>
           )}
         </Header>
-        <Content className="bg-white min-h-[unset]!">
+        {/* Coluna flex: permite às páginas ocuparem a altura disponível (ex.: About centrada no eixo Y) */}
+        <Content className="bg-white min-h-[unset]! flex flex-col">
           <Outlet />
         </Content>
         <Footer

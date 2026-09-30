@@ -104,14 +104,14 @@ export default function Update({ data, open, close, nameRule }) {
 				<Form.Item name="id" hidden>
 					<Input />
 				</Form.Item>
-				<Form.Item name="name" {...errors.labelErrorProps("name", name, "Nome")} rules={[requiredRule, nameRule(data?.id)]}>
-					<Input size="large" placeholder="Nome do download" />
+				<Form.Item name="name" {...errors.labelErrorProps("name", name, t("Name"))} rules={[requiredRule, nameRule(data?.id)]}>
+					<Input size="large" placeholder={t("Download name")} />
 				</Form.Item>
 				<Form.Item name="country" label={t("Country")}>
 					<Select
 						mode="multiple"
 						size="large"
-						placeholder="País..."
+						placeholder={t("Country...")}
 						allowClear
 						options={languages
 							.filter((lang) => lang.id === selectedLanguage.id)
@@ -146,10 +146,10 @@ export default function Update({ data, open, close, nameRule }) {
 									<Form.Item
 										name={[field.name, "name"]}
 										className="w-full"
-										{...errors.labelErrorProps(["items", field.name, "name"], items?.[field.name]?.name, "Name")}
+										{...errors.labelErrorProps(["items", field.name, "name"], items?.[field.name]?.name, t("Name"))}
 										rules={[requiredRule]}
 									>
-										<Input size="large" placeholder="Name" />
+										<Input size="large" placeholder={t("Name")} />
 									</Form.Item>
 									<Form.Item
 										noStyle

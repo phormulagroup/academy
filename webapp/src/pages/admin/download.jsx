@@ -122,14 +122,14 @@ export default function Download() {
 							menu={{
 								items: [
 									{
-										label: "Update",
+										label: t("Update"),
 										key: `${array[i].id}-udpate`,
 										icon: <FaRegEdit />,
 										onClick: () =>
 											openUpdate({ ...array[i], items: downloadItems }),
 									},
 									{
-										label: "Delete",
+										label: t("Delete"),
 										key: `${array[i].id}-delete`,
 										icon: <FaRegTrashAlt />,
 										onClick: () => openDelete(array[i]),
@@ -214,7 +214,7 @@ export default function Download() {
 						width: "100px",
 					},
 					{
-						title: "Nome",
+						title: t("Name"),
 						dataIndex: "name",
 						key: "name",
 						sort: true,
@@ -223,7 +223,7 @@ export default function Download() {
 						width: "35%",
 					},
 					{
-						title: "File",
+						title: t("File"),
 						dataIndex: "files",
 						key: "files",
 						width: "45%",

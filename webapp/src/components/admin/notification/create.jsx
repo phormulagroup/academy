@@ -41,10 +41,10 @@ export default function Create({ open, close, submit }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Adicionar Notificação"
+      title={t("Add Notification")}
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          Adicionar
+          {t("Add")}
         </Button>,
       ]}>
       <Form form={form} onFinish={submit} layout="vertical">

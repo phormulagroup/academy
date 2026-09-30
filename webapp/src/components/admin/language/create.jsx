@@ -3,11 +3,13 @@ import { Button, Drawer, Form, Input, Select } from "antd";
 import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
+import { useTranslation } from "react-i18next";
 import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Create({ open, close, submit }) {
   const { create, getLanguages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const { t } = useTranslation();
   const [languageOptions, setLanguageOptions] = useState([
     { flag: "https://flagcdn.com/es.svg", name: "Español" },
     { flag: "https://flagcdn.com/pt.svg", name: "Português" },
@@ -43,21 +45,21 @@ export default function Create({ open, close, submit }) {
       size={800}
       onClose={onClose}
       maskClosable={false}
-      title="Adicionar linguagem"
+      title={t("Add language")}
       extra={[
         <Button size="large" loading={isButtonLoading} onClick={form.submit}>
-          Adicionar
+          {t("Add")}
         </Button>,
       ]}>
       <Form form={form} onFinish={submit} layout="vertical">
         <Form.Item name="flag" hidden>
           <Input />
         </Form.Item>
-        <Form.Item name="name" label="Nome" rules={[requiredSelectRule]}>
+        <Form.Item name="name" label={t("Name")} rules={[requiredSelectRule]}>
           <Select
             size="large"
             className="w-full"
-            placeholder="Selecione..."
+            placeholder={t("Select...")}
             onChange={(e) =>
               form.setFieldValue(
                 "flag",
@@ -78,12 +80,12 @@ export default function Create({ open, close, submit }) {
             }))}
           />
         </Form.Item>
-        <Form.Item name="country" label="Países" rules={[requiredSelectRule]}>
+        <Form.Item name="country" label={t("Countries")} rules={[requiredSelectRule]}>
           <Select
             mode="multiple"
             size="large"
             className="w-full"
-            placeholder="Selecione..."
+            placeholder={t("Select...")}
             showSearch={{
               optionFilterProp: ["label"],
             }}

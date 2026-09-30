@@ -67,13 +67,13 @@ export default function Product() {
               menu={{
                 items: [
                   {
-                    label: "Update",
+                    label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
                   {
-                    label: "Delete",
+                    label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
@@ -163,7 +163,7 @@ export default function Product() {
         loading={isLoading}
         columns={[
           {
-            title: "Nome",
+            title: t("Name"),
             dataIndex: "name",
             key: "name",
             sort: true,

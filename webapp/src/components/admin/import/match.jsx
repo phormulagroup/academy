@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Spin, Table, Input, Select, message } from "antd";
 import * as XLSX from "xlsx";
+import { useTranslation } from "react-i18next";
 
 import { AiOutlineInfoCircle, AiOutlineLoading } from "react-icons/ai";
 import { requiredSelectRule } from "../../../utils/formFieldError";
@@ -13,6 +14,7 @@ function MatchColumns({
   dbColumns,
   tableData,
 }) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [form] = Form.useForm();
 
@@ -61,9 +63,9 @@ function MatchColumns({
   return (
     <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
       <Form form={form} onFinish={handleSubmit}>
-        <p className="text-[26px] font-bold text-center mb-0">Match Columns</p>
+        <p className="text-[26px] font-bold text-center mb-0">{t("Match Columns")}</p>
         <p className="text-center mt-2 mb-4">
-          Verifique as colunas se estão associadas a uma coluna da base de dados
+          {t("Check that the columns are associated with a database column")}
         </p>
 
         <Table
@@ -79,13 +81,13 @@ function MatchColumns({
               {fields.map((field) => (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    {field.name === 0 ? <p>Colunas da importação</p> : null}
+                    {field.name === 0 ? <p>{t("Import columns")}</p> : null}
                     <Form.Item name={[field.name, "column"]}>
                       <Input readOnly size="large" />
                     </Form.Item>
                   </div>
                   <div>
-                    {field.name === 0 ? <p>Colunas da base de dados</p> : null}
+                    {field.name === 0 ? <p>{t("Database columns")}</p> : null}
                     <Form.Item
                       noStyle
                       shouldUpdate={(prevValues, currentValues) =>
@@ -102,7 +104,7 @@ function MatchColumns({
                               key={"type"}
                               size="large"
                               style={{ width: "100%" }}
-                              placeholder="Selecione..."
+                              placeholder={t("Select...")}
                               filterOption={(input, option) =>
                                 (option?.value ?? "")
                                   .toLowerCase()
@@ -140,10 +142,10 @@ function MatchColumns({
       </Form>
       <div className="flex justify-center items-center mt-6">
         <Button className="mr-2" onClick={prev}>
-          Anterior
+          {t("Previous")}
         </Button>
         <Button type="primary" onClick={form.submit}>
-          Seguinte
+          {t("Next")}
         </Button>
       </div>
     </Spin>
