@@ -8,6 +8,7 @@ import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 import { useNavigate } from "react-router-dom";
 import UserCard from "../../components/app/user/card";
+import CourseContent from "./course/content";
 import { RxCheck, RxChevronDown, RxChevronUp } from "react-icons/rx";
 import DownloadCloudIcon from "../../assets/download-cloud.svg?react";
 import CertificateIconWhite from "../../assets/Certificado-digital.svg?react";
@@ -157,38 +158,6 @@ export default function Result() {
     }
   }
 
-  function calcProgress(items, progress) {
-    if (items && items.length > 0) {
-      let completed = items
-        .map(
-          (item) =>
-            progress.filter(
-              (p) =>
-                p.is_completed === 1 &&
-                p.is_deleted !== 1 &&
-                p.id_course_module === item.id_course_module &&
-                p.activity_type === item.type &&
-                (item.id === p.id_course_topic || item.id === p.id_course_test),
-            ).length,
-        )
-        .reduce((acc, v) => acc + v, 0);
-
-      let progressPercentage = (100 * completed) / items.length;
-      const isInteger = progressPercentage % 1 === 0;
-      return (
-        <p className="text-white">
-          <span className="font-bold uppercase">
-            {!isInteger
-              ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-              : progressPercentage}
-            % {t("Completed")}
-          </span>{" "}
-          | {completed}/{items.length} {t("Steps")}
-        </p>
-      );
-    }
-    return <p></p>;
-  }
 
   function calcCourseProgress(a, b, c) {
     let progressPercentage = (100 * a) / (b + c);
@@ -211,12 +180,13 @@ export default function Result() {
   }
 
   return (
-    <div className="p-10 bg-[#EAEAEA] min-h-full">
+    <div className="py-4 sm:py-8 lg:py-10 bg-[#EAEAEA] min-h-full">
       <div className="page-frame">
-        <div className="grid grid-cols-4">
+        {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e resultados à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-4">
           <UserCard courses={coursesData} />
-          <div className="bg-[#F7F7F7] col-span-3 p-10">
-            <p className="text-[26px] font-bold text-center mb-6!">
+          <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
+            <p className="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
               {t("Results")}
             </p>
             {coursesData.map((c) => {
@@ -250,16 +220,16 @@ export default function Result() {
                     {
                       key: c.course.id,
                       label: (
-                        <div className="p-2 cursor-pointer flex items-center">
-                          <div className="flex flex-col ml-2 w-full">
-                            <div className="flex mb-4">
-                              <p className={`text-[20px] font-bold`}>
+                        <div className="p-1 sm:p-2 cursor-pointer flex items-center min-w-0">
+                          <div className="flex flex-col sm:ml-2 w-full min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                              <p className="text-[15px] sm:text-[17px] lg:text-[20px] font-bold leading-tight">
                                 {c.course.name}
                               </p>
                               {progressPercent === 100 && (
-                                <div className="flex items-center w-full">
+                                <div className="flex items-center">
                                   <Button
-                                    className="certificate-button  ml-4"
+                                    className="certificate-button sm:ml-2"
                                     onClick={() =>
                                       handleDownloadCertificate(
                                         c.course,
@@ -277,7 +247,7 @@ export default function Result() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex w-full gap-8">
+                            <div className="flex flex-col sm:flex-row w-full gap-2 sm:gap-8">
                               {c.progress.length > 0 && (
                                 <div className="flex items-center">
                                   <p className="text-[12px] text-[#707070] text-nowrap">
@@ -307,114 +277,16 @@ export default function Result() {
                           </div>
                         </div>
                       ),
+                      // Módulos com os mesmos estilos (e o mesmo componente) da aba "Course" do detalhe do curso
                       children: (
-                        <Collapse
-                          className="collapse-course"
-                          size="large"
-                          bordered={false}
-                          items={c.modules?.map((item) => ({
-                            key: item.id,
-                            label: (
-                              <div className="flex flex-col">
-                                <div className="p-2 cursor-pointer flex">
-                                  {c.progress.length > 0 &&
-                                  c.progress.filter(
-                                    (p) =>
-                                      p.id_course === c.course.id &&
-                                      p.activity_type === "module" &&
-                                      p.id_course_module === item.id,
-                                  ).length > 0 ? (
-                                    <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                      <RxCheck className="text-white" />
-                                    </div>
-                                  ) : (
-                                    <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                  )}
-                                  <div className="flex flex-col ml-4">
-                                    <p className={`text-[16px]`}>
-                                      {item.title}
-                                    </p>
-                                    <p className="text-[12px] mt-1">
-                                      {c.allItems.filter(
-                                        (_t) =>
-                                          _t.type === "topic" &&
-                                          _t.id_course_module === item.id,
-                                      ).length > 0
-                                        ? `${c.allItems.filter((_t) => _t.type === "topic" && _t.id_course_module === item.id).length} ${t("topic")} ${c.allItems.length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? " | " : ""}`
-                                        : ""}{" "}
-                                      {` ${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 && c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length > 0 ? `${c.allItems.filter((_t) => _t.type === "test" && _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ),
-                            children: (
-                              <div className="flex flex-col">
-                                {item.description && (
-                                  <div className="p-6">{item.description}</div>
-                                )}
-                                <div className="p-6 bg-[#414141] flex justify-between items-center">
-                                  <p className="text-white">
-                                    {t("Module content")}
-                                  </p>
-                                  <div>
-                                    {calcProgress(item.items, c.progress)}
-                                  </div>
-                                </div>
-                                <div className="p-4">
-                                  {item.items.map((_t, i) => (
-                                    <div
-                                      className={`p-4 pl-6 cursor-pointer flex items-center ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
-                                      {c.progress.length > 0 &&
-                                      c.progress.filter(
-                                        (p) =>
-                                          p.is_completed === 1 &&
-                                          p.id_course === c.course.id &&
-                                          (p.id_course_topic === _t.id ||
-                                            p.id_course_test === _t.id),
-                                      ).length > 0 ? (
-                                        <div
-                                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
-                                          <RxCheck className="text-white" />
-                                        </div>
-                                      ) : (
-                                        <div
-                                          className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                      )}
-                                      <p className="text-sm ml-2">{_t.title}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ),
-                          }))}
-                          expandIconPlacement="end"
-                          expandIcon={(panelProps) => {
-                            return (
-                              <div className="flex justify-center items-center">
-                                <div className="mr-2">
-                                  {panelProps.isActive ? (
-                                    <p className="font-bold text-sm">
-                                      {t("Collapse")}
-                                    </p>
-                                  ) : (
-                                    <p className="font-bold text-sm">
-                                      {t("Expand")}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                                  {panelProps.isActive ? (
-                                    <RxChevronUp className="w-3.75 h-3.75 text-white" />
-                                  ) : (
-                                    <RxChevronDown className="w-3.75 h-3.75 text-white" />
-                                  )}
-                                </div>
-                              </div>
-                            );
+                        <CourseContent
+                          modules={c.modules}
+                          progress={c.progress}
+                          data={{
+                            topics: c.allItems.filter((i) => i.type === "topic"),
+                            tests: c.allItems.filter((i) => i.type === "test"),
                           }}
+                          courseSlug={c.course.slug}
                         />
                       ),
                     },

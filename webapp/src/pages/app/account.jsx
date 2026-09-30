@@ -115,12 +115,13 @@ export default function Account() {
   }
 
   return (
-    <div className="p-10 bg-[#EAEAEA] min-h-full">
+    <div className="py-4 sm:py-8 lg:py-10 bg-[#EAEAEA] min-h-full">
       <div className="page-frame">
-        <div className="grid grid-cols-4">
+        {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e formulário à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-4">
           <UserCard />
-          <div className="bg-[#F7F7F7] col-span-3 p-10">
-            <p className="text-[26px] font-bold text-center mb-6!">
+          <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
+            <p className="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
               {t("My account")}
             </p>
             <Form
@@ -131,7 +132,7 @@ export default function Account() {
               <Form.Item name="id" hidden>
                 <Input />
               </Form.Item>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 <div>
                   <Form.Item
                     name="first_name"
