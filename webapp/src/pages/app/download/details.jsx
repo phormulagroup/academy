@@ -181,7 +181,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="page-frame py-6">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
           <Lottie
@@ -251,7 +251,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
                         <p className="ml-2 break-words">{item.name}</p>
                       </div>
                       <div className="flex shrink-0 gap-2">
-                        <Button
+                        <Button className="main-cta-button"
                           size="large"
                           type="primary"
                           onClick={() => download(item)}>

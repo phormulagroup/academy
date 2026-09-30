@@ -56,7 +56,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="container mx-auto p-6 flex flex-col justify-start items-center mt-10">
+    <div className="page-frame py-6 flex flex-col justify-start items-center mt-10">
       <Helmet>
         <meta charSet="utf-8" />
         <title>{t("Contact")} - Bial Regional Academy</title>

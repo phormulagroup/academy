@@ -68,7 +68,7 @@ export default function Inbox() {
     <div className="p-10 bg-[#EAEAEA] min-h-full">
       <Message open={isOpenDetails} close={closeAction} />
       <Create open={isOpenCreate} close={closeAction} />
-      <div className="container m-auto">
+      <div className="page-frame">
         <div className="bg-[#F7F7F7] flex flex-col justify-center items-center p-10 shadow-lg rounded-[5px]">
           <div className="grid grid-cols-3 w-full mb-2">
             <div></div>

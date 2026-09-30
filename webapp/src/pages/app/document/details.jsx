@@ -76,7 +76,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="page-frame py-6">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
           <Lottie

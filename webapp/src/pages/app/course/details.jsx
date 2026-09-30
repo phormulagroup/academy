@@ -13,7 +13,6 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
-import { getPaddingClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
 
 import i18n from "../../../utils/i18n";
@@ -269,26 +268,6 @@ export default function CourseDetails() {
     );
   }
 
-  function getThumbnailHeight() {
-    const w = windowDimension.width;
-
-    // Interpolação (lerp) para altura dinâmica da thumbnail
-    const lerp = (start, end, minW, maxW, current) => {
-      if (current <= minW) return start;
-      if (current >= maxW) return end;
-      return start + ((current - minW) / (maxW - minW)) * (end - start);
-    };
-
-    // Valores interpolados:
-    // 320px: ~280px | 768px: ~380px | 1024px+: ~500px
-    if (w <= 640) {
-      return Math.round(lerp(280, 320, 320, 640, w)) + "px";
-    } else if (w <= 1024) {
-      return Math.round(lerp(320, 400, 640, 1024, w)) + "px";
-    } else {
-      return Math.round(lerp(400, 500, 1024, 1440, w)) + "px";
-    }
-  }
 
   return (
     <div className="bg-[#FFFFFF] relative">
@@ -312,53 +291,35 @@ export default function CourseDetails() {
       ) : data.course ? (
         <div>
           <div
-            className={`container mx-auto ${getPaddingClasses(windowDimension)}`}>
+            className={`page-frame`}>
             {/* Primeiro Container */}
-            <div className="relative z-10 pt-6 sm:pt-10 mb-8 sm:mb-10">
+            <div className="relative z-10 pt-4 sm:pt-8 lg:pt-10 mb-6 sm:mb-10">
               {/* Grupo 1: Nome do Curso + Thumbnail */}
               <div
-                className={`grid gap-6 sm:gap-8 mb-8 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-3" : "grid-cols-1"}`}>
+                className={`grid gap-4 sm:gap-8 mb-6 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-3" : "grid-cols-1"}`}>
                 {/* Nome do Curso - 30% no desktop */}
                 <div className="flex flex-col justify-center col-span-1">
-                  <p
-                    className="text-[#163986] uppercase text-base sm:text-lg md:text-lg"
-                    style={{
-                      fontSize: windowDimension.width >= 1024 ? "20px" : "",
-                    }}>
+                  <p className="text-[#163986] uppercase text-[13px] sm:text-base md:text-lg lg:text-[20px]">
                     {t("Course")}
                   </p>
-                  <p
-                    className="font-bold text-[#163986] mt-2 line-clamp-3 text-xl sm:text-2xl md:text-2xl"
-                    style={{
-                      lineHeight: "1.2",
-                      fontSize:
-                        windowDimension.width >= 1280
-                          ? "45px"
-                          : windowDimension.width >= 1024
-                            ? "30px"
-                            : windowDimension.width >= 425 &&
-                                windowDimension.width < 640
-                              ? "28px"
-                              : "",
-                    }}>
+                  <p className="font-bold text-[#163986] mt-1 sm:mt-2 line-clamp-3 leading-[1.2] text-[20px] sm:text-[24px] md:text-[26px] lg:text-[32px] xl:text-[42px]">
                     {data.course?.name}
                   </p>
                 </div>
 
                 {/* Thumbnail - 70% no desktop - altura dinâmica */}
-                <div
-                  style={{ height: getThumbnailHeight() }}
-                  className="col-span-2">
+                {/* Banner 12:5 na proporção natural (sem altura fixa nem object-cover, a imagem não é cortada) */}
+                <div className="col-span-2">
                   <img
                     src={`${config.server_ip}/media/${data.course?.img}`}
-                    className="w-full h-full rounded-[5px] object-cover"
+                    className="w-full h-auto rounded-[5px]"
                     alt={data.course?.name}
                   />
                 </div>
               </div>
 
               {/* Grupo 2: Progress Bar */}
-              <div className="bg-[#C5CEE1] p-4 sm:p-6 rounded-[5px]">
+              <div className="bg-[#C5CEE1] p-3 sm:p-5 lg:p-6 rounded-[5px]">
                 <div className="flex flex-col gap-4 sm:gap-6">
                   {/* Flex row para icon + progress content */}
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
@@ -657,7 +618,7 @@ export default function CourseDetails() {
             )}
           </div>
           <div className="flex w-full bg-[#F7F7F7]">
-            <div className="container m-auto">
+            <div className="page-frame">
               <div className="flex flex-col"></div>
             </div>
           </div>

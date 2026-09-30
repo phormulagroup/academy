@@ -106,8 +106,7 @@ const Main = () => {
           close={() => setIsOpenLogout(false)}
           submit={logout}
         />
-        <Header
-          className={`sticky top-0 z-100! shrink-0 bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center max-h-25 h-25! ${windowDimension.width < 550 ? "px-[24px]!" : ""}`}>
+        <Header className="sticky top-0 z-100! shrink-0 bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center px-0! h-16! sm:h-20! lg:h-25! max-h-25">
           <Drawer
             open={isOpenDrawerMenu}
             size={"80%"}
@@ -297,11 +296,11 @@ const Main = () => {
             </div>
           </Drawer>
           {windowDimension.width > 1334 ? (
-            <div className="grid grid-cols-5 w-full container mx-auto pl-6 pr-6">
+            <div className="grid grid-cols-5 page-frame">
               <div
                 onClick={() => navigate(`/${i18n.language}`)}
                 className="cursor-pointer">
-                <img src={logo} className="max-h-15" />
+                <img src={logo} className="max-h-10 sm:max-h-12 lg:max-h-15" />
               </div>
               <div className="col-span-3 flex justify-center items-center">
                 {menuItems.map((item) =>
@@ -472,11 +471,11 @@ const Main = () => {
               </div>
             </div>
           ) : (
-            <div className="flex justify-between items-center w-full container mx-auto">
+            <div className="flex justify-between items-center page-frame">
               <div
                 onClick={() => navigate(`/${i18n.language}`)}
                 className="cursor-pointer">
-                <img src={logo} className="max-h-15" />
+                <img src={logo} className="max-h-10 sm:max-h-12 lg:max-h-15" />
               </div>
               <div className="flex items-center">
                 {((user && Object.keys(user).length === 0) ||
@@ -500,46 +499,44 @@ const Main = () => {
           <Outlet />
         </Content>
         <Footer
-          style={{
-            backgroundColor: "#163986",
-            paddingLeft: windowDimension.width < 550 ? "24px" : undefined,
-            paddingRight: windowDimension.width < 550 ? "24px" : undefined,
-          }}>
-          <div className="container flex flex-col md:flex-row justify-between items-end m-auto gap-8">
+          className="px-0! py-6! md:py-8!"
+          style={{ backgroundColor: "#163986" }}>
+          {/* Mesma moldura (.page-frame) do header e do conteúdo */}
+          <div className="page-frame flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-8">
             <div className="w-full">
-              <div className="mb-8 flex justify-center md:justify-start items-center">
-                <p className="text-white text-[13px] md:text-[14px] lg:text-[15px] mr-4">
+              <div className="mb-5 md:mb-8 flex justify-center md:justify-start items-center">
+                <p className="text-white text-[12px] sm:text-[13px] md:text-[14px] lg:text-[15px] mr-3 md:mr-4">
                   {t("Follow us")}
                 </p>
                 <Link
                   to={"https://www.facebook.com/bial.farmaceutica/"}
                   target="_blank"
-                  className="mr-4">
-                  <FaFacebook className="text-white text-[18px] sm:text-[19px] md:text-[20px] lg:text-[22px]" />
+                  className="mr-3 md:mr-4">
+                  <FaFacebook className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
                 </Link>
                 <Link
                   to={"https://www.linkedin.com/company/bial/home/"}
                   target="_blank"
-                  className="mr-4">
-                  <FaLinkedin className="text-white text-[18px] sm:text-[19px] md:text-[20px] lg:text-[22px]" />
+                  className="mr-3 md:mr-4">
+                  <FaLinkedin className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
                 </Link>
                 <Link
                   to={"https://www.instagram.com/bialpharmaceutical/"}
                   target="_blank"
-                  className="mr-4">
-                  <FaInstagram className="text-white text-[18px] sm:text-[19px] md:text-[20px] lg:text-[22px]" />
+                  className="mr-3 md:mr-4">
+                  <FaInstagram className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
                 </Link>
                 <Link
                   to={
                     "https://www.youtube.com/channel/UCcoeRBF4Ivdm4aCwTDZdYIA"
                   }
                   target="_blank">
-                  <FaYoutube className="text-white text-[18px] sm:text-[19px] md:text-[20px] lg:text-[22px]" />
+                  <FaYoutube className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
                 </Link>
               </div>
-              <div className="flex justify-center md:justify-start items-center gap-4">
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-3 gap-y-1 md:gap-4">
                 <Link to={`/${i18n.language}/contact`}>
-                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
                     {t("Contact Form")}
                   </p>
                 </Link>
@@ -547,7 +544,7 @@ const Main = () => {
                 <Link
                   to={`https://www.bial.com/en/terms-and-conditions`}
                   target="_blank">
-                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
                     {t("Terms and conditions")}
                   </p>
                 </Link>
@@ -555,7 +552,7 @@ const Main = () => {
                 <Link
                   to={"https://www.bial.com/en/privacy-policy"}
                   target="_blank">
-                  <p className="text-white text-[12px] md:text-[12.5px] lg:text-[12.5px] underline text-center md:text-left">
+                  <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
                     {t("Privacy policy")}
                   </p>
                 </Link>
@@ -565,10 +562,10 @@ const Main = () => {
               <Link to={"https://www.bial.com/en"} target="_blank">
                 <img
                   src={bialLogo}
-                  className="max-h-10 invert-[1] brightness-[0] cursor-pointer"
+                  className="max-h-8 sm:max-h-9 md:max-h-10 invert-[1] brightness-[0] cursor-pointer"
                 />
               </Link>
-              <p className="text-white text-[11px] md:text-[12px] lg:text-[12px] mt-6!">
+              <p className="text-white text-[11px] sm:text-[11.5px] md:text-[12px] mt-4! md:mt-6!">
                 © {dayjs().year()} Bial. {t("All rights reserved.")}
               </p>
             </div>

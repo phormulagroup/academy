@@ -29,12 +29,12 @@ export default function UserCard({ courses }) {
       {user.job && <p>{user.job}</p>}
       <Avatar src={avatarImg} className="w-40! h-40! mt-4! mb-4!" />
       <Link to={`/${i18n.language}/account`}>
-        <Button size="large" className={`mb-4 min-w-50 user-card-button-account ${location.pathname.includes("account") ? "selected" : ""}`}>
+        <Button size="large" className={`mb-4 min-w-50 user-card-button ${location.pathname.includes("account") ? "selected" : ""}`}>
           <p className="font-bold text-[16px]">{t("My account")}</p>
         </Button>
       </Link>
       <Link to={`/${i18n.language}/result`}>
-        <Button size="large" className={`min-w-50 user-card-button-result ${location.pathname.includes("result") ? "selected" : ""}`}>
+        <Button size="large" className={`min-w-50 user-card-button ${location.pathname.includes("result") ? "selected" : ""}`}>
           <p className="font-bold text-[16px]">{t("Results")}</p>
         </Button>
       </Link>

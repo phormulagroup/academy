@@ -8,7 +8,7 @@ import endpoints from "../../../utils/endpoints";
 import { Link } from "react-router-dom";
 import i18n from "../../../utils/i18n";
 import config from "../../../utils/config";
-import { getMarginClasses, getPaddingClasses } from "../../../utils/responsive";
+import { getMarginClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
 import Lottie from "lottie-react";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
@@ -72,7 +72,7 @@ export default function Document() {
         />
       </Helmet>
       <div
-        className={`container mx-auto ${getPaddingClasses(windowDimension)} ${getMarginClasses(windowDimension)}`}>
+        className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
           <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Library of Documents")}
@@ -90,25 +90,26 @@ export default function Document() {
             />
           </div>
         ) : data && data.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full">
             {data.map((d) => (
               <Link
                 key={d.id}
                 className="flex flex-col shadow-[0px_3px_6px_#00000029] rounded-[5px] cursor-pointer overflow-hidden hover:shadow-[0px_6px_12px_#00000040] transition-shadow"
                 to={`/${i18n.language}/documents/${d.slug}`}>
                 <div
-                  className="bg-center bg-cover h-[200px] w-full rounded-t-[5px]"
+                  // Thumbnails 800x600 (4:3): mesma proporção, a imagem não é cortada
+                  className="bg-center bg-cover aspect-[4/3] w-full rounded-t-[5px]"
                   style={{
                     backgroundImage: `url(${config.server_ip}/media/${d.img})`,
                     backgroundColor: "rgba(0, 0, 0, 0.05)",
                     backgroundBlendMode: "overlay",
                   }}></div>
-                <div className="p-6 min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
-                  <p className="font-bold text-[13px] sm:text-[15px] lg:text-[18px] text-[#163986] text-center line-clamp-3">
+                <div className="p-3 sm:p-4 lg:p-6 min-h-[72px] sm:min-h-[96px] lg:min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
+                  <p className="font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
                     {d.name}
                   </p>
                 </div>
-                <div className="p-6 flex flex-col gap-2 justify-between items-center flex-1">
+                <div className="p-3 sm:p-4 lg:p-6 flex flex-col gap-2 justify-between items-center flex-1">
                   <Button
                     size={windowDimension.width < 640 ? "middle" : "large"}
                     type="primary"

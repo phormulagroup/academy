@@ -212,7 +212,7 @@ export default function Result() {
 
   return (
     <div className="p-10 bg-[#EAEAEA] min-h-full">
-      <div className="container m-auto">
+      <div className="page-frame">
         <div className="grid grid-cols-4">
           <UserCard courses={coursesData} />
           <div className="bg-[#F7F7F7] col-span-3 p-10">

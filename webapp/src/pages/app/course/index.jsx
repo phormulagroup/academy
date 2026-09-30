@@ -12,7 +12,7 @@ import dayjs from "dayjs";
 import Lottie from "lottie-react";
 
 import config from "../../../utils/config";
-import { getMarginClasses, getPaddingClasses } from "../../../utils/responsive";
+import { getMarginClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
 
 // import { FaAward, FaRegClock } from "react-icons/fa";
@@ -357,7 +357,7 @@ export default function CourseDetails() {
         />
       </Helmet>
       <div
-        className={`container mx-auto ${getPaddingClasses(windowDimension)} ${getMarginClasses(windowDimension)}`}>
+        className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
           <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Online Courses")} - Bial Academy
@@ -397,7 +397,8 @@ export default function CourseDetails() {
                 <div
                   className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden`}>
                   <div
-                    className={`${viewType === "grid" ? "h-48 sm:h-60 lg:h-75 rounded-tl-[5px] rounded-tr-[5px]" : viewType === "list" && windowDimension.width > 640 ? "h-40 sm:h-full sm:w-40 lg:w-50 rounded-bl-[5px] rounded-tl-[5px]" : "h-48 sm:h-60 lg:h-75 rounded-tl-[5px] rounded-tr-[5px]"} bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
+                    // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
+                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-40 lg:w-50 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
                     style={{
                       backgroundImage: item.course?.thumbnail
                         ? `url(${config.server_ip}/media/${item.course?.thumbnail})`
@@ -408,16 +409,8 @@ export default function CourseDetails() {
                       backgroundBlendMode: "overlay",
                     }}>
                     {(viewType === "grid" || windowDimension.width <= 640) && (
-                      <div className="p-[6px_12px] sm:p-[8px_16px] lg:p-[8px_20px] bg-white border border-[#163986] rounded-[40px] max-w-full">
-                        <p
-                          className={`font-bold text-[#163986] truncate ${viewType === "list" ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px] lg:text-[18px]"}`}
-                          style={{
-                            fontSize:
-                              viewType === "grid" &&
-                              windowDimension.width > 1200
-                                ? "18px"
-                                : "inherit",
-                          }}>
+                      <div className="p-[4px_10px] sm:p-[6px_14px] lg:p-[6px_16px] bg-white border border-[#163986] rounded-[40px] max-w-full">
+                        <p className="font-bold text-[#163986] truncate text-[12px] sm:text-[13px] lg:text-[15px] xl:text-[16px]">
                           {item.course?.name}
                         </p>
                       </div>
@@ -439,7 +432,7 @@ export default function CourseDetails() {
                         {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
                             <div className="p-[6px_12px] sm:p-[8px_16px] bg-white border border-[#163986] rounded-[40px] inline-block max-w-full">
-                              <p className="font-bold text-[#163986] text-[13px] sm:text-[15px] lg:text-[18px] truncate">
+                              <p className="font-bold text-[#163986] text-[12px] sm:text-[13px] lg:text-[15px] xl:text-[16px] truncate">
                                 {item.course?.name}
                               </p>
                             </div>
@@ -531,6 +524,8 @@ export default function CourseDetails() {
                                 showInfo={false}
                                 strokeColor="#2F8351"
                                 railColor="#FFFFFF"
+                                // Em lista a barra ocupa metade da largura
+                                className={viewType === "list" && windowDimension.width > 640 ? "w-1/2!" : ""}
                               />
                             </>
                           ) : (
@@ -564,6 +559,7 @@ export default function CourseDetails() {
                                     showInfo={false}
                                     strokeColor="#2F8351"
                                     railColor="#FFFFFF"
+                                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-1/2! mx-auto!" : ""}`}
                                   />
                                 </>
                               ) : (

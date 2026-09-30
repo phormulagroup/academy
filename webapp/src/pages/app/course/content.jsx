@@ -78,7 +78,7 @@ export default function CourseContent({ modules, progress, data }) {
       const isInteger = progressPercentage % 1 === 0;
 
       return (
-        <p className="text-[#FFFFFF] text-[14px] sm:text-[16px] md:text-[16px] lg:text-[18px]">
+        <p className="text-[#FFFFFF] text-[12px] sm:text-[13px] md:text-[15px] lg:text-[17px]">
           <span className="font-bold uppercase">
             {!isInteger
               ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
@@ -120,10 +120,10 @@ export default function CourseContent({ modules, progress, data }) {
                     )}
                     <div className="flex flex-col ml-4 max-w-full flex-1 min-w-0 overflow-hidden">
                       <p
-                        className={`text-[#163986] font-bold text-[16px] sm:text-[16px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
+                        className={`text-[#163986] font-bold text-[14px] sm:text-[15px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
-                      <p className="mt-1 text-[#163986] text-[13px] lg:text-[14px] line-clamp-2">
+                      <p className="mt-1 text-[#163986] text-[12px] sm:text-[13px] lg:text-[14px] line-clamp-2">
                         {data?.topics &&
                         data.topics.filter(
                           (_t) => _t.id_course_module === item.id,
@@ -138,55 +138,41 @@ export default function CourseContent({ modules, progress, data }) {
               ),
               children: (
                 <div className="flex flex-col">
-                  {/* Mobile: 0-729px - Module Content with responsive icon and label - CENTERED */}
-                  {windowDimension.width <= 767 && (
-                    <div className="p-4 sm:p-6 bg-[#FF9E83] flex flex-col justify-center items-center">
-                      <div className="flex items-center gap-3 justify-center">
+                  {/* Mobile (< 768px): "Module content" e o progresso num só bloco compacto */}
+                  {windowDimension.width < 768 && (
+                    <div className="p-3 sm:p-4 bg-[#FF9E83] flex flex-col justify-center items-center gap-1">
+                      <div className="flex items-center gap-2 justify-center">
                         {windowDimension.width >= 600 && (
                           <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 sm:w-6 sm:h-6" />
                         )}
-                        <p
-                          className="text-[#FFFFFF] font-bold"
-                          style={{
-                            fontSize:
-                              windowDimension.width >= 425 &&
-                              windowDimension.width < 768
-                                ? "16px"
-                                : "14px",
-                          }}>
+                        <p className="text-[#FFFFFF] font-bold text-[13px] sm:text-[15px]">
                           {t("Module content")}
                         </p>
+                      </div>
+                      <div className="text-center text-white font-bold">
+                        {calcProgress(item.items)}
                       </div>
                     </div>
                   )}
 
-                  {/* Desktop: 768px+ - Icon + Label + Progress in flex row */}
+                  {/* Desktop (768px+): ícone + label + progresso na mesma linha */}
                   {windowDimension.width >= 768 && (
-                    <div className="hidden md:flex md:p-6 bg-[#FF9E83] justify-between items-center">
+                    <div className="flex p-4 lg:p-5 bg-[#FF9E83] justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                        <PiFileTextLight className="text-[#FFFFFF] w-6 h-6 lg:w-8 lg:h-8" />
-                        <p className="text-[#FFFFFF] font-bold text-[16px] lg:text-[18px]">
+                        <PiFileTextLight className="text-[#FFFFFF] w-6 h-6 lg:w-7 lg:h-7" />
+                        <p className="text-[#FFFFFF] font-bold text-[15px] lg:text-[17px]">
                           {t("Module content")}
                         </p>
                       </div>
                       <div>{calcProgress(item.items)}</div>
                     </div>
                   )}
-
-                  {/* Mobile progress bar */}
-                  {windowDimension.width < 768 && (
-                    <div className="p-4 sm:p-6 bg-[#FF9E83] flex justify-center items-center">
-                      <div className="text-center text-white font-bold text-sm sm:text-base">
-                        {calcProgress(item.items)}
-                      </div>
-                    </div>
-                  )}
-                  <div className="p-4">
+                  <div className="p-2 sm:p-4">
                     {item.items && item.items.length > 0 ? (
                       item.items.map((_t, i) => (
                         <div
                           onClick={() => handleNavigate(_t.id, _t.type)}
-                          className={`group p-4 pl-6 flex items-center gap-3 sm:gap-4 text-[14px] lg:text-[16px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
+                          className={`group p-3 pl-4 sm:p-4 sm:pl-6 flex items-center gap-3 sm:gap-4 text-[13px] sm:text-[14px] lg:text-[16px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
                           {/* Circle check indicator */}
                           {progress.length > 0 &&
                           progress.filter(

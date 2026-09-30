@@ -6,7 +6,7 @@ import { Context } from "../../../utils/context";
 import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Create({ open, close, submit }) {
-  const { create } = useContext(Context);
+  const { create, getLanguages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [languageOptions, setLanguageOptions] = useState([
     { flag: "https://flagcdn.com/es.svg", name: "Español" },
@@ -26,6 +26,8 @@ export default function Create({ open, close, submit }) {
     setIsButtonLoading(true);
     try {
       await create({ data: values, table: "language" });
+      // Atualiza idiomas/países na app (seletores de país e de idioma)
+      await getLanguages();
       setIsButtonLoading(false);
       close(true);
       form.resetFields();

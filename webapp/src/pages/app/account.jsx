@@ -116,7 +116,7 @@ export default function Account() {
 
   return (
     <div className="p-10 bg-[#EAEAEA] min-h-full">
-      <div className="container m-auto">
+      <div className="page-frame">
         <div className="grid grid-cols-4">
           <UserCard />
           <div className="bg-[#F7F7F7] col-span-3 p-10">
@@ -276,10 +276,10 @@ export default function Account() {
                 </div>
                 <div className="flex justify-end items-end">
                   <Button
-                    className="w-full"
+                    className="w-full main-cta-button"
                     size="large"
-                    variant="solid"
-                    color="blue"
+                   
+                   
                     onClick={form.submit}>
                     {t("Save")}
                   </Button>
