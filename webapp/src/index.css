@@ -724,6 +724,7 @@ select {
   width: 100%;
   padding: 20px;
   border: 1px solid #707070;
+  border-radius: 5px;
   margin-bottom: 10px;
 }
 
@@ -768,7 +769,24 @@ select {
   border-radius: 100% !important;
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  flex-shrink: 0; /* não encolhe ao lado de textos longos */
   margin-right: 8px;
+}
+
+/* Opções do teste: o círculo mantém sempre o tamanho, mesmo com textos longos */
+.test-form-item .ant-checkbox,
+.test-form-item-multiple .ant-checkbox {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.test-form-item .ant-checkbox .ant-checkbox-inner,
+.test-form-item-multiple .ant-checkbox .ant-checkbox-inner {
+  min-width: 20px;
+  min-height: 20px;
 }
 
 .review-test-question.multiple .circle {

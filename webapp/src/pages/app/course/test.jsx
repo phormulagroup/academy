@@ -462,7 +462,7 @@ const Test = ({
                 {!isAvailable ? (
                   <div>{countdownToBeAvailable}</div>
                 ) : !begin ? (
-                  <div className="flex flex-col justify-center items-center border border-[#707070] p-6 rounded-[5px] mt-4">
+                  <div className="flex flex-col justify-center items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
                     <p className="text-[16px]">
                       <b>{t("Approval percentage")}:</b>{" "}
                       {data.settings.passing_score}%
@@ -605,7 +605,7 @@ const Test = ({
                             {!isApproved && canStillRetry && (
                               <Button
                                 size="large"
-                                className="flex-1"
+                                className="flex-1 main-secondary-cta-button"
                                 onClick={() => restartTest()}
                                 icon={<RxReload />}>
                                 {t("Restart test")}
@@ -619,7 +619,7 @@ const Test = ({
                     {/* LISTA DE QUESTÕES */}
                     {result.items?.map((q, i) => (
                       <div
-                        className={`p-6 flex flex-col bg-[#EAEAEA] ${review ? "flex mt-4 w-full" : "hidden"}`}>
+                        className={`p-4 sm:p-6 flex flex-col bg-white rounded-[5px] border-2 border-dashed border-[#00B9D6] ${review ? "flex mt-4 w-full" : "hidden"}`}>
                         <div className="flex justify-between">
                           <p className="mb-4">
                             <b>{i + 1}</b>. {q.title}
@@ -728,22 +728,23 @@ const Test = ({
                   </div>
                 ) : (
                   <Form form={form} onFinish={submit}>
-                    <div className="p-4 bg-black mt-4">
-                      <div className=" flex justify-between items-center">
-                        <p className="text-[20px] text-white">
+                    {/* Tempo limite: mesmo fundo e forma compacta do título do item concluído */}
+                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
                           {t("Limit time")}
                         </p>
-                        <div>
-                          <p className="text-white text-[20px] font-bold">
-                            {countdown}
-                          </p>
-                        </div>
+                        <p className="text-[#163986] font-bold tabular-nums text-[13px] sm:text-[15px] lg:text-[16px]">
+                          {countdown}
+                        </p>
                       </div>
                       <Progress
                         percent={timePercentage}
                         showInfo={false}
+                        size="small"
                         railColor={"#FFF"}
                         strokeColor={"#00B9D6"}
+                        className="mb-0!"
                       />
                     </div>
 

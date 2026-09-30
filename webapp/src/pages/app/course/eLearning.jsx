@@ -1073,12 +1073,24 @@ const Learning = () => {
                       onClick={closeDrawer}
                     />
                   </div>
-                  <div className="flex flex-col w-full p-6 bg-[#163986]">
-                    <p className="text-white">{t("Course")}</p>
-                    <p className="text-[20px] font-bold text-white">
+                  {/* Em mobile o nome do curso serve para voltar à página do curso */}
+                  <button
+                    type="button"
+                    className="group flex flex-col items-start text-left w-full p-6 bg-[#163986] cursor-pointer"
+                    onClick={() => {
+                      closeDrawer();
+                      navigate(`/${i18n.language}/courses/${slug}`);
+                    }}
+                    aria-label={t("Back to course")}>
+                    <span className="flex items-center gap-1 text-white/80 text-[12px] group-hover:text-[#00B9D6] transition-colors">
+                      <RxChevronLeft className="w-3.5 h-3.5" />
+                      {t("Back to course")}
+                    </span>
+                    <span className="text-white text-[13px] mt-1">{t("Course")}</span>
+                    <span className="text-[20px] font-bold text-white group-hover:underline">
                       {data?.course?.name}
-                    </p>
-                  </div>
+                    </span>
+                  </button>
                   <div className="w-full">
                     {modules?.length > 0 && (
                       <Collapse
