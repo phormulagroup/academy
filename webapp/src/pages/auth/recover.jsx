@@ -159,7 +159,7 @@ export default function Recover() {
               htmlType="submit"
               type="primary"
               size="large"
-              className="w-full"
+              className="w-full main-cta-button"
               loading={isButtonLoading}>
               {t("Send code")}
             </Button>
@@ -191,7 +191,7 @@ export default function Recover() {
               htmlType="submit"
               type="primary"
               size="large"
-              className="w-full"
+              className="w-full main-cta-button"
               loading={isButtonLoading}>
               {t("Send code")}
             </Button>
@@ -235,7 +235,7 @@ export default function Recover() {
               htmlType="submit"
               type="primary"
               size="large"
-              className="w-full"
+              className="w-full main-cta-button"
               loading={isButtonLoading}>
               {t("Recover password")}
             </Button>

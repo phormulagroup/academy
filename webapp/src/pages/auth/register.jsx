@@ -280,7 +280,7 @@ export default function Register() {
               htmlType="submit"
               type="primary"
               size="large"
-              className="w-full max-w-87.5"
+              className="w-full max-w-87.5 main-cta-button"
               loading={isButtonLoading}>
               {t("Register")}
             </Button>

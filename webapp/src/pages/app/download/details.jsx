@@ -258,7 +258,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
                           {t("Download")}
                         </Button>
                         {previewUrl(item) && (
-                          <Button size="large" onClick={() => preview(item)}>
+                          <Button size="large" className="main-secondary-cta-button" onClick={() => preview(item)}>
                             {t("Preview")}
                           </Button>
                         )}

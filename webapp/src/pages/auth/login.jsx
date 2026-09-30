@@ -120,7 +120,7 @@ export default function Login() {
           htmlType="submit"
           type="primary"
           size="large"
-          className="w-full"
+          className="w-full main-cta-button"
           loading={isButtonLoading}>
           {t("Login")}
         </Button>
