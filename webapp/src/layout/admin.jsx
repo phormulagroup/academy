@@ -12,6 +12,8 @@ import LanguageSelector from "../utils/languageSelector";
 import Logout from "../components/logout";
 
 import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
+// Logo a cores para fundos claros (drawer do menu em mobile)
+import logoColor from "../assets/BIAL-Regional-Academy.png";
 import DashboardIcon from "../assets/Backoffice/Menu/Dashboard.svg?react";
 import PagesIcon from "../assets/Backoffice/Menu/Paginas.svg?react";
 import ArticlesIcon from "../assets/Backoffice/Menu/Artigos.svg?react";
@@ -135,7 +137,7 @@ const Main = () => {
           },
           {
             key: `/admin/users/${user.id}`,
-            label: t("My Account"),
+            label: t("My account"),
             icon: <AccountIcon />,
           },
         ],
@@ -249,8 +251,19 @@ const Main = () => {
               onClick={() => setIsOpenDrawerMenu(false)}>
               <CloseOutlined className="text-[#0c3c61]" />
             </Button>
+            {/* Logo: regressa à home, como no menu lateral em desktop */}
+            <Link
+              to={`/${i18n.language}`}
+              className="block px-5 pt-5"
+              onClick={() => setIsOpenDrawerMenu(false)}>
+              <img
+                src={logoColor}
+                alt="Bial Academy Logo"
+                className="max-h-12 w-auto"
+              />
+            </Link>
             <div
-              className="flex p-[60px_20px_20px_20px] cursor-pointer"
+              className="flex p-[24px_20px_20px_20px] cursor-pointer"
               onClick={() => handleClickMenu({ key: "/admin/perfil" })}>
               <Avatar className="w-12.5 h-12.5" icon={<FaRegUser />} />
               <div className="flex flex-col">
@@ -354,7 +367,19 @@ const Main = () => {
                   </Dropdown>
                 </div>
               ) : (
-                <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} />
+                <div className="flex items-center">
+                  {/* Em mobile: seletor de idioma e depois o menu */}
+                  <LanguageSelector
+                    languages={languages}
+                    selectedLanguage={selectedLanguage}
+                    onSelect={selectLanguage}
+                    className="mr-4"
+                  />
+                  <MenuOutlined
+                    onClick={() => setIsOpenDrawerMenu(true)}
+                    style={{ color: "#163986" }}
+                  />
+                </div>
               )}
             </div>
           </Header>

@@ -221,7 +221,7 @@ const Main = () => {
                         }`}
                         to={`/${i18n.language}/account`}
                         onClick={() => closeDrawer()}>
-                        {t("My Account")}
+                        {t("My account")}
                       </Link>
                       <Link
                         className={`m-2 text-center text-[16px] ${
@@ -479,7 +479,8 @@ const Main = () => {
                 <img src={logo} className="max-h-15" />
               </div>
               <div className="flex items-center">
-                {user && user.id_role === 1 && (
+                {((user && Object.keys(user).length === 0) ||
+                  user?.id_role === 1) && (
                   <LanguageSelector
                     languages={languages}
                     selectedLanguage={selectedLanguage}

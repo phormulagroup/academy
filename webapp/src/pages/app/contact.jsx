@@ -6,6 +6,13 @@ import { Button, Checkbox, Form, Input, Select } from "antd";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
+import {
+  emailFieldProps,
+  emailRule,
+  requiredCheckboxRule,
+  requiredRule,
+  requiredSelectRule,
+} from "../../utils/formFieldError";
 import i18n from "../../utils/i18n";
 
 import { Helmet } from "react-helmet";
@@ -68,7 +75,7 @@ export default function Contact() {
       </Helmet>
       <div className="flex flex-col mb-10">
         <p className="text-[30px] font-bold text-center text-[#163986]">
-          {t("Contact form")}
+          {t("Contact Form")}
         </p>
         <p className="text-[20px] text-center italic text-[#163986]">
           {t("Talk with us")}
@@ -84,15 +91,12 @@ export default function Contact() {
           form={form}
           onFinish={submit}
           className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-300"
-          layout="vertical"
-          validateMessages={{
-            required: t("This field is required."),
-          }}>
+          layout="vertical">
           <Form.Item
             name="subject"
             label={t("Subject")}
             className="col-span-3 md:col-span-1"
-            rules={[{ required: true }]}
+            rules={[requiredSelectRule]}
             required>
             <Select
               size="large"
@@ -125,18 +129,16 @@ export default function Contact() {
             name="name"
             label={t("Name")}
             className="col-span-3 md:col-span-1"
-            rules={[{ required: true }]}
+            rules={[requiredRule]}
             required>
             <Input size="large" placeholder={t("Your name")} />
           </Form.Item>
           <Form.Item
             name="email"
-            label={t("Email")}
+            label={t("E-mail")}
             className="col-span-3 md:col-span-1"
-            rules={[
-              { required: true },
-              { type: "email", message: t("Please enter a valid email!") },
-            ]}
+            {...emailFieldProps}
+            rules={[requiredRule, emailRule]}
             required>
             <Input size="large" placeholder={t("Your email")} />
           </Form.Item>
@@ -144,7 +146,7 @@ export default function Contact() {
             name="message"
             label={t("Message")}
             className="col-span-1 md:col-span-3"
-            rules={[{ required: true }]}
+            rules={[requiredRule]}
             required>
             <Input.TextArea
               maxLength={200}
@@ -165,18 +167,9 @@ export default function Contact() {
               valuePropName="checked"
               className="mb-0!"
               rules={[
-                {
-                  validator: (_, value) => {
-                    if (value === true) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error(
-                        t("Please check this box if you want to proceed."),
-                      ),
-                    );
-                  },
-                },
+                requiredCheckboxRule(
+                  t("Please check this box if you want to proceed."),
+                ),
               ]}>
               <Checkbox size="large">
                 <p className="text-[#707070] text-[12px]">

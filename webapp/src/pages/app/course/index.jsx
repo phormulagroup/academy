@@ -479,7 +479,7 @@ export default function CourseDetails() {
                                             : "inherit",
                                   }}>
                                   {calcProgress(item.progress, item.modules)}%{" "}
-                                  {t("completed")}
+                                  {t("Completed").toLowerCase()}
                                 </p>
                                 {/* Certificado do Curso */}
                                 <Button
@@ -553,7 +553,7 @@ export default function CourseDetails() {
                                         item.progress,
                                         item.modules,
                                       )}
-                                      % {t("completed")}
+                                      % {t("Completed").toLowerCase()}
                                     </p>
                                   </div>
                                   <Progress
