@@ -61,6 +61,23 @@ const ContextProvider = ({ children }) => {
 		getLanguages();
 	}, []);
 
+	// Idiomas (países e traduções) alterados noutro separador, ex.: backoffice aberto em nova aba:
+	// ao voltar a este separador recarrega-os (no máximo uma vez a cada 30s)
+	useEffect(() => {
+		let lastLoad = Date.now();
+		const onFocus = () => {
+			if (document.visibilityState !== "visible" || Date.now() - lastLoad < 30000) return;
+			lastLoad = Date.now();
+			getLanguages();
+		};
+		window.addEventListener("focus", onFocus);
+		document.addEventListener("visibilitychange", onFocus);
+		return () => {
+			window.removeEventListener("focus", onFocus);
+			document.removeEventListener("visibilitychange", onFocus);
+		};
+	}, []);
+
 	useEffect(() => {
 		getPersonalization(languages);
 	}, [i18n.language]);

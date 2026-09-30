@@ -33,6 +33,7 @@ const Test = ({
   modules,
   updateProgress,
   next,
+  onInProgressChange,
 }) => {
   const { user, messageApi } = useContext(Context);
   const [data, setData] = useState({});
@@ -47,6 +48,13 @@ const Test = ({
   const [timePercentage, setTimePercentage] = useState(100);
   const [result, setResult] = useState([]);
   const [finished, setFinished] = useState(false);
+
+  // Informa o eLearning se o teste está a decorrer (iniciado e não terminado), para bloquear a navegação
+  useEffect(() => {
+    onInProgressChange?.(begin && !finished);
+  }, [begin, finished]);
+
+  useEffect(() => () => onInProgressChange?.(false), []);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [countdownToBeAvailable, setCountdownToBeAvailable] = useState("");
@@ -483,7 +491,7 @@ const Test = ({
                     </p>
                     <Button
                       onClick={startTest}
-                      className="mt-4"
+                      className="mt-4 main-cta-button"
                       type="primary"
                       size="large">
                       {t("Start test")}
@@ -557,7 +565,7 @@ const Test = ({
                                 <> / {data.settings?.retries_allowed}</>
                               ) : null}
                             </p>
-                            <p className="mt-4">Your percentage:</p>
+                            <p className="mt-4">{t("Your percentage")}:</p>
                             <p className="mb-4 text-[24px] font-bold">
                               {percentage.toFixed(2)}%
                             </p>
@@ -830,7 +838,7 @@ const Test = ({
                                 <div></div>
                               )}
                               {currentQuestion < data.question.length - 1 ? (
-                                <Button
+                                <Button className="main-cta-button"
                                   size="large"
                                   type="primary"
                                   onClick={() =>
@@ -841,7 +849,7 @@ const Test = ({
                                   {t("Next question")}
                                 </Button>
                               ) : (
-                                <Button
+                                <Button className="main-cta-button"
                                   size="large"
                                   type="primary"
                                   onClick={form.submit}>

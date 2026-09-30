@@ -1,11 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 import { MenuOutlined } from "@ant-design/icons";
-import { Button, Collapse, Drawer, Layout, Modal, Progress, Tabs } from "antd";
+import { Button, Collapse, Drawer, Layout, Modal, Progress, Tabs, Switch } from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 import endpoints from "../../../utils/endpoints";
 
+import {
+  TbLayoutSidebarLeftCollapse,
+  TbLayoutSidebarLeftExpand,
+} from "react-icons/tb";
 import { Context } from "../../../utils/context";
 
 import Logout from "../../../components/logout";
@@ -37,7 +41,6 @@ import Test from "./test";
 
 import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import CourseMaterial from "./material";
 import CourseObjection from "./objection/objection";
@@ -56,6 +59,8 @@ const Learning = () => {
   const [data, setData] = useState(null);
   const [modules, setModules] = useState(null);
   const [allItems, setAllItems] = useState(null);
+  // Teste a decorrer (iniciado e não terminado): bloqueia a navegação entre itens
+  const [isTestInProgress, setIsTestInProgress] = useState(false);
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
@@ -332,6 +337,26 @@ const Learning = () => {
     }
   }
 
+  // Posição do item na ordem do curso (allItems); topics e tests são tabelas diferentes e podem ter o
+  // mesmo id, por isso compara-se id e tipo
+  function indexInCourse(item) {
+    return (allItems || []).findIndex(
+      (i) => i.id === item?.id && i.type === item?.type,
+    );
+  }
+
+  // Avança para o item seguinte do curso; ao mudar de módulo mostra primeiro a página desse módulo.
+  // Devolve false quando já é o último item.
+  function goToNextItem() {
+    const nextItem = allItems?.[indexInCourse(selectedCourseItem) + 1];
+    if (!nextItem) return false;
+    if (nextItem.id_course_module !== selectedCourseItem.id_course_module) {
+      const nextModule = modules.find((m) => m.id === nextItem.id_course_module);
+      setSelectedCourseItem(nextModule || nextItem);
+    } else setSelectedCourseItem(nextItem);
+    return true;
+  }
+
   function next(changeItem, itemMetaData) {
     let auxData = [];
     const moduleSelectedCourseItem = modules.filter(
@@ -343,7 +368,6 @@ const Learning = () => {
         p.is_completed === 1 &&
         p.is_deleted !== 1,
     );
-    let goToNextModule = false;
     let courseCompleted = false;
     if (findInProgress.length === 0) {
       // contar os itens completados no módulo após adicionar o item atual
@@ -422,7 +446,6 @@ const Learning = () => {
           courseCompleted = true;
         }
 
-        goToNextModule = true;
       } else {
         auxData = [
           {
@@ -453,27 +476,11 @@ const Learning = () => {
           let newProgress = Object.assign([], progress);
           newProgress = [...newProgress, ...auxData];
           if (changeItem === undefined || changeItem !== false) {
-            if (goToNextModule) {
-              const indexOfSelectedItem = modules.findIndex(
-                (m) => m.id === selectedCourseItem.id_course_module,
-              );
-              if (modules[indexOfSelectedItem + 1])
-                setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
-              else {
-                if (courseCompleted)
-                  navigate(`/${i18n.language}/courses/${slug}`, {
-                    replace: true,
-                  });
-              }
-            } else {
-              let indexOfSelectedItem =
-                moduleSelectedCourseItem.items.findIndex(
-                  (m) => m.id === selectedCourseItem.id,
-                );
-              setSelectedCourseItem(
-                moduleSelectedCourseItem.items[indexOfSelectedItem + 1],
-              );
-            }
+            // Último item do curso concluído: volta à página do curso
+            if (!goToNextItem() && courseCompleted)
+              navigate(`/${i18n.language}/courses/${slug}`, {
+                replace: true,
+              });
           }
           setProgress(newProgress);
         })
@@ -481,80 +488,29 @@ const Learning = () => {
           console.log(err);
         });
     } else {
-      // O item já está concluído, apenas navegua para o próximo
-      const completedItemsInModule = progress.filter(
-        (p) =>
-          p.id_course_module === moduleSelectedCourseItem.id &&
-          p.activity_type !== "module" &&
-          p.is_completed === 1 &&
-          p.is_deleted !== 1,
-      ).length;
-
-      const allModuleItemsCompleted =
-        completedItemsInModule === moduleSelectedCourseItem.items.length;
-
-      if (allModuleItemsCompleted) {
-        // Todos os itens já estão concluídos, vai para o próximo módulo
-        const indexOfSelectedItem = modules.findIndex(
-          (m) => m.id === selectedCourseItem.id_course_module,
-        );
-        if (modules[indexOfSelectedItem + 1])
-          setSelectedCourseItem(modules[indexOfSelectedItem + 1]);
-        else console.log("Last module completed");
-      } else {
-        // Nem todos os itens estão concluídos, vai para o próximo item no módulo
-        let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex(
-          (m) => m.id === selectedCourseItem.id,
-        );
-        setSelectedCourseItem(
-          moduleSelectedCourseItem.items[indexOfSelectedItem + 1],
-        );
-      }
+      // O item já está concluído: apenas avança para o item seguinte do curso
+      goToNextItem();
     }
   }
 
+  // Item anterior na ordem do curso; no primeiro item pergunta se quer voltar à página do curso
   function previous() {
-    const moduleSelectedCourseItem = modules.filter(
-      (m) => m.id === selectedCourseItem.id_course_module,
-    )[0];
-    const findIndexModule = modules.findIndex(
-      (m) => m.id === moduleSelectedCourseItem.id,
-    );
-    let indexOfSelectedItem = moduleSelectedCourseItem.items.findIndex(
-      (m) => m.id === selectedCourseItem.id,
-    );
-    if (findIndexModule === 0) {
-      if (indexOfSelectedItem > 0) {
-        setSelectedCourseItem(
-          moduleSelectedCourseItem.items[indexOfSelectedItem - 1],
-        );
-      } else {
-        confirm({
-          title: t("Voltar para a página de curso?"),
-          icon: <RxExclamationTriangle />,
-          content: t("Como se encontra no primeiro"),
-          okText: "Yes",
-          okButtonProps: { background: "blue" },
-          onOk() {
-            navigate(`/${i18n.language}/courses/${slug}`);
-          },
-          onCancel() {
-            console.log("Cancel");
-          },
-        });
-      }
+    const index = indexInCourse(selectedCourseItem);
+    if (index > 0) {
+      setSelectedCourseItem(allItems[index - 1]);
     } else {
-      if (indexOfSelectedItem === 0) {
-        setSelectedCourseItem(
-          modules[findIndexModule - 1].items[
-            modules[findIndexModule - 1].items.length - 1
-          ],
-        );
-      } else {
-        setSelectedCourseItem(
-          moduleSelectedCourseItem.items[indexOfSelectedItem - 1],
-        );
-      }
+      confirm({
+        title: t("Go back to the course page?"),
+        icon: <RxExclamationTriangle />,
+        content: t("You are on the first item of the course."),
+        okText: t("Yes"),
+        cancelText: t("No"),
+        okButtonProps: { className: "main-cta-button" },
+        cancelButtonProps: { className: "main-secondary-cta-button" },
+        onOk() {
+          navigate(`/${i18n.language}/courses/${slug}`);
+        },
+      });
     }
   }
 
@@ -582,6 +538,51 @@ const Learning = () => {
   function updateProgress(newObj) {
     setProgress([...progress, newObj]);
   }
+
+  // Ecrãs compactos: telemóvel ou telemóvel/tablet rodado na horizontal (ecrã tátil)
+  const isLandscapeTouch =
+    windowDimension.width > windowDimension.height &&
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(pointer: coarse)").matches;
+  const compactTabs = windowDimension.width < 768 || isLandscapeTouch;
+
+  const capitalize = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : text);
+
+  // Label das tabs (Topic, Materials, Objection books): em ecrãs compactos só o ícone
+  function tabLabel(key, Icon, text) {
+    const active = activeKey === key;
+    const color = active
+      ? "text-[#163986]"
+      : "text-[#8B9CC3] group-hover:text-[#163986]";
+    return (
+      <div
+        className="group flex items-center justify-center p-1 sm:p-2"
+        title={text}
+        aria-label={text}>
+        <Icon
+          className={`transition w-5 h-5 md:w-6 md:h-6 shrink-0 ${compactTabs ? "" : "mr-2"} ${color}`}
+        />
+        {!compactTabs && (
+          <p className={`font-bold transition text-[14px] lg:text-[16px] xl:text-[17px] ${color}`}>
+            {text}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Largura da coluna do conteúdo: o maior maxWidth dos blocos do tópico (ex.: vídeo de 1000px)
+  const contentMaxWidth = (() => {
+    try {
+      const blocks = JSON.parse(selectedCourseItem?.content || "{}")?.content || [];
+      const widths = blocks
+        .map((b) => Number(b?.props?.maxWidth))
+        .filter((w) => w > 0);
+      return widths.length > 0 ? Math.max(...widths) : 1000;
+    } catch {
+      return 1000;
+    }
+  })();
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -692,7 +693,8 @@ const Learning = () => {
                           size="large"
                           icon={<RxChevronLeft />}
                           className="button-learning-header mr-2"
-                          onClick={() => previous()}>
+                          onClick={() => previous()}
+                          disabled={isTestInProgress}>
                           {windowDimension.width >= 1081 &&
                           windowDimension.width < 1270
                             ? ""
@@ -705,7 +707,9 @@ const Learning = () => {
                       iconPlacement="end"
                       className="button-learning-header"
                       onClick={() => next()}
-                      disabled={!allowNext && user.id_role !== 1}>
+                      disabled={
+                        isTestInProgress || (!allowNext && user.id_role !== 1)
+                      }>
                       {windowDimension.width >= 1081 &&
                       windowDimension.width < 1270
                         ? ""
@@ -887,6 +891,8 @@ const Learning = () => {
           <Sider
             width={windowDimension.width > 1225 ? 400 : 350}
             className="bg-white! overflow-auto learning-sider"
+            // Recolhido fica totalmente escondido (sem faixa branca); abre/fecha no switch da barra inferior
+            collapsedWidth={0}
             collapsed={collapsed}>
             {!collapsed && (
               <div className="flex flex-col h-full">
@@ -1051,27 +1057,6 @@ const Learning = () => {
         ) : null}
         <Layout
           style={{ flex: 1, flexDirection: "column", position: "relative" }}>
-          {windowDimension.width > 1080 && (
-            <Button
-              variant="solid"
-              style={{
-                backgroundColor: "#FFC600",
-                position: "absolute",
-                top: "80px",
-                left: "-24px",
-                zIndex: 50,
-              }}
-              className="h-12! w-12! rounded-full! flex justify-center items-center"
-              onClick={() => setCollapsed(!collapsed)}
-              icon={
-                collapsed ? (
-                  <ArrowRight className="w-6! h-6! text-black!" />
-                ) : (
-                  <ArrowLeft className="w-6! h-6! text-black!" />
-                )
-              }
-            />
-          )}
           <Content style={{ flex: 1, overflow: "hidden" }}>
             <div className="flex-1 flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
               <Drawer
@@ -1263,7 +1248,11 @@ const Learning = () => {
                 </div>
               </Drawer>
               <div className="flex-1 overflow-y-auto">
-                <div className="p-4 md:p-6 lg:p-8 lg:pl-12!">
+                <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+                  {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
+                  <div
+                    className="elearning-column mx-auto w-full"
+                    style={{ maxWidth: contentMaxWidth }}>
                   {progress?.length > 0 &&
                   progress.filter(
                     (p) =>
@@ -1274,63 +1263,18 @@ const Learning = () => {
                       p.is_deleted !== 1,
                   ).length > 0 ? (
                     // Title of the module preview
-                    <div className="p-4 bg-[#C5CEE1] flex justify-between items-center rounded-[5px]">
-                      <p
-                        className="text-[#163986] font-bold"
-                        style={{
-                          fontSize:
-                            windowDimension.width < 425
-                              ? "18px"
-                              : windowDimension.width < 768
-                                ? "19px"
-                                : windowDimension.width < 1024
-                                  ? "20px"
-                                  : windowDimension.width < 1225
-                                    ? "22px"
-                                    : windowDimension.width < 1440
-                                      ? "23px"
-                                      : "24px",
-                        }}>
+                    <div className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}>
+                      <p className="text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
                         {selectedCourseItem?.title}
                       </p>
-                      <div className="p-4 bg-[#2F8351] rounded-[5px]">
-                        <p
-                          className="text-white"
-                          style={{
-                            fontSize:
-                              windowDimension.width < 425
-                                ? "14px"
-                                : windowDimension.width < 768
-                                  ? "14px"
-                                  : windowDimension.width < 1024
-                                    ? "14px"
-                                    : windowDimension.width < 1225
-                                      ? "14px"
-                                      : windowDimension.width < 1440
-                                        ? "15px"
-                                        : "16px",
-                          }}>
+                      <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
+                        <p className="text-white text-[11px] sm:text-[12px] lg:text-[13px]">
                           {t("Completed")}
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <p
-                      className="text-[#163986] font-bold text-center md:text-left"
-                      style={{
-                        fontSize:
-                          windowDimension.width < 425
-                            ? "18px"
-                            : windowDimension.width < 768
-                              ? "19px"
-                              : windowDimension.width < 1024
-                                ? "20px"
-                                : windowDimension.width < 1225
-                                  ? "22px"
-                                  : windowDimension.width < 1440
-                                    ? "23px"
-                                    : "24px",
-                      }}>
+                    <p className={`text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}>
                       {selectedCourseItem?.title}
                     </p>
                   )}
@@ -1342,50 +1286,16 @@ const Learning = () => {
                     <Tabs
                       activeKey={activeKey}
                       onChange={(key) => setActiveKey(key)}
-                      centered={windowDimension.width < 768}
+                      // Telemóvel/tablet na horizontal: tabs na lateral, só com ícones
+                      tabPosition={isLandscapeTouch ? "left" : "top"}
+                      size={compactTabs ? "small" : "middle"}
+                      centered={windowDimension.width < 768 && !isLandscapeTouch}
                       className={`tabs-${selectedCourseItem.type}`}
                       items={[
                         {
                           key: "1",
-                          label: (
-                            <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                              <PiFileTextLight
-                                className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
-                                  activeKey === "1"
-                                    ? "text-[#163986]"
-                                    : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                }`}
-                              />
-                              <p
-                                className={`font-bold mt-2 sm:mt-0 transition ${
-                                  activeKey === "1"
-                                    ? "text-[#163986]"
-                                    : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                }`}
-                                style={{
-                                  fontSize:
-                                    windowDimension.width < 425
-                                      ? "14px"
-                                      : windowDimension.width >= 425 &&
-                                          windowDimension.width <= 767
-                                        ? "15px"
-                                        : windowDimension.width >= 768 &&
-                                            windowDimension.width <= 1023
-                                          ? "16px"
-                                          : windowDimension.width >= 1024 &&
-                                              windowDimension.width <= 1224
-                                            ? "18px"
-                                            : windowDimension.width >= 1225 &&
-                                                windowDimension.width <= 1439
-                                              ? "19px"
-                                              : windowDimension.width >= 1440
-                                                ? "20px"
-                                                : "16px",
-                                }}>
-                                {t("Topic")}
-                              </p>
-                            </div>
-                          ),
+                          // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
+                          label: tabLabel("1", PiFileTextLight, capitalize(t("topic"))),
                           forceRender: true,
                           children:
                             selectedCourseItem.type === "topic" ? (
@@ -1410,95 +1320,20 @@ const Learning = () => {
                                 setMetaData={setMetaData}
                                 updateProgress={updateProgress}
                                 next={next}
+                                onInProgressChange={setIsTestInProgress}
                               />
                             ),
                         },
                         data.course.material &&
                           data.course.material.length > 0 && {
                             key: "2",
-                            label: (
-                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                                <PiBookBookmark
-                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
-                                    activeKey === "2"
-                                      ? "text-[#163986]"
-                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                  }`}
-                                />
-                                <p
-                                  className={`font-bold mt-2 sm:mt-0 transition ${
-                                    activeKey === "2"
-                                      ? "text-[#163986]"
-                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                  }`}
-                                  style={{
-                                    fontSize:
-                                      windowDimension.width < 425
-                                        ? "14px"
-                                        : windowDimension.width >= 425 &&
-                                            windowDimension.width <= 767
-                                          ? "15px"
-                                          : windowDimension.width >= 768 &&
-                                              windowDimension.width <= 1023
-                                            ? "16px"
-                                            : windowDimension.width >= 1024 &&
-                                                windowDimension.width <= 1224
-                                              ? "18px"
-                                              : windowDimension.width >= 1225 &&
-                                                  windowDimension.width <= 1439
-                                                ? "19px"
-                                                : windowDimension.width >= 1440
-                                                  ? "20px"
-                                                  : "16px",
-                                  }}>
-                                  {t("Materials")}
-                                </p>
-                              </div>
-                            ),
+                            label: tabLabel("2", PiBookBookmark, t("Materials")),
                             children: <CourseMaterial data={data.course} />,
                           },
                         data.course.objection?.tabs &&
                           data.course.objection?.tabs.length > 0 && {
                             key: "3",
-                            label: (
-                              <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
-                                <PiBookOpenLight
-                                  className={`transition w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 sm:mr-2 ${
-                                    activeKey === "3"
-                                      ? "text-[#163986]"
-                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                  }`}
-                                />
-                                <p
-                                  className={`font-bold mt-2 sm:mt-0 transition ${
-                                    activeKey === "3"
-                                      ? "text-[#163986]"
-                                      : "text-[#8B9CC3] group-hover:text-[#163986]"
-                                  }`}
-                                  style={{
-                                    fontSize:
-                                      windowDimension.width < 425
-                                        ? "14px"
-                                        : windowDimension.width >= 425 &&
-                                            windowDimension.width <= 767
-                                          ? "15px"
-                                          : windowDimension.width >= 768 &&
-                                              windowDimension.width <= 1023
-                                            ? "16px"
-                                            : windowDimension.width >= 1024 &&
-                                                windowDimension.width <= 1224
-                                              ? "18px"
-                                              : windowDimension.width >= 1225 &&
-                                                  windowDimension.width <= 1439
-                                                ? "19px"
-                                                : windowDimension.width >= 1440
-                                                  ? "20px"
-                                                  : "16px",
-                                  }}>
-                                  {t("Objection books")}
-                                </p>
-                              </div>
-                            ),
+                            label: tabLabel("3", PiBookOpenLight, t("Objection books")),
                             children: <CourseObjection data={data.course} />,
                           },
                       ].filter(Boolean)}
@@ -1524,6 +1359,7 @@ const Learning = () => {
                       setMetaData={setMetaData}
                       updateProgress={updateProgress}
                       next={next}
+                      onInProgressChange={setIsTestInProgress}
                     />
                   ) : null}
                   {selectedCourseItem &&
@@ -1538,42 +1374,70 @@ const Learning = () => {
                         selectCourseItem={selectCourseItem}
                       />
                     )}
+                  </div>
                 </div>
               </div>
             </div>
           </Content>
-          {selectedCourseItem && selectedCourseItem.type && (
-            <div className="p-4 md:p-6 flex items-center bg-[#FF9E83] shrink-0 px-8">
-              <div className="flex-1">
-                {allItems &&
-                  allItems.length > 0 &&
-                  selectedCourseItem.id !== allItems[0].id && (
-                    <Button
-                      icon={<RxChevronLeft />}
-                      // icon={<AiFillCaretLeft />}
-                      className={
-                        windowDimension.width <= 425
-                          ? "course-button-previous-mobile"
-                          : "course-button-previous"
-                      }
-                      onClick={() => previous()}>
-                      {windowDimension.width > 425 && t("Previous")}
-                    </Button>
+          {/* Barra inferior: à esquerda o switch do menu do curso (Sider, desktop); à direita Anterior e Próximo.
+              Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo) e nunca
+              durante o teste (no desktop seriam redundantes com a navegação do topo). */}
+          {selectedCourseItem &&
+            (windowDimension.width > 1080 ||
+              selectedCourseItem.type === "topic" ||
+              (selectedCourseItem.type === "test" && !isTestInProgress)) && (
+              <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
+                <div className="flex items-center">
+                  {windowDimension.width > 1080 && (
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
+                      {collapsed ? (
+                        <TbLayoutSidebarLeftExpand className="w-5 h-5" />
+                      ) : (
+                        <TbLayoutSidebarLeftCollapse className="w-5 h-5" />
+                      )}
+                      <span>
+                        {collapsed ? t("Show course menu") : t("Hide course menu")}
+                      </span>
+                      <Switch
+                        size="small"
+                        checked={!collapsed}
+                        onChange={(checked) => setCollapsed(!checked)}
+                      />
+                    </label>
                   )}
+                </div>
+                {(selectedCourseItem.type === "topic" ||
+                  (selectedCourseItem.type === "test" &&
+                    windowDimension.width <= 1080 &&
+                    !isTestInProgress)) && (
+                  <div className="flex items-center gap-2">
+                    {allItems &&
+                      allItems.length > 0 &&
+                      selectedCourseItem.id !== allItems[0].id && (
+                        <Button
+                          icon={<RxChevronLeft />}
+                          className={
+                            windowDimension.width <= 425
+                              ? "course-button-previous-mobile"
+                              : "course-button-previous"
+                          }
+                          onClick={() => previous()}>
+                          {windowDimension.width > 425 && t("Previous")}
+                        </Button>
+                      )}
+                    <Button
+                      icon={<RxChevronRight />}
+                      iconPlacement="end"
+                      onClick={() => next()}
+                      disabled={!allowNext && user.id_role !== 1}
+                      size="small"
+                      className="course-button-next">
+                      {windowDimension.width > 425 && t("Next")}
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div className="flex-1 flex justify-end">
-                <Button
-                  icon={<RxChevronRight />}
-                  // icon={<AiFillCaretRight />}
-                  iconPlacement="end"
-                  onClick={() => next()}
-                  disabled={!allowNext && user.id_role !== 1}
-                  className="course-button-next">
-                  {windowDimension.width > 425 && t("Next")}
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
         </Layout>
       </Layout>
     </Layout>

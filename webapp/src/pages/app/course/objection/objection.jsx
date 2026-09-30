@@ -72,7 +72,7 @@ export default function CourseObjection({ data }) {
                   ),
                   children: (
                     <Collapse
-                      className="collapse-objection"
+                      className="collapse-accordion"
                       size="large"
                       bordered={false}
                       items={tabItem.items.map((_i, _ind) => ({

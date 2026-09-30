@@ -8,11 +8,13 @@ import { PiFileTextLight } from "react-icons/pi";
 import i18n from "../../../utils/i18n";
 import { Context } from "../../../utils/context";
 
-export default function CourseContent({ modules, progress, data }) {
+export default function CourseContent({ modules, progress, data, courseSlug }) {
   const { t } = useTranslation();
   const { windowDimension } = useContext(Context);
 
-  const { slug } = useParams();
+  // No detalhe do curso o slug vem do URL; nos Resultados cada curso passa o seu (courseSlug)
+  const { slug: routeSlug } = useParams();
+  const slug = courseSlug ?? routeSlug;
 
   const navigate = useNavigate();
 
