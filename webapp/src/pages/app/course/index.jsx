@@ -356,8 +356,7 @@ export default function CourseDetails() {
           content={`${t("Courses")} - Bial Regional Academy`}
         />
       </Helmet>
-      <div
-        className={`page-frame ${getMarginClasses(windowDimension)}`}>
+      <div className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
           <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Online Courses")} - Bial Academy
@@ -408,6 +407,7 @@ export default function CourseDetails() {
                         : "rgb(0, 0, 0)",
                       backgroundBlendMode: "overlay",
                     }}>
+                    {/* 
                     {(viewType === "grid" || windowDimension.width <= 640) && (
                       <div className="p-[4px_10px] sm:p-[6px_14px] lg:p-[6px_16px] bg-white border border-[#163986] rounded-[40px] max-w-full">
                         <p className="font-bold text-[#163986] truncate text-[12px] sm:text-[13px] lg:text-[15px] xl:text-[16px]">
@@ -415,6 +415,7 @@ export default function CourseDetails() {
                         </p>
                       </div>
                     )}
+                    */}
                     {(viewType === "grid" ||
                       (viewType === "list" && windowDimension.width <= 640)) &&
                       calcProgress(item.progress, item.modules) === 100 && (
@@ -428,8 +429,8 @@ export default function CourseDetails() {
                     <div
                       className={`bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
                       <div className="flex flex-col col-span-3">
-                        {/* Course name for list view on desktop */}
-                        {viewType === "list" && windowDimension.width > 640 && (
+                        {/* 
+                                                {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
                             <div className="p-[6px_12px] sm:p-[8px_16px] bg-white border border-[#163986] rounded-[40px] inline-block max-w-full">
                               <p className="font-bold text-[#163986] text-[12px] sm:text-[13px] lg:text-[15px] xl:text-[16px] truncate">
@@ -438,6 +439,7 @@ export default function CourseDetails() {
                             </div>
                           </div>
                         )}
+                        */}
                         {/* {item.course.settings?.id_trainer && (
 												<div className="flex items-center mb-4">
 													<Avatar src={avatarImg} className="w-12.5! h-12.5!" />
@@ -525,7 +527,12 @@ export default function CourseDetails() {
                                 strokeColor="#2F8351"
                                 railColor="#FFFFFF"
                                 // Em lista a barra ocupa metade da largura
-                                className={viewType === "list" && windowDimension.width > 640 ? "w-1/2!" : ""}
+                                className={
+                                  viewType === "list" &&
+                                  windowDimension.width > 640
+                                    ? "w-1/2!"
+                                    : ""
+                                }
                               />
                             </>
                           ) : (
@@ -572,7 +579,7 @@ export default function CourseDetails() {
                                           ? "11px"
                                           : "inherit",
                                     }}>
-                                    {t("Not enrolled")}
+                                    {t("Not started")}
                                   </p>
                                 </div>
                               )}
@@ -838,7 +845,7 @@ export default function CourseDetails() {
           onClick={scrollToTop}
           style={{ backgroundColor: "#FFC600" }}
           className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
-          title="Scroll to top">
+          title={t("Scroll to top")}>
           <RxChevronUp className="w-6! h-6! text-black!" />
         </button>
       )}
