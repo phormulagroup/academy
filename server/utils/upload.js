@@ -2,10 +2,24 @@ var db = require("./database");
 var util = require("util");
 
 module.exports = {
-  uploadFile: function (file, type) {
+  // fileName (opcional): guarda com esse nome exato, substituindo o ficheiro existente (ex.: avatar nome_apelido.png)
+  uploadFile: function (file, type, fileName) {
     return new Promise(async (resolve, reject) => {
       let sampleFile = null;
-      if (file) {
+      if (file && fileName) {
+        try {
+          const query = util.promisify(db.query).bind(db);
+          const existing = await query("SELECT id FROM media WHERE name = ?", [fileName]);
+          if (existing.length === 0) await query("INSERT INTO media (name, type) VALUES (?, ?)", [fileName, type ? type : "multimedia"]);
+          else await query("UPDATE media SET updated_at = NOW() WHERE id = ?", [existing[0].id]);
+          file.mv(`./media/${fileName}`, (err) => {
+            if (err) return reject(err);
+            resolve(fileName);
+          });
+        } catch (e) {
+          reject(e);
+        }
+      } else if (file) {
         try {
           let file_name = null;
           sampleFile = file;
