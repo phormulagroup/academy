@@ -3,7 +3,7 @@ import { Button, Form, Select } from "antd";
 
 import { useTranslation } from "react-i18next";
 import { Doughnut } from "react-chartjs-2";
-import SearchIcon from "../../../assets/Backoffice/search.svg?react";
+import { LuSearch } from "react-icons/lu";
 
 export default function TestProgress({ data, products, languages }) {
   const { t } = useTranslation();
@@ -337,7 +337,7 @@ export default function TestProgress({ data, products, languages }) {
               size="large"
               onClick={form.submit}
               type="primary"
-              icon={<SearchIcon />}>
+              icon={<LuSearch className="text-[15px]" />}>
               {t("Search")}
             </Button>
           </div>

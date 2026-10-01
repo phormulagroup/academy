@@ -13,8 +13,7 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
-import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
-import SearchIcon from "../../../assets/Backoffice/search.svg?react";
+import { LuDownload, LuSearch } from "react-icons/lu";
 import { getTestReportColumns } from "../../../utils/columns";
 
 export default function TestReport({ data }) {
@@ -417,7 +416,7 @@ export default function TestReport({ data }) {
             color="blue"
             disabled={dataExpanded.length === 0}
             onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<DownloadIcon />}>
+            icon={<LuDownload className="text-[18px]" />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -494,7 +493,7 @@ export default function TestReport({ data }) {
             color="blue"
             disabled={dataExpanded.length === 0}
             onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<DownloadIcon />}>
+            icon={<LuDownload className="text-[18px]" />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -536,7 +535,7 @@ export default function TestReport({ data }) {
                   getTestReportColumns(t),
                 )
               }
-              icon={<DownloadIcon />}>
+              icon={<LuDownload className="text-[18px]" />}>
               {t("Export excel")}
             </Button>
           </div>
@@ -574,7 +573,7 @@ export default function TestReport({ data }) {
               size="large"
               onClick={form.submit}
               type="primary"
-              icon={<SearchIcon />}>
+              icon={<LuSearch className="text-[15px]" />}>
               {t("Search")}
             </Button>
           </div>

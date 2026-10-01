@@ -22,18 +22,21 @@ import { useTranslation } from "react-i18next";
 
 import { useNavigate, useParams } from "react-router-dom";
 import UserCard from "../../../components/admin/user/card";
-import DownloadCloudIcon from "../../../assets/download-cloud.svg?react";
-import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import dayjs from "dayjs";
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
-import TimeIcon from "../../../assets/Backoffice/Tempo.svg?react";
-import PassedIcon from "../../../assets/Backoffice/Status-01.svg?react";
-import NotPassedIcon from "../../../assets/Backoffice/Status-02.svg?react";
-import CorrectIcon from "../../../assets/Backoffice/Pontos.svg?react";
-import CalendarIcon from "../../../assets/Backoffice/calendar.svg?react";
-import TestIcon from "../../../assets/Backoffice/Teste.svg?react";
+import {
+  LuAward,
+  LuCalendar,
+  LuCircleCheck,
+  LuClipboardList,
+  LuClock,
+  LuCloudDownload,
+  LuThumbsDown,
+  LuThumbsUp,
+  LuTimer,
+} from "react-icons/lu";
 import CourseProgress from "./progress";
 import {
   emailFieldProps,
@@ -585,9 +588,9 @@ export default function UserDetails() {
                                           {t("Status")}
                                         </p>
                                         {_try.is_completed ? (
-                                          <PassedIcon className="text-green-400 w-10 h-10" />
+                                          <LuThumbsUp className="text-[#2F8351] w-10 h-10 p-1" />
                                         ) : (
-                                          <NotPassedIcon className="text-green-400 w-10 h-10" />
+                                          <LuThumbsDown className="text-[#DB0709] w-10 h-10 p-1" />
                                         )}
                                         <p className="text-sm">
                                           {_try.is_completed
@@ -600,7 +603,7 @@ export default function UserDetails() {
                                         <p className="text-[11px]">
                                           {t("Correct")}
                                         </p>
-                                        <CorrectIcon className="text-[#010202] w-10 h-10" />
+                                        <LuCircleCheck className="text-[#163986] w-10 h-10 p-1" />
                                         <p className="text-sm">
                                           {
                                             answers.filter(
@@ -615,7 +618,7 @@ export default function UserDetails() {
                                         <p className="text-[11px]">
                                           {t("Time")}
                                         </p>
-                                        <TimeIcon className="text-[#010202] w-10 h-10" />
+                                        <LuTimer className="text-[#163986] w-10 h-10 p-1" />
                                         <p className="text-sm">{testTime}</p>
                                       </div>
 
@@ -623,7 +626,7 @@ export default function UserDetails() {
                                         <p className="text-[11px]">
                                           {t("Date")}
                                         </p>
-                                        <CalendarIcon className="text-[#010202] w-10 h-10" />
+                                        <LuCalendar className="text-[#163986] w-10 h-10 p-1" />
                                         <p className="text-sm">
                                           {dayjs(_try.created_at).format(
                                             "DD/MM/YYYY",
@@ -635,7 +638,7 @@ export default function UserDetails() {
                                         <p className="text-[11px]">
                                           {t("Hour")}
                                         </p>
-                                        <ThumbsUp className="text-[#010202] w-10 h-10" />
+                                        <LuClock className="text-[#163986] w-10 h-10 p-1" />
                                         <p className="text-sm">
                                           {dayjs(_try.created_at).format(
                                             "HH:mm",
@@ -743,8 +746,8 @@ export default function UserDetails() {
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Tests")}</p>
-                          <TestIcon
-                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
+                          <LuClipboardList
+                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#163986]"} w-10 h-10 p-1`}
                           />
                           <p className="text-sm">
                             {
@@ -763,7 +766,7 @@ export default function UserDetails() {
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2">
                           <p className="text-[11px]">{t("Start Date")}</p>
-                          <CalendarIcon className="text-green-400 w-10 h-10" />
+                          <LuCalendar className="text-[#163986] w-10 h-10 p-1" />
                           <p className="text-sm">
                             {c.progress.filter(
                               (_p) => _p.activity_type === "enroll",
@@ -840,13 +843,15 @@ export default function UserDetails() {
                                       )
                                     }>
                                     <div className="flex justify-center items-center">
-                                      <DownloadCloudIcon className="mr-2 h-3" />
+                                      <LuCloudDownload className="mr-2 text-[14px] text-[#163986]" />
                                       <p className="text-[12px]">
                                         {t("Certificate")}
                                       </p>
                                     </div>
                                   </Button>
-                                  <CertificateIconWhite className="ml-2 h-7" />
+                                  <div className="ml-2 w-7 h-7 rounded-full bg-[#163986] flex justify-center items-center shrink-0">
+                                    <LuAward className="text-[16px] text-white" />
+                                  </div>
                                 </div>
                               )}
                             </div>
