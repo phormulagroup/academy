@@ -25,16 +25,19 @@ export default function Download() {
 
   const { t } = useTranslation();
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
-  }, []);
+    if (languages?.length > 0) getData();
+  }, [languages]);
 
   function getData() {
     setIsLoading(true);
     axios
       .get(endpoints.download.readByLang, {
         params: {
-          id_lang: languages.filter((l) => l.code === i18n.language)[0].id,
+          id_lang:
+            languages.find((l) => l.code === i18n.language)?.id ??
+            user?.id_lang,
         },
       })
       .then((res) => {
