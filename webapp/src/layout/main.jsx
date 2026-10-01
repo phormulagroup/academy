@@ -1,13 +1,12 @@
 import React, { useContext, useMemo, useState } from "react";
 import { LogoutOutlined, MenuOutlined } from "@ant-design/icons";
-import { Button, Avatar, Drawer, Dropdown, Layout } from "antd";
+import { Button, Drawer, Dropdown, Layout } from "antd";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/BIAL-Regional-Academy.png";
 
 import { Context } from "../utils/context";
 
 import Logout from "../components/logout";
-import { FaRegUser } from "react-icons/fa";
 import {
   FaFacebook,
   FaLinkedin,
@@ -38,6 +37,7 @@ import {
 import dayjs from "dayjs";
 import useChangeLanguage from "../utils/useChangeLanguage";
 import LanguageSelector from "../utils/languageSelector";
+import UserAvatar from "../utils/userAvatar";
 
 const { Header, Content } = Layout;
 
@@ -177,9 +177,9 @@ const Main = () => {
                     to={`/${i18n.language}/account`}
                     className="dm-user"
                     onClick={closeDrawer}>
-                    <Avatar
+                    <UserAvatar
+                      user={user}
                       size={44}
-                      icon={<FaRegUser />}
                       style={{ color: "#163986", backgroundColor: "#FFFFFF" }}
                     />
                     <div className="dm-user-text">
@@ -466,13 +466,7 @@ const Main = () => {
                       trigger={["click"]}
                       placement="bottomLeft">
                       <div className="flex justify-center items-center cursor-pointer">
-                        <Avatar
-                          icon={<FaRegUser />}
-                          style={{
-                            color: "#FFFFFF",
-                            backgroundColor: "#00B9D6",
-                          }}
-                        />
+                        <UserAvatar user={user} />
                         <p className="text-[12px] ml-2 text-[#163986] font-medium">
                           {user.name.split(" ")[0]}{" "}
                           {

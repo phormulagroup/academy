@@ -18,11 +18,11 @@ import useScrollToTop from "../../../utils/scrollToTop";
 // import { FaAward, FaRegClock } from "react-icons/fa";
 // import { FaListCheck } from "react-icons/fa6";
 import {
+  AiOutlineCheck,
   AiOutlineCloudDownload,
   // AiOutlinePlayCircle
 } from "react-icons/ai";
 
-import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import i18n from "../../../utils/i18n";
 import { downloadCertificate } from "../../../utils/certificate";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
@@ -303,22 +303,6 @@ export default function CourseDetails() {
   //   return activeTestCount;
   // }
 
-  function getCertificateIconClass() {
-    return windowDimension.width <= 320
-      ? "w-[60px] h-[60px] right-[12px] bottom-[-30px]"
-      : windowDimension.width <= 425
-        ? "w-[65px] h-[65px] right-[12px] bottom-[-34px]"
-        : windowDimension.width < 768
-          ? "w-[70px] h-[70px] right-[18px] bottom-[-38px]"
-          : windowDimension.width <= 1024
-            ? "w-[70px] h-[70px] right-[18px] bottom-[-44px]"
-            : windowDimension.width <= 1440
-              ? "w-[75px] h-[75px] right-[20px] bottom-[-38px]"
-              : windowDimension.width < 1920
-                ? "w-[85px] h-[85px] right-[24px] bottom-[-40px]"
-                : "w-[90px] h-[90px] right-[24px] bottom-[-40px]";
-  }
-
   // function getCourseInfoItems(course, modules) {
   //   const items = [];
 
@@ -420,7 +404,8 @@ export default function CourseDetails() {
               {/* CARD COURSE */}
               {data.map((item) => (
                 <div
-                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden`}>
+                  // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem
+                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : ""}`}>
                   <div
                     // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
                     className={`${viewType === "list" && windowDimension.width > 640 ? "w-40 lg:w-50 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
@@ -442,18 +427,17 @@ export default function CourseDetails() {
                       </div>
                     )}
                     */}
-                    {(viewType === "grid" ||
-                      (viewType === "list" && windowDimension.width <= 640)) &&
-                      calcProgress(item.progress, item.modules) === 100 && (
-                        <CertificateIconWhite
-                          className={`absolute z-10 rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
-                        />
-                      )}
+                    {calcProgress(item.progress, item.modules) === 100 && (
+                      <div className="course-card-completed-badge">
+                        <AiOutlineCheck className="shrink-0" />
+                        <span>{t("Completed")}</span>
+                      </div>
+                    )}
                   </div>
                   <div
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
-                      className={`bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
+                      className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
                       <div className="flex flex-col col-span-3">
                         {/* 
                                                 {viewType === "list" && windowDimension.width > 640 && (
@@ -787,16 +771,6 @@ export default function CourseDetails() {
                       </div>
                     </div>
                     <div className="px-4 sm:px-4 md:px-4 lg:px-6 py-4 sm:py-6 md:py-4 lg:py-6 flex flex-col justify-center items-center w-full flex-1">
-                      {/* Certificate icon for list view */}
-                      {viewType === "list" &&
-                        windowDimension.width > 640 &&
-                        calcProgress(item.progress, item.modules) === 100 && (
-                          <div className="mb-8 flex justify-center">
-                            <CertificateIconWhite
-                              className={`rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
-                            />
-                          </div>
-                        )}
                       {/* Action button: Review/Start/Enter or Available countdown */}
                       {canAccess(item.course) || item.is_available ? (
                         <Link

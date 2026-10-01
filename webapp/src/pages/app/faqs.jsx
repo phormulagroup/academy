@@ -35,14 +35,15 @@ export default function Faqs() {
 
   const { t } = useTranslation();
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
-  }, []);
+    if (languages?.length > 0) getData();
+  }, [languages?.length > 0]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.faqs.readByLang, { params: { id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } })
+      .get(endpoints.faqs.readByLang, { params: { id_lang: (languages.find((l) => l.code === i18n.language)?.id ?? user?.id_lang) } })
       .then((res) => {
         console.log(res);
         setData(res.data);
