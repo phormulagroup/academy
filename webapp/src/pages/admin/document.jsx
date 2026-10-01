@@ -153,7 +153,7 @@ export default function Language() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Documents")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Documents")}</p>
         </div>
         <div>
           <Button

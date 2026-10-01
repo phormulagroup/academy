@@ -104,7 +104,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
             />
           </Helmet>
           <div className="flex justify-between items-center mb-4">
-            <p className="text-[24px] font-bold">{data?.name}</p>
+            <p className="font-ryker text-[24px] font-bold">{data?.name}</p>
             <Button
               size="large"
               type="text"

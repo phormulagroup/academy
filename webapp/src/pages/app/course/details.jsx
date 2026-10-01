@@ -294,7 +294,6 @@ export default function CourseDetails() {
     );
   }
 
-
   return (
     <div className="bg-[#FFFFFF] relative">
       {data.course && (
@@ -316,8 +315,7 @@ export default function CourseDetails() {
         </div>
       ) : data.course ? (
         <div>
-          <div
-            className={`page-frame`}>
+          <div className={`page-frame`}>
             {/* Primeiro Container */}
             <div className="relative z-10 pt-4 sm:pt-8 lg:pt-10 mb-6 sm:mb-10">
               {/* Grupo 1: Nome do Curso + Thumbnail */}
@@ -325,10 +323,10 @@ export default function CourseDetails() {
                 className={`grid gap-4 sm:gap-8 mb-6 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-3" : "grid-cols-1"}`}>
                 {/* Nome do Curso - 30% no desktop */}
                 <div className="flex flex-col justify-center col-span-1">
-                  <p className="text-[#163986] uppercase text-[13px] sm:text-base md:text-lg lg:text-[20px]">
+                  <p className="font-ryker font-thin text-[#163986] uppercase text-[13px] sm:text-base md:text-lg lg:text-[20px]">
                     {t("Course")}
                   </p>
-                  <p className="font-bold text-[#163986] mt-1 sm:mt-2 line-clamp-3 leading-[1.2] text-[20px] sm:text-[24px] md:text-[26px] lg:text-[32px] xl:text-[42px]">
+                  <p className="font-ryker font-bold text-[#163986] mt-1 sm:mt-2 line-clamp-3 leading-[1.2] text-[20px] sm:text-[24px] md:text-[26px] lg:text-[32px] xl:text-[42px]">
                     {data.course?.name}
                   </p>
                 </div>
@@ -384,8 +382,7 @@ export default function CourseDetails() {
                             strokeColor={"#2F8351"}
                             railColor={"#FFF"}
                             percent={
-                              (100 *
-                                countCompletedItems()) /
+                              (100 * countCompletedItems()) /
                               ((data?.topics?.filter((t) => t.is_deleted !== 1)
                                 ?.length || 0) +
                                 (data?.tests?.filter((t) => t.is_deleted !== 1)

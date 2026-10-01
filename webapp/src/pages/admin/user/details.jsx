@@ -265,7 +265,7 @@ export default function UserDetails() {
   return (
     <div className="flex flex-col w-full">
       <div className="flex justify-between items-center">
-        <p className="font-bold text-[18px]">{t("Student account")}</p>
+        <p className="font-bold text-[18px] font-ryker">{t("Student account")}</p>
         <p
           className="text-sm cursor-pointer"
           onClick={() => navigate(`/admin/users`)}>
@@ -280,7 +280,7 @@ export default function UserDetails() {
         />
         <div className="col-span-3">
           <div className="bg-[#D0D7E7] p-10 flex flex-col h-full">
-            <p className="text-[26px] font-bold text-center mb-6!">
+            <p className="text-[26px] font-bold text-center mb-6! font-ryker">
               {t("Account")}
             </p>
             <Form
@@ -456,7 +456,7 @@ export default function UserDetails() {
       <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
         <div></div>
         <div className=" col-span-3 mt-10">
-          <p className="text-[26px] font-bold text-center mb-6!">
+          <p className="text-[26px] font-bold text-center mb-6! font-ryker">
             {t("Results")}
           </p>
           {courseData.length > 0 ? (
@@ -673,7 +673,7 @@ export default function UserDetails() {
                     <div>
                       <p className="text-[12px] mb-2">{t("Course")}</p>
                       <div className="course-title">
-                        <p>{c.course.name}</p>
+                        <p className="font-ryker">{c.course.name}</p>
                       </div>
                     </div>
                   ),
@@ -799,7 +799,7 @@ export default function UserDetails() {
                         <div className="p-2 cursor-pointer flex items-center w-full!">
                           <div className="flex flex-col ml-2 w-full">
                             <div className="flex mb-4">
-                              <p className={`text-[20px] font-bold`}>
+                              <p className={`text-[20px] font-bold font-ryker`}>
                                 {c.course.name}
                               </p>
                               {data?.course?.settings.progression_type ===

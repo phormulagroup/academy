@@ -80,10 +80,10 @@ export default function Download() {
       <div
         className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
-          <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
+          <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Downloads")}
           </p>
-          <p className="italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
+          <p className="font-ryker italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
             Keeping training in mind
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function Download() {
                     backgroundBlendMode: "overlay",
                   }}></div>
                 <div className="p-3 sm:p-4 lg:p-6 min-h-[72px] sm:min-h-[96px] lg:min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
-                  <p className="font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
+                  <p className="font-ryker font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
                     {d.name}
                   </p>
                 </div>

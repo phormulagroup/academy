@@ -54,7 +54,7 @@ export default function Update({ data, open, close, nameRule }) {
         </Button>,
       ]}>
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">{t("Update product")}</p>
+        <p className="text-[16px] font-bold font-ryker">{t("Update product")}</p>
         <div className="flex flex-col">
           <Form
             form={form}

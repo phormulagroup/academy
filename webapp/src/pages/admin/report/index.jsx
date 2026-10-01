@@ -66,7 +66,7 @@ export default function Report() {
 		<div className="p-2">
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">{t("Reports")}</p>
+					<p className="text-xl font-bold font-ryker">{t("Reports")}</p>
 				</div>
 				<div>
 					<Button

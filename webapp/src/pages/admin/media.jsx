@@ -196,7 +196,7 @@ function Media() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Multimedia")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Multimedia")}</p>
         </div>
       </div>
       <div>

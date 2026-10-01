@@ -501,15 +501,13 @@ const Learning = () => {
       <div
         className="group flex items-center justify-center p-1 sm:p-2"
         title={text}
-        aria-label={text}
-      >
+        aria-label={text}>
         <Icon
           className={`transition w-5 h-5 md:w-6 md:h-6 shrink-0 ${compactTabs ? "" : "mr-2"} ${color}`}
         />
         {!compactTabs && (
           <p
-            className={`font-bold transition text-[14px] lg:text-[16px] xl:text-[17px] ${color}`}
-          >
+            className={`font-bold transition text-[14px] lg:text-[16px] xl:text-[17px] ${color}`}>
             {text}
           </p>
         )}
@@ -569,8 +567,7 @@ const Learning = () => {
                 : "16px",
           height: "auto",
           minHeight: windowDimension.width > 1080 ? "80px" : "auto",
-        }}
-      >
+        }}>
         <div className="flex justify-center items-center w-full">
           {windowDimension.width > 1080 ? (
             <div className="grid grid-cols-3 gap-4 w-full">
@@ -598,8 +595,7 @@ const Learning = () => {
                             : windowDimension.width >= 1081
                               ? "20px"
                               : "18px",
-                    }}
-                  >
+                    }}>
                     {progressPercentage}% {t("Completed")}
                   </p>
                   <p className="leading-1 text-[12px] lg:text-[14px] text-[#8B9CC3]">
@@ -631,8 +627,7 @@ const Learning = () => {
                   size="large"
                   icon={<RxChevronLeft />}
                   className="button-back-learning-header mr-4"
-                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}
-                >
+                  onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
                   {t("Back to course")}
                 </Button>
                 {selectedCourseItem?.type && (
@@ -643,8 +638,7 @@ const Learning = () => {
                         icon={<RxChevronLeft />}
                         className="button-learning-header mr-2"
                         onClick={() => previous()}
-                        disabled={isTestInProgress}
-                      >
+                        disabled={isTestInProgress}>
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
                           ? ""
@@ -660,8 +654,7 @@ const Learning = () => {
                         onClick={() => next()}
                         disabled={
                           isTestInProgress || (!allowNext && user.id_role !== 1)
-                        }
-                      >
+                        }>
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
                           ? ""
@@ -696,8 +689,7 @@ const Learning = () => {
                               ? "250px"
                               : "50px",
                     flexShrink: 0,
-                  }}
-                >
+                  }}>
                   <div
                     className="h-full bg-[#2F8351] transition-all"
                     style={{ width: `${progressPercentage}%` }}
@@ -716,8 +708,7 @@ const Learning = () => {
                           : windowDimension.width < 640
                             ? "14px"
                             : "15px",
-                  }}
-                >
+                  }}>
                   {progressPercentage}% {t("Completed")}
                 </p>
 
@@ -727,8 +718,7 @@ const Learning = () => {
                     className="text-[#8B9CC3] shrink-0 font-medium"
                     style={{
                       fontSize: "13px",
-                    }}
-                  >
+                    }}>
                     {allItems?.filter((item) =>
                       progress?.some(
                         (p) =>
@@ -778,8 +768,7 @@ const Learning = () => {
                               ? "280px"
                               : "300px",
                     flexShrink: 0,
-                  }}
-                >
+                  }}>
                   <div
                     className="h-full bg-[#2F8351] transition-all"
                     style={{ width: `${progressPercentage}%` }}
@@ -800,19 +789,17 @@ const Learning = () => {
                             : windowDimension.width < 1081
                               ? "18px"
                               : "20px",
-                  }}
-                >
+                  }}>
                   {progressPercentage}% {t("Completed")}
                 </p>
 
                 {/* Steps label - visible from 550px and up */}
                 {windowDimension.width >= 550 && (
                   <p
-                    className="text-[#8B9CC3] shrink-0 font-medium"
+                    className="font-ryker text-[#8B9CC3] shrink-0 font-medium"
                     style={{
                       fontSize: "13px",
-                    }}
-                  >
+                    }}>
                     {allItems?.filter((item) =>
                       progress?.some(
                         (p) =>
@@ -852,13 +839,12 @@ const Learning = () => {
             className="bg-white! overflow-auto learning-sider"
             // Recolhido fica totalmente escondido (sem faixa branca); abre/fecha no switch da barra inferior
             collapsedWidth={0}
-            collapsed={collapsed}
-          >
+            collapsed={collapsed}>
             {!collapsed && (
               <div className="flex flex-col h-full">
                 <div className="flex flex-col w-full p-6 bg-[#163986]">
-                  <p className="text-white">{t("Course")}</p>
-                  <p className="text-[20px] font-bold text-white">
+                  <p className="font-ryker text-white">{t("Course")}</p>
+                  <p className="font-ryker text-[20px] font-bold text-white">
                     {data?.course?.name}
                   </p>
                 </div>
@@ -878,19 +864,16 @@ const Learning = () => {
                               <div className="p-2 cursor-pointer flex items-center">
                                 {isModuleCompleted(item) ? (
                                   <div
-                                    className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}
-                                  >
+                                    className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
                                 ) : (
                                   <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}
-                                  ></div>
+                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
                                 )}
                                 <p
-                                  className={`text-sm text-[#163986] ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
-                                  onClick={() => selectCourseItem(item)}
-                                >
+                                  className={`font-ryker text-sm text-[#163986] ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
+                                  onClick={() => selectCourseItem(item)}>
                                   {item.title}
                                 </p>
                                 {data?.course?.settings.progression_type ===
@@ -915,8 +898,7 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2"
-                                >
+                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2">
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -925,21 +907,18 @@ const Learning = () => {
                                       p[`id_course_${_t.type}`] === _t.id,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
-                                    >
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
-                                    ></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                   )}
                                   {_t.type === "test" && (
                                     <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                   )}
                                   <p
-                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}
-                                  >
+                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
                                     {_t.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
@@ -1021,8 +1000,7 @@ const Learning = () => {
             flexDirection: "column",
             position: "relative",
             minHeight: 0,
-          }}
-        >
+          }}>
           <Content style={{ overflow: "hidden", minHeight: 0 }}>
             <div className="flex flex-col w-full h-full relative bg-[#F1F9FF] overflow-y-auto">
               <Drawer
@@ -1031,8 +1009,7 @@ const Learning = () => {
                 onClose={closeDrawer}
                 maskClosable
                 extra={[]}
-                className="drawer-learning"
-              >
+                className="drawer-learning">
                 <div className="flex flex-col h-full relative overflow-hidden">
                   <div className="absolute top-5 right-5 z-10 flex justify-end cursor-pointer">
                     <AiFillCloseCircle
@@ -1048,16 +1025,15 @@ const Learning = () => {
                       closeDrawer();
                       navigate(`/${i18n.language}/courses/${slug}`);
                     }}
-                    aria-label={t("Back to course")}
-                  >
+                    aria-label={t("Back to course")}>
                     <span className="flex items-center gap-1 text-white/80 text-[12px] group-hover:text-[#00B9D6] transition-colors">
                       <RxChevronLeft className="w-3.5 h-3.5" />
                       {t("Back to course")}
                     </span>
-                    <span className="text-white text-[13px] mt-1">
+                    <span className="font-ryker text-white text-[13px] mt-1">
                       {t("Course")}
                     </span>
-                    <span className="text-[20px] font-bold text-white group-hover:underline">
+                    <span className="font-ryker text-[20px] font-bold text-white group-hover:underline">
                       {data?.course?.name}
                     </span>
                   </button>
@@ -1084,22 +1060,19 @@ const Learning = () => {
                                       p.is_deleted !== 1,
                                   ).length > 0 ? (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
-                                    >
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
                                   ) : (
                                     <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
-                                    ></div>
+                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                   )}
                                   <p
-                                    className={`text-sm ml-2 text-[#163986] ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
+                                    className={`font-ryker text-sm ml-2 text-[#163986] ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       selectCourseItem(item);
-                                    }}
-                                  >
+                                    }}>
                                     {item.title}
                                   </p>
                                   {data?.course?.settings.progression_type ===
@@ -1126,8 +1099,7 @@ const Learning = () => {
                                 {item.items.map((_t, _i) => (
                                   <div
                                     onClick={() => selectCourseItem(_t)}
-                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2"
-                                  >
+                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2">
                                     {progress.length > 0 &&
                                     progress.filter(
                                       (p) =>
@@ -1137,21 +1109,18 @@ const Learning = () => {
                                         p[`id_course_${_t.type}`] === _t.id,
                                     ).length > 0 ? (
                                       <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}
-                                      >
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                         <AiOutlineCheck className="text-white" />
                                       </div>
                                     ) : (
                                       <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}
-                                      ></div>
+                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                     )}
                                     {_t.type === "test" && (
                                       <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                                     )}
                                     <p
-                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}
-                                    >
+                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
                                       {_t.title}
                                     </p>
                                     {data?.course?.settings.progression_type ===
@@ -1249,8 +1218,7 @@ const Learning = () => {
                     {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
                     <div
                       className="elearning-column mx-auto w-full"
-                      style={{ maxWidth: contentMaxWidth }}
-                    >
+                      style={{ maxWidth: contentMaxWidth }}>
                       {progress?.length > 0 &&
                       progress.filter(
                         (p) =>
@@ -1262,9 +1230,8 @@ const Learning = () => {
                       ).length > 0 ? (
                         // Title of the module preview
                         <div
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}
-                        >
-                          <p className="text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
+                          className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}>
+                          <p className="font-ryker text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
                             {selectedCourseItem?.title}
                           </p>
                           <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
@@ -1275,8 +1242,7 @@ const Learning = () => {
                         </div>
                       ) : (
                         <p
-                          className={`text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}
-                        >
+                          className={`font-ryker text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}>
                           {selectedCourseItem?.title}
                         </p>
                       )}
@@ -1443,8 +1409,7 @@ const Learning = () => {
                             ? "course-button-previous-mobile"
                             : "course-button-previous"
                         }
-                        onClick={() => previous()}
-                      >
+                        onClick={() => previous()}>
                         {t("Previous")}
                       </Button>
                     )}
@@ -1455,8 +1420,7 @@ const Learning = () => {
                         onClick={() => next()}
                         disabled={!allowNext && user.id_role !== 1}
                         size="small"
-                        className="course-button-next"
-                      >
+                        className="course-button-next">
                         {nextLabel}
                       </Button>
                     )}

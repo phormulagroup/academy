@@ -1,8 +1,202 @@
-/* TODO: ALTERAR FONTE PARA BIAL 
-  - TITULOS: RIKER
-  - CORPO: POPPINS
-*/
 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+/* Fontes Bial (front, auth e backoffice):
+   - Títulos/headings: Ryker -> classe "font-ryker" (ou h1–h6, títulos de modais, drawers e passos)
+   - Textos, labels e notas: Poppins (fonte base do #root)
+   */
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-thinoblique.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-lightoblique.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-regularoblique.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-mediumoblique.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-boldoblique.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker";
+  src: url("./assets/Fonts/ryker-blackoblique.otf") format("opentype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Ryker Text: variante da Ryker desenhada para tamanhos mais pequenos (classe font-ryker-text) */
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-thinoblique.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-lightoblique.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-regularoblique.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-mediumoblique.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-boldoblique.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ryker Text";
+  src: url("./assets/Fonts/rykertext-blackoblique.otf") format("opentype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
 
 :root {
   --ant-primary-color: #000000;
@@ -14,6 +208,35 @@
 
 a {
   color: unset !important;
+}
+
+/* Fonte dos títulos (Ryker): usar a classe font-ryker em qualquer título novo.
+   O peso escolhe-se com as classes do Tailwind (font-thin, font-light, font-normal, font-medium,
+   font-bold, font-black, + italic): cada uma usa o ficheiro Ryker correspondente (@font-face acima) */
+:root {
+  --font-ryker: "Ryker", "Poppins", sans-serif;
+  --font-ryker-text: "Ryker Text", "Ryker", "Poppins", sans-serif;
+}
+
+/* Ryker Text (opcional): para títulos pequenos/subtítulos; mesmo esquema de pesos da Ryker */
+.font-ryker-text {
+  font-family: var(--font-ryker-text) !important;
+}
+
+.font-ryker,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.ant-modal-title,
+.ant-modal-confirm-title,
+.ant-drawer-title,
+.ant-steps-item-title,
+.ant-table-thead > tr > th,
+.ant-table-thead > tr > td {
+  font-family: var(--font-ryker) !important;
 }
 
 #root {
@@ -1468,9 +1691,17 @@ iframe {
 
 /* Ecrã de curso concluído */
 @keyframes completed-pop {
-  0% { transform: scale(0.6); opacity: 0; }
-  70% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .completed-pop {

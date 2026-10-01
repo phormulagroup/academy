@@ -91,7 +91,7 @@ export default function StudentProgress({ data }) {
       </Form>
       <div className="grid grid-cols-4 gap-4 bg-white rounded-[5px] p-4">
         <div className="col-span-4">
-          <p className="font-bold">{t("Students")}</p>
+          <p className="font-bold font-ryker">{t("Students")}</p>
         </div>
         {filteredData.length > 0 ? (
           filteredData.map((u) => (

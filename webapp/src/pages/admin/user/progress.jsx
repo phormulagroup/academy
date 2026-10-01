@@ -60,7 +60,7 @@ export default function CourseProgress({ data, user }) {
                       <div className={`w-4.25 h-4.25 rounded-full bg-white border border-[#2F8351]`}></div>
                     )}
                     <div className="flex flex-col ml-4">
-                      <p className={`text-[14px]`}>{item.title}</p>
+                      <p className={`text-[14px] font-ryker`}>{item.title}</p>
                       <p className="text-[12px] mt-1">
                         {data?.topics && data.topics.filter((_t) => _t.id_course_module === item.id).length > 0
                           ? `${data.topics.filter((_t) => _t.id_course_module === item.id).length} ${t("topic")} ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? " | " : ""}`

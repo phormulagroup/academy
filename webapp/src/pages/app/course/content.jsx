@@ -80,7 +80,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
       const isInteger = progressPercentage % 1 === 0;
 
       return (
-        <p className="text-[#FFFFFF] text-[12px] sm:text-[13px] md:text-[15px] lg:text-[17px]">
+        <p className="font-ryker text-[#FFFFFF] text-[12px] sm:text-[13px] md:text-[15px] lg:text-[17px]">
           <span className="font-bold uppercase">
             {!isInteger
               ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
@@ -122,7 +122,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                     )}
                     <div className="flex flex-col ml-4 max-w-full flex-1 min-w-0 overflow-hidden">
                       <p
-                        className={`text-[#163986] font-bold text-[14px] sm:text-[15px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
+                        className={`font-ryker text-[#163986] font-bold text-[14px] sm:text-[15px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
                       <p className="mt-1 text-[#163986] text-[12px] sm:text-[13px] lg:text-[14px] line-clamp-2">
@@ -147,7 +147,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                         {windowDimension.width >= 600 && (
                           <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 sm:w-6 sm:h-6" />
                         )}
-                        <p className="text-[#FFFFFF] font-bold text-[13px] sm:text-[15px]">
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[15px]">
                           {t("Module content")}
                         </p>
                       </div>
@@ -162,7 +162,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                     <div className="flex p-4 lg:p-5 bg-[#FF9E83] justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
                         <PiFileTextLight className="text-[#FFFFFF] w-6 h-6 lg:w-7 lg:h-7" />
-                        <p className="text-[#FFFFFF] font-bold text-[15px] lg:text-[17px]">
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[15px] lg:text-[17px]">
                           {t("Module content")}
                         </p>
                       </div>

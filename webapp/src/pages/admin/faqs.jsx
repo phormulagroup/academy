@@ -142,7 +142,7 @@ export default function Faqs() {
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="faqs" />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Faqs")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Faqs")}</p>
         </div>
         <div>
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />

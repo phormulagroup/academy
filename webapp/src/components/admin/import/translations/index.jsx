@@ -83,8 +83,8 @@ function TranslationsImport({ open, close }) {
       key="upload"
       next={handleUploadComplete}
       requiredColumns={["Key", "English"]}
-      title={t("File Upload")}
-      description={t("Select an Excel file with the translations to import")}
+      title={<span className="font-ryker">{t("File Upload")}</span>}
+      description={<span className="font-ryker">{t("Select an Excel file with the translations to import")}</span>}
       mode="button"
       successMessage={t("File uploaded successfully!")}
       formatInfo={formatInfo}

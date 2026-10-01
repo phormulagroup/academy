@@ -74,10 +74,10 @@ export default function Contact() {
         />
       </Helmet>
       <div className="flex flex-col mb-10">
-        <p className="text-[30px] font-bold text-center text-[#163986]">
+        <p className="text-[30px] font-bold text-center text-[#163986] font-ryker">
           {t("Contact Form")}
         </p>
-        <p className="text-[20px] text-center italic text-[#163986]">
+        <p className="text-[20px] text-center italic text-[#163986] font-ryker">
           {t("Talk with us")}
         </p>
         <p className="mt-6 text-[16px] text-[#163986]">

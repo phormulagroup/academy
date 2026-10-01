@@ -59,7 +59,7 @@ export default function Personalization() {
     <div className="p-2">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Personalization")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Personalization")}</p>
         </div>
         <div className="flex justify-center">
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
@@ -70,8 +70,8 @@ export default function Personalization() {
       </div>
       <Form form={form} onFinish={submit} layout="vertical">
         <Divider />
-        <p className="text-[18px] font-bold">{t("Homepage Text")}</p>
-        <p className="text-[12px] italic mb-4 text-[#666]">{t("Set up the text for the homepage")}</p>
+        <p className="text-[18px] font-bold font-ryker">{t("Homepage Text")}</p>
+        <p className="text-[12px] italic mb-4 text-[#666] font-ryker">{t("Set up the text for the homepage")}</p>
         <div className="flex flex-col gap-6 mb-4">
           <Form.Item name={"text"} className="mb-0!">
             <TipTapFormField />

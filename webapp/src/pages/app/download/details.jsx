@@ -209,7 +209,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
             />
           </Helmet>
           <div className="flex justify-between items-center mb-4">
-            <p className="text-[24px] font-bold">{data?.name}</p>
+            <p className="font-ryker text-[24px] font-bold">{data?.name}</p>
             <Button
               size="large"
               type="text"
@@ -234,7 +234,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
 
             <div className="w-full md:flex-1 min-w-0">
               <p className="text-lg font-semibold mb-3">
-                {t("Files")}{" "}
+                <span className="font-ryker">{t("Files")}</span>{" "}
                 <span className="text-sm font-normal text-gray-500">
                   ({data.items.length})
                 </span>

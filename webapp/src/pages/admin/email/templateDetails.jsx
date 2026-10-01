@@ -139,7 +139,7 @@ export default function TemplateDetails() {
 			</div>
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">
+					<p className="text-xl font-bold font-ryker">
 						{t("Template")}: {data?.name}
 					</p>
 				</div>

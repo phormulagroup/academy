@@ -52,7 +52,7 @@ export default function Create({ open, close, nameRule }) {
         </Button>,
       ]}>
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">{t("Create product")}</p>
+        <p className="text-[16px] font-bold font-ryker">{t("Create product")}</p>
         <div className="flex flex-col">
           <Form
             form={form}

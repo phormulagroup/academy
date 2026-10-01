@@ -141,7 +141,7 @@ export default function Product() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Products")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Products")}</p>
         </div>
         <div>
           <Button

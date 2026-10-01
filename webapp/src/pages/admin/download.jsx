@@ -185,7 +185,7 @@ export default function Download() {
 			/>
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">{t("Downloads")}</p>
+					<p className="text-xl font-bold font-ryker">{t("Downloads")}</p>
 				</div>
 				<div>
 					<Button

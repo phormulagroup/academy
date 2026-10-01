@@ -16,7 +16,7 @@ export default function Card({ user, courses, scrollToResults }) {
 
   return (
     <div className="bg-white p-10 flex flex-col items-center">
-      <p className="text-[26px] font-bold text-center">{user.name}</p>
+      <p className="text-[26px] font-bold text-center font-ryker">{user.name}</p>
       {user.job && <p>{user.job}</p>}
       <Avatar src={avatarImg} className="w-40! h-40! mt-4! mb-4!" />
       <p>ID</p>

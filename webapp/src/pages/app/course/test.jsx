@@ -468,7 +468,7 @@ const Test = ({
                   <div>{countdownToBeAvailable}</div>
                 ) : !begin ? (
                   <div className="flex flex-col justify-center items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
-                    <p className="text-[16px]">
+                    <p className="font-ryker font-bold text-[16px]">
                       <b>{t("Approval percentage")}:</b>{" "}
                       {data.settings.passing_score}%
                     </p>
@@ -504,7 +504,7 @@ const Test = ({
                   </div>
                 ) : isCalculating ? (
                   <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
-                    <p className="mb-4 text-[24px] font-bold">
+                    <p className="font-ryker mb-4 text-[24px] font-bold">
                       {t("Calculating...")}
                     </p>
                     <Progress percent={calculate.percentage} showInfo={false} />
@@ -541,7 +541,7 @@ const Test = ({
                         <>
                           {/* LAYOUT UNIFICADO DE RESULTADOS PARA APROVADO, REPROVADO E EM ANDAMENTO */}
                           <div className="flex flex-col justify-center items-center p-6 bg-white mt-4 rounded-lg">
-                            <p className="mb-4 font-bold text-[24px]">
+                            <p className="font-ryker mb-4 font-bold text-[24px]">
                               {t("Result")}
                             </p>
                             {isApproved ? (
@@ -549,7 +549,7 @@ const Test = ({
                             ) : (
                               <AiFillCloseCircle className="text-[80px] text-[#DB0709]" />
                             )}
-                            <p className="mt-4 mb-4 text-[24px] font-bold">
+                            <p className="font-ryker mt-4 mb-4 text-[24px] font-bold">
                               {isApproved
                                 ? t("Approved")
                                 : canStillRetry
@@ -842,13 +842,17 @@ const Test = ({
                                 <Button
                                   size="large"
                                   className={
-                                    footerSlot ? "main-secondary-cta-button" : ""
+                                    footerSlot
+                                      ? "main-secondary-cta-button"
+                                      : ""
                                   }
                                   onClick={() =>
                                     setCurrentQuestion(currentQuestion - 1)
                                   }
                                   icon={<RxChevronLeft />}>
-                                  {shortNavLabels ? t("Previous") : t("Previous question")}
+                                  {shortNavLabels
+                                    ? t("Previous")
+                                    : t("Previous question")}
                                 </Button>
                               ) : (
                                 <div></div>
@@ -869,7 +873,9 @@ const Test = ({
                                   }
                                   icon={<RxChevronRight />}
                                   iconPlacement="end">
-                                  {shortNavLabels ? t("Next") : t("Next question")}
+                                  {shortNavLabels
+                                    ? t("Next")
+                                    : t("Next question")}
                                 </Button>
                               ) : (
                                 <Button

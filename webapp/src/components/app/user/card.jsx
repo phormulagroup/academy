@@ -25,7 +25,7 @@ export default function UserCard({ courses }) {
 
   return (
     <div className="bg-white p-4 sm:p-6 lg:p-10 flex flex-col items-center">
-      <p className="text-[18px] sm:text-[22px] lg:text-[26px] font-bold text-center leading-tight">{user.name}</p>
+      <p className="font-ryker text-[18px] sm:text-[22px] lg:text-[26px] font-bold text-center leading-tight">{user.name}</p>
       {user.job && <p>{user.job}</p>}
       <Avatar src={avatarImg} className="w-20! h-20! sm:w-28! sm:h-28! lg:w-40! lg:h-40! mt-3! mb-3! lg:mt-4! lg:mb-4!" />
       <Link to={`/${i18n.language}/account`}>

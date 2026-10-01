@@ -54,7 +54,7 @@ export default function Settings({ data }) {
     <div className="p-2">
       <div>
         <Form form={form} onFinish={save} layout="vertical">
-          <p className="text-[18px] font-bold">{t("Access")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Access")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t("Controls the acces settings of the test")}
           </p>
@@ -83,7 +83,7 @@ export default function Settings({ data }) {
             </Form.Item>
           </div>
           <Divider />
-          <p className="text-[18px] font-bold">{t("Passing options")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Passing options")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t("Controls the settings of the test to pass")}
           </p>
@@ -103,7 +103,7 @@ export default function Settings({ data }) {
 
           <Divider />
 
-          <p className="text-[18px] font-bold">{t("Status")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Status")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t(
               "Controls the status of the test if it will be showed on course page",
@@ -127,7 +127,7 @@ export default function Settings({ data }) {
 
           <Divider />
 
-          <p className="text-[18px] font-bold">{t("Question and Answers")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Question and Answers")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t(
               "Controls the display and position of the questions and answers",
@@ -157,7 +157,7 @@ export default function Settings({ data }) {
           </div>
           <Divider />
 
-          <p className="text-[18px] font-bold">{t("Results")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Results")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t("Controls what you wanna show after complete the test")}
           </p>

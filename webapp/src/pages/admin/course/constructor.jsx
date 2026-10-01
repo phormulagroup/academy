@@ -312,7 +312,7 @@ function SortableModule({
               />
             ) : (
               <span
-                className="cursor-text font-medium"
+                className="cursor-text font-medium font-ryker"
                 onClick={() => setEditing(true)}
                 title={t("Edit module title")}>
                 {module.title}

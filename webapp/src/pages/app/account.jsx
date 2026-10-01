@@ -121,7 +121,7 @@ export default function Account() {
         <div className="grid grid-cols-1 lg:grid-cols-4">
           <UserCard />
           <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
-            <p className="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
+            <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
               {t("My account")}
             </p>
             <Form

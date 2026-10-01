@@ -357,7 +357,7 @@ export default function Main() {
   return (
     <div className="p-2">
       <Status data={selectedUser} open={isOpenStatus} close={closeSatus} />
-      <p className="text-[18px] font-bold mb-4">{t("Overview e-Learning")}</p>
+      <p className="text-[18px] font-bold mb-4 font-ryker">{t("Overview e-Learning")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="flex justify-between items-center bg-[#FFF]">
@@ -365,24 +365,24 @@ export default function Main() {
               <div className="flex flex-col justify-center items-center border-l border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-l-[5px]">
                 <StudentsIcon className="w-17.5 h-17.5" />
                 <p className="mt-4">{t("Total of students")}</p>
-                <p className="mt-1 font-bold text-[30px]">{data.users?.length}</p>
+                <p className="mt-1 font-bold text-[30px] font-ryker">{data.users?.length}</p>
               </div>
               <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6">
                 <CoursesIcon className="w-17.5 h-17.5" />
                 <p className="mt-4">{t("Total of courses")}</p>
-                <p className="mt-1 font-bold text-[30px] ">{data.courses?.length}</p>
+                <p className="mt-1 font-bold text-[30px] font-ryker">{data.courses?.length}</p>
               </div>
               <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-r-[5px]">
                 <CoursesIcon className="w-17.5 h-17.5" />
                 <p className="mt-4">{t("Active tests")}</p>
-                <p className="mt-1 font-bold text-[30px] ">{calcActiveTests(data.tests)}</p>
+                <p className="mt-1 font-bold text-[30px] font-ryker">{calcActiveTests(data.tests)}</p>
               </div>
             </div>
           </div>
           <div className="flex flex-col bg-[#FFF] p-6 border border-[#C0C0C0] rounded-[5px] mt-4">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
-                <p className="font-bold mr-2">{t("Course progress")}</p>
+                <p className="font-bold mr-2 font-ryker">{t("Course progress")}</p>
                 <Select
                   className="min-w-50"
                   placeholder={t("Choose a course")}
@@ -400,7 +400,7 @@ export default function Main() {
             </div>
             <div className="grid grid-cols-2 gap-10 w-full">
               <div className="flex flex-col">
-                <p className="font-bold mb-4">{t("Progress distribution")}</p>
+                <p className="font-bold mb-4 font-ryker">{t("Progress distribution")}</p>
                 <div className="flex justify-between items-center gap-4 w-full!">
                   <div className="w-1/2">
                     <Doughnut
@@ -440,7 +440,7 @@ export default function Main() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <p className="font-bold mb-4">{t("Progress Percentage")}</p>
+                <p className="font-bold mb-4 font-ryker">{t("Progress Percentage")}</p>
                 <div className="flex justify-between items-center gap-4 w-full!">
                   <div className="w-1/2">
                     <Doughnut
@@ -504,7 +504,7 @@ export default function Main() {
           </div>
         </div>
         <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
-          <p className="font-bold text-[16px] mb-4">{t("Activity")}</p>
+          <p className="font-bold text-[16px] mb-4 font-ryker">{t("Activity")}</p>
           <Table
             dataSource={courseActivity}
             pagination={{
@@ -513,24 +513,24 @@ export default function Main() {
             }}
             columns={[
               {
-                title: t("User"),
+                title: <span className="font-ryker">{t("User")}</span>,
                 dataIndex: "user",
                 key: "user",
                 width: 240,
               },
               {
-                title: t("Progress"),
+                title: <span className="font-ryker">{t("Progress")}</span>,
                 dataIndex: "progress",
                 key: "progress",
               },
               {
-                title: t("Status"),
+                title: <span className="font-ryker">{t("Status")}</span>,
                 dataIndex: "status",
                 key: "status",
                 width: "80px",
               },
               {
-                title: t("Date"),
+                title: <span className="font-ryker">{t("Date")}</span>,
                 dataIndex: "date",
                 key: "date",
                 width: "170px",
@@ -540,14 +540,14 @@ export default function Main() {
         </div>
       </div>
       <div className="flex flex-col mt-4">
-        <p className="text-lg font-bold mb-4">{t("Platform status")}</p>
+        <p className="text-lg font-bold mb-4 font-ryker">{t("Platform status")}</p>
         <div className="grid grid-cols-4 gap-4">
           {/* USERS TABLE */}
           <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px] col-span-2">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-lg font-bold">{t("Registrations on the platform")}</p>
-                <p className="mb-4 mt-1">{t("The most recent submissions made through the registration form are listed here.")}</p>
+                <p className="text-lg font-bold font-ryker">{t("Registrations on the platform")}</p>
+                <p className="mb-4 mt-1 font-ryker">{t("The most recent submissions made through the registration form are listed here.")}</p>
               </div>
               <div>
                 <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
@@ -563,30 +563,30 @@ export default function Main() {
               }}
               columns={[
                 {
-                  title: t("ID"),
+                  title: <span className="font-ryker">{t("ID")}</span>,
                   dataIndex: "id",
                   key: "id",
                   width: "60px",
                 },
                 {
-                  title: t("User"),
+                  title: <span className="font-ryker">{t("User")}</span>,
                   dataIndex: "name",
                   key: "name",
                   width: "200px",
                 },
                 {
-                  title: t("Status"),
+                  title: <span className="font-ryker">{t("Status")}</span>,
                   dataIndex: "status",
                   key: "status",
                   width: "80px",
                 },
                 {
-                  title: t("Day"),
+                  title: <span className="font-ryker">{t("Day")}</span>,
                   dataIndex: "date",
                   key: "date",
                 },
                 {
-                  title: t("Hour"),
+                  title: <span className="font-ryker">{t("Hour")}</span>,
                   dataIndex: "hour",
                   key: "hour",
                 },
@@ -603,7 +603,7 @@ export default function Main() {
           <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-lg font-bold mb-4">{t("Best students")}</p>
+                <p className="text-lg font-bold mb-4 font-ryker">{t("Best students")}</p>
               </div>
               <div>
                 <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">
@@ -669,7 +669,7 @@ export default function Main() {
           <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-lg font-bold mb-4">{t("Access logs")}</p>
+                <p className="text-lg font-bold mb-4 font-ryker">{t("Access logs")}</p>
               </div>
               <div>
                 <Link to="/admin/users" className="text-[#163986]! underline! text-[10px]">

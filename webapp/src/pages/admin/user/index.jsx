@@ -183,7 +183,7 @@ export default function User() {
 			/>
 			<div className="flex justify-between items-center mb-4">
 				<div>
-					<p className="text-xl font-bold">{t("Users")}</p>
+					<p className="text-xl font-bold font-ryker">{t("Users")}</p>
 				</div>
 				<div className="flex justify-center">
 					<Button size="large" className="mr-2" onClick={() => getData()}>

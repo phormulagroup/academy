@@ -60,7 +60,7 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
       ]}
     >
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">{t("Are you sure you want to delete this item?")}</p>
+        <p className="text-[16px] font-bold font-ryker">{t("Are you sure you want to delete this item?")}</p>
         <div className="flex flex-col mt-4">
           <p className="font-semibold">{tablesName[table]}</p>
           <p>ID: {data.id}</p>

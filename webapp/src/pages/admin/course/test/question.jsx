@@ -167,7 +167,7 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
                       </div>
                     </div>
                     <Form.Item name={[field.name, "title"]}>
-                      <Input size="large" />
+                      <Input size="large" className="font-semibold!" />
                     </Form.Item>
                     <Form.List name={[field.name, "answer"]}>
                       {(fieldsAnswer, { add, remove }) => (
@@ -186,7 +186,7 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
                             <div key={f.key} className={`grid grid-cols-8 gap-4 mb-4`}>
                               <div className="col-span-6">
                                 <Form.Item name={[f.name, "title"]} className="mb-0!">
-                                  <Input size="large" />
+                                  <Input size="large" className="font-normal!" />
                                 </Form.Item>
                               </div>
                               <div className="flex justify-center items-center">

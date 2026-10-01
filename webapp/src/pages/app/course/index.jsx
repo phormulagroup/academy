@@ -229,9 +229,7 @@ export default function CourseDetails() {
     axios
       .post(endpoints.course.updateProgress, { data: [enrollData] })
       .catch((err) => console.log(err))
-      .finally(() =>
-        navigate(`/${i18n.language}/courses/${item.course.slug}`),
-      );
+      .finally(() => navigate(`/${i18n.language}/courses/${item.course.slug}`));
   }
 
   function handleDownloadCertificate(item, progress) {
@@ -386,10 +384,10 @@ export default function CourseDetails() {
       </Helmet>
       <div className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
-          <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
+          <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Online Courses")} - Bial Academy
           </p>
-          <p className="italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
+          <p className="font-ryker italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
             Keeping training in mind
           </p>
         </div>

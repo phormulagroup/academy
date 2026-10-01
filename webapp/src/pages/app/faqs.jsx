@@ -64,7 +64,7 @@ export default function Faqs() {
         <meta property="og:description" content={`${t("FAQs")} - Bial Regional Academy`} />
       </Helmet>
       <div className="flex flex-col mb-6 sm:mb-10">
-        <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">{t("FAQs")}</p>
+        <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">{t("FAQs")}</p>
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full">
@@ -82,7 +82,7 @@ export default function Faqs() {
               return {
                 key: n.id,
                 label: (
-                  <p className="text-xs sm:text-sm md:text-base">{n.title}</p>
+                  <p className="font-ryker text-xs sm:text-sm md:text-base">{n.title}</p>
                 ),
                 children: (
                   <div className="flex justify-center gap-4 lg:gap-8 w-full flex-wrap lg:flex-nowrap">

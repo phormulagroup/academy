@@ -77,7 +77,7 @@ export default function CertificateDetails() {
           </p>
         </div>
       </div>
-      <p className="font-bold text-[20px]">{t("Certificate details")}</p>
+      <p className="font-bold text-[20px] font-ryker">{t("Certificate details")}</p>
       <div className="grid grid-cols-2 gap-8 mt-4">
         <CertificateForm form={form} submit={submit} errors={errors} />
         <CertificatePreview data={previewData} />

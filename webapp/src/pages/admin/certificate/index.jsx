@@ -148,7 +148,7 @@ export default function Certificate() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Certificates")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Certificates")}</p>
         </div>
         <div>
           <Button
