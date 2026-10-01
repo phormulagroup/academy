@@ -616,11 +616,13 @@ select,
 
 .principal-menu .ant-menu-item .ant-menu-item-icon {
   max-width: 20px;
-  margin-right: 6px !important;
+  font-size: 17px;
+  margin-right: 8px !important;
 }
 
+/* Ícones do menu (react-icons) seguem a cor do item: brancos no fundo azul, azul Bial no item selecionado */
 .principal-menu .ant-menu-item-selected .ant-menu-item-icon {
-  filter: grayscale(100%) brightness(0);
+  color: #163986;
 }
 
 .ant-menu-title-content {
@@ -1706,4 +1708,201 @@ iframe {
 
 .completed-pop {
   animation: completed-pop 0.6s ease-out;
+}
+
+.course-card-completed {
+  box-shadow:
+    0 0 0 2px #2f8351,
+    0px 3px 6px #00000029 !important;
+}
+
+.course-card-completed .course-card-info {
+  background-color: #dcefe3 !important;
+}
+
+.course-card-completed-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: #2f8351;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+}
+
+@media (min-width: 1024px) {
+  .course-card-completed-badge {
+    font-size: 13px;
+    padding: 5px 14px;
+  }
+}
+
+/* Backoffice: ícones (react-icons/anticons) que herdariam o texto escuro passam a azul Bial.
+   Em @layer components para que classes utilitárias (ex.: text-green-500) e estilos inline nos ícones
+   continuem a prevalecer; só afeta botões "default" (não os primários azuis com ícone branco) e itens
+   de dropdown não "danger". O Sider/Drawer (.principal-menu) não é abrangido. */
+@layer components {
+  .admin-layout .ant-btn-color-default:not(:disabled) svg {
+    color: #163986;
+    transition: color 0.2s;
+  }
+
+  .admin-layout .ant-btn-color-default:not(:disabled):hover svg {
+    color: #00b9d6;
+  }
+
+  /* Dropdowns são renderizados no body (portal), por isso o scope é feito com :has() */
+  body:has(.admin-layout)
+    .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+      .ant-dropdown-menu-item-disabled
+    )
+    .ant-dropdown-menu-item-icon {
+    color: #163986;
+  }
+
+  body:has(.admin-layout)
+    .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+      .ant-dropdown-menu-item-disabled
+    ):hover
+    .ant-dropdown-menu-item-icon {
+    color: #00b9d6;
+  }
+}
+
+body:has(.admin-layout) .ant-table-filter-trigger:not(.active),
+body:has(.admin-layout) .ant-table-column-sorter-up:not(.active),
+body:has(.admin-layout) .ant-table-column-sorter-down:not(.active),
+body:has(.admin-layout)
+  .ant-select:not(.ant-select-disabled)
+  .ant-select-suffix,
+body:has(.admin-layout) .ant-select:not(.ant-select-disabled) .ant-select-clear,
+body:has(.admin-layout)
+  .ant-picker:not(.ant-picker-disabled)
+  .ant-picker-suffix,
+body:has(.admin-layout) .ant-picker:not(.ant-picker-disabled) .ant-picker-clear,
+body:has(.admin-layout) .ant-input-clear-icon,
+body:has(.admin-layout) .ant-input-password-icon.anticon {
+  color: #8b9cc3;
+}
+
+body:has(.admin-layout) .ant-table-filter-trigger:not(.active):hover,
+body:has(.admin-layout) .ant-input-password-icon.anticon:hover {
+  color: #163986;
+}
+
+/* Botão de fechar dos modais e drawers */
+body:has(.admin-layout) .ant-modal-close,
+body:has(.admin-layout) .ant-drawer-close {
+  color: #163986;
+}
+
+body:has(.admin-layout) .ant-modal-close:hover,
+body:has(.admin-layout) .ant-drawer-close:hover {
+  color: #00b9d6;
+}
+
+.admin-layout .ant-card-actions > li > span,
+.admin-layout .ant-card-actions > li > span > .anticon {
+  color: #163986;
+}
+
+.admin-layout .ant-card-actions > li > span:hover,
+.admin-layout .ant-card-actions > li > span > .anticon:hover {
+  color: #00b9d6;
+}
+
+.modal-course-completed .ant-modal-footer {
+  margin-top: 28px !important;
+  flex-wrap: nowrap;
+  gap: 10px !important;
+}
+
+.modal-course-completed .ant-modal-footer .ant-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-inline-start: 0 !important;
+  height: auto !important;
+  min-height: 36px;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  white-space: normal;
+}
+
+@media screen and (min-width: 576px) {
+  .modal-course-completed .ant-modal-footer .ant-btn {
+    min-height: 40px;
+    padding: 6px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .modal-course-completed .ant-modal-footer .ant-btn {
+    min-height: 42px;
+    font-size: 14px !important;
+  }
+}
+
+.doc-viewer-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+
+.doc-viewer-fullscreen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #163986;
+  cursor: pointer;
+  user-select: none;
+}
+
+.doc-viewer-fullscreen svg {
+  font-size: 22px;
+}
+
+.doc-viewer.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0d1b3e;
+}
+
+.doc-viewer.is-fullscreen .doc-viewer-box {
+  flex: 1;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.doc-viewer.is-fullscreen .doc-viewer-bar {
+  justify-content: center;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+}
+
+.doc-viewer.is-fullscreen .doc-viewer-fullscreen {
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.doc-viewer.is-fullscreen .doc-viewer-fullscreen svg {
+  font-size: 16px;
 }

@@ -472,7 +472,7 @@ const Test = ({
                       <b>{t("Approval percentage")}:</b>{" "}
                       {data.settings.passing_score}%
                     </p>
-                    {data.settings.time && (
+                    {Number(data.settings.time) > 0 && (
                       <p className="text-[16px]">
                         <b>{t("Time")}:</b> {data.settings.time} {t("minutes")}
                       </p>
@@ -733,25 +733,27 @@ const Test = ({
                   </div>
                 ) : (
                   <Form form={form} onFinish={submit}>
-                    {/* Tempo limite: mesmo fundo e forma compacta do título do item concluído */}
-                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
-                      <div className="flex justify-between items-center gap-2">
-                        <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
-                          {t("Limit time")}
-                        </p>
-                        <p className="text-[#163986] font-bold tabular-nums text-[13px] sm:text-[15px] lg:text-[16px]">
-                          {countdown}
-                        </p>
+                    {/* Tempo limite: só aparece quando o teste tem limite de tempo */}
+                    {Number(data.settings?.time) > 0 && (
+                      <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
+                        <div className="flex justify-between items-center gap-2">
+                          <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
+                            {t("Limit time")}
+                          </p>
+                          <p className="text-[#163986] font-bold tabular-nums text-[13px] sm:text-[15px] lg:text-[16px]">
+                            {countdown}
+                          </p>
+                        </div>
+                        <Progress
+                          percent={timePercentage}
+                          showInfo={false}
+                          size="small"
+                          railColor={"#FFF"}
+                          strokeColor={"#00B9D6"}
+                          className="mb-0!"
+                        />
                       </div>
-                      <Progress
-                        percent={timePercentage}
-                        showInfo={false}
-                        size="small"
-                        railColor={"#FFF"}
-                        strokeColor={"#00B9D6"}
-                        className="mb-0!"
-                      />
-                    </div>
+                    )}
 
                     <div>
                       <p className="mb-4 mt-4">

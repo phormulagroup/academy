@@ -47,11 +47,13 @@ import Test from "./test";
 
 import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
-import CourseCompleted from "./completed";
 
 import CourseMaterial from "./material";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
+import CourseCompletedModal from "../../../components/app/course/courseCompleted";
+import { downloadCertificate } from "../../../utils/certificate";
+import config from "../../../utils/config";
 
 const { confirm } = Modal;
 
@@ -68,6 +70,8 @@ const Learning = () => {
   const [allItems, setAllItems] = useState(null);
   // Teste a decorrer (iniciado e não terminado): bloqueia a navegação entre itens
   const [isTestInProgress, setIsTestInProgress] = useState(false);
+  // Modal de parabéns: só abre no momento em que o curso fica concluído (registo "course" criado agora)
+  const [isOpenCourseCompleted, setIsOpenCourseCompleted] = useState(false);
   // Elemento no fundo do ecrã onde o Test coloca a navegação entre perguntas (fixa durante o teste)
   const [testFooterSlot, setTestFooterSlot] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -76,8 +80,6 @@ const Learning = () => {
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
-  // Ecrã de parabéns mostrado quando o último tópico/teste conclui o curso
-  const [showCompleted, setShowCompleted] = useState(false);
 
   const { t, i18n } = useTranslation();
 
@@ -132,6 +134,12 @@ const Learning = () => {
         auxCourse.settings = auxCourse.settings
           ? JSON.parse(auxCourse.settings)
           : null;
+        // Navegação: o admin navega sempre livremente (sem restrições, mesmo que o curso seja linear);
+        // os alunos têm sempre navegação linear
+        auxCourse.settings = {
+          ...(auxCourse.settings || {}),
+          progression_type: user.id_role === 1 ? "free" : "linear",
+        };
 
         // Admins (id_role = 1) can access all courses regardless of restrictions
         const isAdmin = user.id_role === 1;
@@ -419,11 +427,15 @@ const Learning = () => {
         data: auxData,
       })
       .then(() => {
-        if (changeItem === undefined || changeItem !== false) {
-          // Último item do curso concluído: mostra o ecrã de curso concluído
-          if (!goToNextItem() && courseCompleted) setShowCompleted(true);
-        }
+        if (changeItem === undefined || changeItem !== false) goToNextItem();
         setProgress((prev) => [...prev, ...auxData]);
+        // Abrir modal de curso concluído se o curso estiver concluído 100% ou se tiver sido concluído no ultimo item
+        if (
+          courseCompleted ||
+          isCourseCompleted(simulatedProgress) ||
+          (courseAlreadyCompleted && isLastItem)
+        )
+          setIsOpenCourseCompleted(true);
       })
       .catch((err) => {
         console.log(err);
@@ -545,6 +557,17 @@ const Learning = () => {
           <meta property="og:description" content={data.course.name} />
         </Helmet>
       )}
+      <CourseCompletedModal
+        open={isOpenCourseCompleted}
+        close={() => setIsOpenCourseCompleted(false)}
+        courseName={data?.course?.name}
+        userName={user?.name}
+        hasCertificate={!!data?.course?.id_course_certificate}
+        onBackToCourses={() => navigate(`/${i18n.language}/courses`)}
+        onDownloadCertificate={() =>
+          downloadCertificate(data.course, progress, user, config, endpoints)
+        }
+      />
       <Logout
         open={isOpenLogout}
         close={() => setIsOpenLogout(false)}
@@ -1201,169 +1224,155 @@ const Learning = () => {
                   </div>
                 </div>
               </Drawer>
-              {showCompleted ? (
-                <CourseCompleted
-                  course={data?.course}
-                  modules={modules}
-                  itemsCount={allItems?.length || 0}
-                  onBack={() => navigate(`/${i18n.language}/courses/${slug}`)}
-                  onReview={() => {
-                    setShowCompleted(false);
-                    setSelectedCourseItem(allItems?.[0]);
-                  }}
-                />
-              ) : (
-                <div className="overflow-y-auto">
-                  <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-                    {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
-                    <div
-                      className="elearning-column mx-auto w-full"
-                      style={{ maxWidth: contentMaxWidth }}>
-                      {progress?.length > 0 &&
-                      progress.filter(
-                        (p) =>
-                          p.activity_type === selectedCourseItem?.type &&
-                          p[`id_course_${selectedCourseItem?.type}`] ===
-                            selectedCourseItem?.id &&
-                          p.is_completed === 1 &&
-                          p.is_deleted !== 1,
-                      ).length > 0 ? (
-                        // Title of the module preview
-                        <div
-                          className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}>
-                          <p className="font-ryker text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
-                            {selectedCourseItem?.title}
-                          </p>
-                          <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
-                            <p className="text-white text-[11px] sm:text-[12px] lg:text-[13px]">
-                              {t("Completed")}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <p
-                          className={`font-ryker text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}>
+              {/* Conclusão do curso: modal de parabéns (CourseCompletedModal) em vez do ecrã inline */}
+              <div className="overflow-y-auto">
+                <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+                  {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
+                  <div
+                    className="elearning-column mx-auto w-full"
+                    style={{ maxWidth: contentMaxWidth }}>
+                    {progress?.length > 0 &&
+                    progress.filter(
+                      (p) =>
+                        p.activity_type === selectedCourseItem?.type &&
+                        p[`id_course_${selectedCourseItem?.type}`] ===
+                          selectedCourseItem?.id &&
+                        p.is_completed === 1 &&
+                        p.is_deleted !== 1,
+                    ).length > 0 ? (
+                      // Title of the module preview
+                      <div
+                        className={`px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] flex justify-between items-center gap-2 rounded-[5px] ${isLandscapeTouch ? "mb-4" : ""}`}>
+                        <p className="font-ryker text-[#163986] font-bold leading-tight text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px]">
                           {selectedCourseItem?.title}
                         </p>
-                      )}
-                      {selectedCourseItem &&
-                      Object.keys(selectedCourseItem).length > 0 &&
-                      (selectedCourseItem.type === "topic" ||
-                        selectedCourseItem.type === "test") &&
-                      (data?.course?.material || data?.course?.objection) ? (
-                        <Tabs
-                          activeKey={activeKey}
-                          onChange={(key) => setActiveKey(key)}
-                          // Telemóvel/tablet na horizontal: tabs na lateral, só com ícones
-                          tabPosition={isLandscapeTouch ? "left" : "top"}
-                          size={compactTabs ? "small" : "middle"}
-                          centered={
-                            windowDimension.width < 768 && !isLandscapeTouch
-                          }
-                          className={`tabs-${selectedCourseItem.type}`}
-                          items={[
-                            {
-                              key: "1",
-                              // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
-                              label: tabLabel(
-                                "1",
-                                PiFileTextLight,
-                                capitalize(t("topic")),
+                        <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#2F8351] rounded-[5px] shrink-0">
+                          <p className="text-white text-[11px] sm:text-[12px] lg:text-[13px]">
+                            {t("Completed")}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p
+                        className={`font-ryker text-[#163986] font-bold leading-tight text-center md:text-left text-[14px] sm:text-[15px] md:text-[17px] lg:text-[19px] xl:text-[20px] ${isLandscapeTouch ? "mb-4" : ""}`}>
+                        {selectedCourseItem?.title}
+                      </p>
+                    )}
+                    {selectedCourseItem &&
+                    Object.keys(selectedCourseItem).length > 0 &&
+                    (selectedCourseItem.type === "topic" ||
+                      selectedCourseItem.type === "test") &&
+                    (data?.course?.material || data?.course?.objection) ? (
+                      <Tabs
+                        activeKey={activeKey}
+                        onChange={(key) => setActiveKey(key)}
+                        // Telemóvel/tablet na horizontal: tabs na lateral, só com ícones
+                        tabPosition={isLandscapeTouch ? "left" : "top"}
+                        size={compactTabs ? "small" : "middle"}
+                        centered={
+                          windowDimension.width < 768 && !isLandscapeTouch
+                        }
+                        className={`tabs-${selectedCourseItem.type}`}
+                        items={[
+                          {
+                            key: "1",
+                            // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
+                            label: tabLabel(
+                              "1",
+                              PiFileTextLight,
+                              capitalize(t("topic")),
+                            ),
+                            forceRender: true,
+                            children:
+                              selectedCourseItem.type === "topic" ? (
+                                <Topic
+                                  course={data.course}
+                                  progress={progress}
+                                  selectedCourseItem={selectedCourseItem}
+                                  setAllowNext={setAllowNext}
+                                  modules={modules}
+                                  allItems={allItems}
+                                  collapsed={collapsed}
+                                />
+                              ) : (
+                                <Test
+                                  course={data.course}
+                                  progress={progress}
+                                  selectedCourseItem={selectedCourseItem}
+                                  setAllowNext={setAllowNext}
+                                  modules={modules}
+                                  allItems={allItems}
+                                  metaData={metaData}
+                                  setMetaData={setMetaData}
+                                  updateProgress={updateProgress}
+                                  next={next}
+                                  onInProgressChange={setIsTestInProgress}
+                                  footerSlot={testFooterSlot}
+                                />
                               ),
-                              forceRender: true,
-                              children:
-                                selectedCourseItem.type === "topic" ? (
-                                  <Topic
-                                    course={data.course}
-                                    progress={progress}
-                                    selectedCourseItem={selectedCourseItem}
-                                    setAllowNext={setAllowNext}
-                                    modules={modules}
-                                    allItems={allItems}
-                                    collapsed={collapsed}
-                                  />
-                                ) : (
-                                  <Test
-                                    course={data.course}
-                                    progress={progress}
-                                    selectedCourseItem={selectedCourseItem}
-                                    setAllowNext={setAllowNext}
-                                    modules={modules}
-                                    allItems={allItems}
-                                    metaData={metaData}
-                                    setMetaData={setMetaData}
-                                    updateProgress={updateProgress}
-                                    next={next}
-                                    onInProgressChange={setIsTestInProgress}
-                                    footerSlot={testFooterSlot}
-                                  />
-                                ),
+                          },
+                          data.course.material &&
+                            data.course.material.length > 0 && {
+                              key: "2",
+                              label: tabLabel(
+                                "2",
+                                PiBookBookmark,
+                                t("Materials"),
+                              ),
+                              children: <CourseMaterial data={data.course} />,
                             },
-                            data.course.material &&
-                              data.course.material.length > 0 && {
-                                key: "2",
-                                label: tabLabel(
-                                  "2",
-                                  PiBookBookmark,
-                                  t("Materials"),
-                                ),
-                                children: <CourseMaterial data={data.course} />,
-                              },
-                            data.course.objection?.tabs &&
-                              data.course.objection?.tabs.length > 0 && {
-                                key: "3",
-                                label: tabLabel(
-                                  "3",
-                                  PiBookOpenLight,
-                                  t("Objection books"),
-                                ),
-                                children: (
-                                  <CourseObjection data={data.course} />
-                                ),
-                              },
-                          ].filter(Boolean)}
-                        />
-                      ) : selectedCourseItem?.type === "topic" ? (
-                        <Topic
+                          data.course.objection?.tabs &&
+                            data.course.objection?.tabs.length > 0 && {
+                              key: "3",
+                              label: tabLabel(
+                                "3",
+                                PiBookOpenLight,
+                                t("Objection books"),
+                              ),
+                              children: <CourseObjection data={data.course} />,
+                            },
+                        ].filter(Boolean)}
+                      />
+                    ) : selectedCourseItem?.type === "topic" ? (
+                      <Topic
+                        course={data.course}
+                        progress={progress}
+                        selectedCourseItem={selectedCourseItem}
+                        setAllowNext={setAllowNext}
+                        modules={modules}
+                        allItems={allItems}
+                      />
+                    ) : selectedCourseItem?.type === "test" ? (
+                      <Test
+                        course={data?.course}
+                        progress={progress}
+                        selectedCourseItem={selectedCourseItem}
+                        setAllowNext={setAllowNext}
+                        modules={modules}
+                        allItems={allItems}
+                        metaData={metaData}
+                        setMetaData={setMetaData}
+                        updateProgress={updateProgress}
+                        next={next}
+                        onInProgressChange={setIsTestInProgress}
+                        footerSlot={testFooterSlot}
+                      />
+                    ) : null}
+                    {selectedCourseItem &&
+                      Object.keys(selectedCourseItem).length > 0 &&
+                      !selectedCourseItem.type && (
+                        <Module
                           course={data.course}
                           progress={progress}
                           selectedCourseItem={selectedCourseItem}
-                          setAllowNext={setAllowNext}
                           modules={modules}
                           allItems={allItems}
+                          selectCourseItem={selectCourseItem}
                         />
-                      ) : selectedCourseItem?.type === "test" ? (
-                        <Test
-                          course={data?.course}
-                          progress={progress}
-                          selectedCourseItem={selectedCourseItem}
-                          setAllowNext={setAllowNext}
-                          modules={modules}
-                          allItems={allItems}
-                          metaData={metaData}
-                          setMetaData={setMetaData}
-                          updateProgress={updateProgress}
-                          next={next}
-                          onInProgressChange={setIsTestInProgress}
-                          footerSlot={testFooterSlot}
-                        />
-                      ) : null}
-                      {selectedCourseItem &&
-                        Object.keys(selectedCourseItem).length > 0 &&
-                        !selectedCourseItem.type && (
-                          <Module
-                            course={data.course}
-                            progress={progress}
-                            selectedCourseItem={selectedCourseItem}
-                            modules={modules}
-                            allItems={allItems}
-                            selectCourseItem={selectCourseItem}
-                          />
-                        )}
-                    </div>
+                      )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </Content>
           {/* Navegação entre perguntas do teste: o Test coloca-a aqui (portal) enquanto decorre */}
@@ -1372,7 +1381,6 @@ const Learning = () => {
               Próximo. Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo).
               Durante o teste é substituída pela navegação entre perguntas. */}
           {selectedCourseItem &&
-            !showCompleted &&
             !isTestInProgress &&
             (windowDimension.width > 1080 || selectedCourseItem.type) && (
               <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
