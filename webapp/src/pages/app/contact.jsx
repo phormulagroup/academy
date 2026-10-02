@@ -18,7 +18,7 @@ import i18n from "../../utils/i18n";
 import { Helmet } from "react-helmet";
 
 export default function Contact() {
-  const { t, languages, messageApi } = useContext(Context);
+  const { t, languages, toastApi } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -35,7 +35,7 @@ export default function Contact() {
       .then((res) => {
         console.log(res);
         setIsButtonLoading(false);
-        messageApi.open({
+        toastApi.open({
           type: "success",
           content: t(
             "You message was sent successfully! We will reply as soon as possible.",
@@ -45,7 +45,7 @@ export default function Contact() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({
+        toastApi.open({
           type: "error",
           content: t(
             "An error occurred while sending your message, try again later.",

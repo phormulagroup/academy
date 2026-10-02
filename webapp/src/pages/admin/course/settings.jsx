@@ -46,7 +46,7 @@ const SECTIONS = [
 ];
 
 export default function Settings({ course, isActive = true, onSaved }) {
-  const { languages, createLog, user, selectedLanguage, messageApi } =
+  const { languages, createLog, user, selectedLanguage, toastApi } =
     useContext(Context);
   const [products, setProducts] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -113,7 +113,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({ type: "error", content: t("Failed to load the users and groups with access to this course") });
+        toastApi.open({ type: "error", content: t("Failed to load the users and groups with access to this course") });
       });
   }
 
@@ -210,7 +210,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
         await axios.post(endpoints.course.setAccessGroups, { data: { id_course: course.id, id_groups: accessGroupIds } });
       }
       if (restrictToPeople && accessLoaded && accessUserIds.length === 0 && accessGroupIds.length === 0) {
-        messageApi.open({ type: "warning", content: t("The course is limited to users and groups, but none was selected: only administrators can access it") });
+        toastApi.open({ type: "warning", content: t("The course is limited to users and groups, but none was selected: only administrators can access it") });
       }
 
       await createLog({
@@ -224,13 +224,13 @@ export default function Settings({ course, isActive = true, onSaved }) {
       console.log(res);
       setIsDirty(false);
       onSaved?.({ name: values.name, internal_name: values.internal_name, status: values.status });
-      messageApi.open({
+      toastApi.open({
         type: "success",
         content: t("Course settings updated successfully"),
       });
     } catch (err) {
       console.log(err);
-      messageApi.open({
+      toastApi.open({
         type: "error",
         content: err.response?.status === 409 ? t("A course with this address already exists") : t("Failed to update course settings"),
       });

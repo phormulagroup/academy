@@ -19,7 +19,7 @@ import {
 const AVATAR_SIZE = { xs: 80, sm: 112, md: 112, lg: 160, xl: 160, xxl: 160 };
 
 export default function UserCard({ courses, editable = false }) {
-  const { user, setUser, messageApi } = useContext(Context);
+  const { user, setUser, toastApi } = useContext(Context);
 
   const { t } = useTranslation();
 
@@ -35,7 +35,7 @@ export default function UserCard({ courses, editable = false }) {
 
     const error = avatarFileError(file);
     if (error) {
-      messageApi.open({ type: "error", content: t(error) });
+      toastApi.open({ type: "error", content: t(error) });
       return;
     }
 
@@ -44,13 +44,13 @@ export default function UserCard({ courses, editable = false }) {
       const res = await uploadUserAvatar(file, user);
       // Só muda a imagem (img): a sessão atual continua válida, não é preciso guardar outro token
       setUser(res.user);
-      messageApi.open({
+      toastApi.open({
         type: "success",
         content: t("Avatar updated successfully"),
       });
     } catch (err) {
       console.log(err);
-      messageApi.open({
+      toastApi.open({
         type: "error",
         content: t("Could not update the avatar, please try again"),
       });

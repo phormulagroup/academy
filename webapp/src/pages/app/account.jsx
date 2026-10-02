@@ -26,7 +26,7 @@ import {
 } from "../../utils/userFields";
 
 export default function Account() {
-  const { user, setUser, languages, selectedLanguage, messageApi } =
+  const { user, setUser, languages, selectedLanguage, toastApi } =
     useContext(Context);
 
   const { t, i18n } = useTranslation();
@@ -73,12 +73,12 @@ export default function Account() {
         if (res.data.user && res.data.token) {
           setUser(res.data.user);
           localStorage.setItem("token", res.data.token);
-          messageApi.open({
+          toastApi.open({
             type: "success",
             content: t("Account updated successfully!"),
           });
         } else {
-          messageApi.open({
+          toastApi.open({
             type: "error",
             content: t("Something wrong happened, try again please."),
           });
@@ -86,7 +86,7 @@ export default function Account() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({
+        toastApi.open({
           type: "error",
           content: t("Something wrong happened, try again please."),
         });

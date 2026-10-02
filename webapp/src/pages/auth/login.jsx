@@ -18,7 +18,7 @@ import {
 } from "../../utils/formFieldError";
 
 export default function Login() {
-  const { login, messageApi, languages, createLog } = useContext(Context);
+  const { login, toastApi, languages, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
@@ -39,19 +39,19 @@ export default function Login() {
               action: "login",
               id_lang: languages.filter((l) => l.code === i18n.language)[0].id,
             });
-            messageApi.open({
+            toastApi.open({
               type: "success",
               content: `${t("Welcome")} ${res.data.user.name}!`,
             });
           } else if (res.data.user.status === "pending")
-            messageApi.open({
+            toastApi.open({
               type: "warning",
               content: t(
                 "This user is still pending on approval. You'll need to wait until we approved you registration.",
               ),
             });
           else if (res.data.user.status === "denied")
-            messageApi.open({
+            toastApi.open({
               type: "error",
               content: t(
                 "This user was denied from our administration. If you have some complaints contact us through email",
@@ -63,7 +63,7 @@ export default function Login() {
         } else if (res.data.message === "The password is not correct, try again.") {
           setFieldError(form, "password", t("The password is not correct, try again."));
         } else {
-          messageApi.open({
+          toastApi.open({
             type: "error",
             content: t(`${res.data.message}`),
           });
@@ -72,7 +72,7 @@ export default function Login() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({
+        toastApi.open({
           type: "error",
           content: t("Something went wrong, try again later."),
         });

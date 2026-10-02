@@ -14,7 +14,7 @@ import endpoints from "../../../utils/endpoints";
 // `data`: { background, text, text_align, text_x, text_y, sample: { name, course } }; o `sample` é opcional (nome e
 // curso de exemplo, para testar textos compridos).
 export default function CertificatePreview({ data }) {
-  const { messageApi } = useContext(Context);
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [pdfUrl, setPdfUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +47,7 @@ export default function CertificatePreview({ data }) {
         } catch {
           // sem corpo legível: usa a mensagem genérica
         }
-        messageApi.open({ type: "error", content: reason || t("The preview could not be generated") });
+        toastApi.open({ type: "error", content: reason || t("The preview could not be generated") });
         setPdfUrl(null);
       })
       .finally(() => {

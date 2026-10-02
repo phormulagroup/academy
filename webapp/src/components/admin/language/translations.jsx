@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from "react";
+import { toastRef } from "../../../utils/notify";
 import RowActions from "../rowActions";
 import {
   Button,
@@ -9,7 +10,6 @@ import {
   Space,
   Popconfirm,
   Pagination,
-  message,
   } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
@@ -153,13 +153,13 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       // Validar que todas as linhas tém key e value
       for (const trans of translationsToUpdate) {
         if (!trans.key || !trans.value) {
-          message.error(t("All rows must have a Key and Translation value"));
+          toastRef.current.error(t("All rows must have a Key and Translation value"));
           return;
         }
       }
 
       if (translationsToUpdate.length === 0) {
-        message.error(t("At least one translation is required"));
+        toastRef.current.error(t("At least one translation is required"));
         return;
       }
 
@@ -192,7 +192,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
       }
     } catch (err) {
       console.error("Erro ao salvar traduções:", err);
-      message.error(t("Error saving translations"));
+      toastRef.current.error(t("Error saving translations"));
     }
   }
 

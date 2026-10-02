@@ -11,7 +11,7 @@ import { requiredRule } from "../../../utils/formFieldError";
 // Criar e editar um grupo; os membros só se gerem ao editar (sem um grupo criado não há a quem os associar)
 export default function UserGroupForm({ data, open, close }) {
   const isUpdate = !!data?.id;
-  const { create, update, messageApi } = useContext(Context);
+  const { create, update, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
@@ -40,7 +40,7 @@ export default function UserGroupForm({ data, open, close }) {
       .then((res) => setAllUsers(res.data.filter((u) => !u.is_deleted && u.id_role !== 1)))
       .catch((err) => {
         console.log(err);
-        messageApi.open({ type: "error", content: t("Failed to load the users") });
+        toastApi.open({ type: "error", content: t("Failed to load the users") });
       });
   }
 
@@ -54,7 +54,7 @@ export default function UserGroupForm({ data, open, close }) {
       .catch((err) => {
         console.log(err);
         setHasMembersError(true);
-        messageApi.open({ type: "error", content: t("Failed to load the members of this group. Reload before saving, so they are not removed by mistake") });
+        toastApi.open({ type: "error", content: t("Failed to load the members of this group. Reload before saving, so they are not removed by mistake") });
       });
   }
 
@@ -75,7 +75,7 @@ export default function UserGroupForm({ data, open, close }) {
 
   async function submit(values) {
     if (isUpdate && hasMembersError) {
-      messageApi.open({ type: "error", content: t("Failed to load the members of this group. Reload before saving, so they are not removed by mistake") });
+      toastApi.open({ type: "error", content: t("Failed to load the members of this group. Reload before saving, so they are not removed by mistake") });
       return;
     }
     setIsButtonLoading(true);
@@ -89,7 +89,7 @@ export default function UserGroupForm({ data, open, close }) {
         await axios.post(endpoints.userGroup.setMembers, { data: { id_group, id_users: members.map((u) => u.id) } });
       } catch (err) {
         console.log(err);
-        messageApi.open({ type: "error", content: t("The group was saved, but the members could not be saved. Try again") });
+        toastApi.open({ type: "error", content: t("The group was saved, but the members could not be saved. Try again") });
         setIsButtonLoading(false);
         return;
       }

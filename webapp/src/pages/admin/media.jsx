@@ -77,7 +77,7 @@ function KindIcon({ type, className }) {
 }
 
 function Media() {
-  const { messageApi } = useContext(Context);
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("media");
   const [selectedMedia, setSelectedMedia] = useState(false);
@@ -134,7 +134,7 @@ function Media() {
       .catch((err) => {
         console.log(err);
         setIsLoading(false);
-        messageApi.open({ type: "error", content: t("Failed to load media") });
+        toastApi.open({ type: "error", content: t("Failed to load media") });
       });
   }
 
@@ -154,7 +154,7 @@ function Media() {
     if (batch.settled < batch.total) return;
 
     if (batch.failed === 0) {
-      messageApi.open({
+      toastApi.open({
         type: "success",
         content:
           batch.total === 1
@@ -162,7 +162,7 @@ function Media() {
             : t("All {{total}} files were uploaded successfully.", { total: batch.total }),
       });
     } else if (batch.succeeded === 0) {
-      messageApi.open({
+      toastApi.open({
         type: "error",
         content:
           batch.total === 1
@@ -170,7 +170,7 @@ function Media() {
             : t("None of the {{total}} files could be uploaded.", { total: batch.total }),
       });
     } else {
-      messageApi.open({
+      toastApi.open({
         type: "warning",
         content: t("{{succeeded}} of {{total}} files were uploaded successfully, but {{failed}} failed.", {
           succeeded: batch.succeeded,
@@ -251,7 +251,7 @@ function Media() {
 
   function handleCopyClipboard(name) {
     navigator.clipboard.writeText(mediaUrl(name));
-    messageApi.open({ type: "success", content: t("Image link copied") });
+    toastApi.open({ type: "success", content: t("Image link copied") });
   }
 
   function handleOpenDelete(item) {
@@ -260,7 +260,7 @@ function Media() {
   }
 
   function handleDeleteSuccess(deletedItem) {
-    messageApi.open({
+    toastApi.open({
       type: "success",
       content: t("Asset") + ` "${deletedItem?.name || deletedItem?.id}" ` + t("was removed successfully"),
     });
@@ -301,7 +301,7 @@ function Media() {
           axios.post(endpoints.media.delete, { data: { id: item.id, name: item.name } }),
         ),
       );
-      messageApi.open({
+      toastApi.open({
         type: "success",
         content:
           itemsToDelete.length === 1
@@ -312,7 +312,7 @@ function Media() {
       getData();
     } catch (err) {
       console.log(err);
-      messageApi.open({ type: "error", content: t("The selected files could not be deleted.") });
+      toastApi.open({ type: "error", content: t("The selected files could not be deleted.") });
     } finally {
       setIsBulkDeleting(false);
     }

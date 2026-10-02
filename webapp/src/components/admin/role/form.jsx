@@ -25,6 +25,7 @@ import {
   LuServer,
   LuShieldCheck,
   LuSettings,
+  LuTicket,
   LuTrash2,
   LuUsers,
   LuUsersRound,
@@ -48,7 +49,7 @@ const ACTIONS = [
 const GROUPS = [
   { key: "web", label: "Website", resources: ["media", "iec", "personalization", "language", "notification", "faqs"] },
   { key: "learning", label: "e-Learning", resources: ["course", "certificate", "report", "document", "download", "product"] },
-  { key: "manage", label: "Management", resources: ["user", "user_group", "form_submission"] },
+  { key: "manage", label: "Management", resources: ["user", "user_group", "form_submission", "ticket"] },
   { key: "email", label: "E-mail", resources: ["email_template", "settings"] },
 ];
 
@@ -68,6 +69,7 @@ const RESOURCE_ICONS = {
   user: <LuUsers />,
   user_group: <LuUsersRound />,
   form_submission: <LuMessageSquareText />,
+  ticket: <LuTicket />,
   email_template: <LuLayoutTemplate />,
   settings: <LuServer />,
 };
@@ -79,7 +81,7 @@ const fullRow = () => ({ can_create: true, can_read: true, can_update: true, can
 // permissões; ao editar guarda nome e permissões de uma vez. O Admin tem sempre acesso total (o servidor ignora a tabela
 // de permissões para ele), por isso não tem matriz.
 export default function RoleForm({ data, open, close }) {
-  const { messageApi, setRoles } = useContext(Context);
+  const { toastApi, setRoles } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -123,7 +125,7 @@ export default function RoleForm({ data, open, close }) {
         console.log(err);
         setHasLoadError(true);
         setIsLoading(false);
-        messageApi.open({ type: "error", content: t("Could not load the current permissions of this role. Close and reopen before saving, so they are not erased by mistake.") });
+        toastApi.open({ type: "error", content: t("Could not load the current permissions of this role. Close and reopen before saving, so they are not erased by mistake.") });
       });
   }
 
@@ -173,21 +175,21 @@ export default function RoleForm({ data, open, close }) {
       .post(endpoints.role.create, { data: values })
       .then((res) => {
         axios.get(endpoints.role.read).then((r) => setRoles(r.data));
-        messageApi.open({ type: "success", content: t("Role created. Now set its permissions below.") });
+        toastApi.open({ type: "success", content: t("Role created. Now set its permissions below.") });
         setIsButtonLoading(false);
         setLocalRole({ id: res.data.insertId, name: values.name });
         setMatrix(Object.fromEntries(RESOURCES.map((r) => [r.key, emptyRow()])));
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({ type: "error", content: err.response?.data?.message || t("Could not create the role.") });
+        toastApi.open({ type: "error", content: err.response?.data?.message || t("Could not create the role.") });
         setIsButtonLoading(false);
       });
   }
 
   async function submitUpdate(values) {
     if (hasLoadError) {
-      messageApi.open({ type: "error", content: t("Could not load the current permissions of this role. Close and reopen before saving, so they are not erased by mistake.") });
+      toastApi.open({ type: "error", content: t("Could not load the current permissions of this role. Close and reopen before saving, so they are not erased by mistake.") });
       return;
     }
     setIsButtonLoading(true);
@@ -201,12 +203,12 @@ export default function RoleForm({ data, open, close }) {
       }
       const rolesRes = await axios.get(endpoints.role.read);
       setRoles(rolesRes.data);
-      messageApi.open({ type: "success", content: t("Role updated successfully.") });
+      toastApi.open({ type: "success", content: t("Role updated successfully.") });
       setIsButtonLoading(false);
       close(true);
     } catch (err) {
       console.log(err);
-      messageApi.open({ type: "error", content: err.response?.data?.message || t("Could not save the role.") });
+      toastApi.open({ type: "error", content: err.response?.data?.message || t("Could not save the role.") });
       setIsButtonLoading(false);
     }
   }
@@ -227,7 +229,7 @@ export default function RoleForm({ data, open, close }) {
       <Form
         form={form}
         onFinish={(values) => (isUpdate ? submitUpdate(values) : submitCreate(values))}
-        onFinishFailed={() => messageApi.open({ type: "error", content: t("Fill in the highlighted fields correctly.") })}
+        onFinishFailed={() => toastApi.open({ type: "error", content: t("Fill in the highlighted fields correctly.") })}
         layout="vertical"
         validateTrigger="onSubmit"
         validateMessages={{ required: t("This field is required!") }}

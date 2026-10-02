@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { toastRef } from "../../../utils/notify";
 import PageFooter from "../../../components/admin/pageFooter";
 import {
   DndContext,
@@ -20,7 +21,6 @@ import {
   Space,
   Typography,
   Popconfirm,
-  message,
   Tag,
 } from "antd";
 import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
@@ -720,10 +720,10 @@ export default function Constructor({ course, isActive = true }) {
       setHistory([]);
       setFuture([]);
 
-      message.success(t("State saved!"));
+      toastRef.current.success(t("State saved!"));
     } catch (err) {
       console.log(err);
-      message.error(t("Failed to save."));
+      toastRef.current.error(t("Failed to save."));
     } finally {
       setIsSaving(false);
     }

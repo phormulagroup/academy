@@ -31,6 +31,7 @@ import {
   LuUsers,
   LuUsersRound,
   LuShieldCheck,
+  LuTicket,
   LuUserCog,
   LuMessageSquareText,
   LuLayoutTemplate,
@@ -56,10 +57,9 @@ const Main = () => {
     windowDimension,
     selectedLanguage,
     setSelectedLanguage,
-    inbox,
+    unreadTicketsCount,
     permissions,
   } = useContext(Context);
-  const unreadMessages = (inbox || []).reduce((sum, n) => sum + (n.unread_messages || 0), 0);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
@@ -173,6 +173,11 @@ const Main = () => {
             key: "/admin/permissions",
             label: t("Permissions"),
             icon: <LuShieldCheck />,
+          },
+          {
+            key: "/admin/tickets",
+            label: t("Tickets"),
+            icon: <LuTicket />,
           },
           {
             key: "/admin/answers",
@@ -318,13 +323,15 @@ const Main = () => {
                       {!isSiderCollapsed && <span className="text-[11px] font-medium leading-none">{selectedLanguage?.code?.toUpperCase()}</span>}
                     </button>
                   </LanguageSelector>
-                  <Tooltip title={t("Inbox")} placement={isSiderCollapsed ? "right" : "top"}>
-                    <Link to="/admin/inbox" aria-label={t("Inbox")} className={SIDER_ICON_BUTTON}>
-                      <Badge count={unreadMessages} size="small" color="#00B9D6" offset={[2, -2]}>
-                        <LuBell className="text-[18px] text-white!" />
-                      </Badge>
-                    </Link>
-                  </Tooltip>
+                  {canAccess("/admin/tickets") && (
+                    <Tooltip title={t("Tickets")} placement={isSiderCollapsed ? "right" : "top"}>
+                      <Link to="/admin/tickets" aria-label={t("Tickets")} className={SIDER_ICON_BUTTON}>
+                        <Badge count={unreadTicketsCount} size="small" color="#00B9D6" offset={[2, -2]}>
+                          <LuTicket className="text-[18px] text-white!" />
+                        </Badge>
+                      </Link>
+                    </Tooltip>
+                  )}
                   <Tooltip title={isSiderCollapsed ? t("Expand menu") : t("Collapse menu")} placement={isSiderCollapsed ? "right" : "top"}>
                     <button
                       type="button"

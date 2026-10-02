@@ -85,7 +85,7 @@ const Test = ({
   // Elemento fixo no fundo do eLearning onde fica a navegação entre perguntas durante o teste
   footerSlot,
 }) => {
-  const { user, messageApi, windowDimension } = useContext(Context);
+  const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
   const isAdmin = user?.id_role === 1;
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
@@ -349,7 +349,7 @@ const Test = ({
     );
 
     if (isValid.filter((item) => !item).length > 0) {
-      messageApi.open({
+      toastApi.open({
         type: "error",
         content: t(
           "You will need to answer ALL questions! Please check if you miss any question.",

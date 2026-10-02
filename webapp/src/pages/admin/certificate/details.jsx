@@ -18,7 +18,7 @@ import useFormErrors from "../../../utils/useFormErrors";
 const EMPTY_SAMPLE = { name: "", course: "" };
 
 export default function CertificateDetails() {
-  const { messageApi } = useContext(Context);
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [previewData, setPreviewData] = useState(null);
@@ -111,7 +111,7 @@ export default function CertificateDetails() {
       .then(() => {
         setData((prev) => ({ ...prev, ...payload }));
         setIsDirty(false);
-        messageApi.open({ type: "success", content: t("Certificate updated successfully!") });
+        toastApi.open({ type: "success", content: t("Certificate updated successfully!") });
       })
       .catch((err) => {
         console.log(err);

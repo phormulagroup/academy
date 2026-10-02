@@ -8,7 +8,7 @@ import Learning from "../pages/app/course/eLearning";
 import Account from "../pages/app/account";
 import Result from "../pages/app/results";
 import Notifications from "../pages/app/notification";
-import Inbox from "../pages/app/inbox";
+import Ticket from "../pages/app/ticket";
 import Document from "../pages/app/document";
 import DocumentDetails from "../pages/app/document/details";
 import Error404 from "../pages/app/404";
@@ -32,7 +32,8 @@ export const userRoutes = [
 			{ path: "downloads/:slug", element: <DownloadDetails /> }, // "/:lang/courses"
 			{ path: "faqs", element: <Faqs /> }, // "/:lang/faqs"
 			{ path: "notifications", element: <Notifications /> }, // "/:lang/notifications"
-			{ path: "inbox", element: <Inbox /> }, // "/:lang/inbox"
+			{ path: "tickets", element: <Ticket /> }, // "/:lang/tickets"
+			{ path: "inbox", element: <Navigate to="../tickets" replace relative="path" /> },
 			{ path: "contact", element: <Contact /> }, // "/:lang/contact"
 			{ path: "courses", element: <Course /> }, // "/:lang/courses"
 			{ path: "courses/:slug", element: <CourseDetails /> }, // "/:lang/courses/:slug"

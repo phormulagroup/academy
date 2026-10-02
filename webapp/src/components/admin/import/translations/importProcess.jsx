@@ -1,5 +1,6 @@
 import { useState, useContext, useEffect } from "react";
-import { Button, Spin, message, Result } from "antd";
+import { toastRef } from "../../../../utils/notify";
+import { Button, Spin, Result } from "antd";
 import { AiOutlineLoading } from "react-icons/ai";
 import axios from "axios";
 import { Context } from "../../../../utils/context";
@@ -33,7 +34,7 @@ function ImportProcess({
         );
 
         if (!targetLanguage) {
-          message.warning(`${t("Language")} ${langCode} ${t("not found, skipping...")}`);
+          toastRef.current.warning(`${t("Language")} ${langCode} ${t("not found, skipping...")}`);
           continue;
         }
 
@@ -108,7 +109,7 @@ function ImportProcess({
       }, 3500);
     } catch (err) {
       console.error("Erro ao importar traduções:", err);
-      message.error(t("Error importing translations. Please try again."));
+      toastRef.current.error(t("Error importing translations. Please try again."));
       setIsLoading(false);
     }
   };

@@ -673,13 +673,6 @@ export default function CourseDetails() {
                                 showInfo={false}
                                 strokeColor="#2F8351"
                                 railColor="#FFFFFF"
-                                // Em lista a barra ocupa metade da largura
-                                className={
-                                  viewType === "list" &&
-                                  windowDimension.width > 640
-                                    ? "w-1/2!"
-                                    : ""
-                                }
                               />
                             </>
                           ) : (
@@ -721,7 +714,7 @@ export default function CourseDetails() {
                                     showInfo={false}
                                     strokeColor="#2F8351"
                                     railColor="#FFFFFF"
-                                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-1/2! mx-auto!" : ""}`}
+                                    
                                   />
                                 </>
                               ) : (

@@ -1,6 +1,7 @@
 import "react-quill-new/dist/quill.snow.css";
 
-import { Button, Input, Modal, Tooltip, message } from "antd";
+import { toastRef } from "../../../utils/notify";
+import { Button, Input, Modal, Tooltip } from "antd";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuRedo2, LuUndo2 } from "react-icons/lu";
@@ -180,7 +181,7 @@ export default function RichTextEditor({
     const quill = getQuill();
     if (!file || !quill) return;
     if (!IMAGE_REGEX.test(file)) {
-      message.error(t("The selected file is not an image."));
+      toastRef.current.error(t("The selected file is not an image."));
       return;
     }
     const url = `${config.server_ip}/media/${file}`;

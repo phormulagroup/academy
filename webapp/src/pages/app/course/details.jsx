@@ -37,7 +37,7 @@ import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 
 export default function CourseDetails() {
-  const { user, languages, messageApi, windowDimension } = useContext(Context);
+  const { user, languages, toastApi, windowDimension } = useContext(Context);
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -161,7 +161,7 @@ export default function CourseDetails() {
               allTests,
             });
           } else {
-            messageApi.open({
+            toastApi.open({
               type: "info",
               content: t(
                 "This course is not available in your country or your access period has expired.",
@@ -181,7 +181,7 @@ export default function CourseDetails() {
     }
 
     getData();
-  }, [slug, user, languages, navigate, t, messageApi, canAccess]);
+  }, [slug, user, languages, navigate, t, toastApi, canAccess]);
 
   // Nº de tópicos/testes (não apagados) concluídos; cada item conta uma só vez, mesmo com registos repetidos
   function countCompletedItems() {

@@ -6,7 +6,7 @@ import { Context } from "../../utils/context";
 import { useTranslation } from "react-i18next";
 
 export default function Delete({ open, close, data, table, onDeleteSuccess }) {
-  const { messageApi, createLog, user, selectedLanguage } = useContext(Context);
+  const { toastApi, createLog, user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media"), user: t("User"), document: t("Document"), download: t("Download"), iec: t("IEC"), userGroup: t("User group"), role: t("Role") });
@@ -34,7 +34,7 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
       if (onDeleteSuccess) {
         onDeleteSuccess(data);
       } else {
-        messageApi.success(`${tablesName[table]} ${t("was successfully deleted and is considered inactive.")}`);
+        toastApi.success(`${tablesName[table]} ${t("was successfully deleted and is considered inactive.")}`);
       }
       setIsButtonLoading(false);
     } catch (err) {

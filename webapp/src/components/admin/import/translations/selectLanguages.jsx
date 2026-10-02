@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button, message, Spin } from "antd";
+import { toastRef } from "../../../../utils/notify";
+import { Button, Spin } from "antd";
 import { AiOutlineLoading } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 
@@ -61,7 +62,7 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
 
   const handleNext = () => {
     if (selectedLanguages.length === 0) {
-      message.error(t("Please select at least one language"));
+      toastRef.current.error(t("Please select at least one language"));
       return;
     }
     next(selectedLanguages);

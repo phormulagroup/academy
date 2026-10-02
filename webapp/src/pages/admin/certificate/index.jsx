@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 const EMPTY_FILTERS = { search: "", status: null };
 
 export default function Certificate() {
-  const { user, messageApi, selectedLanguage } = useContext(Context);
+  const { user, toastApi, selectedLanguage } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -120,7 +120,7 @@ export default function Certificate() {
   }
 
   function handleDeleteSuccess(deletedItem) {
-    messageApi.open({
+    toastApi.open({
       type: "success",
       content:
         t("Certificate") +

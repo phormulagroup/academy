@@ -1,12 +1,12 @@
 import { useContext, useState } from "react";
+import { toastRef } from "../../../utils/notify";
 import {
 	Button,
 	Modal,
 	Form,
 	Input,
 	Select,
-	message,
-} from "antd";
+	} from "antd";
 
 import { Context } from "../../../utils/context";
 import { useNavigate } from "react-router-dom";
@@ -40,7 +40,7 @@ export default function Create({ open, close, products, nameRule, internalNameRu
 			}, 1500);
 		} catch (err) {
 			console.log(err);
-			message.error(err.response?.data?.message || t("Error creating course"));
+			toastRef.current.error(err.response?.data?.message || t("Error creating course"));
 			setIsButtonLoading(false);
 		}
 	}

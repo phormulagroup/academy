@@ -111,7 +111,7 @@ function ReplaceModal({ dialog, onClose, t }) {
 }
 
 function Iec() {
-  const { t, messageApi } = useContext(Context);
+  const { t, toastApi } = useContext(Context);
   const perm = usePermission("iec");
   const [iecs, setIecs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,7 +141,7 @@ function Iec() {
       .then((res) => setIecs(res.data))
       .catch((err) => {
         console.log(err);
-        messageApi.open({ type: "error", content: t("Failed to load IECs") });
+        toastApi.open({ type: "error", content: t("Failed to load IECs") });
       })
       .finally(() => setIsLoading(false));
   }
@@ -191,10 +191,10 @@ function Iec() {
     const counted = b.total - b.skipped;
     // Tudo cancelado (nada foi enviado nem falhou): não faz sentido um "0/0 com sucesso"
     if (counted === 0) {
-      messageApi.open({ key: "iec-upload", type: "info", content: t("Upload cancelled") });
+      toastApi.open({ key: "iec-upload", type: "info", content: t("Upload cancelled") });
       return;
     }
-    messageApi.open({
+    toastApi.open({
       key: "iec-upload",
       type: b.errors.length ? "warning" : "success",
       content: `${b.ok}/${counted} ${t("files uploaded successfully")}${extra ? ` (${extra})` : ""}`,
@@ -269,7 +269,7 @@ function Iec() {
 
   function handleCopyLink(item) {
     navigator.clipboard.writeText(fileUrl(item));
-    messageApi.open({ type: "success", content: t("Link copied") });
+    toastApi.open({ type: "success", content: t("Link copied") });
   }
 
   function handleDownloadQr() {
@@ -287,7 +287,7 @@ function Iec() {
   }
 
   function handleDeleteSuccess(deletedItem) {
-    messageApi.open({
+    toastApi.open({
       type: "success",
       content: `IEC "${deletedItem?.name}" ${t("was removed successfully")}`,
     });

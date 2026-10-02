@@ -10,8 +10,8 @@ import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 
 export default function SMTP() {
-  // messageApi do Context: o contextHolder já está montado no Provider (antes a página não mostrava nenhuma mensagem)
-  const { messageApi } = useContext(Context);
+  // toastApi do Context: o contextHolder já está montado no Provider (antes a página não mostrava nenhuma mensagem)
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,14 +40,14 @@ export default function SMTP() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.error(t("Could not load the SMTP settings"));
+        toastApi.error(t("Could not load the SMTP settings"));
         setIsLoading(false);
       });
   }
 
   function submit(values) {
     if (!data?.id) {
-      messageApi.error(t("Could not load the SMTP settings"));
+      toastApi.error(t("Could not load the SMTP settings"));
       return;
     }
     setIsSaving(true);
@@ -59,12 +59,12 @@ export default function SMTP() {
         },
       })
       .then(() => {
-        messageApi.success(t("SMTP settings saved successfully"));
+        toastApi.success(t("SMTP settings saved successfully"));
         setIsSaving(false);
       })
       .catch((err) => {
         console.log(err);
-        messageApi.error(t("Could not save the SMTP settings, try again"));
+        toastApi.error(t("Could not save the SMTP settings, try again"));
         setIsSaving(false);
       });
   }
@@ -76,9 +76,9 @@ export default function SMTP() {
       .post(endpoints.email.test, { data: form.getFieldsValue() })
       .then((res) => {
         if (res.data?.sent) {
-          messageApi.success(t("Test e-mail sent successfully"));
+          toastApi.success(t("Test e-mail sent successfully"));
         } else {
-          messageApi.error(
+          toastApi.error(
             `${t("Could not send the test e-mail")}${res.data?.message ? `: ${res.data.message}` : ""}`,
           );
         }
@@ -86,7 +86,7 @@ export default function SMTP() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.error(t("Could not send the test e-mail"));
+        toastApi.error(t("Could not send the test e-mail"));
         setIsTesting(false);
       });
   }

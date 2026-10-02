@@ -18,7 +18,7 @@ import endpoints from "../../utils/endpoints";
 
 // Grupos de utilizadores: listas reutilizáveis de pessoas, usadas para restringir o acesso a cursos
 export default function UserGroup() {
-  const { messageApi } = useContext(Context);
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("user_group");
 
@@ -47,7 +47,7 @@ export default function UserGroup() {
       .catch((err) => {
         console.log(err);
         setIsLoading(false);
-        messageApi.open({ type: "error", content: t("Failed to load the user groups") });
+        toastApi.open({ type: "error", content: t("Failed to load the user groups") });
       });
   }
 

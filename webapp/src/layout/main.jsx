@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/BIAL-Regional-Academy.png";
 
 import { Context } from "../utils/context";
+import { usePermission } from "../utils/usePermission";
 
 import Logout from "../components/logout";
 import {
@@ -29,7 +30,7 @@ import {
   MdOutlineDescription,
   MdOutlineFileDownload,
   MdOutlineHelpOutline,
-  MdOutlineMailOutline,
+  MdOutlineConfirmationNumber,
   MdOutlinePersonOutline,
   MdOutlineSchool,
   MdPersonAddAlt,
@@ -94,7 +95,7 @@ const Main = () => {
     languages,
     windowDimension,
     notifications,
-    inbox,
+    unreadTicketsCount,
     isLoggedIn,
     selectedLanguage,
     isStaff,
@@ -139,10 +140,9 @@ const Main = () => {
   const unreadNotifications = (notifications ?? []).filter(
     (n) => n.is_read === 0,
   ).length;
-  const unreadMessages = (inbox ?? []).reduce(
-    (sum, n) => sum + (n.unread_messages || 0),
-    0,
-  );
+  // Quem pode gerir tickets vai para o backoffice; os restantes veem os seus tickets no site
+  const { canRead: canManageTickets } = usePermission("ticket");
+  const ticketsPath = canManageTickets ? "/admin/tickets" : `/${i18n.language}/tickets`;
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -270,16 +270,12 @@ const Main = () => {
                         {t("Notifications")}
                       </DrawerLink>
                       <DrawerLink
-                        to={
-                          user.id_role === 1
-                            ? "/admin/inbox"
-                            : `/${i18n.language}/inbox`
-                        }
-                        icon={MdOutlineMailOutline}
-                        active={currentSection === "inbox"}
-                        badge={unreadMessages}
+                        to={ticketsPath}
+                        icon={MdOutlineConfirmationNumber}
+                        active={currentSection === "tickets"}
+                        badge={unreadTicketsCount}
                         onClick={closeDrawer}>
-                        {t("Inbox")}
+                        {t("Tickets")}
                       </DrawerLink>
                     </div>
                   </>
@@ -373,7 +369,7 @@ const Main = () => {
                                 target="_blank"
                                 rel="noopener noreferrer">
                                 <div className="flex items-center">
-                                  <div className="w-5 mr-2"></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlineAdminPanelSettings className="text-[16px]" /></div>
                                   <p>{t("Go to backoffice")}</p>
                                 </div>
                               </Link>
@@ -386,7 +382,7 @@ const Main = () => {
                                 className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "account" ? "active" : ""}`}
                                 to={`/${i18n.language}/account`}>
                                 <div className="flex items-center">
-                                  <div className="w-5 mr-2"></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlinePersonOutline className="text-[16px]" /></div>
                                   <p>{t("My account")}</p>
                                 </div>
                               </Link>
@@ -399,36 +395,29 @@ const Main = () => {
                                 className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "result" ? "active" : ""}`}
                                 to={`/${i18n.language}/result`}>
                                 <div className="flex items-center">
-                                  <div className="w-5 mr-2"></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlineAssessment className="text-[16px]" /></div>
                                   <p>{t("Results")}</p>
                                 </div>
                               </Link>
                             ),
                           },
                           {
-                            key: "inbox",
+                            key: "tickets",
                             label: (
                               <Link
-                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "inbox" ? "active" : ""}`}
-                                to={
-                                  user.id_role === 1
-                                    ? "/admin/inbox"
-                                    : `/${i18n.language}/inbox`
-                                }>
+                                className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "tickets" ? "active" : ""}`}
+                                to={ticketsPath}>
                                 <div className="flex items-center">
                                   <div className="w-5 h-5 mr-2 flex justify-center items-center">
-                                    {inbox.filter((n) => n.unread_messages > 0)
-                                      .length > 0 ? (
+                                    {unreadTicketsCount > 0 ? (
                                       <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                                        <p className="text-white text-[10px]">
-                                          {inbox.map((n) => n.unread_messages)}
-                                        </p>
+                                        <p className="text-white text-[10px]">{unreadTicketsCount}</p>
                                       </div>
                                     ) : (
-                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
+                                      <MdOutlineConfirmationNumber className="text-[16px]" />
                                     )}
                                   </div>
-                                  <p>{t("Inbox")}</p>
+                                  <p>{t("Tickets")}</p>
                                 </div>
                               </Link>
                             ),
@@ -454,7 +443,7 @@ const Main = () => {
                                         </p>
                                       </div>
                                     ) : (
-                                      <MdNotificationsNone className="text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]" />
+                                      <MdNotificationsNone className="text-[16px]" />
                                     )}
                                   </div>
                                   <p>{t("Notifications")}</p>

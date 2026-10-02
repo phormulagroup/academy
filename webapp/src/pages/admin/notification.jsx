@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 
 export default function Notification() {
-  const { selectedLanguage, messageApi } = useContext(Context);
+  const { selectedLanguage, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("notification");
   const [isLoading, setIsLoading] = useState(true);
@@ -97,11 +97,11 @@ export default function Notification() {
         data: obj,
       })
       .then(() => {
-        messageApi.success(t("Notification sent successfully"));
+        toastApi.success(t("Notification sent successfully"));
       })
       .catch((err) => {
         console.log(err);
-        messageApi.error(t("Something went wrong, please try again"));
+        toastApi.error(t("Something went wrong, please try again"));
       });
   }
 

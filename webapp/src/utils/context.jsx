@@ -1,12 +1,13 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import endpoints from "./endpoints";
 import api from "./api";
-import { message, notification, Tour } from "antd";
+import { notification, Tour } from "antd";
 import i18n from "./i18n";
+import { createToastApi, toastRef } from "./notify";
 import { useTranslation } from "react-i18next";
 
 export const Context = createContext();
@@ -27,15 +28,13 @@ const ContextProvider = ({ children }) => {
 	const [languages, setLanguages] = useState([]);
 	const [selectedLanguage, setSelectedLanguage] = useState(null);
 	const [notifications, setNotifications] = useState([]);
-	const [inbox, setInbox] = useState([]);
-	const [selectedInbox, setSelectedInbox] = useState({});
+	const [unreadTicketsCount, setUnreadTicketsCount] = useState(0); // tickets com novidades por ler (ver /ticket/unreadCount)
 	const [personalization, setPersonalization] = useState({});
 
-	const inboxRef = useRef(inbox);
+	const unreadTicketsRef = useRef(0);
 	const knownNotificationsRef = useRef(null); // ids já conhecidos (null até à 1ª leitura, para não avisar das antigas)
-	const inboxLoadedRef = useRef(false);
+	const ticketsLoadedRef = useRef(false);
 	const isExpiringRef = useRef(false); // evita várias mensagens quando vários pedidos falham ao mesmo tempo
-	const selectedInboxRef = useRef(selectedInbox);
 
 	const [windowDimension, setWindowDimension] = useState({
 		width: window.innerWidth,
@@ -56,9 +55,11 @@ const ContextProvider = ({ children }) => {
 		userGroup: t("User group"),
 	});
 
-	const [messageApi, contextMessageHolder] = message.useMessage();
-	const [notificationApi, contextNotificationHolder] =
-		notification.useNotification();
+	// stack.threshold 1: a partir do 2.º toast em simultâneo ficam empilhados (só o mais recente visível, os outros por trás)
+	const [notificationApi, contextNotificationHolder] = notification.useNotification({ stack: { threshold: 1 } });
+	// Único componente de toasts da app (cartões de notificação), ver utils/notify.js
+	const toastApi = useMemo(() => createToastApi(notificationApi), [notificationApi]);
+	toastRef.current = toastApi;
 
 	const navigate = useNavigate();
 
@@ -103,12 +104,8 @@ const ContextProvider = ({ children }) => {
 	}, [user.id]);
 
 	useEffect(() => {
-		inboxRef.current = inbox;
-	}, [inbox]);
-
-	useEffect(() => {
-		selectedInboxRef.current = selectedInbox;
-	}, [selectedInbox]);
+		unreadTicketsRef.current = unreadTicketsCount;
+	}, [unreadTicketsCount]);
 
 	useEffect(() => {
 		const detectSize = () => {
@@ -134,9 +131,9 @@ const ContextProvider = ({ children }) => {
 	}
 
 	async function pollUpdates(auxUser) {
-		const [notificationsRes, inboxRes] = await Promise.allSettled([
+		const [notificationsRes, ticketsRes] = await Promise.allSettled([
 			axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser.id } }),
-			axios.get(auxUser.id_role === 1 ? endpoints.inbox.readBySupport : endpoints.inbox.readByUser, { params: { id_user: auxUser.id } }),
+			axios.get(endpoints.ticket.unreadCount),
 		]);
 
 		// Notificações: avisa das que ainda não tinham aparecido e não foram lidas
@@ -151,30 +148,14 @@ const ContextProvider = ({ children }) => {
 			setNotifications(rows);
 		}
 
-		// Mensagens: nova thread (suporte) ou mais mensagens por ler numa thread
-		if (inboxRes.status === "fulfilled") {
-			const previous = inboxRef.current;
-			const openId = selectedInboxRef.current?.id;
-			const rows = inboxRes.value.data.map((m) => (m.id === openId ? { ...m, unread_messages: 0 } : m));
-
-			if (inboxLoadedRef.current) {
-				rows.forEach((m) => {
-					const before = previous.find((p) => p.id === m.id);
-					if (!before && auxUser.id_role === 1 && m.id_user !== auxUser.id && !m.id_user_responsible) {
-						showToast("Nova thread", "There is a new thread, someone needs to open it!");
-					} else if (before && m.unread_messages > before.unread_messages) {
-						showToast("New message", "There is a new message, go check it out!");
-					}
-				});
+		// Tickets: avisa quando há mais por ler do que na última leitura
+		if (ticketsRes.status === "fulfilled") {
+			const count = ticketsRes.value.data.count || 0;
+			if (ticketsLoadedRef.current && count > unreadTicketsRef.current) {
+				showToast(t("New ticket activity"), t("There is a new ticket or reply, go check it out!"));
 			}
-			inboxLoadedRef.current = true;
-			setInbox(rows);
-
-			// Thread aberta: só a atualiza se chegou mensagem nova (isto volta a carregar a conversa)
-			const open = rows.find((m) => m.id === openId);
-			if (open && open.created_at !== selectedInboxRef.current.created_at) {
-				setSelectedInbox((prev) => ({ ...prev, text: open.text, created_at: open.created_at, from_id_user: open.from_id_user, to_id_user: open.to_id_user, unread_messages: 0 }));
-			}
+			ticketsLoadedRef.current = true;
+			setUnreadTicketsCount(count);
 		}
 	}
 
@@ -241,18 +222,11 @@ const ContextProvider = ({ children }) => {
 		}
 	}
 
-	async function getMessages(auxUser) {
+	async function getTickets() {
 		try {
-			const res = await axios.get(
-				auxUser.id_role === 1
-					? endpoints.inbox.readBySupport
-					: endpoints.inbox.readByUser,
-				{
-					params: { id_user: auxUser.id },
-				},
-			);
-			inboxLoadedRef.current = true;
-			setInbox(res.data);
+			const res = await axios.get(endpoints.ticket.unreadCount);
+			ticketsLoadedRef.current = true;
+			setUnreadTicketsCount(res.data.count || 0);
 		} catch (err) {
 			console.log(err);
 		}
@@ -268,9 +242,8 @@ const ContextProvider = ({ children }) => {
 		setUser({});
 		setPermissions([]);
 		setNotifications([]);
-		setInbox([]);
-		setSelectedInbox({});
-		messageApi.open({
+		setUnreadTicketsCount(0);
+		toastApi.open({
 			key: "session-expired",
 			type: "warning",
 			content: t("Your session has expired. Please log in again."),
@@ -304,7 +277,7 @@ const ContextProvider = ({ children }) => {
 				});
 				await login({ user: res.data.user, token: token });
 				getNotifications(res.data.user);
-				getMessages(res.data.user);
+				getTickets();
 				getCourses(res.data.user);
 				setTimeout(() => {
 					setIsLoading(false);
@@ -440,13 +413,13 @@ const ContextProvider = ({ children }) => {
 					meta_data: JSON.stringify({ ...obj.data, id: res.insertId }),
 					id_lang: selectedLanguage.id,
 				});
-				messageApi.open({
+				toastApi.open({
 					type: "success",
 					content: `${tablesName[obj.table]} ${t("was successfully created")}.`,
 				});
 				resolve(res);
 			} catch (err) {
-				messageApi.open({
+				toastApi.open({
 					type: "error",
 					content: t("Something went wrong, please try again"),
 				});
@@ -468,13 +441,13 @@ const ContextProvider = ({ children }) => {
 					meta_data: JSON.stringify(obj.data),
 					id_lang: selectedLanguage.id,
 				});
-				messageApi.open({
+				toastApi.open({
 					type: "success",
 					content: `${tablesName[obj.table]} ${t("was successfully updated")}.`,
 				});
 				resolve(res);
 			} catch (err) {
-				messageApi.open({
+				toastApi.open({
 					type: "error",
 					content: t("Something went wrong, please try again"),
 				});
@@ -494,7 +467,7 @@ const ContextProvider = ({ children }) => {
 				logout,
 				isLoading,
 				setIsLoading,
-				messageApi,
+				toastApi,
 				notificationApi,
 				createLog,
 				update,
@@ -516,15 +489,12 @@ const ContextProvider = ({ children }) => {
 				setSelectedLanguage,
 				notifications,
 				setNotifications,
-				inbox,
-				setInbox,
-				selectedInbox,
-				setSelectedInbox,
+				unreadTicketsCount,
+				setUnreadTicketsCount,
 				personalization, 
 				getPersonalization
 			}}
 		>
-			{contextMessageHolder}
 			{contextNotificationHolder}
 			{children}
 		</Context.Provider>

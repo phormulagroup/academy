@@ -9,7 +9,7 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 export default function CourseProgress({ data, user }) {
-  const { messageApi } = useContext(Context);
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
 
   function confirm(module, item) {

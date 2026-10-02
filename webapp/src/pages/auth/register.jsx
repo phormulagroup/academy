@@ -29,7 +29,7 @@ import {
 
 export default function Register() {
   const { t } = useTranslation();
-  const { languages, messageApi } = useContext(Context);
+  const { languages, toastApi } = useContext(Context);
   const [countries, setCountries] = useState([]);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -71,7 +71,7 @@ export default function Register() {
       })
       .then((res) => {
         if (res.data.insertId) {
-          messageApi.success({
+          toastApi.success({
             type: "success",
             content: t(
               "User registered successfully. You're registration is now pending for review.",
@@ -90,7 +90,7 @@ export default function Register() {
           );
           setIsButtonLoading(false);
         } else {
-          messageApi.open({
+          toastApi.open({
             type: "error",
             content: t(
               res.data.message ?? "Something went wrong, try again later.",
@@ -101,7 +101,7 @@ export default function Register() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({
+        toastApi.open({
           type: "error",
           content: t("Something went wrong, try again later."),
         });
@@ -119,7 +119,7 @@ export default function Register() {
         requiredMark="hidden"
         className="auth-form"
         onFinishFailed={() =>
-          messageApi.error(t("Some fields are missing"))
+          toastApi.error(t("Some fields are missing"))
         }>
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="col-span-2 md:col-span-1">

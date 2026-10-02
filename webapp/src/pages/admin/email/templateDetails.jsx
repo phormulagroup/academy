@@ -14,7 +14,7 @@ import EmailEditor from "react-email-editor";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function TemplateDetails() {
-	const { user, messageApi, selectedLanguage } = useContext(Context);
+	const { user, toastApi, selectedLanguage } = useContext(Context);
 	const { t } = useTranslation();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -109,7 +109,7 @@ export default function TemplateDetails() {
 				},
 			})
 			.then((res) => {
-				messageApi.open({
+				toastApi.open({
 					type: "success",
 					content: t("Template updated successfully!"),
 				});
@@ -117,7 +117,7 @@ export default function TemplateDetails() {
 			})
 			.catch((err) => {
 				console.log(err);
-				messageApi.open({
+				toastApi.open({
 					type: "error",
 					content: t("Something went wrong, try again later."),
 				});

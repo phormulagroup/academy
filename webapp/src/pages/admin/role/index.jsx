@@ -18,7 +18,7 @@ const ADMIN_ROLE_ID = 1;
 
 // Funções (papéis) e as permissões de cada uma por secção do backoffice. Só o Admin gere esta página.
 export default function Role() {
-  const { messageApi, setRoles, roles } = useContext(Context);
+  const { toastApi, setRoles, roles } = useContext(Context);
   const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +49,7 @@ export default function Role() {
       .catch((err) => {
         console.log(err);
         setIsLoading(false);
-        messageApi.open({ type: "error", content: t("Failed to load the roles") });
+        toastApi.open({ type: "error", content: t("Failed to load the roles") });
       });
   }
 
@@ -86,7 +86,7 @@ export default function Role() {
         open={isOpenDelete}
         close={closeAction}
         table="role"
-        onDeleteSuccess={() => messageApi.open({ type: "success", content: t("Role deleted successfully.") })}
+        onDeleteSuccess={() => toastApi.open({ type: "success", content: t("Role deleted successfully.") })}
       />
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Form, Upload, Spin, Button, message } from "antd";
+import { toastRef } from "../../../utils/notify";
+import { Form, Upload, Spin, Button } from "antd";
 
 import * as XLSX from "xlsx";
 import { useTranslation } from "react-i18next";
@@ -69,7 +70,7 @@ function UploadFile({
     const isValidFormat = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
     
     if (!isValidFormat) {
-      message.error(t("File has an invalid format. Only .xlsx files are accepted"));
+      toastRef.current.error(t("File has an invalid format. Only .xlsx files are accepted"));
       setFileList([file]);
       setValidatedData(null);
       next(null);
@@ -80,7 +81,7 @@ function UploadFile({
     const reader = new FileReader();
     
     reader.onerror = () => {
-      message.error(t("Error reading the file. Please check the format."));
+      toastRef.current.error(t("Error reading the file. Please check the format."));
       setIsLoading(false);
       setFileList([file]);
       setValidatedData(null);
@@ -103,7 +104,7 @@ function UploadFile({
         // Validar colunas obrigatórias
         if (requiredColumns.length > 0) {
           if (jsonData.length === 0) {
-            message.error(t("The file contains no data or is empty"));
+            toastRef.current.error(t("The file contains no data or is empty"));
             setIsLoading(false);
             setValidatedData(null);
             next(null);
@@ -116,7 +117,7 @@ function UploadFile({
           );
 
           if (missingColumns.length > 0) {
-            message.error(
+            toastRef.current.error(
               t("The file does not contain the required columns."),
             );
             setIsLoading(false);
@@ -129,13 +130,13 @@ function UploadFile({
         const successMsg =
           successMessage ||
           `${t("File uploaded successfully!")} ${jsonData.length} ${t("rows found")}`;
-        message.success(successMsg);
+        toastRef.current.success(successMsg);
         setValidatedData(jsonData);
         setIsLoading(false);
         next(jsonData);
       } catch (err) {
         console.error("Error parsing file:", err);
-        message.error(t("Error reading the Excel file. Check the format."));
+        toastRef.current.error(t("Error reading the Excel file. Check the format."));
         setIsLoading(false);
         setValidatedData(null);
         next(null);

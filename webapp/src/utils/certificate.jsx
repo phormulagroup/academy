@@ -1,6 +1,6 @@
 import axios from "axios";
+import { toastRef } from "./notify";
 import dayjs from "dayjs";
-import { message } from "antd";
 
 import endpoints from "./endpoints";
 import i18n from "./i18n";
@@ -57,6 +57,6 @@ export const downloadCertificate = (item, progress, user) => {
     .then((res) => saveBlob(res.data, fileName))
     .catch(async (err) => {
       console.log(err);
-      message.error(await errorMessage(err));
+      toastRef.current.error(await errorMessage(err));
     });
 };

@@ -1,4 +1,5 @@
-import { Row, Col, message } from "antd";
+import { Row, Col } from "antd";
+import { toastRef } from "../../../utils/notify";
 import { useContext } from "react";
 import axios from "axios";
 import { InboxOutlined } from "@ant-design/icons";
@@ -23,9 +24,9 @@ function Upload() {
         console.log(info.file, info.fileList);
       }
       if (status === "done") {
-        message.success(`${info.file.name} ${t("file uploaded successfully.")}`);
+        toastRef.current.success(`${info.file.name} ${t("file uploaded successfully.")}`);
       } else if (status === "error") {
-        message.error(`${info.file.name} ${t("file upload failed.")}`);
+        toastRef.current.error(`${info.file.name} ${t("file upload failed.")}`);
       }
     },
     beforeUpload: (file) => {

@@ -55,7 +55,7 @@ export async function uploadUserAvatar(file, user) {
   // O servidor define o nome (nome_apelido_avatar_IDIOMA) e substitui o avatar atual do utilizador
   const formData = new FormData();
   formData.append("file", compressed, `avatar.${AVATAR_EXT[file.type] || "png"}`);
-  formData.append("data", JSON.stringify({ type: "multimedia", id_user: user.id }));
+  formData.append("data", JSON.stringify({ type: "avatar", id_user: user.id }));
   const uploaded = await axios.post(endpoints.media.singleUpload, formData);
 
   const res = await axios.post(endpoints.user.update, { data: { id: user.id, img: uploaded.data } });

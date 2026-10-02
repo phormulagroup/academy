@@ -19,7 +19,7 @@ import {
 } from "../../utils/formFieldError";
 
 export default function Recover() {
-  const { messageApi, createLog } = useContext(Context);
+  const { toastApi, createLog } = useContext(Context);
 
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [userRecover] = useState({});
@@ -33,7 +33,7 @@ export default function Recover() {
   const navigate = useNavigate();
 
   const genericError = () =>
-    messageApi.open({
+    toastApi.open({
       type: "error",
       content: t("Something went wrong, please try again"),
     });
@@ -44,14 +44,14 @@ export default function Recover() {
       .post(endpoints.auth.verifyRecoverCode, { data: values })
       .then((res) => {
         if (res.data.user) {
-          messageApi.open({
+          toastApi.open({
             type: "success",
             content: t("The code is correct, now choose your new password"),
           });
           formPassword.setFieldValue("email", values.email);
           setCurrentStep(currentStep + 1);
         } else if (res.data.message) {
-          messageApi.open({ type: "error", content: t(res.data.message) });
+          toastApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
         setIsButtonLoading(false);
       })
@@ -68,7 +68,7 @@ export default function Recover() {
       .post(endpoints.auth.recover, { data: values })
       .then((res) => {
         if (res.data.status) {
-          messageApi.open({
+          toastApi.open({
             type: "success",
             content: t(
               "An e-mail was sent with the code to recover your password",
@@ -86,7 +86,7 @@ export default function Recover() {
             t("There is no account with this e-mail"),
           );
         } else if (res.data.message) {
-          messageApi.open({ type: "error", content: t(res.data.message) });
+          toastApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
         setIsButtonLoading(false);
       })
@@ -103,7 +103,7 @@ export default function Recover() {
       .post(endpoints.auth.password, { data: values })
       .then((res) => {
         if (res.data.status) {
-          messageApi.open({
+          toastApi.open({
             type: "success",
             content: t(
               "The password was changed, now you can login with the new one",
@@ -113,7 +113,7 @@ export default function Recover() {
           createLog({ id_user: userRecover.id, action: "recover password" });
           navigate(`/${i18n.language}/login`);
         } else if (res.data.message) {
-          messageApi.open({ type: "error", content: t(res.data.message) });
+          toastApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
         setIsButtonLoading(false);
       })

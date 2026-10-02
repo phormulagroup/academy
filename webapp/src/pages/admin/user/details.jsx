@@ -55,7 +55,7 @@ import {
 } from "../../../utils/userFields";
 
 export default function UserDetails() {
-  const { user, languages, messageApi } = useContext(Context);
+  const { user, languages, toastApi } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
@@ -211,13 +211,13 @@ export default function UserDetails() {
       .post(endpoints.user.update, { data })
       .then((res) => {
         if (res.data.user) {
-          messageApi.open({
+          toastApi.open({
             type: "success",
             content: t("Account updated successfully!"),
           });
           getData();
         } else {
-          messageApi.open({
+          toastApi.open({
             type: "error",
             content: t("Something wrong happened, try again please."),
           });
@@ -225,7 +225,7 @@ export default function UserDetails() {
       })
       .catch((err) => {
         console.log(err);
-        messageApi.open({
+        toastApi.open({
           type: "error",
           content: t("Something wrong happened, try again please."),
         });

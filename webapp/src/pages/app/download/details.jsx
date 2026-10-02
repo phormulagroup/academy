@@ -91,7 +91,7 @@ function previewUrl(item) {
 }
 
 export default function DownloadDetails() {
-  const { user, languages, createLog, messageApi } = useContext(Context);
+  const { user, languages, createLog, toastApi } = useContext(Context);
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   // Ficheiro (id) que está a ser descarregado, para mostrar o botão em loading
@@ -162,10 +162,10 @@ export default function DownloadDetails() {
         `${config.server_ip}/media/${encodeURIComponent(item.file)}`,
         item.file,
       );
-      messageApi.success(t("File downloaded successfully"));
+      toastApi.success(t("File downloaded successfully"));
     } catch (e) {
       console.log(e);
-      messageApi.error(t("Could not download the file, please try again"));
+      toastApi.error(t("Could not download the file, please try again"));
       setDownloadingId(null);
       return;
     }

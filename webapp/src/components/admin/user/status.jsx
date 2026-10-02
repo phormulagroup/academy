@@ -9,7 +9,7 @@ import endpoints from "../../../utils/endpoints";
 import { requiredSelectRule } from "../../../utils/formFieldError";
 
 export default function Status({ data, open, close, status }) {
-  const { createLog, selectedLanguage, user, messageApi } = useContext(Context);
+  const { createLog, selectedLanguage, user, toastApi } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -35,11 +35,11 @@ export default function Status({ data, open, close, status }) {
       });
       console.log(res);
       setIsButtonLoading(false);
-      messageApi.success(t("User status updated successfully"));
+      toastApi.success(t("User status updated successfully"));
       close(true);
     } catch (err) {
       console.log(err);
-      messageApi.error(t("Something went wrong, please try again"));
+      toastApi.error(t("Something went wrong, please try again"));
       setIsButtonLoading(false);
     }
   }

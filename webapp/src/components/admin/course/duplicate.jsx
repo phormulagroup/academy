@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from "react";
+import { toastRef } from "../../../utils/notify";
 import {
 	Button,
 	Modal,
 	Form,
 	Input,
 	Select,
-	message,
 	notification,
 } from "antd";
 import axios from "axios";
@@ -96,7 +96,7 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 			setIsButtonLoading(false);
 		} catch (err) {
 			console.log("Duplicate error:", err);
-			message.error(err.message || t("Error duplicating course"));
+			toastRef.current.error(err.message || t("Error duplicating course"));
 			setIsButtonLoading(false);
 		}
 	}
