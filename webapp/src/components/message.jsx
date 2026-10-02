@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import endpoints from "../utils/endpoints";
 import { Context } from "../utils/context";
-import TipTapFormField from "./admin/tipTap/tipTapFormField";
+import RichTextFormField from "./admin/richText/richTextFormField";
 import avatarImg from "../assets/Female.svg";
 import CalendarIcon from "../assets/Backoffice/calendar.svg?react";
 import dayjs from "dayjs";
@@ -182,7 +182,7 @@ export default function Message({ open, close }) {
               <div>
                 <Form form={form} onFinish={sendMessage}>
                   <Form.Item name="text">
-                    <TipTapFormField />
+                    <RichTextFormField />
                   </Form.Item>
                 </Form>
                 <div className="flex justify-end items-center">
@@ -195,7 +195,7 @@ export default function Message({ open, close }) {
             <div>
               <Form form={form} onFinish={sendMessage}>
                 <Form.Item name="text">
-                  <TipTapFormField />
+                  <RichTextFormField />
                 </Form.Item>
               </Form>
               <div className="flex justify-end items-center">

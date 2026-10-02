@@ -7,7 +7,7 @@ import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { RxReload } from "react-icons/rx";
-import TipTapFormField from "../../components/admin/tipTap/tipTapFormField";
+import RichTextFormField from "../../components/admin/richText/richTextFormField";
 
 export default function Personalization() {
   const { t, selectedLanguage, update, create, languages, getPersonalization } = useContext(Context);
@@ -74,7 +74,7 @@ export default function Personalization() {
         <p className="text-[12px] italic mb-4 text-[#666] font-ryker">{t("Set up the text for the homepage")}</p>
         <div className="flex flex-col gap-6 mb-4">
           <Form.Item name={"text"} className="mb-0!">
-            <TipTapFormField />
+            <RichTextFormField />
           </Form.Item>
         </div>
       </Form>

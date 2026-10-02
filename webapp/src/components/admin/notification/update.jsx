@@ -3,7 +3,7 @@ import { Button, Drawer, Form, Input, Select } from "antd";
 
 import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
-import TipTapFormField from "../tipTap/tipTapFormField";
+import RichTextFormField from "../richText/richTextFormField";
 import { requiredRichTextRule } from "../../../utils/formFieldError";
 
 export default function Update({ data, open, close, submit }) {
@@ -63,13 +63,13 @@ export default function Update({ data, open, close, submit }) {
           name="title"
           label={t("Title")}
           rules={[requiredRichTextRule]}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
         <Form.Item
           name="description"
           label={t("Description")}
           rules={[requiredRichTextRule]}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
       </Form>
     </Drawer>

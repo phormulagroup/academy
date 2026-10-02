@@ -44,7 +44,10 @@ function VideoPlayer({ link, maxWidth, title, justifyContent, alignItems }) {
       maxWidth={maxWidth}
       justifyContent={justifyContent}
       alignItems={alignItems}>
-      <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+      {/* Cantos arredondados (5px) como os restantes cartões da plataforma */}
+      <div
+        className="rounded-[5px] overflow-hidden"
+        style={{ padding: "56.25% 0 0 0", position: "relative" }}>
         {!isLoaded && (
           <div className="absolute inset-0 flex justify-center items-center bg-white">
             <Lottie
@@ -67,6 +70,7 @@ function VideoPlayer({ link, maxWidth, title, justifyContent, alignItems }) {
             left: 0,
             width: "100%",
             height: "100%",
+            borderRadius: 5,
             opacity: isLoaded ? 1 : 0,
             transition: "opacity 0.3s ease",
           }}

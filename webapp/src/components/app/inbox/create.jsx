@@ -4,7 +4,7 @@ import countries from "../../../utils/countries.json";
 
 import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
-import TipTapFormField from "../../admin/tipTap/tipTapFormField";
+import RichTextFormField from "../../admin/richText/richTextFormField";
 
 export default function Create({ open, close, submit }) {
   const { create, user } = useContext(Context);
@@ -61,7 +61,7 @@ export default function Create({ open, close, submit }) {
           <Input size="large" />
         </Form.Item>
         <Form.Item name="text" label={t("Message")}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
       </Form>
     </Modal>

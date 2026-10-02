@@ -71,15 +71,20 @@
 
 .bial-carousel-stage {
   position: relative;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
 .bial-carousel .swiper {
   height: auto;
   border-radius: 5px;
+  overflow: hidden;
 }
 
 .bial-carousel .swiper-slide {
   background: #ffffff;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
 /* Slide inteiro, sem cortes */
@@ -219,6 +224,7 @@
 }
 
 .bial-carousel.is-fullscreen .bial-carousel-stage {
+  border-radius: 0;
   flex: 1;
   min-height: 0;
   display: flex;
