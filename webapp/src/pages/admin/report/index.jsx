@@ -1,8 +1,8 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
 import { useContext, useEffect, useCallback, useMemo } from "react";
 import { useState } from "react";
 import { Button, Tabs } from "antd";
-import { RxReload } from "react-icons/rx";
 import { LuBookOpen, LuCircleCheck, LuFileQuestion, LuGraduationCap, LuUsers } from "react-icons/lu";
 import { Context } from "../../../utils/context";
 
@@ -125,7 +125,7 @@ export default function Report() {
 		<div>
 			<div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
 				<p className="text-xl font-bold">{t("Reports")}</p>
-				<Button onClick={fetchAllData} loading={isLoading} icon={<RxReload />} aria-label={t("Refresh")} title={t("Refresh")} />
+				<RefreshButton onClick={fetchAllData} loading={isLoading} />
 			</div>
 			<SummaryCards data={data} isLoading={isLoading} />
 			<Tabs

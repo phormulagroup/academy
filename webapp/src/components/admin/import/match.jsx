@@ -1,155 +1,144 @@
-import React, { useEffect, useState } from "react";
-import { Button, Form, Spin, Table, Input, Select } from "antd";
-import * as XLSX from "xlsx";
+import { useMemo, useState } from "react";
+import { Alert, Button, Popconfirm, Select, Table, Tag } from "antd";
+import { RxArrowRight } from "react-icons/rx";
+import { FaFileExcel, FaRegTrashAlt } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 
-import { AiOutlineInfoCircle, AiOutlineLoading } from "react-icons/ai";
-import { requiredSelectRule } from "../../../utils/formFieldError";
+const PREVIEW_ROWS = 5;
+const normalize = (value) => String(value ?? "").trim().toLowerCase();
 
-function MatchColumns({
-  step,
-  next,
-  prev,
-  tableColumns,
-  dbColumns,
-  tableData,
-}) {
+function formatFileSize(bytes) {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Segundo passo: associar cada coluna do ficheiro a um campo. As colunas com o nome do campo (ou da sua etiqueta) já vêm associadas;
+// o que ficar sem campo é ignorado. Mostra uma pré-visualização com o campo a que cada coluna ficou ligada.
+export default function MatchColumns({ file, fields, fileColumns, rows, onRemoveFile, prev, next }) {
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
-  const [form] = Form.useForm();
 
-  useEffect(() => {
-    if (step === 1) {
-      let auxFormInitialValues = [];
-      for (let i = 0; i < tableColumns.length; i++) {
-        auxFormInitialValues.push({
-          column: tableColumns[i].title,
-          db_column: dbColumns.filter(
-            (item) => item.Field.toLowerCase() === tableColumns[i].title,
-          )[0]?.Field,
-        });
-      }
+  const [mapping, setMapping] = useState(() =>
+    Object.fromEntries(
+      fileColumns.map((col) => {
+        const key = normalize(col);
+        const field = fields.find((f) => normalize(f.Field) === key || normalize(t(f.label)) === key);
+        return [col, field?.Field];
+      }),
+    ),
+  );
 
-      form.setFieldValue("columns", auxFormInitialValues);
-      setIsLoading(false);
-    }
-  }, []);
+  const used = useMemo(() => new Set(Object.values(mapping).filter(Boolean)), [mapping]);
+  const mappedCount = used.size;
+  const hasEmail = used.has("email");
+  const hasName = used.has("name") || (used.has("first_name") && used.has("last_name"));
+  const canContinue = hasEmail && hasName;
 
-  function handleSubmit(values) {
-    let newTableData = [];
-    let objectKeys = Object.keys(tableData[0]);
-    for (let i = 0; i < tableData.length; i++) {
-      let newObject = {};
-      objectKeys.filter((item) => {
-        const findDbColumn = values.columns.filter((d) => d.column === item)[0];
-        newObject = {
-          ...newObject,
-          [findDbColumn.db_column]: tableData[i][findDbColumn.column],
-        };
+  const previewColumns = fileColumns.map((col) => ({
+    key: col,
+    dataIndex: col,
+    width: 180,
+    ellipsis: true,
+    title: (
+      <div className="flex min-w-0 flex-col items-start gap-1">
+        <span className="max-w-full truncate font-semibold">{col}</span>
+        {mapping[col] ? (
+          <Tag color="green" className="m-0! max-w-full truncate">
+            → {mapping[col]}
+          </Tag>
+        ) : (
+          <Tag className="m-0!">{t("Ignored")}</Tag>
+        )}
+      </div>
+    ),
+    render: (value) => (value === null || value === undefined || value === "" ? <span className="text-[#BFBFBF]">—</span> : String(value)),
+  }));
+
+  function submit() {
+    const mapped = rows.map((row) => {
+      const out = {};
+      fileColumns.forEach((col) => {
+        if (mapping[col]) out[mapping[col]] = row[col];
       });
-      if (Object.keys(newObject).includes("email") && newObject.email) {
-        newObject.email = newObject.email
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-        newObject.email = newObject.email.replaceAll(" ", "");
-      }
-
-      newTableData.push(newObject);
-    }
-
-    next(newTableData);
+      return out;
+    });
+    next(mapped);
   }
 
   return (
-    <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
-      <Form form={form} onFinish={handleSubmit}>
-        <p className="text-[26px] font-bold text-center mb-0">{t("Match Columns")}</p>
-        <p className="text-center mt-2 mb-4">
-          {t("Check that the columns are associated with a database column")}
-        </p>
+    <div>
+      <p className="mb-0! text-center text-[26px] font-bold">{t("Match columns")}</p>
+      <p className="mb-4! mt-2 text-center">{t("Confirm which field each column of your file corresponds to")}</p>
 
-        <Table
-          className="import-table"
-          columns={tableColumns ?? []}
-          dataSource={tableData.slice(0, 3) ?? []}
-          scroll={{ x: 1 }}
-        />
+      {file && (
+        <div className="mb-4 flex items-center gap-3 rounded-[12px] bg-[#F6F7F9] px-4 py-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] bg-white text-[20px] text-[#163986]">
+            <FaFileExcel />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="mb-0! truncate font-medium">{file.name}</p>
+            <p className="mb-0! text-[12px] text-[#8A8D98]">
+              {t("{{count}} rows", { count: rows.length })} · {t("{{count}} columns", { count: fileColumns.length })}
+              {file.size ? ` · ${formatFileSize(file.size)}` : ""}
+            </p>
+          </div>
+          <Popconfirm title={t("Remove file?")} description={t("Goes back to the upload step to choose another file.")} okText={t("Remove")} cancelText={t("Cancel")} okButtonProps={{ danger: true }} onConfirm={onRemoveFile}>
+            <Button danger type="text" icon={<FaRegTrashAlt />}>
+              {t("Remove")}
+            </Button>
+          </Popconfirm>
+        </div>
+      )}
 
-        <Form.List name="columns">
-          {(fields) => (
-            <div>
-              {fields.map((field) => (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    {field.name === 0 ? <p>{t("Import columns")}</p> : null}
-                    <Form.Item name={[field.name, "column"]}>
-                      <Input readOnly size="large" />
-                    </Form.Item>
-                  </div>
-                  <div>
-                    {field.name === 0 ? <p>{t("Database columns")}</p> : null}
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) =>
-                        prevValues.columns !== currentValues.columns
-                      }>
-                      {({ getFieldValue }) => {
-                        return (
-                          <Form.Item
-                            name={[field.name, "db_column"]}
-                            rules={[requiredSelectRule]}>
-                            <Select
-                              showSearch
-                              allowClear
-                              key={"type"}
-                              size="large"
-                              style={{ width: "100%" }}
-                              placeholder={t("Select...")}
-                              filterOption={(input, option) =>
-                                (option?.value ?? "")
-                                  .toLowerCase()
-                                  .includes(input.toLowerCase())
-                              }
-                              options={dbColumns.map((value, index) => ({
-                                value: value.Field,
-                                label: value.Field,
-                                disabled:
-                                  getFieldValue("columns").filter(
-                                    (item) =>
-                                      item.db_column === value.Field &&
-                                      getFieldValue("columns")[field.name]
-                                        .db_column !== value.Field,
-                                  ).length > 0,
-                              }))}
-                              defaultValue={
-                                dbColumns.filter(
-                                  (item) =>
-                                    item.Field.toLowerCase() ===
-                                    getFieldValue("columns")[field.name].column,
-                                )[0]?.Field
-                              }
-                            />
-                          </Form.Item>
-                        );
-                      }}
-                    </Form.Item>
-                  </div>
-                </div>
-              ))}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="mb-0! text-[13px] font-medium text-[#8A8D98]">{t("Preview (first {{shown}} of {{total}} rows)", { shown: Math.min(PREVIEW_ROWS, rows.length), total: rows.length })}</p>
+        <Tag color={mappedCount === fileColumns.length ? "green" : "default"} className="m-0!">
+          {t("{{mapped}}/{{total}} columns matched", { mapped: fileColumns.filter((c) => mapping[c]).length, total: fileColumns.length })}
+        </Tag>
+      </div>
+      <Table className="mb-6" size="small" bordered pagination={false} columns={previewColumns} dataSource={rows.slice(0, PREVIEW_ROWS).map((row, index) => ({ ...row, __rowKey: index }))} rowKey="__rowKey" scroll={{ x: "max-content" }} />
+
+      <div className="flex flex-col gap-2">
+        {fileColumns.map((col) => (
+          <div key={col} className="flex items-center gap-4 rounded-[12px] bg-[#F6F7F9] px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="mb-0! text-[11px] text-[#8A8D98]">{t("File column")}</p>
+              <p className="mb-0! truncate font-medium">{col}</p>
             </div>
-          )}
-        </Form.List>
-      </Form>
-      <div className="flex justify-center items-center mt-6">
+            <RxArrowRight className="shrink-0 text-[18px] text-[#8A8D98]" />
+            <div className="min-w-0 flex-1">
+              <p className="mb-0! text-[11px] text-[#8A8D98]">{t("Field")}</p>
+              <Select
+                className="w-full"
+                allowClear
+                showSearch={{ optionFilterProp: "label" }}
+                placeholder={t("Ignore this column")}
+                value={mapping[col]}
+                onChange={(value) => setMapping((prevMapping) => ({ ...prevMapping, [col]: value }))}
+                options={fields.map((f) => ({
+                  value: f.Field,
+                  label: `${f.Field} · ${t(f.label)}`,
+                  // Cada campo só pode ficar ligado a uma coluna
+                  disabled: used.has(f.Field) && mapping[col] !== f.Field,
+                }))}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!canContinue && (
+        <Alert className="mt-4" type="warning" showIcon title={t("Match the required fields to continue")} description={t("The e-mail and the name (first and last name, or the full name) are required.")} />
+      )}
+
+      <div className="mt-6 flex items-center justify-center">
         <Button className="mr-2" onClick={prev}>
           {t("Previous")}
         </Button>
-        <Button type="primary" onClick={form.submit}>
+        <Button type="primary" disabled={!canContinue} onClick={submit}>
           {t("Next")}
         </Button>
       </div>
-    </Spin>
+    </div>
   );
 }
-
-export default MatchColumns;

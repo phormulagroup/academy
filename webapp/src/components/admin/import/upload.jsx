@@ -1,256 +1,102 @@
-import { useState, useEffect } from "react";
-import { toastRef } from "../../../utils/notify";
-import { Form, Upload, Spin, Button } from "antd";
-
+import { useContext, useState } from "react";
+import { Button, Spin, Upload } from "antd";
 import * as XLSX from "xlsx";
+import { InboxOutlined, LoadingOutlined } from "@ant-design/icons";
+import { FaFileExcel } from "react-icons/fa";
+import { LuDownload } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
-import {
-  UploadOutlined,
-  InboxOutlined,
-  LoadingOutlined,
-} from "@ant-design/icons";
+
+import { Context } from "../../../utils/context";
 
 const { Dragger } = Upload;
 
-function UploadFile({
-  next,
-  requiredColumns = [],
-  title,
-  description,
-  mode = "dragger",
-  successMessage = null,
-  formatInfo = null,
-  resetTrigger = null,
-}) {
+// Primeiro passo: escolher o ficheiro .xlsx. Dá também um modelo para descarregar, com as colunas esperadas e uma linha de exemplo.
+function UploadFile({ next, fields = [], table }) {
+  const { toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
-  const [fileList, setFileList] = useState([]);
-  const [validatedData, setValidatedData] = useState(null);
 
-  // Reinicializar estado quando resetTrigger muda
-  useEffect(() => {
-    if (resetTrigger !== null) {
-      setFileList([]);
-      setValidatedData(null);
-      setIsLoading(false);
-    }
-  }, [resetTrigger]);
+  function downloadTemplate() {
+    const headers = fields.map((f) => f.Field);
+    const example = fields.map((f) => f.example ?? "");
+    const sheet = XLSX.utils.aoa_to_sheet([headers, example]);
+    sheet["!cols"] = headers.map((h) => ({ wch: Math.max(16, h.length + 4) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Data");
+    XLSX.writeFile(workbook, `${table}-import-template.xlsx`);
+  }
 
-  const uploadProps = {
-    accept: ".xlsx, .xls", 
-    name: "file",
-    multiple: false,
-    onRemove: (file) => {
-      // Remover ficheiro da lista
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-      setValidatedData(null);
-    },
-    beforeUpload: (file) => {
-      setFileList([file]);
-      handleFileChange(file);
-      return false; // Prevenir upload automático
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
-    fileList: mode === "dragger" ? fileList : [],
-    defaultFileList: [],
-  };
-
-  const handleFileChange = (fileOrEvent) => {
-    // Processar ficheiro do Dragger ou Upload button
-    const file = fileOrEvent?.file || fileOrEvent;
-    if (!file) return;
-
-    // Verificar formato do ficheiro
-    const fileName = file.name || file.fileName;
-    const isValidFormat = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
-    
-    if (!isValidFormat) {
-      toastRef.current.error(t("File has an invalid format. Only .xlsx files are accepted"));
-      setFileList([file]);
-      setValidatedData(null);
-      next(null);
-      return;
-    }
-
+  function handleFile(file) {
+    // Leitura/parse síncronos: o Spin dá feedback enquanto decorre
     setIsLoading(true);
     const reader = new FileReader();
-    
     reader.onerror = () => {
-      toastRef.current.error(t("Error reading the file. Please check the format."));
+      toastApi.error(t("Error reading the file. Please check the format."));
       setIsLoading(false);
-      setFileList([file]);
-      setValidatedData(null);
-      next(null);
     };
-
     reader.onload = (event) => {
       try {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, {
-          header: 0,
-          defval: null,
-        });
-
-        setFileList([file]);
-
-        // Validar colunas obrigatórias
-        if (requiredColumns.length > 0) {
-          if (jsonData.length === 0) {
-            toastRef.current.error(t("The file contains no data or is empty"));
-            setIsLoading(false);
-            setValidatedData(null);
-            next(null);
-            return;
-          }
-
-          const firstRow = jsonData[0];
-          const missingColumns = requiredColumns.filter(
-            (col) => !Object.prototype.hasOwnProperty.call(firstRow, col),
-          );
-
-          if (missingColumns.length > 0) {
-            toastRef.current.error(
-              t("The file does not contain the required columns."),
-            );
-            setIsLoading(false);
-            setValidatedData(null);
-            next(null);
-            return;
-          }
-        }
-
-        const successMsg =
-          successMessage ||
-          `${t("File uploaded successfully!")} ${jsonData.length} ${t("rows found")}`;
-        toastRef.current.success(successMsg);
-        setValidatedData(jsonData);
-        setIsLoading(false);
-        next(jsonData);
+        const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        // raw:false devolve o texto como aparece no Excel (datas incluídas), em vez de números de série
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 0, defval: null, raw: false, dateNF: "yyyy-mm-dd" });
+        next(jsonData, file);
       } catch (err) {
-        console.error("Error parsing file:", err);
-        toastRef.current.error(t("Error reading the Excel file. Check the format."));
+        console.log(err);
+        toastApi.error(t("Error reading the Excel file. Check the format."));
+      } finally {
         setIsLoading(false);
-        setValidatedData(null);
-        next(null);
       }
     };
-    
     reader.readAsArrayBuffer(file);
-  };
-
-  const handleConfirm = () => {
-    if (validatedData) {
-      next(validatedData);
-    }
-  };
+  }
 
   return (
-    <Spin
-      spinning={isLoading}
-      tip={mode === "dragger" ? t("Uploading...") : undefined}
-      indicator={<LoadingOutlined spin />}
-    >
-      <div>
-        <p
-          className={
-            mode === "dragger"
-              ? "text-[26px] font-bold text-center"
-              : "text-[26px] font-bold text-center mb-0"
-          }
-        >
-          {title ?? t("Import file")}
-        </p>
-        <p
-          className={
-            mode === "dragger"
-              ? "text-center mt-2 mb-4"
-              : "text-center mt-2 mb-6"
-          }
-        >
-          {description ?? t("Import the file in XLSX format")}
-        </p>
-
-        {mode === "dragger" ? (
-          <Dragger
-            {...uploadProps}
-            style={{ maxHeight: 400 }}
-            className="import_users_dragger"
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="text-[16px]">
-              {t("Click or drag file to this area to upload")}
-            </p>
-            <p className="text-[12px] mt-2">
-              {t("Import a")} <b>XLSX</b> {t("file")}
-            </p>
-          </Dragger>
-        ) : (
-          <div className="flex justify-center mb-6">
-            <Upload {...uploadProps}>
-              <Button icon={<UploadOutlined />} size="large">
-                {t("Select File")}
-              </Button>
-            </Upload>
-          </div>
-        )}
-
-        {fileList.length > 0 && mode === "button" && (
-          <div className="mb-6">
-            <p className="font-semibold mb-2">{t("Selected file:")}</p>
-            <div className={`p-3 rounded border flex justify-between items-center ${
-              validatedData 
-                ? "bg-gray-50 border-gray-200" 
-                : "bg-red-50 border-red-200"
-            }`}>
-              <div>
-                <span className="text-sm">{fileList[0].name}</span>
-                {validatedData && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ {validatedData.length} {t("rows validated")}
-                  </p>
-                )}
-                {!validatedData && (
-                  <p className="text-xs text-red-600 mt-1">
-                    ⚠ {t("Invalid file")}
-                  </p>
-                )}
-              </div>
-              <Button 
-                danger 
-                size="small"
-                onClick={() => {
-                  setFileList([]);
-                  setValidatedData(null);
-                  next(null);
-                }}
-              >
-                {t("Remove")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {formatInfo && (
-          <div className="bg-blue-50 p-4 rounded border border-blue-200">
-            <p className="font-semibold mb-2">{t("Expected format:")}</p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              {formatInfo.map((info, idx) => (
-                <li key={idx}>{info}</li>
-              ))}
-            </ul>
-          </div>
+    <Spin spinning={isLoading} tip={t("Loading...")} indicator={<LoadingOutlined spin />}>
+      <div className="mb-6 flex flex-col items-center text-center">
+        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E6F9FC]">
+          <FaFileExcel className="text-[22px] text-[#163986]" />
+        </div>
+        <p className="mb-1! text-[22px] font-bold">{t("Import file")}</p>
+        <p className="mb-3! text-[#8A8D98]">{t("Upload an XLSX file with the data to import.")}</p>
+        {fields.length > 0 && (
+          <Button icon={<LuDownload />} onClick={downloadTemplate}>
+            {t("Download template")}
+          </Button>
         )}
       </div>
+      <Dragger
+        accept=".xlsx,.xls"
+        name="file"
+        multiple={false}
+        showUploadList={false}
+        beforeUpload={(file) => {
+          handleFile(file);
+          return Upload.LIST_IGNORE; // não envia nada: o ficheiro é lido aqui
+        }}
+        className="rounded-[15px]!">
+        <p className="ant-upload-drag-icon">
+          <InboxOutlined className="text-[#163986]!" />
+        </p>
+        <p className="mb-1! text-[16px] font-medium">{t("Click or drag the file to this area to upload it")}</p>
+        <p className="mb-0! text-[12px] text-[#8A8D98]">
+          {t("Only")} <b>.xlsx</b> {t("files — the 1st row must have the column names")}
+        </p>
+      </Dragger>
+      {fields.length > 0 && (
+        <div className="mt-6 rounded-[12px] bg-[#F6F7F9] p-4">
+          <p className="mb-2! text-[13px] font-bold">{t("Expected columns")}</p>
+          <div className="flex flex-wrap gap-2">
+            {fields.map((f) => (
+              <span key={f.Field} className="rounded-full border border-solid border-[#E5E7EB] bg-white px-3 py-1 text-[12px]">
+                <b>{f.Field}</b> <span className="text-[#8A8D98]">· {t(f.label)}</span>
+                {f.required === true && <span className="ml-1 text-[#DB0709]">*</span>}
+              </span>
+            ))}
+          </div>
+          <p className="mb-0! mt-3 text-[12px] text-[#8A8D98]">{t("Required: e-mail and a name (first and last name, or the full name). The other columns are optional.")}</p>
+        </div>
+      )}
     </Spin>
   );
 }

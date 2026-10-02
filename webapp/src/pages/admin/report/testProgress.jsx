@@ -1,674 +1,374 @@
-import { useEffect, useState, useCallback } from "react";
-import { Button, Form, Select, Switch } from "antd";
-
+import { useMemo, useState } from "react";
+import { Button, Empty, Select, Switch, Tag } from "antd";
+import { LuBookOpen, LuChevronDown, LuCircleCheck, LuPill, LuUsers } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
-import { Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
-// Os gráficos circulares precisam dos elementos registados (antes vinha do dashboard, que já não os usa)
-ChartJS.register(ArcElement, Tooltip, Legend);
-import { LuSearch } from "react-icons/lu";
+import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
 
 // Nº de países visíveis por idioma antes do "Mostrar tudo"
 const COUNTRIES_PREVIEW = 5;
 
-// Barra horizontal compacta (label + barra + valor) usada na média por idioma/país
+const STATUS_COLORS = { notStarted: "#C7F1F8", inProgress: "#9BE3EF", approved: "#40CBE0", notApproved: "#0397AE" };
+const SCORE_BUCKETS = [
+  { key: "<= 100%", color: "#0397AE" },
+  { key: "< 80%", color: "#00B9D6" },
+  { key: "< 60%", color: "#40CBE0" },
+  { key: "< 40%", color: "#9BE3EF" },
+  { key: "< 20%", color: "#C7F1F8" },
+];
+const NO_PRODUCT = "none";
+
+const parseJson = (value, fallback) => {
+  if (!value) return fallback;
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+// Estatísticas dos testes de um conjunto de cursos (os de um produto, ou todos): estado de cada teste por aluno (por iniciar, em progresso,
+// aprovado, reprovado), distribuição da pontuação média e média por idioma e por país. Cada combinação aluno + teste conta uma vez e a
+// pontuação é a média de todas as suas tentativas.
+function computeStats(obj, courses, languages) {
+  const counts = { notStarted: 0, inProgress: 0, approved: 0, notApproved: 0 };
+  const buckets = Object.fromEntries(SCORE_BUCKETS.map((b) => [b.key, 0]));
+  const courseIds = new Set(courses.map((c) => c.id));
+  const users = (obj.users || []).filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
+  const userCountry = Object.fromEntries(users.map((u) => [u.id, u.country]));
+  const userIds = new Set(users.map((u) => u.id));
+
+  // Tentativas por aluno + teste
+  const attemptsByKey = {};
+  (obj.activity || []).forEach((a) => {
+    if (a.activity_type !== "test" || a.is_deleted !== 0 || !userIds.has(a.id_user) || !courseIds.has(a.id_course)) return;
+    const key = `${a.id_user}_${a.id_course_test}`;
+    (attemptsByKey[key] = attemptsByKey[key] || []).push(a);
+  });
+
+  const byLang = {}; // id_lang -> { total, count }
+  const byCountry = {}; // id_lang -> { país -> { total, count } }
+  const byCourse = {}; // id_course -> { total, count }
+  const students = new Set();
+  let scoreTotal = 0;
+  let scoreCount = 0;
+
+  Object.values(attemptsByKey).forEach((attempts) => {
+    const first = attempts[0];
+    students.add(first.id_user);
+    const average =
+      attempts.reduce((sum, a) => {
+        const items = parseJson(a.meta_data, {})?.items ?? [];
+        return sum + (items.length > 0 ? (items.filter((i) => i.is_correct).length * 100) / items.length : 0);
+      }, 0) / attempts.length;
+
+    const completed = attempts.some((a) => a.is_completed === 1);
+    if (completed) counts.approved += 1;
+
+    if (average < 20) buckets["< 20%"] += 1;
+    else if (average < 40) buckets["< 40%"] += 1;
+    else if (average < 60) buckets["< 60%"] += 1;
+    else if (average < 80) buckets["< 80%"] += 1;
+    else buckets["<= 100%"] += 1;
+
+    scoreTotal += average;
+    scoreCount += 1;
+
+    const course = courses.find((c) => c.id === first.id_course);
+    if (course) {
+      byCourse[course.id] = byCourse[course.id] || { total: 0, count: 0 };
+      byCourse[course.id].total += average;
+      byCourse[course.id].count += 1;
+      if (course.id_lang) {
+        byLang[course.id_lang] = byLang[course.id_lang] || { total: 0, count: 0 };
+        byLang[course.id_lang].total += average;
+        byLang[course.id_lang].count += 1;
+        const country = userCountry[first.id_user] || "—";
+        byCountry[course.id_lang] = byCountry[course.id_lang] || {};
+        byCountry[course.id_lang][country] = byCountry[course.id_lang][country] || { total: 0, count: 0 };
+        byCountry[course.id_lang][country].total += average;
+        byCountry[course.id_lang][country].count += 1;
+      }
+    }
+
+    // Sem aprovação: reprovado se esgotou as tentativas permitidas, senão em progresso
+    if (!completed) {
+      const test = (obj.tests || []).find((x) => x.id === first.id_course_test && x.is_deleted !== 1);
+      if (test) {
+        const retries = parseJson(test.settings, null)?.retries_allowed;
+        if (retries && retries > 0 && attempts.length >= retries) counts.notApproved += 1;
+        else counts.inProgress += 1;
+      }
+    }
+  });
+
+  // Testes dos cursos sem nenhuma tentativa de qualquer aluno
+  const testsWithAttempts = new Set(Object.values(attemptsByKey).map((a) => a[0].id_course_test));
+  (obj.tests || []).forEach((test) => {
+    if (test.is_deleted !== 1 && courseIds.has(test.id_course) && !testsWithAttempts.has(test.id)) counts.notStarted += 1;
+  });
+
+  const avgByLang = (languages || []).map((lang) => ({
+    id: lang.id,
+    code: lang.code.toUpperCase(),
+    name: lang.name,
+    flag: lang.flag,
+    count: byLang[lang.id]?.count || 0,
+    avgScore: byLang[lang.id] ? byLang[lang.id].total / byLang[lang.id].count : 0,
+    countries: Object.entries(byCountry[lang.id] || {})
+      .map(([country, d]) => ({ country, avgScore: d.total / d.count, count: d.count }))
+      .sort((a, b) => b.avgScore - a.avgScore || a.country.localeCompare(b.country)),
+  }));
+
+  const courseScores = courses
+    .map((c) => ({ id: c.id, name: c.internal_name || c.name, count: byCourse[c.id]?.count || 0, avgScore: byCourse[c.id] ? byCourse[c.id].total / byCourse[c.id].count : 0 }))
+    .sort((a, b) => b.avgScore - a.avgScore);
+
+  const evaluated = counts.approved + counts.notApproved;
+  return {
+    counts,
+    buckets,
+    avgByLang,
+    courseScores,
+    courses: courses.length,
+    students: students.size,
+    attempts: scoreCount,
+    avgScore: scoreCount > 0 ? scoreTotal / scoreCount : null,
+    approvalRate: evaluated > 0 ? Math.round((counts.approved * 100) / evaluated) : null,
+  };
+}
+
+// Barra horizontal compacta (label + barra + valor) usada nas médias por idioma, país e curso
 function ScoreBar({ label, value, hasData, flag, bold }) {
   return (
     <div className="flex items-center gap-3 py-1">
-      <div className="flex items-center gap-2 w-24 min-w-24 sm:w-36 sm:min-w-36">
-        {flag && (
-          <img
-            src={flag}
-            alt={label}
-            className="max-w-5 max-h-5 rounded-sm"
-            onError={(e) => {
-              e.target.style.display = "none";
-            }}
-          />
-        )}
-        <span
-          title={label}
-          className={`truncate text-[13px] ${bold ? "font-bold text-[#163986]" : "text-[#163986]"}`}>
+      <div className="flex w-24 min-w-24 items-center gap-2 sm:w-40 sm:min-w-40">
+        {flag && <img src={flag} alt={label} className="max-h-5 max-w-5 rounded-sm" onError={(e) => (e.target.style.display = "none")} />}
+        <span title={label} className={`truncate text-[13px] ${bold ? "font-bold text-[#163986]" : "text-[#163986]"}`}>
           {label}
         </span>
       </div>
-      <div className="flex-1 min-w-8 h-2 rounded-full bg-[#E8ECF4] overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${hasData ? Math.max(value, 1) : 0}%`,
-            backgroundColor: bold ? "#163986" : "#00B9D6",
-          }}
-        />
+      <div className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-[#E8ECF4]">
+        <div className="h-full rounded-full" style={{ width: `${hasData ? Math.max(value, 1) : 0}%`, backgroundColor: bold ? "#163986" : "#00B9D6" }} />
       </div>
-      <span
-        className={`w-14 min-w-14 sm:w-16 sm:min-w-16 text-right text-[13px] ${hasData ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}>
-        {hasData ? `${value.toFixed(2)}%` : "—"}
-      </span>
+      <span className={`w-14 min-w-14 text-right text-[13px] sm:w-16 sm:min-w-16 ${hasData ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}>{hasData ? `${value.toFixed(1)}%` : "—"}</span>
     </div>
   );
 }
 
-export default function TestProgress({ data, products, languages }) {
-  const { t } = useTranslation();
-
-  // Guarda a chave (inglês) da label e traduz no render - as traduções são carregadas de forma assíncrona
-  const [graphicGlobal, setGraphicGlobal] = useState({
-    notStarted: { value: 0, label: "Not started", color: "#C7F1F8" },
-    inProgress: { value: 0, label: "In progress", color: "#9BE3EF" },
-    approved: { value: 0, label: "Approved", color: "#40CBE0" },
-    notApproved: { value: 0, label: "Repproved", color: "#0397AE" },
-  });
-  const [groupByCountry, setGroupByCountry] = useState(false);
-  const [expandedLangs, setExpandedLangs] = useState({});
-  const [graphicScore, setGraphicScore] = useState({
-    "<= 100%": { value: 0, label: "<= 100%", color: "#0397AE" },
-    "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
-    "< 60%": { value: 0, label: "< 60%", color: "#40CBE0" },
-    "< 40%": { value: 0, label: "< 40%", color: "#9BE3EF" },
-    "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
-  });
-  const [graphicAvgScoreByLang, setGraphicAvgScoreByLang] = useState([]);
-
-  const [form] = Form.useForm();
-
-  const filterProgressCourses = useCallback(
-    (id_product, obj) => {
-      // Verifica se os dados necessários estão presentes
-      if (!obj || !obj.courses || !obj.tests || !obj.activity || !obj.users) {
-        // Se algum dos dados estiver ausente, reinicializa os gráficos com valores zero
-        setGraphicGlobal((prev) => ({
-          notStarted: { ...prev.notStarted, value: 0 },
-          inProgress: { ...prev.inProgress, value: 0 },
-          approved: { ...prev.approved, value: 0 },
-          notApproved: { ...prev.notApproved, value: 0 },
-        }));
-        setGraphicScore((prev) => ({
-          "<= 100%": { ...prev["<= 100%"], value: 0 },
-          "< 80%": { ...prev["< 80%"], value: 0 },
-          "< 60%": { ...prev["< 60%"], value: 0 },
-          "< 40%": { ...prev["< 40%"], value: 0 },
-          "< 20%": { ...prev["< 20%"], value: 0 },
-        }));
-        setGraphicAvgScoreByLang(
-          (languages || []).map((lang) => ({
-            id: lang.id,
-            code: lang.code.toUpperCase(),
-            name: lang.name,
-            avgScore: 0,
-            count: 0,
-            flag: lang.flag,
-            countries: [],
-          })),
-        );
-        return;
-      }
-
-      // Inicializa os contadores para os gráficos
-      let auxGraphicGlobalValues = {
-        notStarted: 0,
-        inProgress: 0,
-        approved: 0,
-        notApproved: 0,
-      };
-      let auxGraphicScoreValues = {
-        "<= 100%": 0,
-        "< 80%": 0,
-        "< 60%": 0,
-        "< 40%": 0,
-        "< 20%": 0,
-      };
-
-      // Filtra os cursos com base no produto selecionado (se houver) - admins veem draft e published courses
-      let filteredCourses = obj.courses.filter((c) => c.is_deleted !== 1);
-      if (id_product) {
-        filteredCourses = filteredCourses.filter(
-          (c) => c.id_product === id_product,
-        );
-      }
-
-      // Filtra apenas os users regulares (id_role = 2) com status aprovado (aprovados pelo administrador)
-      // Exclui testes de cursos em draft - que só devem ser vistos pelo admin
-      let users = obj.users.filter(
-        (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
-      );
-      let testScoreMap = {};
-      let testScoreByCountry = {}; // { [id_lang]: { [country]: { total, count } } }
-      let userCountry = {};
-      users.forEach((u) => {
-        userCountry[u.id] = u.country;
-      });
-      let testUserAttempts = {}; // Agrupa tentativas por combinação de user e test
-      let notApprovedTests = new Set(); // Rastreia combinações de user/test que não foram aprovadas
-
-      // Primeira passagem: Agrupa tentativas por combinação de user e test, e calcula a pontuação média
-      for (let u = 0; u < users.length; u++) {
-        let findActivity = obj.activity.filter(
-          (_a) =>
-            _a.id_user === users[u].id &&
-            _a.activity_type === "test" &&
-            _a.is_deleted === 0,
-        );
-
-        if (findActivity.length > 0) {
-          // Filtra apenas atividades que pertencem a cursos filtrados
-          findActivity = findActivity.filter((_a) =>
-            filteredCourses.some((c) => c.id === _a.id_course),
-          );
-
-          if (findActivity.length > 0) {
-            for (let i = 0; i < findActivity.length; i++) {
-              let item = findActivity[i];
-              let key = `${users[u].id}_${item.id_course_test}`;
-
-              if (!testUserAttempts[key]) {
-                testUserAttempts[key] = [];
-              }
-              testUserAttempts[key].push(item);
-            }
-          }
-        }
-      }
-
-      // Segunda passagem: Calcula a pontuação média, status e distribuições para cada combinação de user/test
-      for (let key in testUserAttempts) {
-        let attempts = testUserAttempts[key];
-
-        // Calcula a porcentagem média em todas as tentativas
-        let totalPercentage = 0;
-        let firstItem = attempts[0];
-
-        for (let j = 0; j < attempts.length; j++) {
-          let item = attempts[j];
-          item.meta_data =
-            item.meta_data && typeof item.meta_data === "string"
-              ? JSON.parse(item.meta_data)
-              : item.meta_data;
-
-          let totalItems = item.meta_data.items;
-          let percentage =
-            totalItems.length > 0
-              ? (totalItems.filter((_t) => _t.is_correct).length * 100) /
-                totalItems.length
-              : 0;
-
-          totalPercentage += percentage;
-        }
-
-        let avgPercentage =
-          attempts.length > 0 ? totalPercentage / attempts.length : 0;
-
-        // Verifica se o teste foi concluído (is_completed === 1) para determinar se é aprovado
-        let isCompleted = attempts.some((a) => a.is_completed === 1);
-
-        if (isCompleted) {
-          auxGraphicGlobalValues.approved += 1;
-        }
-
-        /**
-         * Distribuição de pontuação média em faixas:
-         * < 20%: 0 to 19.99%
-         * < 40%: 20% to 39.99%
-         * < 60%: 40% to 59.99%
-         * < 80%: 60% to 79.99%
-         * <= 100%: 80% to 100%
-         */
-
-        // Distribui a pontuação média em faixas para o gráfico de pontuação
-        if (avgPercentage < 20) auxGraphicScoreValues["< 20%"] += 1;
-        else if (avgPercentage < 40) auxGraphicScoreValues["< 40%"] += 1;
-        else if (avgPercentage < 60) auxGraphicScoreValues["< 60%"] += 1;
-        else if (avgPercentage < 80) auxGraphicScoreValues["< 80%"] += 1;
-        else if (avgPercentage <= 100) auxGraphicScoreValues["<= 100%"] += 1;
-
-        // Registra a pontuação por idioma - apenas de cursos não deletados (filteredCourses)
-        let c = filteredCourses.filter(
-          (_c) => _c.id === firstItem.id_course,
-        )[0];
-        if (c && c.id_lang) {
-          if (!testScoreMap[c.id_lang]) {
-            testScoreMap[c.id_lang] = { total: 0, count: 0 };
-          }
-          testScoreMap[c.id_lang].total += avgPercentage;
-          testScoreMap[c.id_lang].count += 1;
-
-          // Registra a pontuação por país do utilizador, dentro do idioma do curso
-          const country = userCountry[firstItem.id_user] || "—";
-          if (!testScoreByCountry[c.id_lang]) testScoreByCountry[c.id_lang] = {};
-          if (!testScoreByCountry[c.id_lang][country]) {
-            testScoreByCountry[c.id_lang][country] = { total: 0, count: 0 };
-          }
-          testScoreByCountry[c.id_lang][country].total += avgPercentage;
-          testScoreByCountry[c.id_lang][country].count += 1;
-        }
-
-        // Verifica se o teste tem limite de tentativas e se o user excedeu esse limite sem passar, para marcar como "Not Approved"
-        const { id_course_test } = firstItem;
-        let findTest = obj.tests.filter(
-          (c) => c.id === id_course_test && c.is_deleted !== 1,
-        )[0];
-        if (findTest && !isCompleted) {
-          // Apenas considera para "Not Approved" se o teste não foi concluído
-          let testSettings =
-            findTest.settings && typeof findTest.settings === "string"
-              ? JSON.parse(findTest.settings)
-              : findTest.settings;
-
-          // Verifica se o teste tem limite de tentativas configurado
-          if (
-            testSettings &&
-            testSettings.retries_allowed &&
-            testSettings.retries_allowed > 0
-          ) {
-            if (attempts.length >= testSettings.retries_allowed) {
-              notApprovedTests.add(key);
-            } else {
-              // User tem tentativas restantes = In Progress
-              auxGraphicGlobalValues.inProgress += 1;
-            }
-          } else {
-            // Se o teste NÃO tem retries_allowed configurado, trata como In Progress (tentativas ilimitadas/em andamento)
-            auxGraphicGlobalValues.inProgress += 1;
-          }
-        }
-      }
-
-      // Count "Not Approved" tests - combinações de user/test que excederam o limite de tentativas sem passar
-      auxGraphicGlobalValues.notApproved = notApprovedTests.size;
-
-      // Count "Not Started" tests - testes em cursos filtrados que não têm nenhuma tentativa registrada
-      // Exclui testes deletados (is_deleted = 1)
-      let allTestsInFilteredCourses = new Set();
-      for (let i = 0; i < filteredCourses.length; i++) {
-        let testsForCourse = obj.tests.filter(
-          (t) => t.id_course === filteredCourses[i].id && t.is_deleted !== 1,
-        );
-        for (let j = 0; j < testsForCourse.length; j++) {
-          allTestsInFilteredCourses.add(testsForCourse[j].id);
-        }
-      }
-
-      // Verifica quais testes em cursos filtrados não têm tentativas registradas
-      let testsWithAttempts = new Set();
-      for (let key in testUserAttempts) {
-        let attempts = testUserAttempts[key];
-        if (attempts.length > 0) {
-          testsWithAttempts.add(attempts[0].id_course_test);
-        }
-      }
-
-      // Not started = testes em cursos filtrados que não têm tentativas registradas
-      for (let testId of allTestsInFilteredCourses) {
-        if (!testsWithAttempts.has(testId)) {
-          auxGraphicGlobalValues.notStarted += 1;
-        }
-      }
-
-      // Calcula a pontuação média por idioma
-      const availableLangs = languages || [];
-      const avgByLang = availableLangs.map((lang) => {
-        const langData = testScoreMap[lang.id];
-        const avgScore = langData
-          ? (langData.total / langData.count).toFixed(2)
-          : 0;
-        // Média por país (apenas países com tentativas), ordenada da maior para a menor
-        const countries = Object.entries(testScoreByCountry[lang.id] || {})
-          .map(([country, d]) => ({
-            country,
-            avgScore: parseFloat((d.total / d.count).toFixed(2)),
-            count: d.count,
-          }))
-          .sort(
-            (a, b) =>
-              b.avgScore - a.avgScore || a.country.localeCompare(b.country),
-          );
-        return {
-          id: lang.id,
-          code: lang.code.toUpperCase(),
-          name: lang.name,
-          avgScore: parseFloat(avgScore),
-          count: langData ? langData.count : 0,
-          flag: lang.flag,
-          countries,
-        };
-      });
-
-      setGraphicAvgScoreByLang(avgByLang);
-
-      // Atualiza os estados dos gráficos com os valores calculados
-      setGraphicGlobal((prev) => ({
-        notStarted: {
-          ...prev.notStarted,
-          value: auxGraphicGlobalValues.notStarted,
-        },
-        inProgress: {
-          ...prev.inProgress,
-          value: auxGraphicGlobalValues.inProgress,
-        },
-        approved: { ...prev.approved, value: auxGraphicGlobalValues.approved },
-        notApproved: {
-          ...prev.notApproved,
-          value: auxGraphicGlobalValues.notApproved,
-        },
-      }));
-      setGraphicScore((prev) => ({
-        "<= 100%": {
-          ...prev["<= 100%"],
-          value: auxGraphicScoreValues["<= 100%"],
-        },
-        "< 80%": { ...prev["< 80%"], value: auxGraphicScoreValues["< 80%"] },
-        "< 60%": { ...prev["< 60%"], value: auxGraphicScoreValues["< 60%"] },
-        "< 40%": { ...prev["< 40%"], value: auxGraphicScoreValues["< 40%"] },
-        "< 20%": { ...prev["< 20%"], value: auxGraphicScoreValues["< 20%"] },
-      }));
-    },
-    [languages],
-  );
-
-  useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      // Recalcula os gráficos com base nos dados recebidos
-      form.resetFields();
-      filterProgressCourses(null, data); // Chama a função de filtragem sem filtro de produto inicialmente
-    }
-  }, [data, filterProgressCourses, form]);
-
-  function filterData(values) {
-    filterProgressCourses(values.product || null, data);
-  }
-
-  return (
+const Kpi = ({ icon, label, value }) => (
+  <div className="flex items-center gap-3 rounded-[14px] bg-white p-4 shadow">
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[#E6F9FC] text-[20px] text-[#163986]">{icon}</span>
     <div>
-      <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
-          {/* Filtrar por produto */}
-          <Form.Item name="product" className="mb-0! w-full sm:w-auto">
-            <Select
-              allowClear
-              className="w-full sm:w-[260px]!"
-              placeholder={t("Select product")}
-              showSearch={{ optionFilterProp: ["label"] }}
-              options={products?.map((p) => ({ label: p.name, value: p.id }))}
-            />
-          </Form.Item>
-          <Button onClick={form.submit} type="primary" icon={<LuSearch />}>
-            {t("Search")}
-          </Button>
-        </div>
-      </Form>
-      <div className="p-4 bg-white rounded-[5px]">
-        <p className="font-bold font-ryker">{t("Test progress")}</p>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16 mt-4">
-          <div>
-            <p className="font-bold mb-2 font-ryker">{t("Global")}</p>
-            <div className="p-4 border border-[#C0C0C0] rounded-[5px] flex flex-col">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full">
-                <div className="flex flex-col">
-                  <p className="font-bold mb-4 font-ryker">{t("Status distribution")}</p>
-                  <div className="flex justify-between items-center gap-4 w-full!">
-                    <div className="w-1/2">
-                      <Doughnut
-                        className="w-full! h-full!"
-                        data={{
-                          labels: [
-                            t(graphicGlobal.notStarted?.label),
-                            t(graphicGlobal.approved?.label),
-                            t(graphicGlobal.inProgress?.label),
-                            t(graphicGlobal.notApproved?.label),
-                          ],
-                          datasets: [
-                            {
-                              data: [
-                                graphicGlobal.notStarted.value,
-                                graphicGlobal.approved.value,
-                                graphicGlobal.inProgress.value,
-                                graphicGlobal.notApproved.value,
-                              ],
-                              backgroundColor: [
-                                graphicGlobal.notStarted.color,
-                                graphicGlobal.approved.color,
-                                graphicGlobal.inProgress.color,
-                                graphicGlobal.notApproved.color,
-                              ],
-                              borderWidth: 1,
-                            },
-                          ],
-                        }}
-                        options={{
-                          plugins: {
-                            legend: {
-                              display: false,
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                    <div className="w-1/2">
-                      {Object.keys(graphicGlobal).map((_k) => {
-                        const item = graphicGlobal[_k];
-                        if (!item || !item.label) return null;
-                        return (
-                          <div
-                            key={_k}
-                            className="flex justify-between items-center">
-                            <div className="flex items-center">
-                              <div
-                                className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`}
-                                style={{
-                                  backgroundColor: item.color,
-                                }}></div>
-                              <p className="text-[11px]">{t(item.label)}</p>
-                            </div>
-                            <div className="min-w-10 flex justify-center items-center">
-                              <p className="text-[11px]">{item.value}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <p className="font-bold mb-4 font-ryker">{t("Score percentage")}</p>
-                  <div className="flex justify-between items-center gap-4 w-full!">
-                    <div className="w-1/2">
-                      <Doughnut
-                        className="w-full! h-full!"
-                        data={{
-                          labels: [
-                            graphicScore["<= 100%"].label,
-                            graphicScore["< 80%"].label,
-                            graphicScore["< 60%"].label,
-                            graphicScore["< 40%"].label,
-                            graphicScore["< 20%"].label,
-                          ],
-                          datasets: [
-                            {
-                              data: [
-                                graphicScore["<= 100%"].value,
-                                graphicScore["< 80%"].value,
-                                graphicScore["< 60%"].value,
-                                graphicScore["< 40%"].value,
-                                graphicScore["< 20%"].value,
-                              ],
-                              backgroundColor: [
-                                graphicScore["<= 100%"].color,
-                                graphicScore["< 80%"].color,
-                                graphicScore["< 60%"].color,
-                                graphicScore["< 40%"].color,
-                                graphicScore["< 20%"].color,
-                              ],
-                              borderWidth: 1,
-                            },
-                          ],
-                        }}
-                        options={{
-                          plugins: {
-                            legend: {
-                              display: false,
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                    <div>
-                      {Object.keys(graphicScore).map((_k) => {
-                        const item = graphicScore[_k];
-                        if (!item || !item.label) return null;
-                        return (
-                          <div
-                            key={_k}
-                            className="flex justify-between items-center">
-                            <div className="flex items-center">
-                              <div
-                                className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`}
-                                style={{
-                                  backgroundColor: item.color,
-                                }}></div>
-                              <p className="text-[11px]">{item.label}</p>
-                            </div>
-                            <div className="min-w-10 flex justify-center items-center">
-                              <p className="text-[11px]">{item.value}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+      <p className="mb-0! text-[22px] font-bold leading-tight">{value}</p>
+      <p className="mb-0! text-[12px] text-[#8A8D98]">{label}</p>
+    </div>
+  </div>
+);
+
+// Média por idioma ou, em alternativa, por país dentro de cada idioma
+function LangScores({ stats, groupByCountry, expanded, toggle, prefix, t }) {
+  const langs = stats.avgByLang.filter((l) => l.count > 0 || !groupByCountry);
+  if (stats.attempts === 0) return <p className="py-4 text-center text-[13px] text-[#8B9CC3]">{t("No data available")}</p>;
+  if (!groupByCountry) {
+    return (
+      <div className="flex flex-col divide-y divide-[#E8ECF4]">
+        {stats.avgByLang.map((l) => (
+          <ScoreBar key={l.id} label={l.code} flag={l.flag} value={l.avgScore} hasData={l.count > 0} bold />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex max-h-130 flex-col gap-3 overflow-y-auto pr-1">
+      {langs.map((l) => {
+        const key = `${prefix}-${l.id}`;
+        const visible = expanded[key] ? l.countries : l.countries.slice(0, COUNTRIES_PREVIEW);
+        return (
+          <div key={l.id} className="shrink-0 overflow-hidden rounded-[12px] border border-[#E5E7EB]">
+            <div className="flex items-center justify-between gap-2 bg-[#F6F7F9] px-3 py-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <img src={l.flag} alt={l.code} className="max-h-5 max-w-5 rounded-sm" onError={(e) => (e.target.style.display = "none")} />
+                <span className="text-[13px] font-bold text-[#163986]">{l.code}</span>
+                <span className="text-[12px] text-[#8B9CC3]">
+                  {l.countries.length} {t("Countries")}
+                </span>
               </div>
+              <span className="rounded-full bg-[#163986] px-2 py-0.5 text-[13px] font-bold text-white">{l.avgScore.toFixed(1)}%</span>
+            </div>
+            <div className="px-3 py-2">
+              {visible.map((c) => (
+                <ScoreBar key={c.country} label={t(c.country)} value={c.avgScore} hasData={c.count > 0} />
+              ))}
+              {l.countries.length > COUNTRIES_PREVIEW && (
+                <button type="button" className="mt-1 cursor-pointer border-0 bg-transparent text-[12px] font-bold text-[#00B9D6] hover:underline" onClick={() => toggle(key)}>
+                  {expanded[key] ? t("Show less") : `${t("Show all")} (${l.countries.length})`}
+                </button>
+              )}
             </div>
           </div>
-          <div>
-            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-              <p className="font-bold font-ryker">
-                {t("Average score by language")}
-              </p>
-              {/* Alterna entre média por idioma e média por país (dentro de cada idioma) - afeta apenas esta secção */}
-              <div className="flex items-center gap-2 text-[13px]">
-                <span
-                  className={`cursor-pointer ${!groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}
-                  onClick={() => setGroupByCountry(false)}>
-                  {t("By language")}
-                </span>
-                <Switch
-                  size="small"
-                  checked={groupByCountry}
-                  onChange={setGroupByCountry}
-                  aria-label={t("By country")}
-                />
-                <span
-                  className={`cursor-pointer ${groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}
-                  onClick={() => setGroupByCountry(true)}>
-                  {t("By country")}
-                </span>
-              </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Um produto: cabeçalho com os números principais e, ao abrir, as estatísticas de todos os cursos associados a esse produto
+function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, toggleExpanded, prefix, t }) {
+  const statusSegments = [
+    { label: t("Not started"), value: stats.counts.notStarted, color: STATUS_COLORS.notStarted },
+    { label: t("In progress"), value: stats.counts.inProgress, color: STATUS_COLORS.inProgress },
+    { label: t("Approved"), value: stats.counts.approved, color: STATUS_COLORS.approved },
+    { label: t("Repproved"), value: stats.counts.notApproved, color: STATUS_COLORS.notApproved },
+  ];
+  const scoreRows = SCORE_BUCKETS.map((b) => ({ label: b.key, value: stats.buckets[b.key], color: b.color }));
+
+  return (
+    <div className="overflow-hidden rounded-[16px] border border-solid border-[#E5E7EB] bg-white">
+      <div role="button" tabIndex={0} onClick={onToggle} onKeyDown={(e) => e.key === "Enter" && onToggle()} className="flex cursor-pointer flex-wrap items-center gap-4 p-4 hover:bg-[#FAFBFD]">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[#E6F9FC] text-[20px] text-[#163986]">
+          <LuPill />
+        </span>
+        <div className="min-w-[180px] flex-1">
+          <p className="mb-0! text-[16px] font-bold">{title}</p>
+          <p className="mb-0! text-[12px] text-[#8A8D98]">
+            {t("{{count}} courses", { count: stats.courses })} · {t("{{count}} students evaluated", { count: stats.students })}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Tag color="blue" className="m-0!">
+            {t("Average score")}: {stats.avgScore === null ? "—" : `${stats.avgScore.toFixed(1)}%`}
+          </Tag>
+          <Tag color="green" className="m-0!">
+            {t("Approval rate")}: {stats.approvalRate === null ? "—" : `${stats.approvalRate}%`}
+          </Tag>
+          <LuChevronDown className={`text-[20px] text-[#163986] transition-transform ${open ? "rotate-180" : ""}`} />
+        </div>
+      </div>
+
+      {open && (
+        <div className="grid grid-cols-1 gap-6 border-0 border-t border-solid border-[#EEF0F5] bg-[#F7F8FA] p-4 md:p-5 xl:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+              <p className="mb-4! text-[14px] font-bold">{t("Status distribution")}</p>
+              <StackedBar segments={statusSegments} />
             </div>
-            <div className="p-4 border border-[#C0C0C0] rounded-[5px]">
-              {graphicAvgScoreByLang && graphicAvgScoreByLang.length > 0 ? (
-                !groupByCountry ? (
-                  <div className="flex flex-col divide-y divide-[#E8ECF4]">
-                    {graphicAvgScoreByLang.map((item, index) => (
-                      <ScoreBar
-                        key={item.id || index}
-                        label={item.code}
-                        flag={item.flag}
-                        value={item.avgScore}
-                        hasData={item.count > 0}
-                        bold
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3 max-h-130 overflow-y-auto pr-1">
-                    {graphicAvgScoreByLang.map((item, index) => {
-                      const expanded = !!expandedLangs[item.id];
-                      const visibleCountries = expanded
-                        ? item.countries
-                        : item.countries.slice(0, COUNTRIES_PREVIEW);
-                      return (
-                        <div
-                          key={item.id || index}
-                          className="shrink-0 rounded-[5px] border border-[#C5CEE1] overflow-hidden">
-                          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#F3F5FA]">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <img
-                                src={item.flag}
-                                alt={item.code}
-                                className="max-w-5 max-h-5 rounded-sm"
-                                onError={(e) => {
-                                  e.target.style.display = "none";
-                                }}
-                              />
-                              <span className="text-[13px] font-bold text-[#163986]">
-                                {item.code}
-                              </span>
-                              {item.name && (
-                                <span className="hidden sm:inline text-[12px] text-[#8B9CC3] truncate">
-                                  {item.name}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[12px] text-[#8B9CC3] whitespace-nowrap">
-                                {item.countries.length} {t("Countries")}
-                              </span>
-                              <span
-                                className={`text-[13px] font-bold px-2 py-0.5 rounded-full ${item.count > 0 ? "bg-[#163986] text-white" : "bg-[#E8ECF4] text-[#8B9CC3]"}`}>
-                                {item.count > 0
-                                  ? `${item.avgScore.toFixed(2)}%`
-                                  : "—"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="px-3 py-2">
-                            {item.countries.length > 0 ? (
-                              <>
-                                {visibleCountries.map((c) => (
-                                  <ScoreBar
-                                    key={c.country}
-                                    label={t(c.country)}
-                                    value={c.avgScore}
-                                    hasData={c.count > 0}
-                                  />
-                                ))}
-                                {item.countries.length > COUNTRIES_PREVIEW && (
-                                  <button
-                                    type="button"
-                                    className="mt-1 text-[12px] font-bold text-[#00B9D6] cursor-pointer hover:underline"
-                                    onClick={() =>
-                                      setExpandedLangs((prev) => ({
-                                        ...prev,
-                                        [item.id]: !prev[item.id],
-                                      }))
-                                    }>
-                                    {expanded
-                                      ? t("Show less")
-                                      : `${t("Show all")} (${item.countries.length})`}
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <p className="text-[12px] text-[#8B9CC3] py-1">
-                                {t("No data available")}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
+            <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+              <p className="mb-4! text-[14px] font-bold">{t("Score percentage")}</p>
+              <HorizontalBars rows={scoreRows} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+              <p className="mb-3! text-[14px] font-bold">{groupByCountry ? t("Average score by country") : t("Average score by language")}</p>
+              <LangScores stats={stats} groupByCountry={groupByCountry} expanded={expanded} toggle={toggleExpanded} prefix={prefix} t={t} />
+            </div>
+            <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+              <p className="mb-3! text-[14px] font-bold">{t("Average score by course")}</p>
+              {stats.courseScores.length > 0 ? (
+                <div className="flex flex-col divide-y divide-[#E8ECF4]">
+                  {stats.courseScores.map((c) => (
+                    <ScoreBar key={c.id} label={c.name} value={c.avgScore} hasData={c.count > 0} />
+                  ))}
+                </div>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  {t("No data available")}
-                </p>
+                <p className="py-2 text-center text-[13px] text-[#8B9CC3]">{t("No data available")}</p>
               )}
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Progresso dos testes agrupado por produto: as estatísticas de todos os cursos de cada produto, com a média por idioma ou por país
+export default function TestProgress({ data, products, languages }) {
+  const { t } = useTranslation();
+  const [productFilter, setProductFilter] = useState(null);
+  const [groupByCountry, setGroupByCountry] = useState(false);
+  const [expanded, setExpanded] = useState({});
+  const [openProducts, setOpenProducts] = useState({});
+
+  const courses = useMemo(() => (data?.courses || []).filter((c) => c.is_deleted !== 1), [data]);
+
+  // Um grupo por produto com cursos (e um para os cursos sem produto)
+  const groups = useMemo(() => {
+    if (!data || !data.users) return [];
+    const list = (products || [])
+      .filter((p) => p.is_deleted !== 1)
+      .map((p) => ({ key: String(p.id), title: p.name, courses: courses.filter((c) => c.id_product === p.id) }));
+    const orphan = courses.filter((c) => !c.id_product || !(products || []).some((p) => p.id === c.id_product));
+    if (orphan.length > 0) list.push({ key: NO_PRODUCT, title: t("No product"), courses: orphan });
+    // Os produtos com alunos avaliados primeiro (por nº de alunos), depois os restantes por nome
+    return list
+      .filter((g) => g.courses.length > 0)
+      .map((g) => ({ ...g, stats: computeStats(data, g.courses, languages) }))
+      .sort((a, b) => b.stats.students - a.stats.students || a.title.localeCompare(b.title));
+  }, [data, products, courses, languages, t]);
+
+  const visible = groups.filter((g) => productFilter === null || g.key === String(productFilter));
+  const total = useMemo(() => (data?.users ? computeStats(data, visible.flatMap((g) => g.courses), languages) : null), [data, visible, languages]);
+
+  const isOpen = (key, index) => (key in openProducts ? openProducts[key] : visible.length === 1 || index === 0);
+
+  return (
+    <div>
+      <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[13px]">
+          <span className={`cursor-pointer ${!groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => setGroupByCountry(false)}>
+            {t("By language")}
+          </span>
+          <Switch size="small" checked={groupByCountry} onChange={setGroupByCountry} aria-label={t("By country")} />
+          <span className={`cursor-pointer ${groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => setGroupByCountry(true)}>
+            {t("By country")}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            allowClear
+            className="w-full sm:w-[260px]!"
+            placeholder={t("Select product")}
+            showSearch={{ optionFilterProp: ["label"] }}
+            value={productFilter ?? undefined}
+            onChange={(value) => setProductFilter(value ?? null)}
+            options={groups.map((g) => ({ label: g.title, value: g.key === NO_PRODUCT ? NO_PRODUCT : Number(g.key) }))}
+          />
+          <Button onClick={() => setOpenProducts(Object.fromEntries(visible.map((g) => [g.key, true])))}>{t("Expand all")}</Button>
+          <Button onClick={() => setOpenProducts(Object.fromEntries(visible.map((g) => [g.key, false])))}>{t("Collapse all")}</Button>
+        </div>
       </div>
+
+      {total && (
+        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Kpi icon={<LuPill />} label={t("Products")} value={visible.length} />
+          <Kpi icon={<LuBookOpen />} label={t("Courses")} value={total.courses} />
+          <Kpi icon={<LuUsers />} label={t("Students evaluated")} value={total.students} />
+          <Kpi icon={<LuCircleCheck />} label={t("Average score")} value={total.avgScore === null ? "—" : `${total.avgScore.toFixed(1)}%`} />
+        </div>
+      )}
+
+      {visible.length > 0 ? (
+        <div className="flex flex-col gap-4">
+          {visible.map((g, index) => (
+            <ProductCard
+              key={g.key}
+              title={g.title}
+              stats={g.stats}
+              open={isOpen(g.key, index)}
+              onToggle={() => setOpenProducts((prev) => ({ ...prev, [g.key]: !isOpen(g.key, index) }))}
+              groupByCountry={groupByCountry}
+              expanded={expanded}
+              toggleExpanded={(key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
+              prefix={g.key}
+              t={t}
+            />
+          ))}
+        </div>
+      ) : (
+        <Empty description={t("No data available")} />
+      )}
     </div>
   );
 }

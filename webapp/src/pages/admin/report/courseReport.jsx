@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef } from "react";
+import { buildCourseStudentExport } from "../../../utils/courseExport";
 import { useState } from "react";
 import { Avatar, Button, ConfigProvider, Form, Input, Segmented, Select, Table, Tag } from "antd";
 import { CiCalendar } from "react-icons/ci";
@@ -178,6 +179,7 @@ export default function CourseReport({ data, isLoading }) {
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [dataToExport, setDataToExport] = useState([]);
+  const [exportTable, setExportTable] = useState("CoursesReport"); // a escolha de colunas lembrada é por tipo de export
   const [columnsToExport, setColumnsToExport] = useState([]);
   const [courses, setCourses] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -441,7 +443,8 @@ export default function CourseReport({ data, isLoading }) {
     setFilteredData(extra.currentDataSource);
   }
 
-  function openExport(data, columns = []) {
+  function openExport(data, columns = [], table = "CoursesReport") {
+    setExportTable(table);
     setDataToExport(data);
     setColumnsToExport(columns);
     setIsOpenExport(true);
@@ -658,12 +661,16 @@ export default function CourseReport({ data, isLoading }) {
       }
     }
 
-    return <CourseExpandedPanel width={panelWidth} rows={dataExpanded} columns={columnsExpanded} onExport={() => openExport(dataExpanded, columnsExpanded)} t={t} />;
+    return <CourseExpandedPanel width={panelWidth} rows={dataExpanded} columns={columnsExpanded} onExport={() => {
+      // Export detalhado do curso: estatísticas de cada aluno, dos testes e das respostas às perguntas
+      const detailed = buildCourseStudentExport({ course, base: dataExpanded, data, languages, t });
+      openExport(detailed.rows, detailed.columns, "CourseStudentsReport");
+    }} t={t} />;
   };
 
   return (
     <div>
-      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={"CoursesReport"} columns={columnsToExport} />
+      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={exportTable} columns={columnsToExport} />
       <div className="flex justify-end items-center w-full">
         <Form form={form} layout="vertical" onFinish={filterData} className="w-full">
           <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">

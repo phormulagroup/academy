@@ -1,0 +1,26 @@
+import { useState } from "react";
+import { Button, Tooltip } from "antd";
+import { LuDownload } from "react-icons/lu";
+import { useTranslation } from "react-i18next";
+
+import ExportTable from "./export";
+
+// Botão de exportar para o cabeçalho de uma listagem: abre a janela de exportação com as linhas atuais (já filtradas)
+export default function ExportButton({ data, columns, table }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Tooltip title={t("Export the list to Excel or CSV")}>
+        <Button icon={<LuDownload />} disabled={!data || data.length === 0} onClick={() => setOpen(true)} aria-label={t("Export")} />
+      </Tooltip>
+      <ExportTable open={open} close={() => setOpen(false)} data={data} table={table} columns={columns} />
+    </>
+  );
+}
+
+// Colunas usadas por várias listagens
+export const activityColumn = { title: "Activity", dataIndex: "is_deleted", value: (row, { t }) => (row.is_deleted ? t("Inactive") : t("Active")) };
+export const languageColumn = { title: "Language", dataIndex: "id_lang", value: (row, { languages }) => languages?.find((l) => l.id === row.id_lang)?.code?.toUpperCase() ?? "" };
+export const createdColumn = { title: "Created at", dataIndex: "created_at", value: (row) => (row.created_at ? String(row.created_at).replace("T", " ").slice(0, 19) : "") };
