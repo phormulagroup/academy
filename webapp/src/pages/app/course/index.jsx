@@ -18,11 +18,11 @@ import useScrollToTop from "../../../utils/scrollToTop";
 // import { FaAward, FaRegClock } from "react-icons/fa";
 // import { FaListCheck } from "react-icons/fa6";
 import {
+  AiOutlineCheck,
   AiOutlineCloudDownload,
   // AiOutlinePlayCircle
 } from "react-icons/ai";
 
-import CertificateIconWhite from "../../../assets/Certificado-digital.svg?react";
 import i18n from "../../../utils/i18n";
 import { downloadCertificate } from "../../../utils/certificate";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
@@ -38,6 +38,8 @@ export default function CourseDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
+  // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
+  const isListView = viewType === "list" && windowDimension.width > 640;
 
   useEffect(() => {
     if (user) getData();
@@ -229,9 +231,7 @@ export default function CourseDetails() {
     axios
       .post(endpoints.course.updateProgress, { data: [enrollData] })
       .catch((err) => console.log(err))
-      .finally(() =>
-        navigate(`/${i18n.language}/courses/${item.course.slug}`),
-      );
+      .finally(() => navigate(`/${i18n.language}/courses/${item.course.slug}`));
   }
 
   function handleDownloadCertificate(item, progress) {
@@ -305,22 +305,6 @@ export default function CourseDetails() {
   //   return activeTestCount;
   // }
 
-  function getCertificateIconClass() {
-    return windowDimension.width <= 320
-      ? "w-[60px] h-[60px] right-[12px] bottom-[-30px]"
-      : windowDimension.width <= 425
-        ? "w-[65px] h-[65px] right-[12px] bottom-[-34px]"
-        : windowDimension.width < 768
-          ? "w-[70px] h-[70px] right-[18px] bottom-[-38px]"
-          : windowDimension.width <= 1024
-            ? "w-[70px] h-[70px] right-[18px] bottom-[-44px]"
-            : windowDimension.width <= 1440
-              ? "w-[75px] h-[75px] right-[20px] bottom-[-38px]"
-              : windowDimension.width < 1920
-                ? "w-[85px] h-[85px] right-[24px] bottom-[-40px]"
-                : "w-[90px] h-[90px] right-[24px] bottom-[-40px]";
-  }
-
   // function getCourseInfoItems(course, modules) {
   //   const items = [];
 
@@ -386,10 +370,10 @@ export default function CourseDetails() {
       </Helmet>
       <div className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
-          <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
+          <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Online Courses")} - Bial Academy
           </p>
-          <p className="italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
+          <p className="font-ryker italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
             Keeping training in mind
           </p>
         </div>
@@ -418,11 +402,13 @@ export default function CourseDetails() {
               </div>
             )}
             <div
-              className={`grid ${(viewType === "list" && windowDimension.width > 640) || windowDimension.width < 700 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"} gap-5 sm:gap-7 lg:gap-8`}>
+              // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl
+              className={`grid ${isListView ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"} gap-5 sm:gap-6 lg:gap-6`}>
               {/* CARD COURSE */}
               {data.map((item) => (
                 <div
-                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden`}>
+                  // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem
+                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : ""}`}>
                   <div
                     // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
                     className={`${viewType === "list" && windowDimension.width > 640 ? "w-40 lg:w-50 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
@@ -444,19 +430,21 @@ export default function CourseDetails() {
                       </div>
                     )}
                     */}
-                    {(viewType === "grid" ||
-                      (viewType === "list" && windowDimension.width <= 640)) &&
-                      calcProgress(item.progress, item.modules) === 100 && (
-                        <CertificateIconWhite
-                          className={`absolute z-10 rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
-                        />
-                      )}
+                    {/* Em lista o selo passa para o painel de informação (não sobrepõe a imagem) */}
+                    {calcProgress(item.progress, item.modules) === 100 &&
+                      !isListView && (
+                      <div className="course-card-completed-badge">
+                        <AiOutlineCheck className="shrink-0" />
+                        <span>{t("Completed")}</span>
+                      </div>
+                    )}
                   </div>
                   <div
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
-                      className={`bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
-                      <div className="flex flex-col col-span-3">
+                      className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
+                      <div
+                        className={`flex flex-col col-span-3 ${isListView ? "justify-center h-full" : ""}`}>
                         {/* 
                                                 {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
@@ -484,9 +472,18 @@ export default function CourseDetails() {
 													</div>
 												</div>
 											)} */}
-                        <div className="mt-2 sm:mt-2 lg:mt-[6px] flex flex-col justify-center items-center">
+                        <div
+                          className={`${isListView ? "" : "mt-2 sm:mt-2 lg:mt-[6px]"} flex flex-col justify-center items-center`}>
                           {calcProgress(item.progress, item.modules) === 100 ? (
                             <>
+                              {isListView && (
+                                <div className="flex w-full mb-3">
+                                  <div className="course-card-completed-badge course-card-completed-badge-inline">
+                                    <AiOutlineCheck className="shrink-0" />
+                                    <span>{t("Completed")}</span>
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-row items-center justify-between w-full mb-3 sm:mb-3 gap-2 sm:gap-2 min-h-auto">
                                 <p
                                   className="uppercase font-bold text-[13px] sm:text-[10px] md:text-[12px] lg:text-[14px] text-[#2F8351] flex-shrink-0"
@@ -789,16 +786,6 @@ export default function CourseDetails() {
                       </div>
                     </div>
                     <div className="px-4 sm:px-4 md:px-4 lg:px-6 py-4 sm:py-6 md:py-4 lg:py-6 flex flex-col justify-center items-center w-full flex-1">
-                      {/* Certificate icon for list view */}
-                      {viewType === "list" &&
-                        windowDimension.width > 640 &&
-                        calcProgress(item.progress, item.modules) === 100 && (
-                          <div className="mb-8 flex justify-center">
-                            <CertificateIconWhite
-                              className={`rounded-full shadow-[0px_3px_6px_#00000029] ${getCertificateIconClass()}`}
-                            />
-                          </div>
-                        )}
                       {/* Action button: Review/Start/Enter or Available countdown */}
                       {canAccess(item.course) || item.is_available ? (
                         <Link

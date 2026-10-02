@@ -70,10 +70,10 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
   return (
     <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
       <div>
-        <p className="text-[26px] font-bold text-center mb-0">
+        <p className="text-[26px] font-bold text-center mb-0 font-ryker">
           {t("Select Languages")}
         </p>
-        <p className="text-center mt-2 mb-6">
+        <p className="text-center mt-2 mb-6 font-ryker">
           {t("Choose the languages you want to import from the file")}
         </p>
 

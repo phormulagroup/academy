@@ -25,16 +25,19 @@ export default function Download() {
 
   const { t } = useTranslation();
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
-  }, []);
+    if (languages?.length > 0) getData();
+  }, [languages]);
 
   function getData() {
     setIsLoading(true);
     axios
       .get(endpoints.download.readByLang, {
         params: {
-          id_lang: languages.filter((l) => l.code === i18n.language)[0].id,
+          id_lang:
+            languages.find((l) => l.code === i18n.language)?.id ??
+            user?.id_lang,
         },
       })
       .then((res) => {
@@ -80,10 +83,10 @@ export default function Download() {
       <div
         className={`page-frame ${getMarginClasses(windowDimension)}`}>
         <div className="flex flex-col justify-center items-center mb-8 sm:mb-12 pb-2 sm:pb-4">
-          <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
+          <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">
             {t("Downloads")}
           </p>
-          <p className="italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
+          <p className="font-ryker italic text-center text-[14px] sm:text-[16px] lg:text-[18px] text-[#163986] mt-2 sm:mt-3">
             Keeping training in mind
           </p>
         </div>
@@ -96,7 +99,8 @@ export default function Download() {
             />
           </div>
         ) : data && data.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full">
+          // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 w-full">
             {data.map((d) => (
               <Link
                 key={d.id}
@@ -111,7 +115,7 @@ export default function Download() {
                     backgroundBlendMode: "overlay",
                   }}></div>
                 <div className="p-3 sm:p-4 lg:p-6 min-h-[72px] sm:min-h-[96px] lg:min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
-                  <p className="font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
+                  <p className="font-ryker font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
                     {d.name}
                   </p>
                 </div>

@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { configRender } from "../../../components/admin/editor";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import Player from "@vimeo/player";
 import { RxLockClosed } from "react-icons/rx";
 import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
+import { Context } from "../../../utils/context";
 
 const Topic = ({
   course,
@@ -22,6 +23,9 @@ const Topic = ({
   const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const [seo, setSeo] = useState({});
   const { t } = useTranslation();
+  const { user } = useContext(Context);
+  // Admin (id_role = 1) sem restrições; aluno (id_role = 2) com navegação linear e vídeos obrigatórios
+  const isAdmin = user?.id_role === 1;
 
   const playerRef = useRef(null);
 
@@ -31,103 +35,104 @@ const Topic = ({
     setIsVideoCompleted(false);
 
     if (selectedCourseItem.type !== "topic") return;
-    const iframe = document.querySelector('iframe[src*="player.vimeo.com"]');
 
-    // If the topic is already completed, allow to go to the next topic/test
-    if (
-      progress.filter(
-        (p) =>
-          p.activity_type === "topic" &&
-          p.id_course_topic === selectedCourseItem.id &&
-          p.is_completed === 1 &&
-          p.is_deleted !== 1,
-      ).length > 0
-    ) {
+    const isCompleted = progress.some(
+      (p) =>
+        p.activity_type === "topic" &&
+        p.id_course_topic === selectedCourseItem.id &&
+        p.is_completed === 1 &&
+        p.is_deleted !== 1,
+    );
+
+    // Admin: navegação livre, não precisa de ver os vídeos. Tópico já concluído: pode avançar e rever à vontade
+    if (isAdmin || isCompleted) {
       setAllowNext(true);
       return;
     }
 
-    // If the course progress is free, allow to go to the next topic/test
-    if (
-      !course.settings ||
-      (course.settings && course.settings.progression_type === "free")
-    ) {
-      if (!iframe) {
-        setAllowNext(true);
-        return;
-      } else {
-        setAllowNext(false);
-      }
-    }
-
-    //If the course progress is linear
-    if (course.settings && course.settings.progression_type === "linear") {
-      let findIndex =
+    // Aluno, navegação linear: o tópico fica bloqueado enquanto o item anterior não estiver concluído
+    if (course.settings?.progression_type === "linear") {
+      const findIndex =
         allItems?.findIndex(
           (i) =>
             i.id === selectedCourseItem.id &&
             i.type === selectedCourseItem.type,
         ) ?? -1;
-      if (findIndex <= 0) {
-        if (!iframe) {
-          setAllowNext(true);
-          return;
-        } else {
-          setAllowNext(false);
-        }
-      } else {
-        let previousItem = allItems[findIndex - 1];
-        let previousCompleted = progress.filter(
+      if (findIndex > 0) {
+        const previousItem = allItems[findIndex - 1];
+        const previousCompleted = progress.some(
           (p) =>
             p.is_completed === 1 &&
             p.is_deleted !== 1 &&
-            ((p.activity_type === "topic" &&
-              p.id_course_topic === previousItem.id) ||
-              (p.activity_type === "test" &&
-                p.id_course_test === previousItem.id)),
-        ).length;
-
-        if (previousCompleted > 0) {
-          if (!iframe) {
-            setAllowNext(true);
-            return;
-          } else {
-            setAllowNext(false);
-          }
-        } else {
-          setAllowNext(false);
+            p.activity_type === previousItem.type &&
+            p[`id_course_${previousItem.type}`] === previousItem.id,
+        );
+        if (!previousCompleted) {
           setIsTopicLocked(true);
+          return;
         }
       }
     }
 
-    if (iframe) {
-      const player = new Player(iframe);
-      //let curtime = videoTimeWatched ?? 0;
-      let curtime = 0;
-      playerRef.current = player;
-
-      /*if (videoTimeWatched > 0) {
-        player.setCurrentTime(videoTimeWatched);
-      }*/
-
-      player.on("timeupdate", function (data) {
-        if (data.seconds < curtime + 1 && data.seconds > curtime) {
-          curtime = data.seconds;
-        }
-      });
-
-      player.on("seeked", function (data) {
-        if (data.seconds > curtime) {
-          player.setCurrentTime(curtime);
-        }
-      });
-
-      player.on("ended", () => {
-        setAllowNext(true);
-        setIsVideoCompleted(true);
-      });
+    // Sem vídeos no conteúdo do tópico: pode avançar
+    if (!(selectedCourseItem.content || "").includes("player.vimeo.com")) {
+      setAllowNext(true);
+      return;
     }
+
+    // Vídeos (Vimeo): o aluno tem de ver todos até ao fim para avançar; se tentar avançar o tempo do
+    // vídeo para a frente, o vídeo volta sempre ao início
+    let players = [];
+    let retryTimer = null;
+    const attachPlayers = (tries = 0) => {
+      const iframes = [
+        ...document.querySelectorAll('iframe[src*="player.vimeo.com"]'),
+      ];
+      // O conteúdo tem vídeo mas o iframe ainda não está na página: tenta de novo (nunca liberta sem ver)
+      if (iframes.length === 0) {
+        if (tries < 40) retryTimer = setTimeout(() => attachPlayers(tries + 1), 250);
+        return;
+      }
+      let endedCount = 0;
+      players = iframes.map((iframe) => {
+        const player = new Player(iframe);
+        let watched = 0; // até onde o aluno já viu, sem saltos
+        let ended = false;
+
+        player.on("timeupdate", (data) => {
+          if (data.seconds > watched && data.seconds < watched + 1.5)
+            watched = data.seconds;
+        });
+        player.on("seeked", (data) => {
+          if (data.seconds > watched + 1.5) {
+            watched = 0;
+            player.setCurrentTime(0);
+          }
+        });
+        player.on("ended", () => {
+          if (ended) return;
+          ended = true;
+          endedCount++;
+          if (endedCount === iframes.length) {
+            setAllowNext(true);
+            setIsVideoCompleted(true);
+          }
+        });
+        return player;
+      });
+      playerRef.current = players[0];
+    };
+    attachPlayers();
+
+    // Ao mudar de item, remove os listeners dos vídeos anteriores
+    return () => {
+      clearTimeout(retryTimer);
+      players.forEach((player) => {
+        player.off("timeupdate");
+        player.off("seeked");
+        player.off("ended");
+      });
+    };
   }, [selectedCourseItem]);
 
   const parsedContent = useMemo(() => {

@@ -76,9 +76,15 @@ export default function Recover() {
           });
           formCode.setFieldValue("email", values.email);
           setCurrentStep(currentStep + 1);
-        } else if (res.data.message === "This e-mail does not exists in our database!") {
+        } else if (
+          res.data.message === "This e-mail does not exists in our database!"
+        ) {
           // E-mail sem conta: mensagem traduzida no próprio campo
-          setFieldError(form, "email", t("There is no account with this e-mail"));
+          setFieldError(
+            form,
+            "email",
+            t("There is no account with this e-mail"),
+          );
         } else if (res.data.message) {
           messageApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
@@ -136,11 +142,13 @@ export default function Recover() {
       {currentStep === 0 ? (
         <div>
           <p className={introClass}>
-            <b>{t("Password Recovery")}</b>
+            <b className="font-ryker">{t("Password Recovery")}</b>
             <br />
-            {t(
-              "Enter your email and you will receive instructions to recover your password.",
-            )}
+            <span className="font-normal">
+              {t(
+                "Enter your email and you will receive instructions to recover your password.",
+              )}
+            </span>
           </p>
           <Form
             form={form}
@@ -169,7 +177,7 @@ export default function Recover() {
       ) : currentStep === 1 ? (
         <div>
           <p className={introClass}>
-            <b>{t("Password Recovery")}</b>
+            <b className="font-ryker">{t("Password Recovery")}</b>
             <br />
             {t(
               "Enter the code you received in your email to recover your password.",
@@ -201,7 +209,7 @@ export default function Recover() {
       ) : (
         <div>
           <p className={introClass}>
-            <b>{t("Password Recovery")}</b>
+            <b className="font-ryker">{t("Password Recovery")}</b>
             <br />
             {t("Choose your new password.")}
           </p>
@@ -218,7 +226,10 @@ export default function Recover() {
               name="password"
               rules={[requiredRule]}
               className="mb-4!">
-              <Input.Password size="large" placeholder={t("Enter your new password")} />
+              <Input.Password
+                size="large"
+                placeholder={t("Enter your new password")}
+              />
             </Form.Item>
             <Form.Item
               label={t("Confirm password")}
@@ -229,7 +240,10 @@ export default function Recover() {
                 matchFieldRule("password", t("The passwords does not match!")),
               ]}
               className="mb-4!">
-              <Input.Password size="large" placeholder={t("Repeat your new password")} />
+              <Input.Password
+                size="large"
+                placeholder={t("Repeat your new password")}
+              />
             </Form.Item>
             <Button
               htmlType="submit"

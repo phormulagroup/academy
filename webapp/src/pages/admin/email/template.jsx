@@ -149,7 +149,7 @@ export default function Template() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Templates")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Templates")}</p>
         </div>
         <div className="flex justify-center">
           <Button

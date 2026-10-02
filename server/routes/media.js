@@ -5,6 +5,7 @@ const fs = require("fs");
 var fileUpload = require("express-fileupload");
 const middleware = require("../utils/middleware");
 const { uploadFile } = require("../utils/upload");
+const { avatarFileName } = require("../utils/avatar");
 
 var router = express.Router();
 router.use(fileUpload());
@@ -38,7 +39,20 @@ router.post("/singleUpload", async (req, res) => {
   try {
     console.log(req.files.file);
     const data = req.body.data ? JSON.parse(req.body.data) : null;
-    const fileResponse = await uploadFile(req.files.file, data ? data.type : null);
+    let fileName = null;
+
+    // substitui o avatar atual do utilizador (se existir)
+    if (data && data.id_user) {
+      const query = util.promisify(db.query).bind(db);
+      fileName = await avatarFileName(data.id_user, req.files.file.name.split(".").pop().toLowerCase());
+      const user = await query("SELECT img FROM user WHERE id = ?", [data.id_user]);
+      if (user[0].img && user[0].img !== fileName) {
+        fs.unlink(`./media/${user[0].img}`, (err) => err && console.log(err));
+        await query("DELETE FROM media WHERE name = ?", [user[0].img]);
+      }
+    }
+
+    const fileResponse = await uploadFile(req.files.file, data ? data.type : null, fileName);
     console.log(fileResponse);
     res.send(fileResponse);
   } catch (e) {

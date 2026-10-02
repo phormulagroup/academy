@@ -60,7 +60,7 @@ export default function Update({ data, open, close, products, nameRule, internal
         </Button>,
       ]}
     >
-      <p className="text-[16px] font-bold mb-4">{t("Update Course")}</p>
+      <p className="text-[16px] font-bold mb-4 font-ryker">{t("Update Course")}</p>
       <Form
         form={form}
         onFinish={submit}

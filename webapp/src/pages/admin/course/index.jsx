@@ -198,7 +198,7 @@ export default function Course() {
       />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Courses")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Courses")}</p>
         </div>
         <div className="flex justify-center">
           <Button

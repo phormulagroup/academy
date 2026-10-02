@@ -66,7 +66,7 @@ export const requiredListRule = { validator: requireSelection };
  * @returns {boolean} True if the content has text or images, false otherwise.
  */
 
-// Editor de texto (TipTap): o HTML sem texto (ex.: "<p></p>") também conta como vazio; imagens contam como conteúdo
+// Editor de texto (Quill): o HTML sem texto (ex.: "<p></p>", "<p><br></p>") também conta como vazio; imagens contam como conteúdo
 const hasRichText = (html) =>
   typeof html === "string" &&
   (/<img\b/i.test(html) ||
@@ -74,7 +74,7 @@ const hasRichText = (html) =>
 
 /**
  * @constant requiredRichTextRule
- * @description Validation rule for required rich text inputs (TipTap). Considers HTML without text as empty; images count as content.
+ * @description Validation rule for required rich text inputs (Quill). Considers HTML without text as empty; images count as content.
  * @type {Object}
  */
 export const requiredRichTextRule = {

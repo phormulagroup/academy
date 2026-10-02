@@ -468,11 +468,11 @@ const Test = ({
                   <div>{countdownToBeAvailable}</div>
                 ) : !begin ? (
                   <div className="flex flex-col justify-center items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
-                    <p className="text-[16px]">
+                    <p className="font-ryker font-bold text-[16px]">
                       <b>{t("Approval percentage")}:</b>{" "}
                       {data.settings.passing_score}%
                     </p>
-                    {data.settings.time && (
+                    {Number(data.settings.time) > 0 && (
                       <p className="text-[16px]">
                         <b>{t("Time")}:</b> {data.settings.time} {t("minutes")}
                       </p>
@@ -504,7 +504,7 @@ const Test = ({
                   </div>
                 ) : isCalculating ? (
                   <div className="flex flex-col justify-center items-center p-6 bg-white mt-4">
-                    <p className="mb-4 text-[24px] font-bold">
+                    <p className="font-ryker mb-4 text-[24px] font-bold">
                       {t("Calculating...")}
                     </p>
                     <Progress percent={calculate.percentage} showInfo={false} />
@@ -541,7 +541,7 @@ const Test = ({
                         <>
                           {/* LAYOUT UNIFICADO DE RESULTADOS PARA APROVADO, REPROVADO E EM ANDAMENTO */}
                           <div className="flex flex-col justify-center items-center p-6 bg-white mt-4 rounded-lg">
-                            <p className="mb-4 font-bold text-[24px]">
+                            <p className="font-ryker mb-4 font-bold text-[24px]">
                               {t("Result")}
                             </p>
                             {isApproved ? (
@@ -549,7 +549,7 @@ const Test = ({
                             ) : (
                               <AiFillCloseCircle className="text-[80px] text-[#DB0709]" />
                             )}
-                            <p className="mt-4 mb-4 text-[24px] font-bold">
+                            <p className="font-ryker mt-4 mb-4 text-[24px] font-bold">
                               {isApproved
                                 ? t("Approved")
                                 : canStillRetry
@@ -733,25 +733,27 @@ const Test = ({
                   </div>
                 ) : (
                   <Form form={form} onFinish={submit}>
-                    {/* Tempo limite: mesmo fundo e forma compacta do título do item concluído */}
-                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
-                      <div className="flex justify-between items-center gap-2">
-                        <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
-                          {t("Limit time")}
-                        </p>
-                        <p className="text-[#163986] font-bold tabular-nums text-[13px] sm:text-[15px] lg:text-[16px]">
-                          {countdown}
-                        </p>
+                    {/* Tempo limite: só aparece quando o teste tem limite de tempo */}
+                    {Number(data.settings?.time) > 0 && (
+                      <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
+                        <div className="flex justify-between items-center gap-2">
+                          <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
+                            {t("Limit time")}
+                          </p>
+                          <p className="text-[#163986] font-bold tabular-nums text-[13px] sm:text-[15px] lg:text-[16px]">
+                            {countdown}
+                          </p>
+                        </div>
+                        <Progress
+                          percent={timePercentage}
+                          showInfo={false}
+                          size="small"
+                          railColor={"#FFF"}
+                          strokeColor={"#00B9D6"}
+                          className="mb-0!"
+                        />
                       </div>
-                      <Progress
-                        percent={timePercentage}
-                        showInfo={false}
-                        size="small"
-                        railColor={"#FFF"}
-                        strokeColor={"#00B9D6"}
-                        className="mb-0!"
-                      />
-                    </div>
+                    )}
 
                     <div>
                       <p className="mb-4 mt-4">
@@ -842,13 +844,17 @@ const Test = ({
                                 <Button
                                   size="large"
                                   className={
-                                    footerSlot ? "main-secondary-cta-button" : ""
+                                    footerSlot
+                                      ? "main-secondary-cta-button"
+                                      : ""
                                   }
                                   onClick={() =>
                                     setCurrentQuestion(currentQuestion - 1)
                                   }
                                   icon={<RxChevronLeft />}>
-                                  {shortNavLabels ? t("Previous") : t("Previous question")}
+                                  {shortNavLabels
+                                    ? t("Previous")
+                                    : t("Previous question")}
                                 </Button>
                               ) : (
                                 <div></div>
@@ -869,7 +875,9 @@ const Test = ({
                                   }
                                   icon={<RxChevronRight />}
                                   iconPlacement="end">
-                                  {shortNavLabels ? t("Next") : t("Next question")}
+                                  {shortNavLabels
+                                    ? t("Next")
+                                    : t("Next question")}
                                 </Button>
                               ) : (
                                 <Button

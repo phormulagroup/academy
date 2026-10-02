@@ -46,10 +46,10 @@ export default function Test() {
     <div className="p-2">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-sm">
+          <p className="text-sm font-ryker">
             {t("Course")} | {data?.course_name}
           </p>
-          <p className="text-xl font-bold mt-4">{data?.title}</p>
+          <p className="text-xl font-bold mt-4 font-ryker">{data?.title}</p>
         </div>
       </div>
       <Tabs

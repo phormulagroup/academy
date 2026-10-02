@@ -60,7 +60,7 @@ export default function Status({ data, open, close, status }) {
         </Button>,
       ]}>
       <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold">{t("Change user status")}</p>
+        <p className="text-[16px] font-bold font-ryker">{t("Change user status")}</p>
         <div className="flex flex-col mt-4">
           <p>
             {t("Are you sure that you want to change status of this user?")}

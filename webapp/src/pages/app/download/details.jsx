@@ -13,7 +13,7 @@ import {
   FaRegFileVideo,
   FaRegFileWord,
 } from "react-icons/fa";
-import { useContext, useRef } from "react";
+import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
 import { Helmet } from "react-helmet";
@@ -25,6 +25,7 @@ import endpoints from "../../../utils/endpoints";
 import i18n from "../../../utils/i18n";
 
 import config from "../../../utils/config";
+import downloadFile from "../../../utils/downloadFile";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
 
@@ -83,31 +84,36 @@ const pdfVersionOf = (file) => file.replace(/\.[^.]+$/, ".pdf");
 function previewUrl(item) {
   const mode = getFileType(item.file).preview;
   if (mode === "pdf-version")
-    return `${config.server_ip}/media/${pdfVersionOf(item.file)}`;
-  return mode ? `${config.server_ip}/media/${item.file}` : null;
+    return `${config.server_ip}/media/${encodeURIComponent(pdfVersionOf(item.file))}`;
+  return mode
+    ? `${config.server_ip}/media/${encodeURIComponent(item.file)}`
+    : null;
 }
 
-export default function DownloadDetails({ themePreference = "light" }) {
-  const { user, courses, languages, createLog } = useContext(Context);
+export default function DownloadDetails() {
+  const { user, languages, createLog, messageApi } = useContext(Context);
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const viewerRef = useRef(null);
+  // Ficheiro (id) que está a ser descarregado, para mostrar o botão em loading
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const navigate = useNavigate();
   const { slug } = useParams();
   const { t } = useTranslation();
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
-  }, []);
+    if (languages?.length > 0) getData();
+  }, [languages?.length > 0]);
 
   function getData() {
     axios
       .get(endpoints.download.readBySlug, {
         params: {
           slug,
-          id_lang: languages.filter((l) => l.code === i18n.language)[0].id,
+          id_lang:
+            languages.find((l) => l.code === i18n.language)?.id ??
+            user?.id_lang,
         },
       })
       .then((res) => {
@@ -137,7 +143,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
   async function preview(item) {
     try {
       window.open(previewUrl(item), "_blank");
-      const res = await axios.post(endpoints.download.preview, { data: item });
+      await axios.post(endpoints.download.preview, { data: item });
       await createLog({
         id_user: user.id,
         action: "view",
@@ -148,28 +154,25 @@ export default function DownloadDetails({ themePreference = "light" }) {
     }
   }
 
+  // Descarrega sempre o ficheiro original (ex.: o .pptx, não a versão PDF usada no Preview), com o seu nome
   async function download(item) {
+    setDownloadingId(item.id);
     try {
-      const response = await axios.get(
-        `${config.server_ip}/media/${item.file}`,
-        {
-          responseType: "blob",
-        },
+      await downloadFile(
+        `${config.server_ip}/media/${encodeURIComponent(item.file)}`,
+        item.file,
       );
+      messageApi.success(t("File downloaded successfully"));
+    } catch (e) {
+      console.log(e);
+      messageApi.error(t("Could not download the file, please try again"));
+      setDownloadingId(null);
+      return;
+    }
+    setDownloadingId(null);
 
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = item.file; // nome do ficheiro
-      document.body.appendChild(link);
-      link.click();
-
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      const res = await axios.post(endpoints.download.download, { data: item });
+    try {
+      await axios.post(endpoints.download.download, { data: item });
       await createLog({
         id_user: user.id,
         action: "download",
@@ -209,7 +212,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
             />
           </Helmet>
           <div className="flex justify-between items-center mb-4">
-            <p className="text-[24px] font-bold">{data?.name}</p>
+            <p className="font-ryker text-[24px] font-bold">{data?.name}</p>
             <Button
               size="large"
               type="text"
@@ -234,7 +237,7 @@ export default function DownloadDetails({ themePreference = "light" }) {
 
             <div className="w-full md:flex-1 min-w-0">
               <p className="text-lg font-semibold mb-3">
-                {t("Files")}{" "}
+                <span className="font-ryker">{t("Files")}</span>{" "}
                 <span className="text-sm font-normal text-gray-500">
                   ({data.items.length})
                 </span>
@@ -251,14 +254,22 @@ export default function DownloadDetails({ themePreference = "light" }) {
                         <p className="ml-2 break-words">{item.name}</p>
                       </div>
                       <div className="flex shrink-0 gap-2">
-                        <Button className="main-cta-button"
+                        <Button
+                          className="main-cta-button"
                           size="large"
                           type="primary"
+                          loading={downloadingId === item.id}
+                          disabled={
+                            downloadingId !== null && downloadingId !== item.id
+                          }
                           onClick={() => download(item)}>
                           {t("Download")}
                         </Button>
                         {previewUrl(item) && (
-                          <Button size="large" className="main-secondary-cta-button" onClick={() => preview(item)}>
+                          <Button
+                            size="large"
+                            className="main-secondary-cta-button"
+                            onClick={() => preview(item)}>
                             {t("Preview")}
                           </Button>
                         )}

@@ -85,7 +85,7 @@ export default function Login() {
   return (
     <AuthLayout>
       <div className="flex justify-center items-center mx-auto max-w-75">
-        <p className="text-center text-[13px] sm:text-sm mb-4 sm:mb-6 font-semibold">
+        <p className="font-ryker text-center text-[13px] sm:text-sm mb-4 sm:mb-6 font-semibold">
           {t("Welcome to the BIAL Regional Academy e-Learning platform")}
         </p>
       </div>

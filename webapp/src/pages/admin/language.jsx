@@ -158,7 +158,7 @@ export default function Language() {
       <TranslationsImport open={isOpenImport} close={closeAction} />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Translations")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Translations")}</p>
         </div>
         <div>
           <Button

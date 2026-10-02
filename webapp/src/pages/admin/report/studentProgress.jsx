@@ -1,24 +1,13 @@
-import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Empty, Form, Input, Select, Spin, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-import { RxReload } from "react-icons/rx";
-
-import Table from "../../../components/admin/table";
-import Delete from "../../../components/admin/delete";
-import Create from "../../../components/admin/certificate/create";
-import Logs from "../../../components/admin/logs";
+import { Button, Empty, Form, Input, Select, Spin } from "antd";
 
 import { Context } from "../../../utils/context";
 
-import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import config from "../../../utils/config";
-import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
-import SearchIcon from "../../../assets/Backoffice/search.svg?react";
+import { LuSearch } from "react-icons/lu";
 
 export default function StudentProgress({ data }) {
   const { languages, selectedLanguage } = useContext(Context);
@@ -33,25 +22,37 @@ export default function StudentProgress({ data }) {
   useEffect(() => {
     if (data && Object.keys(data).length > 0) {
       // Filtra apenas os estudantes aprovados pelo administrador, excluindo administradores (id_role = 1)
-      const approvedStudents = data.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
+      const approvedStudents = data.users.filter(
+        (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
+      );
       setFilteredData(approvedStudents);
     }
   }, [data]);
 
   useEffect(() => {
-    setCountries(JSON.parse(languages.filter((l) => l.id === selectedLanguage.id)[0].country));
+    setCountries(
+      JSON.parse(
+        languages.filter((l) => l.id === selectedLanguage.id)[0].country,
+      ),
+    );
   }, [selectedLanguage]);
 
   function filterData(values) {
     setIsSearching(true);
     console.log(values);
     // Começa com os users regulares (id_role = 2) que foram aprovados pelo administrador
-    let newData = data.users.filter((u) => u.id_role === 2 && u.status?.toLowerCase() === "approved");
+    let newData = data.users.filter(
+      (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
+    );
 
-    if (values.country && values.country.length > 0) newData = newData.filter((n) => values.country.includes(n.country));
+    if (values.country && values.country.length > 0)
+      newData = newData.filter((n) => values.country.includes(n.country));
     if (values.student)
       newData = newData.filter(
-        (n) => n.name.toLowerCase().includes(values.student.toLowerCase()) || n.email.toLowerCase().includes(values.student.toLowerCase()) || n.id.toString() === values.student,
+        (n) =>
+          n.name.toLowerCase().includes(values.student.toLowerCase()) ||
+          n.email.toLowerCase().includes(values.student.toLowerCase()) ||
+          n.id.toString() === values.student,
       );
 
     setFilteredData(newData);
@@ -80,10 +81,19 @@ export default function StudentProgress({ data }) {
             />
           </Form.Item>
           <Form.Item name="student" label={t("Student")} className="mb-0!">
-            <Input size="large" placeholder={t("Search for name, ID or e-mail")} allowClear />
+            <Input
+              size="large"
+              placeholder={t("Search for name, ID or e-mail")}
+              allowClear
+            />
           </Form.Item>
           <div className="flex justify-center items-end">
-            <Button className="w-full" size="large" onClick={form.submit} type="primary" icon={<SearchIcon />}>
+            <Button
+              className="w-full"
+              size="large"
+              onClick={form.submit}
+              type="primary"
+              icon={<LuSearch className="text-[15px]" />}>
               {t("Search")}
             </Button>
           </div>
@@ -91,7 +101,7 @@ export default function StudentProgress({ data }) {
       </Form>
       <div className="grid grid-cols-4 gap-4 bg-white rounded-[5px] p-4">
         <div className="col-span-4">
-          <p className="font-bold">{t("Students")}</p>
+          <p className="font-bold font-ryker">{t("Students")}</p>
         </div>
         {filteredData.length > 0 ? (
           filteredData.map((u) => (
@@ -99,8 +109,12 @@ export default function StudentProgress({ data }) {
               <div className="bg-white border border-solid border-[#707070] rounded-[5px] p-4 flex justify-start items-center">
                 <div
                   className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
-                  style={{ backgroundImage: u.img ? `url(${config.server_ip}/media/${u.img})` : "none", backgroundColor: u.img ? "transparent" : "#ccc" }}
-                >
+                  style={{
+                    backgroundImage: u.img
+                      ? `url(${config.server_ip}/media/${u.img})`
+                      : "none",
+                    backgroundColor: u.img ? "transparent" : "#ccc",
+                  }}>
                   {!u.img && (
                     <p className="text-[#163986]">
                       {u.name.split(" ")[0][0]}
@@ -110,14 +124,18 @@ export default function StudentProgress({ data }) {
                 </div>
                 <div className="flex flex-col">
                   <p className="text-[#163986]">{u.name}</p>
-                  <p className="text-[11px] text-[#163986] underline">{u.email}</p>
+                  <p className="text-[11px] text-[#163986] underline">
+                    {u.email}
+                  </p>
                   <p className="text-[11px] text-[#163986]">ID: {u.id}</p>
                 </div>
               </div>
             </Link>
           ))
         ) : (
-          <div className="col-span-4">{isSearching ? <Spin spinning={true} /> : <Empty />}</div>
+          <div className="col-span-4">
+            {isSearching ? <Spin spinning={true} /> : <Empty />}
+          </div>
         )}
       </div>
     </div>

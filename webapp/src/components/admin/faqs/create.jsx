@@ -4,7 +4,7 @@ import { Button, Drawer, Form, Input } from "antd";
 import { Context } from "../../../utils/context";
 import Media from "../media/media";
 import { useTranslation } from "react-i18next";
-import TipTapFormField from "../tipTap/tipTapFormField";
+import RichTextFormField from "../richText/richTextFormField";
 import { fileTypeRule } from "../../../utils/fileValidation";
 import {
   requiredListRule,
@@ -105,7 +105,7 @@ export default function Create({ data, open, close, nameRule }) {
           name="description"
           label={t("Description")}
           rules={[requiredRichTextRule]}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
 
         <p className="pb-2">

@@ -123,7 +123,7 @@ function ImportProcess({
         {importSuccess ? (
           <Result
             status="success"
-            title={t("Translations Imported Successfully!")}
+            title={<span className="font-ryker">{t("Translations Imported Successfully!")}</span>}
             subTitle={`${selectedLanguages.length} ${t("language(s) updated with")} ${uploadedData?.length || 0} ${t("translations")}`}
             extra={
               <Button type="primary" onClick={() => close(true)}>
@@ -133,10 +133,10 @@ function ImportProcess({
           />
         ) : (
           <div>
-            <p className="text-[26px] font-bold text-center mb-0">
+            <p className="text-[26px] font-bold text-center mb-0 font-ryker">
               {t("Confirm Import")}
             </p>
-            <p className="text-center mt-2 mb-6">
+            <p className="text-center mt-2 mb-6 font-ryker">
               {t("Are you ready to import the translations?")}
             </p>
 

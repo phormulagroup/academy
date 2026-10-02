@@ -1,33 +1,11 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Avatar,
-  Button,
-  Collapse,
-  DatePicker,
-  Divider,
-  Form,
-  Input,
-  Select,
-} from "antd";
-import { FaRegUser } from "react-icons/fa";
+import { Button, DatePicker, Divider, Form, Input, Select } from "antd";
 import { useContext } from "react";
-import {
-  FaChevronRight,
-  FaRegCheckCircle,
-  FaRegCopy,
-  FaRegEdit,
-  FaRegFile,
-  FaRegTimesCircle,
-  FaRegTrashAlt,
-} from "react-icons/fa";
-
-import Table from "../../components/admin/table";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
 import { useNavigate } from "react-router-dom";
-import avatarImg from "../../assets/Female.svg";
 import { useTranslation } from "react-i18next";
 import UserCard from "../../components/app/user/card";
 import dayjs from "dayjs";
@@ -79,7 +57,8 @@ export default function Account() {
     delete formObjUser.password;
     delete formObjUser.name;
     form.setFieldsValue(formObjUser);
-  }, [user]);
+    // Só ao carregar o utilizador: mudar o avatar não deve repor alterações por guardar no formulário
+  }, [user.id]);
 
   function submit(values) {
     if (values.password) values.new_password = values.password;
@@ -115,13 +94,13 @@ export default function Account() {
   }
 
   return (
-    <div className="py-4 sm:py-8 lg:py-10 bg-[#EAEAEA] min-h-full">
+    <div className="flex-1 py-4 sm:py-8 lg:py-10 bg-[#EAEAEA]">
       <div className="page-frame">
         {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e formulário à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-4">
-          <UserCard />
+        <div className="grid grid-cols-1 lg:grid-cols-4 rounded-[5px] overflow-hidden shadow-[0px_3px_6px_#00000029]">
+          <UserCard editable />
           <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
-            <p className="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
+            <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
               {t("My account")}
             </p>
             <Form
@@ -254,14 +233,20 @@ export default function Account() {
                 </div>
                 {/* Divide os dados pessoais das passwords */}
                 <div className="col-span-full">
-                  <Divider className="my-0!" style={{ borderColor: "#8b9cc3" }} />
+                  <Divider
+                    className="my-0!"
+                    style={{ borderColor: "#8b9cc3" }}
+                  />
                 </div>
                 <div>
                   <Form.Item
                     label={t("Password")}
                     name="password"
                     className="mb-0!">
-                    <Input.Password size="large" placeholder={t("Enter your new password")} />
+                    <Input.Password
+                      size="large"
+                      placeholder={t("Enter your new password")}
+                    />
                   </Form.Item>
                 </div>
                 <div>
@@ -276,15 +261,16 @@ export default function Account() {
                       ),
                     ]}
                     className="mb-0!">
-                    <Input.Password size="large" placeholder={t("Repeat your new password")} />
+                    <Input.Password
+                      size="large"
+                      placeholder={t("Repeat your new password")}
+                    />
                   </Form.Item>
                 </div>
                 <div className="flex justify-end items-end">
                   <Button
                     className="w-full main-cta-button"
                     size="large"
-                   
-                   
                     onClick={form.submit}>
                     {t("Save")}
                   </Button>

@@ -13,8 +13,8 @@ function ExportData({ data, columns, columnMapping = {}, translate }) {
     })); // Aplica widths específicas conforme configuração
   return (
     <div className="flex flex-col justify-center items-center p-2">
-      <p className="blue text-[20px] mt-6">{t("To be exported")}:</p>
-      <p className="font-bold blue text-[40px] mt-2 mb-2">{data.length}</p>
+      <p className="blue text-[20px] mt-6 font-ryker">{t("To be exported")}:</p>
+      <p className="font-bold blue text-[40px] mt-2 mb-2 font-ryker">{data.length}</p>
       <Table
         columns={filteredColumns}
         dataSource={data}

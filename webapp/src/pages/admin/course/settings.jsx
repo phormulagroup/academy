@@ -3,6 +3,7 @@ import { useContext, useEffect } from "react";
 import { useState } from "react";
 
 import { Context } from "../../../utils/context";
+import { cleanMaterials } from "../../../utils/materials";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,7 @@ import { fileTypeRule } from "../../../utils/fileValidation";
 import { AiOutlinePlus } from "react-icons/ai";
 import { RxTrash } from "react-icons/rx";
 
-import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
+import RichTextFormField from "../../../components/admin/richText/richTextFormField";
 import dayjs from "dayjs";
 
 export default function Settings({ course }) {
@@ -134,8 +135,9 @@ export default function Settings({ course }) {
       values.objection = values.objection
         ? JSON.stringify(values.objection)
         : null;
+      // A key "country" do material só é guardada quando tem países selecionados
       values.material = values.material
-        ? JSON.stringify(values.material)
+        ? JSON.stringify(cleanMaterials(values.material))
         : null;
       values.settings = values.settings
         ? JSON.stringify(values.settings)
@@ -185,14 +187,14 @@ export default function Settings({ course }) {
           {/* Header Information settings + Toogle Show Info course */}
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-[18px] font-bold">{t("Duration")}</p>
+              <p className="text-[18px] font-bold font-ryker">{t("Duration")}</p>
               <p className="text-[12px] italic mb-4 text-[#666]">
                 {t("Control the duration time of the course")}
               </p>
             </div>
 
             {/* <div>
-              <p className="text-[18px] font-bold">{t("Information")}</p>
+              <p className="text-[18px] font-bold font-ryker">{t("Information")}</p>
               <p className="text-[12px] italic mb-4 text-[#666]">
                 {t(
                   "Controls additional information that users will see on course page",
@@ -267,7 +269,7 @@ export default function Settings({ course }) {
 
           <Divider />
 
-          <p className="text-[18px] font-bold">{t("Product")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Product")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t("Change the product associated with this course")}
           </p>
@@ -293,7 +295,7 @@ export default function Settings({ course }) {
 
           <Divider />
 
-          <p className="text-[18px] font-bold">{t("Access")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Access")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t(
               "Controls additional restrictions that enrollees need to meet to access the course",
@@ -303,7 +305,7 @@ export default function Settings({ course }) {
             <div className="gap-4 flex flex-col">
               <Form.Item
                 name={["settings", "course_access_expiration"]}
-                label={t("Course access expiration")}
+                label={<span className="font-ryker">{t("Course access expiration")}</span>}
                 valuePropName="checked"
                 className="mb-0!">
                 <Switch
@@ -406,7 +408,7 @@ export default function Settings({ course }) {
           </div>
 
           <Divider />
-          <p className="text-[18px] font-bold">
+          <p className="text-[18px] font-bold font-ryker">
             {t("Display and content options")}
           </p>
           <p className="text-[12px] italic mb-4 text-[#666]">
@@ -456,6 +458,21 @@ export default function Settings({ course }) {
                     <Form.Item name={[field.name, "name"]}>
                       <Input size="large" placeholder={t("File name")} />
                     </Form.Item>
+                    {/* Restrição de países do material (vazio = sem restrição); mesmos países do limite de país */}
+                    <Form.Item name={[field.name, "country"]} className="-mt-2!">
+                      <Select
+                        mode="multiple"
+                        size="large"
+                        className="w-full"
+                        placeholder={t("No country restriction")}
+                        allowClear
+                        showSearch={{ optionFilterProp: ["label"] }}
+                        options={JSON.parse(
+                          languages.filter((l) => l.id === course.id_lang)[0]
+                            ?.country || "[]",
+                        ).map((item) => ({ value: item, label: item }))}
+                      />
+                    </Form.Item>
                   </div>
                 ))}
 
@@ -473,7 +490,7 @@ export default function Settings({ course }) {
             )}
           </Form.List>
           <Divider />
-          <p className="text-[18px] font-bold">{t("Navigation")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Navigation")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t(
               "Controls how students interact with the content and their navigational experience",
@@ -504,7 +521,7 @@ export default function Settings({ course }) {
             </Form.Item>
           </div>
           <Divider />
-          <p className="text-[18px] font-bold">{t("Enrollment")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Enrollment")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t("Controls how students gain access to the course")}
           </p>
@@ -557,7 +574,7 @@ export default function Settings({ course }) {
             </div>
           </div>
           <Divider />
-          <p className="text-[18px] font-bold">{t("Completion awards")}</p>
+          <p className="text-[18px] font-bold font-ryker">{t("Completion awards")}</p>
           <p className="text-[12px] italic mb-4 text-[#666]">
             {t(
               "Controls the look and feel of the course and optional content settings",
@@ -584,12 +601,12 @@ export default function Settings({ course }) {
           </div>
 
           <Divider />
-          <p className="text-[18px] font-bold mb-4">{t("Objection book")}</p>
+          <p className="text-[18px] font-bold mb-4 font-ryker">{t("Objection book")}</p>
           <Form.Item
             name={["objection", "text"]}
             className="mb-0!"
             label={t("Description")}>
-            <TiptapFormField placeholder={t("Write the content...")} richMedia />
+            <RichTextFormField placeholder={t("Write the content...")} richMedia />
           </Form.Item>
           <div className="mt-4">
             <Form.List name={["objection", "tabs"]}>
@@ -631,7 +648,7 @@ export default function Settings({ course }) {
                                   name={[sub.name, "text"]}
                                   className="w-full!"
                                   label={t("Text")}>
-                                  <TiptapFormField placeholder={t("Write the content...")} richMedia />
+                                  <RichTextFormField placeholder={t("Write the content...")} richMedia />
                                 </Form.Item>
                                 <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                   <Button

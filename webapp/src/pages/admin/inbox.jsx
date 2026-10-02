@@ -13,8 +13,7 @@ import Translations from "../../components/admin/language/translations";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 import dayjs from "dayjs";
-import CalendarIcon from "../../assets/Backoffice/calendar.svg?react";
-import SettingsIcon from "../../assets/Backoffice/settings.svg?react";
+import { LuCalendar, LuClock, LuSettings } from "react-icons/lu";
 import Message from "../../components/message";
 import { CgClose } from "react-icons/cg";
 
@@ -111,7 +110,9 @@ export default function Inbox() {
                     ],
                   }}
                 >
-                  <SettingsIcon className="ml-2! max-w-5 cursor-pointer" />
+                  <span className="ml-2 inline-flex cursor-pointer">
+                    <LuSettings className="text-[20px] text-[#163986]" />
+                  </span>
                 </Dropdown>
               </div>
             </div>
@@ -123,12 +124,12 @@ export default function Inbox() {
               <div className="flex justify-end items-center">
                 <div className="flex justify-start items-center">
                   <p className="mr-4">{t("Last message")}: </p>
-                  <CalendarIcon className="max-w-3.75" />
+                  <LuCalendar className="text-[15px] text-[#163986]" />
                   <p className="ml-1">{dayjs(m.created_at).format("DD/MM/YYYY")}</p>
                 </div>
                 <div className="ml-4">
                   <div className="flex justify-start items-center">
-                    <CalendarIcon className="max-w-3.75" />
+                    <LuClock className="text-[15px] text-[#163986]" />
                     <p className="ml-2">{dayjs(m.created_at).format("HH:mm")}</p>
                   </div>
                 </div>
@@ -137,7 +138,7 @@ export default function Inbox() {
             <div className="pt-4 grid grid-cols-4">
               <div className="col-span-3 flex justify-start items-center">
                 <p className="mr-4">{t("Initiated at")}: </p>
-                <CalendarIcon className="max-w-3.75" />
+                <LuCalendar className="text-[15px] text-[#163986]" />
                 <p className="ml-2">{dayjs(m.initiated_at).format("DD/MM/YYYY")}</p>
               </div>
               <div className="flex justify-end items-center">

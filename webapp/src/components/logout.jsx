@@ -21,7 +21,7 @@ function Logout({ open, close, submit }) {
         </Button>,
       ]}>
       <div className="modal-logout-body">
-        <p className="modal-logout-title">
+        <p className="modal-logout-title font-ryker font-black!">
           {t("Are you sure you want to log out?")}
         </p>
       </div>

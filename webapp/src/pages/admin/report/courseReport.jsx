@@ -1,10 +1,6 @@
-import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Form, Select, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-import { RxReload } from "react-icons/rx";
+import { Button, Form, Select } from "antd";
 
 import Table from "../../../components/admin/table";
 
@@ -13,8 +9,7 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
-import DownloadIcon from "../../../assets/Backoffice/download.svg?react";
-import SearchIcon from "../../../assets/Backoffice/search.svg?react";
+import { LuDownload, LuSearch } from "react-icons/lu";
 import {
   getCourseReportColumns,
   getExpandedStudentColumns,
@@ -503,7 +498,7 @@ export default function CourseReport({ data }) {
             color="blue"
             disabled={dataExpanded.length === 0}
             onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<DownloadIcon />}>
+            icon={<LuDownload className="text-[18px]" />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -545,7 +540,7 @@ export default function CourseReport({ data }) {
                   getCourseReportColumns(t, false),
                 )
               }
-              icon={<DownloadIcon />}>
+              icon={<LuDownload className="text-[18px]" />}>
               {t("Export excel")}
             </Button>
           </div>
@@ -583,7 +578,7 @@ export default function CourseReport({ data }) {
               size="large"
               onClick={form.submit}
               type="primary"
-              icon={<SearchIcon />}>
+              icon={<LuSearch className="text-[15px]" />}>
               {t("Search")}
             </Button>
           </div>

@@ -62,7 +62,7 @@ export default function Create({ open, close, products, nameRule, internalNameRu
 				</Button>,
 			]}
 		>
-			<p className="text-[16px] font-bold mb-4">{t("Create Course")}</p>
+			<p className="text-[16px] font-bold mb-4 font-ryker">{t("Create Course")}</p>
 			<Form
 				form={form}
 				onFinish={submit}

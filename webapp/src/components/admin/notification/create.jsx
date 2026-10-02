@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Button, Drawer, Form } from "antd";
 
 import { Context } from "../../../utils/context";
-import TipTapFormField from "../tipTap/tipTapFormField";
+import RichTextFormField from "../richText/richTextFormField";
 import { useTranslation } from "react-i18next";
 import { requiredRichTextRule } from "../../../utils/formFieldError";
 
@@ -52,13 +52,13 @@ export default function Create({ open, close, submit }) {
           name="title"
           label={t("Title")}
           rules={[requiredRichTextRule]}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
         <Form.Item
           name="description"
           label={t("Description")}
           rules={[requiredRichTextRule]}>
-          <TipTapFormField />
+          <RichTextFormField />
         </Form.Item>
       </Form>
     </Drawer>

@@ -1,9 +1,8 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
-import { Avatar, Button, Collapse, Divider } from "antd";
+import { Button, Collapse, Divider } from "antd";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import avatarImg from "../../../assets/Female.svg";
+import UserAvatar from "../../../utils/userAvatar";
 import { useTranslation } from "react-i18next";
 
 export default function Card({ user, courses, scrollToResults }) {
@@ -17,9 +16,11 @@ export default function Card({ user, courses, scrollToResults }) {
 
   return (
     <div className="bg-white p-10 flex flex-col items-center">
-      <p className="text-[26px] font-bold text-center">{user.name}</p>
+      <p className="text-[26px] font-bold text-center font-ryker">
+        {user.name}
+      </p>
       {user.job && <p>{user.job}</p>}
-      <Avatar src={avatarImg} className="w-40! h-40! mt-4! mb-4!" />
+      <UserAvatar user={user} size={160} className="mt-4! mb-4! shrink-0" />
       <p>ID</p>
       <p className="text-[25px]">{user.id}</p>
       <Button size="large" className="mt-4!" onClick={scrollToResults}>
@@ -28,17 +29,45 @@ export default function Card({ user, courses, scrollToResults }) {
       <div className="flex justify-center items-center gap-4 mt-6!">
         <div className="flex flex-col justify-start items-center">
           <p className="text-[30px] font-bold text-center">{courses.length}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Course(s)")}</p>
+          <p className="text-[#707C87] text-[12px] text-center">
+            {t("Course(s)")}
+          </p>
         </div>
         <Divider orientation="vertical" className="m-0! h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Completed")}</p>
+          <p className="text-[30px] font-bold text-center">
+            {
+              courses.filter((_c) =>
+                _c.progress?.some(
+                  (_p) =>
+                    _p.is_completed === 1 &&
+                    _p.activity_type === "course" &&
+                    _p.is_deleted === 0,
+                ),
+              ).length
+            }
+          </p>
+          <p className="text-[#707C87] text-[12px] text-center">
+            {t("Completed")}
+          </p>
         </div>
         <Divider orientation="vertical" className="m-0!  h-full!" />
         <div className="flex flex-col justify-start items-center">
-          <p className="text-[30px] font-bold text-center">{courses.filter((_c) => _c.progress?.some((_p) => _p.is_completed === 1 && _p.activity_type === "course" && _p.is_deleted === 0)).length}</p>
-          <p className="text-[#707C87] text-[12px] text-center">{t("Certificate(s)")}</p>
+          <p className="text-[30px] font-bold text-center">
+            {
+              courses.filter((_c) =>
+                _c.progress?.some(
+                  (_p) =>
+                    _p.is_completed === 1 &&
+                    _p.activity_type === "course" &&
+                    _p.is_deleted === 0,
+                ),
+              ).length
+            }
+          </p>
+          <p className="text-[#707C87] text-[12px] text-center">
+            {t("Certificate(s)")}
+          </p>
         </div>
       </div>
     </div>

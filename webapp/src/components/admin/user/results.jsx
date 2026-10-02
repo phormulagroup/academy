@@ -1,9 +1,9 @@
 import { useEffect, useContext } from "react";
 import { Context } from "../../../utils/context";
-import { Avatar, Button, Divider } from "antd";
+import { Button, Divider } from "antd";
 
 import { useLocation } from "react-router-dom";
-import avatarImg from "../../../assets/Female.svg";
+import UserAvatar from "../../../utils/userAvatar";
 
 export default function Card({ user, courses, scrollToResults }) {
   const { t } = useContext(Context);
@@ -16,9 +16,9 @@ export default function Card({ user, courses, scrollToResults }) {
 
   return (
     <div className="bg-white p-10 flex flex-col items-center">
-      <p className="text-[26px] font-bold text-center">{user.name}</p>
+      <p className="text-[26px] font-bold text-center font-ryker">{user.name}</p>
       {user.job && <p>{user.job}</p>}
-      <Avatar src={avatarImg} className="w-40! h-40! mt-4! mb-4!" />
+      <UserAvatar user={user} size={160} className="mt-4! mb-4! shrink-0" />
       <p>ID</p>
       <p className="text-[25px]">{user.id}</p>
       <Button size="large" className="mt-4!" onClick={scrollToResults}>

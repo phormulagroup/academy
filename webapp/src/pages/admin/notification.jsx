@@ -139,7 +139,7 @@ export default function Notification() {
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="language" />
       <div className="flex justify-between items-center mb-4">
         <div>
-          <p className="text-xl font-bold">{t("Notifications")}</p>
+          <p className="text-xl font-bold font-ryker">{t("Notifications")}</p>
         </div>
         <div>
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />

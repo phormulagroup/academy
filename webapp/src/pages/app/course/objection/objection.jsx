@@ -78,7 +78,7 @@ export default function CourseObjection({ data }) {
                       items={tabItem.items.map((_i, _ind) => ({
                         key: `${tabItem.label}-${_ind}`,
                         label: (
-                          <p className="text-xs sm:text-sm md:text-base">
+                          <p className="font-ryker text-xs sm:text-sm md:text-base">
                             {_i.title}
                           </p>
                         ),

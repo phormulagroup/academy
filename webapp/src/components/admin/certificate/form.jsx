@@ -2,7 +2,7 @@ import { Form, Input } from "antd";
 
 import Media from "../media/media";
 import { useTranslation } from "react-i18next";
-import TipTapFormField from "../tipTap/tipTapFormField";
+import RichTextFormField from "../richText/richTextFormField";
 import { fileTypeRule } from "../../../utils/fileValidation";
 import { requiredRule } from "../../../utils/formFieldError";
 import useMediaPicker from "../../../utils/useMediaPicker";
@@ -63,7 +63,7 @@ export default function CertificateForm({ form, submit, preview, errors }) {
           )}
         </Form.Item>
         <Form.Item name={"text"} className="mb-0!" label={t("Text")}>
-          <TipTapFormField placeholder={t("Write the content...")} />
+          <RichTextFormField placeholder={t("Write the content...")} />
         </Form.Item>
       </Form>
     </div>

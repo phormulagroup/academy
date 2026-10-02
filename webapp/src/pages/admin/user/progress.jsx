@@ -17,15 +17,33 @@ export default function CourseProgress({ data, user }) {
   }
 
   function removeProgress(module, item) {
-    let findIndexAllItems = data.allItems.findIndex((c) => c.id === item.id && c.type === item.type);
-    let itemsToRemove = data.allItems.slice(findIndexAllItems, data.allItems.length);
-    let findIndexModulesToRemove = data.modules.findIndex((c) => c.id === module.id);
-    let modulesToRemove = data.modules.slice(findIndexModulesToRemove, data.modules.length);
+    let findIndexAllItems = data.allItems.findIndex(
+      (c) => c.id === item.id && c.type === item.type,
+    );
+    let itemsToRemove = data.allItems.slice(
+      findIndexAllItems,
+      data.allItems.length,
+    );
+    let findIndexModulesToRemove = data.modules.findIndex(
+      (c) => c.id === module.id,
+    );
+    let modulesToRemove = data.modules.slice(
+      findIndexModulesToRemove,
+      data.modules.length,
+    );
     let tests = data.allItems.filter((c) => c.type === "test");
     console.log(data.course);
     try {
       axios
-        .post(endpoints.course.resetProgress, { data: { user: user, module: modulesToRemove, items: itemsToRemove, course: data.course, tests } })
+        .post(endpoints.course.resetProgress, {
+          data: {
+            user: user,
+            module: modulesToRemove,
+            items: itemsToRemove,
+            course: data.course,
+            tests,
+          },
+        })
         .then((res) => {
           console.log(res);
         })
@@ -52,17 +70,29 @@ export default function CourseProgress({ data, user }) {
               label: (
                 <div className="flex flex-col">
                   <div className="p-2 flex">
-                    {data.progress.length > 0 && data.progress.filter((p) => p.activity_type === "module" && p.id_course_module === item.id).length > 0 ? (
-                      <div className={`w-4.25 h-4.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                    {data.progress.length > 0 &&
+                    data.progress.filter(
+                      (p) =>
+                        p.activity_type === "module" &&
+                        p.id_course_module === item.id,
+                    ).length > 0 ? (
+                      <div
+                        className={`w-4.25 h-4.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                         <RxCheck className="text-white" />
                       </div>
                     ) : (
-                      <div className={`w-4.25 h-4.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                      <div
+                        className={`w-4.25 h-4.25 rounded-full bg-white border border-[#2F8351]`}></div>
                     )}
                     <div className="flex flex-col ml-4">
-                      <p className={`text-[14px]`}>{item.title}</p>
+                      <p className={`text-[14px] font-ryker font-bold`}>
+                        {item.title}
+                      </p>
                       <p className="text-[12px] mt-1">
-                        {data?.topics && data.topics.filter((_t) => _t.id_course_module === item.id).length > 0
+                        {data?.topics &&
+                        data.topics.filter(
+                          (_t) => _t.id_course_module === item.id,
+                        ).length > 0
                           ? `${data.topics.filter((_t) => _t.id_course_module === item.id).length} ${t("topic")} ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? " | " : ""}`
                           : ""}{" "}
                         {` ${data.tests?.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? `${data.tests.filter((_t) => _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
@@ -73,18 +103,28 @@ export default function CourseProgress({ data, user }) {
               ),
               children: (
                 <div className="flex flex-col">
-                  {item.description && <div className="p-6">{item.description}</div>}
+                  {item.description && (
+                    <div className="p-6">{item.description}</div>
+                  )}
                   <div className="p-4">
                     {item.items.map((_t, i) => (
-                      <div className={`p-4 flex items-center justify-between ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
+                      <div
+                        className={`p-4 flex items-center justify-between ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""}`}>
                         <div className="flex justify-center items-center">
                           {data.progress.length > 0 &&
-                          data.progress.filter((p) => p.is_completed === 1 && p.activity_type === _t.type && p[`id_course_${_t.type}`] === _t.id).length > 0 ? (
-                            <div className={`w-4.25 h-4.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                          data.progress.filter(
+                            (p) =>
+                              p.is_completed === 1 &&
+                              p.activity_type === _t.type &&
+                              p[`id_course_${_t.type}`] === _t.id,
+                          ).length > 0 ? (
+                            <div
+                              className={`w-4.25 h-4.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                               <RxCheck className="text-white" />
                             </div>
                           ) : (
-                            <div className={`w-4.25 h-4.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                            <div
+                              className={`w-4.25 h-4.25 rounded-full bg-white border border-[#2F8351]`}></div>
                           )}
                           <p className="text-sm ml-2">{_t.title}</p>
                         </div>
@@ -94,8 +134,7 @@ export default function CourseProgress({ data, user }) {
                             description={t("Are you sure to delete this task?")}
                             onConfirm={() => confirm(item, _t, data.course)}
                             okText={t("Yes")}
-                            cancelText={t("No")}
-                          >
+                            cancelText={t("No")}>
                             <IoMdClose className="cursor-pointer" />
                           </Popconfirm>
                         </div>
@@ -110,10 +149,18 @@ export default function CourseProgress({ data, user }) {
               return (
                 <div className="flex justify-center items-center">
                   <div className="mr-2">
-                    {panelProps.isActive ? <p className="font-bold text-[12px]">{t("Collapse")}</p> : <p className="font-bold text-[12px]">{t("Expand")}</p>}
+                    {panelProps.isActive ? (
+                      <p className="font-bold text-[12px]">{t("Collapse")}</p>
+                    ) : (
+                      <p className="font-bold text-[12px]">{t("Expand")}</p>
+                    )}
                   </div>
                   <div className="w-4 h-4 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                    {panelProps.isActive ? <RxChevronUp className="w-3 h-3 text-white" /> : <RxChevronDown className="w-3 h-3 text-white" />}
+                    {panelProps.isActive ? (
+                      <RxChevronUp className="w-3 h-3 text-white" />
+                    ) : (
+                      <RxChevronDown className="w-3 h-3 text-white" />
+                    )}
                   </div>
                 </div>
               );

@@ -35,14 +35,15 @@ export default function Faqs() {
 
   const { t } = useTranslation();
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
-  }, []);
+    if (languages?.length > 0) getData();
+  }, [languages?.length > 0]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.faqs.readByLang, { params: { id_lang: languages.filter((_l) => _l.code === i18n.language)[0].id } })
+      .get(endpoints.faqs.readByLang, { params: { id_lang: (languages.find((l) => l.code === i18n.language)?.id ?? user?.id_lang) } })
       .then((res) => {
         console.log(res);
         setData(res.data);
@@ -64,7 +65,7 @@ export default function Faqs() {
         <meta property="og:description" content={`${t("FAQs")} - Bial Regional Academy`} />
       </Helmet>
       <div className="flex flex-col mb-6 sm:mb-10">
-        <p className="text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">{t("FAQs")}</p>
+        <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[28px] font-bold text-center text-[#163986]">{t("FAQs")}</p>
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full">
@@ -82,7 +83,7 @@ export default function Faqs() {
               return {
                 key: n.id,
                 label: (
-                  <p className="text-xs sm:text-sm md:text-base">{n.title}</p>
+                  <p className="font-ryker text-xs sm:text-sm md:text-base">{n.title}</p>
                 ),
                 children: (
                   <div className="flex justify-center gap-4 lg:gap-8 w-full flex-wrap lg:flex-nowrap">

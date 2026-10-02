@@ -180,13 +180,13 @@ export default function Result() {
   }
 
   return (
-    <div className="py-4 sm:py-8 lg:py-10 bg-[#EAEAEA] min-h-full">
+    <div className="flex-1 py-4 sm:py-8 lg:py-10 bg-[#EAEAEA]">
       <div className="page-frame">
         {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e resultados à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 rounded-[5px] overflow-hidden shadow-[0px_3px_6px_#00000029]">
           <UserCard courses={coursesData} />
           <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
-            <p className="text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
+            <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
               {t("Results")}
             </p>
             {coursesData.map((c) => {
@@ -223,7 +223,7 @@ export default function Result() {
                         <div className="p-1 sm:p-2 cursor-pointer flex items-center min-w-0">
                           <div className="flex flex-col sm:ml-2 w-full min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
-                              <p className="text-[15px] sm:text-[17px] lg:text-[20px] font-bold leading-tight">
+                              <p className="font-ryker text-[15px] sm:text-[17px] lg:text-[20px] font-bold leading-tight">
                                 {c.course.name}
                               </p>
                               {progressPercent === 100 && (

@@ -128,7 +128,7 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
         </Button>,
       ]}
     >
-      <p className="text-[16px] font-bold mb-4">{t("Duplicate Course")}</p>
+      <p className="text-[16px] font-bold mb-4 font-ryker">{t("Duplicate Course")}</p>
       <p>{t("Are you sure you want to duplicate this course?")}</p>
       <p className="mb-4">
         {t("Selected course")}: <b>{data.internal_name}</b>
