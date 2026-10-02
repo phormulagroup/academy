@@ -8,7 +8,8 @@ import { PiFileTextLight } from "react-icons/pi";
 import i18n from "../../../utils/i18n";
 import { Context } from "../../../utils/context";
 
-export default function CourseContent({ modules, progress, data, courseSlug }) {
+// compact: módulos mais baixos (usado nos Resultados), com as mesmas cores e o mesmo indicador de expandir
+export default function CourseContent({ modules, progress, data, courseSlug, compact = false }) {
   const { t } = useTranslation();
   const { windowDimension } = useContext(Context);
 
@@ -108,37 +109,37 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
   }
 
   return (
-    <div className="mb-10">
+    <div className={compact ? "mb-0" : "mb-10"}>
       {modules && modules.length > 0 ? (
         <Collapse
-          className="collapse-course"
-          size="large"
+          className={`collapse-course ${compact ? "collapse-course-compact" : ""}`}
+          size={compact ? "small" : "large"}
           bordered={false}
           items={modules
             ?.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
             .map((item) => ({
               key: item.id,
               label: (
-                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 p-2 w-full min-w-0">
+                <div className={`grid grid-cols-[auto_minmax(0,1fr)] items-center w-full min-w-0 ${compact ? "gap-3 p-0" : "gap-4 p-2"}`}>
                   {withLockTooltip(<div
-                    className={`p-2 flex min-w-0 ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+                    className={`${compact ? "p-1.5" : "p-2"} flex min-w-0 ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
                     // onClick={() => handleNavigate(item.id, "module")}
                   >
                     {isModuleCompleted(item) ? (
                       <div
-                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
+                        className={`${compact ? "w-5.5 h-5.5 min-w-5.5 min-h-5.5" : "w-6.25 h-6.25 min-w-6.25 min-h-6.25"} rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                         <RxCheck className="text-white" />
                       </div>
                     ) : (
                       <div
-                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
+                        className={`${compact ? "w-5.5 h-5.5 min-w-5.5 min-h-5.5" : "w-6.25 h-6.25 min-w-6.25 min-h-6.25"} rounded-full bg-white border border-[#2F8351]`}></div>
                     )}
-                    <div className="flex flex-col ml-4 max-w-full flex-1 min-w-0 overflow-hidden">
+                    <div className={`flex flex-col ${compact ? "ml-3.5" : "ml-4"} max-w-full flex-1 min-w-0 overflow-hidden`}>
                       <p
-                        className={`font-ryker text-[#163986] font-bold text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px] line-clamp-2 w-full overflow-hidden`}>
+                        className={`font-ryker text-[#163986] font-bold ${compact ? "text-[14px] sm:text-[15px] leading-tight" : "text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px]"} line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
-                      <p className="mt-1 text-[#163986] text-[12px] lg:text-[13px] line-clamp-2">
+                      <p className={`${compact ? "mt-0.5 mb-0! text-[12px]" : "mt-1 text-[12px] lg:text-[13px]"} text-[#163986] line-clamp-2`}>
                         {data?.topics &&
                         data.topics.filter(
                           (_t) => _t.id_course_module === item.id,
@@ -182,14 +183,14 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                       <div>{calcProgress(item.items)}</div>
                     </div>
                   )}
-                  <div className="p-2 sm:p-4">
+                  <div className={compact ? "p-1 sm:p-2" : "p-2 sm:p-4"}>
                     {item.items && item.items.length > 0 ? (
                       item.items.map((_t, i) => withLockTooltip(
                         <div
                           key={`${_t.type}-${_t.id}`}
                           onClick={() => handleNavigate(_t.id, _t.type)}
                           // Itens mais pequenos que o título do módulo e que o "Module content"/progresso
-                          className={`group p-3 pl-4 sm:pl-6 lg:py-3.5 flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] xl:text-[14px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
+                          className={`group ${compact ? "p-2 pl-3 sm:pl-4" : "p-3 pl-4 sm:pl-6 lg:py-3.5"} flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] xl:text-[14px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
                           {/* Circle check indicator */}
                           {progress.length > 0 &&
                           progress.filter(

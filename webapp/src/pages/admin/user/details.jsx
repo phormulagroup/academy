@@ -1,43 +1,19 @@
 import axios from "axios";
-import { useContext, useEffect, useRef } from "react";
-import { useState } from "react";
-import {
-  Button,
-  Collapse,
-  DatePicker,
-  Divider,
-  Empty,
-  Form,
-  Input,
-  Progress,
-  Select,
-  Tabs,
-} from "antd";
-
-import { Context } from "../../../utils/context";
-
-import endpoints from "../../../utils/endpoints";
-import { RxChevronDown, RxChevronUp } from "react-icons/rx";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Button, DatePicker, Divider, Empty, Form, Input, Select, Skeleton, Tag } from "antd";
+import dayjs from "dayjs";
+import { LuAward, LuBookOpen, LuCircleCheck, LuLock, LuPlay, LuUser, LuIdCard, LuMail, LuMapPin } from "react-icons/lu";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { useNavigate, useParams } from "react-router-dom";
-import UserCard from "../../../components/admin/user/card";
-import dayjs from "dayjs";
-import { downloadCertificate } from "../../../utils/certificate";
+import { Context } from "../../../utils/context";
+import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
-import {
-  LuAward,
-  LuCalendar,
-  LuCircleCheck,
-  LuClipboardList,
-  LuClock,
-  LuCloudDownload,
-  LuThumbsDown,
-  LuThumbsUp,
-  LuTimer,
-} from "react-icons/lu";
-import CourseProgress from "./progress";
+import { downloadCertificate } from "../../../utils/certificate";
+import { usePermission } from "../../../utils/usePermission";
+import { courseStats } from "../../../utils/userResults";
+import UserAvatar from "../../../utils/userAvatar";
+import CourseResult from "../../../components/admin/user/courseResult";
 import {
   emailFieldProps,
   emailRule,
@@ -47,76 +23,94 @@ import {
   requiredSelectRule,
   uniqueRule,
 } from "../../../utils/formFieldError";
-import {
-  academicBackgroundOptions,
-  genderOptions,
-  namePlaceholders,
-  splitName,
-} from "../../../utils/userFields";
+import { academicBackgroundOptions, genderOptions, namePlaceholders, splitName } from "../../../utils/userFields";
 
+const STATUS_TAGS = {
+  approved: { label: "Approved", color: "green" },
+  pending: { label: "Pending", color: "orange" },
+  not_approved: { label: "Not Approved", color: "red" },
+};
+
+const SummaryTile = ({ icon, label, value }) => (
+  <div className="flex items-center gap-3 rounded-[14px] bg-white p-4 shadow">
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[#E6F9FC] text-[20px] text-[#163986]">{icon}</span>
+    <div>
+      <p className="mb-0! text-[22px] font-bold leading-tight">{value}</p>
+      <p className="mb-0! text-[12px] text-[#8A8D98]">{label}</p>
+    </div>
+  </div>
+);
+
+const SectionTitle = ({ icon, children }) => (
+  <p className="mb-4! flex items-center gap-2 text-[15px] font-bold">
+    <span className="text-[#163986]">{icon}</span>
+    {children}
+  </p>
+);
+
+// Detalhes de um utilizador no backoffice: resumo, resultados por curso e edição da conta
 export default function UserDetails() {
   const { user, languages, toastApi } = useContext(Context);
+  const { t, i18n } = useTranslation();
+  // /admin/perfil (sem id) é o perfil de quem está autenticado; /admin/users/:id é o de qualquer utilizador
+  const { id: paramId } = useParams();
+  const isProfile = paramId === undefined;
+  const id = paramId ?? user.id;
+  const navigate = useNavigate();
+  const { canUpdate: canUpdateUsers, canRead: canReadUsers } = usePermission("user");
+  // Cada um edita a sua conta; editar as dos outros exige permissão
+  const isOwnAccount = Number(id) === user.id;
+  const canEdit = canUpdateUsers || isOwnAccount;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [data, setData] = useState({});
   const [courseData, setCourseData] = useState([]);
   const [countries, setCountries] = useState([]);
   // Utilizadores existentes, para o uniqueRule do e-mail
   const [users, setUsers] = useState([]);
+  const [view, setView] = useState("results");
 
-  const resultsRef = useRef();
-  const { t, i18n } = useTranslation();
-  const { id } = useParams();
   // Exemplos de Nome e Apelido no idioma atual
   const placeholders = namePlaceholders(i18n.language);
   const [form] = Form.useForm();
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     getData();
   }, [id]);
 
   useEffect(() => {
+    if (!canReadUsers) return;
     axios
       .get(endpoints.user.read)
       .then((res) => setUsers(res.data))
       .catch((err) => console.log(err));
-  }, []);
+  }, [canReadUsers]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.user.readById, { params: { id, id_role: user.id_role } })
+      .get(endpoints.user.readById, { params: { id } })
       .then((res) => {
-        setData(res.data.user);
+        setData(res.data.user ?? {});
         if (res.data.user) {
           setCountries(
             languages
               .filter((lang) => lang.id === res.data.user.id_lang)
-              .flatMap((l) =>
-                JSON.parse(l.country).map((c) => ({
-                  value: c,
-                  label: t(`${c}`),
-                  id_lang: l.id,
-                })),
-              )
+              .flatMap((l) => JSON.parse(l.country).map((c) => ({ value: c, label: t(`${c}`), id_lang: l.id })))
               .sort((a, b) => a.label.localeCompare(b.label)),
           );
-
           delete res.data.user.password;
           // A BD guarda só name: é dividido em Nome + Apelido para editar
-          form.setFieldsValue({
-            ...res.data.user,
-            ...splitName(res.data.user.name),
-          });
-
+          form.setFieldsValue({ ...res.data.user, ...splitName(res.data.user.name) });
           prepareData(res);
         }
+        setIsLoading(false);
       })
       .catch((err) => {
         console.log(err);
         setIsLoading(false);
+        toastApi.error(err.response?.data?.message || t("Could not load this user"));
       });
   }
 
@@ -183,777 +177,200 @@ export default function UserDetails() {
     }
   }
 
-  function calcCourseProgress(a, b, c) {
-    let progressPercentage = (100 * a) / (b + c);
-    const isInteger = progressPercentage % 1 === 0;
-    return (
-      <p
-        className={`text-[12px] ${progressPercentage === 100 ? "text-[#2F8351]" : "text-[#707070]"} text-nowrap mr-2`}>
-        {!isInteger
-          ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-          : progressPercentage}
-        % {t("Completed")}
-      </p>
-    );
-  }
-
-  function handleDownloadCertificate(item, progress) {
-    downloadCertificate(item, progress, user, config, endpoints);
-  }
-
   function submit(values) {
-    const data = { ...values, id };
-    if (data.password) data.new_password = data.password;
-    delete data.password;
-    delete data.confirm_password;
+    const payload = { ...values, id };
+    if (payload.password) payload.new_password = payload.password;
+    delete payload.password;
+    delete payload.confirm_password;
 
+    setIsSaving(true);
     axios
-      .post(endpoints.user.update, { data })
+      .post(endpoints.user.update, { data: payload })
       .then((res) => {
         if (res.data.user) {
-          toastApi.open({
-            type: "success",
-            content: t("Account updated successfully!"),
-          });
+          toastApi.success(t("Account updated successfully!"));
+          form.setFieldsValue({ password: undefined, confirm_password: undefined });
           getData();
         } else {
-          toastApi.open({
-            type: "error",
-            content: t("Something wrong happened, try again please."),
-          });
+          toastApi.error(t("Something wrong happened, try again please."));
         }
       })
       .catch((err) => {
         console.log(err);
-        toastApi.open({
-          type: "error",
-          content: t("Something wrong happened, try again please."),
-        });
-      });
+        toastApi.error(err.response?.data?.message || t("Something wrong happened, try again please."));
+      })
+      .finally(() => setIsSaving(false));
   }
 
-  function scrollToResults() {
-    console.log(resultsRef);
-    resultsRef.current.scrollIntoView();
-  }
+  // O certificado é do aluno (nome dele), não de quem está a ver a página
+  const handleDownloadCertificate = (course, progress) => downloadCertificate(course, progress, data);
 
-  async function deleteTry(_try) {
-    console.log(_try);
-    try {
-      const res = await axios.post(endpoints.course.deleteTry, {
-        data: { id: _try.id },
-      });
-      console.log(res.data.affectedRows);
-      if (res.data.affectedRows > 0) {
-        // Update the course data
-        const updatedCourseData = courseData.map((c) => {
-          console.log(c);
-          if (c.course.id === _try.id_course) {
-            console.log(c.progress.filter((t) => t.id !== _try.id));
-            return {
-              ...c,
-              progress: c.progress.filter((t) => t.id !== _try.id),
-            };
-          }
-          return course;
-        });
+  const summary = useMemo(() => {
+    const stats = courseData.map(courseStats);
+    return {
+      courses: courseData.length,
+      inProgress: stats.filter((s) => s.status === "in_progress").length,
+      completed: stats.filter((s) => s.status === "completed").length,
+      certificates: stats.filter((s) => s.hasCertificate).length,
+    };
+  }, [courseData]);
 
-        setCourseData(updatedCourseData);
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  const statusTag = STATUS_TAGS[data.status];
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="flex justify-between items-center">
-        <p className="font-bold text-[18px] font-ryker">{t("Student account")}</p>
-        <p
-          className="text-sm cursor-pointer"
-          onClick={() => navigate(`/admin/users`)}>
-          « {t("Go back")}
-        </p>
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <p className="mb-0! text-[18px] font-bold font-ryker">{isProfile ? t("My profile") : t("Student account")}</p>
+        {!isProfile && (
+          <button type="button" className="cursor-pointer border-0 bg-transparent text-sm text-[#163986]" onClick={() => navigate("/admin/users")}>
+            « {t("Go back")}
+          </button>
+        )}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
-        <UserCard
-          user={data}
-          courses={courseData}
-          scrollToResults={scrollToResults}
-        />
-        <div className="lg:col-span-3">
-          <div className="bg-[#D0D7E7] p-6 md:p-10 flex flex-col h-full rounded-[5px] shadow-[0px_3px_6px_#00000029]">
-            <p className="text-[26px] font-bold text-center mb-6! font-ryker">
-              {t("Account")}
-            </p>
-            <Form
-              form={form}
-              onFinish={submit}
-              layout="vertical"
-              className="auth-form">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                  <Form.Item
-                    name="first_name"
-                    label={t("First Name")}
-                    rules={[requiredRule]}
-                    className="mb-0!">
-                    <Input size="large" placeholder={placeholders.first_name} />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    name="last_name"
-                    label={t("Last Name")}
-                    rules={[requiredRule]}
-                    className="mb-0!">
-                    <Input size="large" placeholder={placeholders.last_name} />
-                  </Form.Item>
-                </div>
-                <div>
-                  {/* Formato do e-mail e não usado por outra conta (a do próprio aluno é ignorada) */}
-                  <Form.Item
-                    name="email"
-                    label={t("E-mail")}
-                    {...emailFieldProps}
-                    rules={[
-                      requiredRule,
-                      emailRule,
-                      uniqueRule(
-                        users,
-                        t(
-                          "This e-mail is already associated with another account",
-                        ),
-                        { field: "email", excludeId: Number(id) },
-                      ),
-                    ]}
-                    className="mb-0!">
-                    <Input
-                      type="email"
-                      size="large"
-                      placeholder={t("youremail@domain.com")}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    name="gender"
-                    label={t("Gender")}
-                    rules={[requiredSelectRule]}
-                    className="mb-0!">
-                    <Select
-                      size="large"
-                      placeholder={t("Gender")}
-                      allowClear
-                      options={genderOptions(t, i18n.language)}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Birth date")}
-                    name="birth_date"
-                    rules={[requiredDateRule]}
-                    className="mb-0!"
-                    getValueProps={(value) => ({
-                      value: value && dayjs(value),
-                    })}>
-                    <DatePicker
-                      size="large"
-                      placeholder={t("Select birth date")}
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    name="country"
-                    label={t("Country")}
-                    rules={[requiredSelectRule]}
-                    className="mb-0!">
-                    <Select
-                      size="large"
-                      placeholder={t("Choose a country")}
-                      showSearch={{ optionFilterProp: "label" }}
-                      allowClear
-                      options={countries.map((item) => ({
-                        label: item.label,
-                        value: item.value,
-                      }))}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Academic background")}
-                    name="academic_background"
-                    rules={[requiredSelectRule]}
-                    className="mb-0!">
-                    <Select
-                      size="large"
-                      placeholder={t("Academic background")}
-                      showSearch={{ optionFilterProp: "label" }}
-                      allowClear
-                      options={academicBackgroundOptions(t)}
-                    />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Bial's starting date")}
-                    name="bial_starting_date"
-                    rules={[requiredDateRule]}
-                    className="mb-0!"
-                    getValueProps={(value) => ({
-                      value: value && dayjs(value),
-                    })}>
-                    <DatePicker
-                      size="large"
-                      placeholder={t("Select Bial's starting date")}
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-                {/* Divide os dados pessoais das passwords */}
-                <div className="col-span-full">
-                  <Divider className="my-0!" style={{ borderColor: "#8b9cc3" }} />
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Password")}
-                    name="password"
-                    className="mb-0!">
-                    <Input.Password size="large" placeholder={t("Enter a new password")} />
-                  </Form.Item>
-                </div>
-                <div>
-                  <Form.Item
-                    label={t("Confirm password")}
-                    name="confirm_password"
-                    dependencies={["password"]}
-                    rules={[
-                      matchFieldRule(
-                        "password",
-                        t("The passwords does not match!"),
-                      ),
-                    ]}
-                    className="mb-0!">
-                    <Input.Password size="large" placeholder={t("Repeat the new password")} />
-                  </Form.Item>
-                </div>
-                <div className="flex justify-end items-end">
-                  <Button
-                    className="w-full"
-                    size="large"
-                    variant="solid"
-                    color="blue"
-                    onClick={form.submit}>
-                    {t("Save")}
-                  </Button>
-                </div>
-              </div>
-            </Form>
+
+      <div className="flex flex-wrap items-center justify-between gap-6 rounded-[16px] bg-white p-6 shadow md:p-8">
+        <div className="flex min-w-0 items-center gap-5">
+          <UserAvatar user={data} size={88} className="shrink-0" />
+          <div className="min-w-0">
+            <p className="mb-1! truncate text-[24px] font-bold">{data.name}</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[#5B5F6B]">
+              {data.email && (
+                <span className="flex items-center gap-1.5">
+                  <LuMail /> {data.email}
+                </span>
+              )}
+              {data.country && (
+                <span className="flex items-center gap-1.5">
+                  <LuMapPin /> {t(data.country)}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <LuIdCard /> ID {data.id}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {data.role_name && <Tag color="#163986" className="m-0!">{data.role_name}</Tag>}
+              {statusTag && (
+                <Tag color={statusTag.color} className="m-0!">
+                  {t(statusTag.label)}
+                </Tag>
+              )}
+              {!!data.is_deleted && (
+                <Tag color="red" className="m-0!">
+                  {t("Inactive")}
+                </Tag>
+              )}
+              {data.created_at && <span className="text-[12px] text-[#8A8D98]">{t("Registered on")} {dayjs(data.created_at).format("DD/MM/YYYY")}</span>}
+            </div>
           </div>
         </div>
+        <div className="flex rounded-[12px] bg-[#F2F3F5] p-1">
+          {[
+            { value: "results", label: t("Results"), icon: <LuBookOpen /> },
+            { value: "account", label: t("Account"), icon: <LuUser /> },
+          ].map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setView(item.value)}
+              className={`flex cursor-pointer items-center gap-2 rounded-[9px] border-0 px-4 py-2 text-[14px] font-medium transition-colors ${view === item.value ? "bg-[#163986] text-white" : "bg-transparent text-[#5B5F6B] hover:bg-white"}`}>
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div id="results" ref={resultsRef} className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="hidden lg:block"></div>
-        <div className="lg:col-span-3 mt-10">
-          <p className="text-[26px] font-bold text-center mb-6! font-ryker">
-            {t("Results")}
-          </p>
-          {courseData.length > 0 ? (
-            courseData.map((c) => {
-              const tests = c.allItems
-                .filter((_c) => _c.type === "test")
-                .map((_t, _i) => {
-                  let tries = c.progress.filter(
-                    (_p) =>
-                      _p.activity_type === "test" &&
-                      _p.id_course_test === _t.id,
-                  );
-                  let testSettings = _t.settings
-                    ? JSON.parse(_t.settings)
-                    : null;
-                  let maxTries = 0;
-                  let time = null;
-                  let questions = [];
-                  if (testSettings) {
-                    time = testSettings.time;
-                    maxTries = testSettings.retries_allowed;
-                  }
-                  if (_t.question) questions = JSON.parse(_t.question);
-                  return {
-                    key: `${_t.id}-test`,
-                    label:
-                      _i === 0 ? (
-                        <div>
-                          <p className="mt-6 text-[12px] mb-2">{t("Tests")}</p>
-                          <div className="test-title">
-                            <p>{_t.title}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p>{_t.title}</p>
-                        </div>
-                      ),
-                    children: (
-                      <div className="flex flex-col w-full!">
-                        <div className="grid grid-cols-5 mb-6">
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="italic text-[11px]">{t("Status")}</p>
-                            {c.progress.filter(
-                              (_p) =>
-                                _p.activity_type === "test" &&
-                                _p.id_course_test === _t.id,
-                            ).length > 0 ? (
-                              <>
-                                <p className="text-sm">
-                                  {c.progress.filter(
-                                    (_p) =>
-                                      _p.activity_type === "test" &&
-                                      _p.id_course_test === _t.id &&
-                                      _p.is_completed,
-                                  ).length > 0
-                                    ? t("Completed")
-                                    : c.progress.filter(
-                                          (_p) =>
-                                            _p.activity_type === "test" &&
-                                            _p.id_course_test === _t.id &&
-                                            _p.is_completed === 0,
-                                        ).length === maxTries
-                                      ? t("Not passed")
-                                      : t("In progress")}
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-sm">{t("Not started")}</p>
-                              </>
-                            )}
-                          </div>
 
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="text-[11px]">{t("Tries")}</p>
-                            <p className="text-sm">
-                              {tries.length}/{maxTries}
-                            </p>
-                          </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <SummaryTile icon={<LuBookOpen />} label={t("Course(s)")} value={summary.courses} />
+        <SummaryTile icon={<LuPlay />} label={t("In progress")} value={summary.inProgress} />
+        <SummaryTile icon={<LuCircleCheck />} label={t("Completed")} value={summary.completed} />
+        <SummaryTile icon={<LuAward />} label={t("Certificate(s)")} value={summary.certificates} />
+      </div>
 
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="text-[11px]">{t("Questions")}</p>
-                            <p className="text-sm">{questions.length}</p>
-                          </div>
-
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="text-[11px]">{t("Time")}</p>
-                            <p className="text-sm">{time} min</p>
-                          </div>
-
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <p className="text-[11px]">{t("Passing score")}</p>
-                            <p className="text-sm">
-                              {testSettings?.passing_score ?? "80"}%
-                            </p>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <Divider dashed className="mb-4! mt-6!" />
-                          <p className="text-center font-bold">{t("Tries")}</p>
-                          {tries.length > 0 ? (
-                            <Tabs
-                              className="tabs-tries"
-                              type="card"
-                              items={tries.map((_try, _tryInd) => {
-                                let meta_data = _try.meta_data
-                                  ? JSON.parse(_try.meta_data)
-                                  : {};
-                                let testTime = "";
-                                let answers = [];
-                                if (meta_data) {
-                                  testTime =
-                                    meta_data.time > 60
-                                      ? `${Math.floor(meta_data.time / 60)} min`
-                                      : `${meta_data.time} s`;
-                                  answers = meta_data.items;
-                                }
-                                return {
-                                  key: `${_try.id}-try`,
-                                  label: `${t("Try")} nº${_tryInd + 1}`,
-                                  children: (
-                                    <div className="grid grid-cols-5">
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">
-                                          {t("Status")}
-                                        </p>
-                                        {_try.is_completed ? (
-                                          <LuThumbsUp className="text-[#2F8351] w-10 h-10 p-1" />
-                                        ) : (
-                                          <LuThumbsDown className="text-[#DB0709] w-10 h-10 p-1" />
-                                        )}
-                                        <p className="text-sm">
-                                          {_try.is_completed
-                                            ? t("Passed")
-                                            : t("Not passed")}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">
-                                          {t("Correct")}
-                                        </p>
-                                        <LuCircleCheck className="text-[#163986] w-10 h-10 p-1" />
-                                        <p className="text-sm">
-                                          {
-                                            answers.filter(
-                                              (_a) => _a.is_correct,
-                                            ).length
-                                          }
-                                          /{answers.length}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">
-                                          {t("Time")}
-                                        </p>
-                                        <LuTimer className="text-[#163986] w-10 h-10 p-1" />
-                                        <p className="text-sm">{testTime}</p>
-                                      </div>
-
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">
-                                          {t("Date")}
-                                        </p>
-                                        <LuCalendar className="text-[#163986] w-10 h-10 p-1" />
-                                        <p className="text-sm">
-                                          {dayjs(_try.created_at).format(
-                                            "DD/MM/YYYY",
-                                          )}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex flex-col justify-center items-center gap-2">
-                                        <p className="text-[11px]">
-                                          {t("Hour")}
-                                        </p>
-                                        <LuClock className="text-[#163986] w-10 h-10 p-1" />
-                                        <p className="text-sm">
-                                          {dayjs(_try.created_at).format(
-                                            "HH:mm",
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div className="col-span-5 flex flex-col justify-center items-center mt-6">
-                                        <Button
-                                          dashed
-                                          onClick={() => deleteTry(_try)}>
-                                          {t("Delete try")}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ),
-                                };
-                              })}
-                            />
-                          ) : (
-                            <Empty
-                              className="mt-6"
-                              description={t("No tries made yet")}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ),
-                  };
-                });
-
-              const tabsInside = [
-                {
-                  key: `${c.course.id}_course`,
-                  label: (
-                    <div>
-                      <p className="text-[12px] mb-2">{t("Course")}</p>
-                      <div className="course-title">
-                        <p className="font-ryker">{c.course.name}</p>
-                      </div>
-                    </div>
-                  ),
-                  children: (
-                    <div>
-                      <div className="grid grid-cols-5">
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Status")}</p>
-                          {c.progress.length > 0 ? (
-                            c.progress.filter(
-                              (_p) =>
-                                _p.activity_type === "course" &&
-                                _p.is_completed,
-                            ).length > 0 ? (
-                              <>
-                                <ThumbsUp className="text-green-400 w-10 h-10" />
-                                <p className="text-sm">{t("Passed")}</p>
-                              </>
-                            ) : (
-                              <>
-                                <ThumbsDown className="text-green-400 w-10 h-10" />
-                                <p className="text-sm">{t("In progress")}</p>
-                              </>
-                            )
-                          ) : (
-                            <>
-                              <ThumbsDown className="text-green-400 w-10 h-10" />
-                              <p className="text-sm">{t("Not started")}</p>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Modules")}</p>
-                          <ThumbsUp
-                            className={`${c.progress.filter((_p) => _p.activity_type === "module" && _p.is_completed).length === c.modules.length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
-                          />
-                          <p className="text-sm">
-                            {
-                              c.progress.filter(
-                                (_p) =>
-                                  _p.activity_type === "module" &&
-                                  _p.is_completed,
-                              ).length
-                            }
-                            /{c.modules.length}
-                          </p>
-                        </div>
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Topics")}</p>
-                          <ThumbsUp
-                            className={`${c.progress.filter((_p) => _p.activity_type === "topic" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "topic").length ? "text-green-400" : "text-[#163986]"} w-10 h-10`}
-                          />
-                          <p className="text-sm">
-                            {
-                              c.progress.filter(
-                                (_p) =>
-                                  _p.activity_type === "topic" &&
-                                  _p.is_completed,
-                              ).length
-                            }
-                            /
-                            {
-                              c.allItems.filter((_c) => _c.type === "topic")
-                                .length
-                            }
-                          </p>
-                        </div>
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Tests")}</p>
-                          <LuClipboardList
-                            className={`${c.progress.filter((_p) => _p.activity_type === "test" && _p.is_completed).length === c.allItems.filter((_c) => _c.type === "test").length ? "text-green-400" : "text-[#163986]"} w-10 h-10 p-1`}
-                          />
-                          <p className="text-sm">
-                            {
-                              c.progress.filter(
-                                (_p) =>
-                                  _p.activity_type === "test" &&
-                                  _p.is_completed,
-                              ).length
-                            }
-                            /
-                            {
-                              c.allItems.filter((_c) => _c.type === "test")
-                                .length
-                            }
-                          </p>
-                        </div>
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <p className="text-[11px]">{t("Start Date")}</p>
-                          <LuCalendar className="text-[#163986] w-10 h-10 p-1" />
-                          <p className="text-sm">
-                            {c.progress.filter(
-                              (_p) => _p.activity_type === "enroll",
-                            ).length > 0
-                              ? dayjs(
-                                  c.progress.filter(
-                                    (_p) => _p.activity_type === "enroll",
-                                  )[0].created_at,
-                                ).format("DD/MM/YYYY")
-                              : t("Not started")}
-                          </p>
-                        </div>
-                      </div>
-                      {c.progress.length > 0 && (
-                        <CourseProgress data={c} user={data} />
-                      )}
-                    </div>
-                  ),
-                },
-                ...tests,
-              ];
-
-              return (
-                <Collapse
-                  key={`results-collapse-${c.course.id}`}
-                  className={`${c.progress.filter((p) => p.is_completed === 1 && p.activity_type === "course" && p.id_course === c.course.id).length > 0 ? "completed" : "ongoing"} collapse-result`}
-                  size="large"
-                  bordered={false}
-                  items={[
-                    {
-                      key: c.course.id,
-                      label: (
-                        <div className="p-2 cursor-pointer flex items-center w-full!">
-                          <div className="flex flex-col ml-2 w-full">
-                            <div className="flex mb-4">
-                              <p className={`text-[20px] font-bold font-ryker`}>
-                                {c.course.name}
-                              </p>
-                              {data?.course?.settings.progression_type ===
-                              "linear"
-                                ? mInd > 0 &&
-                                  c.progress.filter(
-                                    (p) =>
-                                      p.id_course === c.course.id &&
-                                      p.activity_type === "module" &&
-                                      p.id_course_module ===
-                                        modules[mInd - 1].id,
-                                  ).length === 0 && (
-                                    <div className="flex justify-center items-center ml-4">
-                                      <RxLockClosed className="w-3.75 h-3.75" />
-                                    </div>
-                                  )
-                                : null}
-                              {(100 *
-                                c.progress.filter(
-                                  (p) =>
-                                    p.is_completed === 1 &&
-                                    p.activity_type !== "module" &&
-                                    p.activity_type !== "course" &&
-                                    p.activity_type !== "enroll",
-                                ).length) /
-                                (c.allItems.filter((_c) => _c.type === "topic")
-                                  .length +
-                                  c.allItems.filter((_c) => _c.type === "test")
-                                    .length) ===
-                                100 && (
-                                <div className="flex items-center w-full">
-                                  <Button
-                                    className="certificate-button  ml-4"
-                                    onClick={() =>
-                                      handleDownloadCertificate(
-                                        c.course,
-                                        c.progress,
-                                      )
-                                    }>
-                                    <div className="flex justify-center items-center">
-                                      <LuCloudDownload className="mr-2 text-[14px] text-[#163986]" />
-                                      <p className="text-[12px]">
-                                        {t("Certificate")}
-                                      </p>
-                                    </div>
-                                  </Button>
-                                  <div className="ml-2 w-7 h-7 rounded-full bg-[#163986] flex justify-center items-center shrink-0">
-                                    <LuAward className="text-[16px] text-white" />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex w-full gap-8">
-                              <div className="flex items-center">
-                                {c.progress.length > 0 ? (
-                                  <p className="text-[12px] text-[#707070] text-nowrap">
-                                    {t("Last activity at")}{" "}
-                                    {dayjs(
-                                      c.progress[c.progress.length - 1]
-                                        .created_at,
-                                    ).format("YYYY-MM-DD HH:mm")}
-                                  </p>
-                                ) : (
-                                  <p className="text-[12px] text-[#707070] text-nowrap">
-                                    {t("Not started")}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex justify-start items-center w-full">
-                                {calcCourseProgress(
-                                  c.progress.filter(
-                                    (p) =>
-                                      p.is_completed === 1 &&
-                                      p.activity_type !== "module" &&
-                                      p.activity_type !== "course" &&
-                                      p.activity_type !== "enroll",
-                                  ).length,
-                                  c.allItems.filter((_c) => _c.type === "topic")
-                                    .length,
-                                  c.allItems.filter((_c) => _c.type === "test")
-                                    .length,
-                                )}
-                                <Progress
-                                  strokeColor={"#2F8351"}
-                                  railColor={"#EAEAEA"}
-                                  percent={
-                                    (100 *
-                                      c.progress.filter(
-                                        (p) =>
-                                          p.is_completed === 1 &&
-                                          p.activity_type !== "module" &&
-                                          p.activity_type !== "course" &&
-                                          p.activity_type !== "enroll",
-                                      ).length) /
-                                    (c.allItems.filter(
-                                      (_c) => _c.type === "topic",
-                                    ).length +
-                                      c.allItems.filter(
-                                        (_c) => _c.type === "test",
-                                      ).length)
-                                  }
-                                  className="max-w-75"
-                                  showInfo={false}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ),
-                      children: (
-                        <div>
-                          <Tabs
-                            tabPlacement="start"
-                            type="card"
-                            items={tabsInside}
-                            size="large"
-                            className="result-tab-course-item"
-                          />
-                        </div>
-                      ),
-                    },
-                  ]}
-                  expandIconPlacement="end"
-                  expandIcon={(panelProps) => {
-                    return (
-                      <div className="flex justify-center items-center">
-                        <div className="mr-2">
-                          {panelProps.isActive ? (
-                            <p className="font-bold text-sm">{t("Collapse")}</p>
-                          ) : (
-                            <p className="font-bold text-sm">{t("Expand")}</p>
-                          )}
-                        </div>
-                        <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                          {panelProps.isActive ? (
-                            <RxChevronUp className="w-3.75 h-3.75 text-white" />
-                          ) : (
-                            <RxChevronDown className="w-3.75 h-3.75 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-              );
-            })
+      {view === "results" ? (
+        <div className="rounded-[16px] bg-white p-6 shadow lg:p-8">
+          <p className="mb-1! text-xl font-bold">{t("Results")}</p>
+          <p className="mb-6! text-[14px] text-[#8A8D98]">{isProfile ? t("Your progress and tests in each course") : t("Progress and tests of this student in each course")}</p>
+          {isLoading && courseData.length === 0 ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : courseData.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {courseData.map((c) => (
+                <CourseResult key={c.course.id} course={c} student={data} onChange={getData} onDownloadCertificate={handleDownloadCertificate} />
+              ))}
+            </div>
           ) : (
             <Empty description={t("No courses available")} />
           )}
         </div>
-      </div>
+      ) : (
+        <div className="rounded-[16px] bg-white p-6 shadow lg:p-8">
+          <p className="mb-1! text-xl font-bold">{t("Account")}</p>
+          <p className="mb-6! text-[14px] text-[#8A8D98]">{canEdit ? (isProfile ? t("Your personal data and password") : isOwnAccount ? t("Personal data and password of this student") : t("Personal data of this student")) : t("You do not have permission to edit this account")}</p>
+          <Form form={form} onFinish={submit} onFinishFailed={() => toastApi.error(t("Fill in the highlighted fields correctly."))} layout="vertical" disabled={!canEdit} validateTrigger="onSubmit">
+            <SectionTitle icon={<LuUser />}>{t("Personal data")}</SectionTitle>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3">
+              <Form.Item name="first_name" label={t("First Name")} rules={[requiredRule]} className="mb-0!">
+                <Input placeholder={placeholders.first_name} />
+              </Form.Item>
+              <Form.Item name="last_name" label={t("Last Name")} rules={[requiredRule]} className="mb-0!">
+                <Input placeholder={placeholders.last_name} />
+              </Form.Item>
+              {/* Formato do e-mail e não usado por outra conta (a do próprio aluno é ignorada) */}
+              <Form.Item
+                name="email"
+                label={t("E-mail")}
+                {...emailFieldProps}
+                rules={[requiredRule, emailRule, uniqueRule(users, t("This e-mail is already associated with another account"), { field: "email", excludeId: Number(id) })]}
+                className="mb-0!">
+                <Input type="email" placeholder={t("youremail@domain.com")} />
+              </Form.Item>
+              <Form.Item name="gender" label={t("Gender")} rules={[requiredSelectRule]} className="mb-0!">
+                <Select placeholder={t("Gender")} allowClear options={genderOptions(t, i18n.language)} />
+              </Form.Item>
+              <Form.Item label={t("Birth date")} name="birth_date" rules={[requiredDateRule]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
+                <DatePicker placeholder={t("Select birth date")} className="w-full" />
+              </Form.Item>
+              <Form.Item name="country" label={t("Country")} rules={[requiredSelectRule]} className="mb-0!">
+                <Select placeholder={t("Choose a country")} showSearch={{ optionFilterProp: "label" }} allowClear options={countries.map((item) => ({ label: item.label, value: item.value }))} />
+              </Form.Item>
+              <Form.Item label={t("Academic background")} name="academic_background" rules={[requiredSelectRule]} className="mb-0!">
+                <Select placeholder={t("Academic background")} showSearch={{ optionFilterProp: "label" }} allowClear options={academicBackgroundOptions(t)} />
+              </Form.Item>
+              <Form.Item label={t("Bial's starting date")} name="bial_starting_date" rules={[requiredDateRule]} className="mb-0!" getValueProps={(value) => ({ value: value && dayjs(value) })}>
+                <DatePicker placeholder={t("Select Bial's starting date")} className="w-full" />
+              </Form.Item>
+            </div>
+
+            {/* A palavra-passe só se altera na própria conta: um admin não pode trocar a de outros utilizadores */}
+            {isOwnAccount && (
+              <>
+            <Divider />
+  
+              <SectionTitle icon={<LuLock />}>{t("Password")}</SectionTitle>
+              <p className="mb-4! text-[13px] text-[#8A8D98]">{t("Leave empty to keep the current password")}</p>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3">
+                <Form.Item label={t("New password")} name="password" className="mb-0!">
+                  <Input.Password placeholder={t("Enter a new password")} />
+                </Form.Item>
+                <Form.Item label={t("Confirm password")} name="confirm_password" dependencies={["password"]} rules={[matchFieldRule("password", t("The passwords does not match!"))]} className="mb-0!">
+                  <Input.Password placeholder={t("Repeat the new password")} />
+                </Form.Item>
+              </div>
+              </>
+            )}
+
+            {canEdit && (
+              <div className="mt-8 flex justify-end">
+                <Button type="primary" loading={isSaving} onClick={form.submit} className="w-full md:w-auto md:min-w-48">
+                  {t("Save")}
+                </Button>
+              </div>
+            )}
+          </Form>
+        </div>
+      )}
     </div>
   );
 }

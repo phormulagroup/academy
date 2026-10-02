@@ -1,20 +1,18 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { Button, Collapse, Progress } from "antd";
-import { useContext } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Empty } from "antd";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import UserCard from "../../components/app/user/card";
-import CourseContent from "./course/content";
-import { RxCheck, RxChevronDown, RxChevronUp } from "react-icons/rx";
-import { AiOutlineCloudDownload } from "react-icons/ai";
+import UserHero from "../../components/app/user/hero";
+import CourseResult from "../../components/app/user/courseResult";
+import { LuAward, LuBookOpen, LuCircleCheck, LuPlay } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
-import dayjs from "dayjs";
 import { downloadCertificate } from "../../utils/certificate";
 import { isAllowedByCountry } from "../../utils/courseStatus";
 import config from "../../utils/config";
+import { courseStats } from "../../utils/userResults";
 
 export default function Result() {
   const { user, selectedLanguage } = useContext(Context);
@@ -155,162 +153,56 @@ export default function Result() {
   }
 
 
-  function calcCourseProgress(a, b, c) {
-    let progressPercentage = (100 * a) / (b + c);
-    const isInteger = progressPercentage % 1 === 0;
-    return !isInteger ? (
-      <p className={"text-[12px] text-[#707070] text-nowrap mr-2"}>
-        {(Math.round(progressPercentage * 100) / 100).toFixed(2)}%{" "}
-        {t("Completed")}
-      </p>
-    ) : (
-      <p
-        className={`text-[12px] ${progressPercentage === 100 ? "text-[#2F8351]" : "text-[#707070]"} text-nowrap mr-2`}>
-        {progressPercentage}% {t("Completed")}
-      </p>
-    );
-  }
-
   function handleDownloadCertificate(item, progress) {
     downloadCertificate(item, progress, user, config, endpoints);
   }
 
-  return (
-    <div className="flex-1 py-4 sm:py-8 lg:py-10 bg-[#EAEAEA]">
-      <div className="page-frame">
-        {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e resultados à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 rounded-[5px] overflow-hidden shadow-[0px_3px_6px_#00000029]">
-          <UserCard courses={coursesData} />
-          <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
-            <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">
-              {t("Results")}
-            </p>
-            {coursesData.map((c) => {
-              const validCompletions = c.progress.filter(
-                (p) =>
-                  p.is_completed === 1 &&
-                  p.activity_type !== "module" &&
-                  p.activity_type !== "course" &&
-                  p.activity_type !== "enroll" &&
-                  c.allItems.some(
-                    (item) =>
-                      (p.activity_type === "topic" &&
-                        item.type === "topic" &&
-                        p.id_course_topic === item.id) ||
-                      (p.activity_type === "test" &&
-                        item.type === "test" &&
-                        p.id_course_test === item.id),
-                  ),
-              ).length;
-              const totalItems = c.allItems.length;
-              const progressPercent =
-                totalItems > 0 ? (100 * validCompletions) / totalItems : 0;
+  const summary = useMemo(() => {
+    const stats = coursesData.map(courseStats);
+    return {
+      courses: coursesData.length,
+      inProgress: stats.filter((s) => s.status === "in_progress").length,
+      completed: stats.filter((s) => s.status === "completed").length,
+      certificates: stats.filter((s) => s.hasCertificate).length,
+    };
+  }, [coursesData]);
 
-              return (
-                <Collapse
-                  key={`results-collapse-${c.course.id}`}
-                  className={`${progressPercent === 100 ? "completed" : "ongoing"} collapse-result`}
-                  size="large"
-                  bordered={false}
-                  items={[
-                    {
-                      key: c.course.id,
-                      label: (
-                        <div className="p-1 sm:p-2 cursor-pointer flex items-center min-w-0">
-                          <div className="flex flex-col sm:ml-2 w-full min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
-                              <p className="font-ryker text-[15px] sm:text-[17px] lg:text-[20px] font-bold leading-tight">
-                                {c.course.name}
-                              </p>
-                              {progressPercent === 100 && (
-                                <div className="flex items-center">
-                                  <Button
-                                    className="certificate-button sm:ml-2"
-                                    onClick={() =>
-                                      handleDownloadCertificate(
-                                        c.course,
-                                        c.progress,
-                                      )
-                                    }>
-                                    <div className="flex justify-center items-center">
-                                      <AiOutlineCloudDownload className="mr-1.5 w-4 h-4 text-[#163986]" />
-                                      <p className="text-[12px]">
-                                        {t("Certificate")}
-                                      </p>
-                                    </div>
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col sm:flex-row w-full gap-2 sm:gap-8">
-                              {c.progress.length > 0 && (
-                                <div className="flex items-center">
-                                  <p className="text-[12px] text-[#707070] text-nowrap">
-                                    {t("Last activity at")}{" "}
-                                    {dayjs(
-                                      c.progress[c.progress.length - 1]
-                                        .created_at,
-                                    ).format("YYYY-MM-DD HH:mm")}
-                                  </p>
-                                </div>
-                              )}
-                              <div className="flex justify-start items-center w-full">
-                                {calcCourseProgress(
-                                  validCompletions,
-                                  totalItems,
-                                  0,
-                                )}
-                                <Progress
-                                  strokeColor={"#2F8351"}
-                                  railColor={"#EAEAEA"}
-                                  percent={progressPercent}
-                                  className="max-w-75"
-                                  showInfo={false}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ),
-                      // Módulos com os mesmos estilos (e o mesmo componente) da aba "Course" do detalhe do curso
-                      children: (
-                        <CourseContent
-                          modules={c.modules}
-                          progress={c.progress}
-                          data={{
-                            topics: c.allItems.filter((i) => i.type === "topic"),
-                            tests: c.allItems.filter((i) => i.type === "test"),
-                          }}
-                          courseSlug={c.course.slug}
-                        />
-                      ),
-                    },
-                  ]}
-                  expandIconPlacement="end"
-                  expandIcon={(panelProps) => {
-                    return (
-                      <div className="flex justify-center items-center">
-                        <div className="mr-2">
-                          {panelProps.isActive ? (
-                            <p className="font-bold text-sm">{t("Collapse")}</p>
-                          ) : (
-                            <p className="font-bold text-sm">{t("Expand")}</p>
-                          )}
-                        </div>
-                        <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
-                          {panelProps.isActive ? (
-                            <RxChevronUp className="w-3.75 h-3.75 text-white" />
-                          ) : (
-                            <RxChevronDown className="w-3.75 h-3.75 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-              );
-            })}
-          </div>
+  const tiles = [
+    { icon: <LuBookOpen />, label: t("Course(s)"), value: summary.courses },
+    { icon: <LuPlay />, label: t("In progress"), value: summary.inProgress },
+    { icon: <LuCircleCheck />, label: t("Completed"), value: summary.completed },
+    { icon: <LuAward />, label: t("Certificate(s)"), value: summary.certificates },
+  ];
+
+  return (
+    <div className="flex-1 bg-[#F1F9FF] py-4 sm:py-8 lg:py-10">
+      <div className="page-frame flex flex-col gap-4 sm:gap-6">
+        <UserHero />
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {tiles.map((tile) => (
+            <div key={tile.label} className="flex items-center gap-3 rounded-[14px] bg-white p-3 shadow-[0px_3px_6px_#00000029] sm:p-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#E6F9FC] text-[20px] text-[#163986] sm:h-11 sm:w-11">{tile.icon}</span>
+              <div>
+                <p className="mb-0! text-[20px] font-bold leading-tight sm:text-[22px]">{tile.value}</p>
+                <p className="mb-0! text-[12px] text-[#8A8D98]">{tile.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-[16px] bg-white p-3 shadow-[0px_3px_6px_#00000029] sm:p-6 lg:p-8">
+          <p className="mb-1! font-ryker text-[20px] font-bold sm:text-[24px]">{t("Results")}</p>
+          <p className="mb-5! text-[14px] text-[#8A8D98]">{t("Your progress and tests in each course")}</p>
+          {coursesData.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {coursesData.map((c) => (
+                <CourseResult key={c.course.id} course={c} onDownloadCertificate={handleDownloadCertificate} />
+              ))}
+            </div>
+          ) : (
+            <Empty description={t("No courses available")} />
+          )}
         </div>
       </div>
     </div>

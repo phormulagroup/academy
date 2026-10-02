@@ -1,10 +1,12 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
+import { LuUpload } from "react-icons/lu";
 import { usePermission } from "../../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../../components/admin/rowActions";
 import { useState } from "react";
 import { Button, Tag } from "antd";
-import { IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
@@ -213,17 +215,31 @@ export default function User() {
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Users")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} users", { total: filterRows(tableData).length })}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
-          <Button size="large" onClick={() => getData()}>
-            <IoMdRefresh />
-          </Button>
-          <Button
-            size="large"
-            onClick={() => setIsOpenImport(true)}>
-            {t("Import")}
-          </Button>
+          <RefreshButton size="large" onClick={() => getData()} />
+          <ExportButton table="users" data={filterRows(tableData)} columns={[
+              { title: "ID", dataIndex: "id" },
+              { title: "Name", dataIndex: "name" },
+              { title: "E-mail", dataIndex: "email" },
+              { title: "Role", dataIndex: "role_name" },
+              { title: "Language", dataIndex: "language" },
+              { title: "Country", dataIndex: "country" },
+              { title: "Gender", dataIndex: "gender" },
+              { title: "Birth date", dataIndex: "birth_date", value: (row) => (row.birth_date ? String(row.birth_date).slice(0, 10) : "") },
+              { title: "Academic background", dataIndex: "academic_background" },
+              { title: "Bial's starting date", dataIndex: "bial_starting_date", value: (row) => (row.bial_starting_date ? String(row.bial_starting_date).slice(0, 10) : "") },
+              { title: "Status", dataIndex: "status" },
+              activityColumn,
+              createdColumn,
+            ]} />
+          {perm.canCreate && (
+            <Button size="large" icon={<LuUpload />} onClick={() => setIsOpenImport(true)}>
+              {t("Import")}
+            </Button>
+          )}
           {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)}>
             {t("Add User")}
           </Button>)}

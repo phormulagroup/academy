@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
-import { Button, Form, Select, Modal } from "antd";
+import { Form, Select } from "antd";
+import { LuUserCog } from "react-icons/lu";
 
 import { useTranslation } from "react-i18next";
 import axios from "axios";
@@ -7,6 +8,7 @@ import axios from "axios";
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { requiredSelectRule } from "../../../utils/formFieldError";
+import ConfirmModal from "../confirmModal";
 
 export default function Status({ data, open, close, status }) {
   const { createLog, selectedLanguage, user, toastApi } = useContext(Context);
@@ -45,38 +47,30 @@ export default function Status({ data, open, close, status }) {
   }
 
   return (
-    <Modal
-      key="modal-logout"
-      width={500}
-      style={{ top: 20 }}
-      onCancel={onClose}
+    <ConfirmModal
       open={open}
-      maskClosable={false}
-      footer={[
-        <Button disabled={isButtonLoading} onClick={onClose}>
-          {t("No")}
-        </Button>,
-        <Button loading={isButtonLoading} type="primary" onClick={form.submit}>
-          {t("Yes")}
-        </Button>,
-      ]}>
-      <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold font-ryker">{t("Change user status")}</p>
-        <div className="flex flex-col mt-4">
-          <p>
-            {t("Are you sure that you want to change status of this user?")}
-          </p>
-          <p className="mt-4">
-            <b>{t("Name")}</b>: {data.name}
-          </p>
-          <p>
-            <b>{t("E-mail")}</b>: {data.email}
-          </p>
-          <Form
+      onCancel={onClose}
+      onConfirm={form.submit}
+      loading={isButtonLoading}
+      tone="info"
+      icon={<LuUserCog />}
+      title={t("Change user status")}
+      description={t("Are you sure that you want to change status of this user?")}
+      okText={t("Save")}
+      cancelText={t("Cancel")}>
+      <div className="mb-4 rounded-[10px] bg-[#F6F7F9] p-3 text-[13px]">
+        <p className="mb-1!">
+          <b>{t("Name")}</b>: {data.name}
+        </p>
+        <p className="mb-0!">
+          <b>{t("E-mail")}</b>: {data.email}
+        </p>
+      </div>
+      <Form
             form={form}
             onFinish={submit}
             layout="vertical"
-            className="mt-6!">
+            >
             <Form.Item
               rules={[requiredSelectRule]}
               name="status"
@@ -108,8 +102,6 @@ export default function Status({ data, open, close, status }) {
               )}
             </p>
           </Form>
-        </div>
-      </div>
-    </Modal>
+    </ConfirmModal>
   );
 }

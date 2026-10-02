@@ -46,6 +46,7 @@ export const adminRoutes = [
 			{ path: "templates/:id", element: <TemplateDetails /> },
 			{ path: "users", element: <User /> },
 			{ path: "users/:id", element: <UserDetails /> },
+			{ path: "perfil", element: <UserDetails /> },
 			{ path: "documents", element: <Document /> },
 			{ path: "downloads", element: <Download /> },
 			{ path: "media", element: <Media /> },
