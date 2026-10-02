@@ -35,7 +35,7 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
 - Os erros 500/502/503/504 do servidor web mostram `maintenance.html` (estática, 4 línguas, volta a tentar a cada 20 s).
 
 ## 3. API (Node.js)
-1. Enviar e extrair `server-staging.zip` numa pasta **fora** do `public_html` (ex.: `~/academy-api`).
+1. Enviar e extrair `server-staging.zip` numa pasta **fora** do `public_html` (ex.: `~/academy-api`). Os certificados são gerados aqui (`pdfkit`, com a pasta `fonts/` do zip).
 2. Editar `.env.staging` no servidor:
    | Variável | Valor |
    |---|---|
@@ -44,11 +44,20 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `IEC_DIR` | `/home/<utilizador-cpanel>/public_html/regional/wp-content/uploads/iec` |
    | `IEC_PUBLIC_URL` | `https://academy.phormuladev.com/regional/wp-content/uploads/iec` |
    | `MEDIA_FALLBACK_URL` | vazio (usa `https://academy.phormuladev.com/api/media/`) |
-3. cPanel → *Setup Node.js App* → *Create*:
+3. **Base de dados** (uma vez por ambiente, antes de arrancar): correr, por esta ordem, os ficheiros de `server/database/migrations/`
+   (todos são aditivos e podem repetir-se sem estragar nada):
+   - `2026-10-02-certificate-text-layout.sql`: acrescenta `text_align`, `text_x` e `text_y` a `course_certificate`. Sem isto o
+     backoffice mostra o alinhamento e a posição do certificado desativados e não os guarda.
+   - `2026-10-02-course-access.sql`: cria `user_group`, `user_group_member`, `course_user_access` e `course_group` (acesso a cursos
+     por utilizadores e grupos).
+   - `2026-10-02-permissions.sql`: cria `permission` (permissões por função e secção do backoffice). Sem esta tabela só o Admin
+     entra no backoffice; as outras funções ficam sem acesso até o Admin lhes dar permissões em *Gestão → Permissões*.
+   Depois, importar as traduções novas (`docs/translations/admin-redesign-translations.xlsx`) para a tabela `language`.
+4. cPanel → *Setup Node.js App* → *Create*:
    - Application root: a pasta da API · Application URL: `academy.phormuladev.com/api` · Startup file: `index.js`
    - Variável de ambiente **`NODE_ENV=staging`** (sem ela carrega `.env.development`)
    - *Run NPM Install* (os avisos `npm warn deprecated … glob` são inofensivos) e *Restart*.
-4. Se o Passenger **tirar** o `/api` antes de chegar ao Node, pôr `API_PREFIX=` (vazio) e reiniciar.
+5. Se o Passenger **tirar** o `/api` antes de chegar ao Node, pôr `API_PREFIX=` (vazio) e reiniciar.
 
 ## 4. Pasta `media`
 A webapp vai buscar as imagens/documentos a `https://academy.phormuladev.com/api/media/<ficheiro>`.
