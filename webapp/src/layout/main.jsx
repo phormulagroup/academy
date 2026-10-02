@@ -521,43 +521,52 @@ const Main = () => {
           {/* Mesma moldura (.page-frame) do header e do conteúdo */}
           <div className="page-frame flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-8">
             <div className="w-full">
-              <div className="mb-5 md:mb-8 flex justify-center md:justify-start items-center">
-                <p className="text-white text-[12px] sm:text-[13px] md:text-[14px] lg:text-[15px] mr-3 md:mr-4">
+              {/* Redes sociais: ícones discretos e alinhados com o label */}
+              <div className="mb-4 md:mb-6 flex justify-center md:justify-start items-center gap-3 md:gap-4">
+                <p className="text-white text-[12px] md:text-[13px] leading-none">
                   {t("Follow us")}
                 </p>
-                <Link
-                  to={"https://www.facebook.com/bial.farmaceutica/"}
-                  target="_blank"
-                  className="mr-3 md:mr-4">
-                  <FaFacebook className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
-                </Link>
-                <Link
-                  to={"https://www.linkedin.com/company/bial/home/"}
-                  target="_blank"
-                  className="mr-3 md:mr-4">
-                  <FaLinkedin className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
-                </Link>
-                <Link
-                  to={"https://www.instagram.com/bialpharmaceutical/"}
-                  target="_blank"
-                  className="mr-3 md:mr-4">
-                  <FaInstagram className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
-                </Link>
-                <Link
-                  to={
-                    "https://www.youtube.com/channel/UCcoeRBF4Ivdm4aCwTDZdYIA"
-                  }
-                  target="_blank">
-                  <FaYoutube className="text-white text-[16px] sm:text-[18px] md:text-[20px] lg:text-[22px]" />
-                </Link>
+                <div className="flex items-center gap-3 md:gap-3.5">
+                  {[
+                    {
+                      Icon: FaFacebook,
+                      url: "https://www.facebook.com/bial.farmaceutica/",
+                      label: "Facebook",
+                    },
+                    {
+                      Icon: FaLinkedin,
+                      url: "https://www.linkedin.com/company/bial/home/",
+                      label: "LinkedIn",
+                    },
+                    {
+                      Icon: FaInstagram,
+                      url: "https://www.instagram.com/bialpharmaceutical/",
+                      label: "Instagram",
+                    },
+                    {
+                      Icon: FaYoutube,
+                      url: "https://www.youtube.com/channel/UCcoeRBF4Ivdm4aCwTDZdYIA",
+                      label: "YouTube",
+                    },
+                  ].map((social) => (
+                    <Link
+                      key={social.label}
+                      to={social.url}
+                      target="_blank"
+                      aria-label={social.label}
+                      className="flex items-center opacity-90 hover:opacity-100 transition-opacity">
+                      <social.Icon className="text-white text-[16px] md:text-[18px] xl:text-[19px]" />
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-3 gap-y-1 md:gap-4">
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-4 gap-y-1.5 sm:gap-x-3 md:gap-x-4">
                 <Link to={`/${i18n.language}/contact`}>
                   <p className="text-white text-[11.5px] sm:text-[12px] md:text-[12.5px] underline text-center md:text-left">
                     {t("Contact Form")}
                   </p>
                 </Link>
-                <p className="text-white">|</p>
+                <p className="hidden sm:block text-white/70 text-[12px]">|</p>
                 <Link
                   to={`https://www.bial.com/en/terms-and-conditions`}
                   target="_blank">
@@ -565,7 +574,7 @@ const Main = () => {
                     {t("Terms and conditions")}
                   </p>
                 </Link>
-                <p className="text-white">|</p>
+                <p className="hidden sm:block text-white/70 text-[12px]">|</p>
                 <Link
                   to={"https://www.bial.com/en/privacy-policy"}
                   target="_blank">
