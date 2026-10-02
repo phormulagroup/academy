@@ -536,6 +536,76 @@ router.post("/updateProgress", async (req, res, next) => {
 	}
 });
 
+// O Admin marca como concluído, em nome de um aluno: um item (tópico/teste), um módulo ou o curso todo. Só acrescenta o que ainda
+// não está concluído; depois fecha os módulos e o curso se ficarem completos. Os itens saem sempre do curso na BD, nunca do cliente.
+router.post("/completeProgress", requirePermission("course", "update"), async (req, res) => {
+	console.log("//// COMPLETE COURSE PROGRESS ////");
+	const { id_user, id_course, scope, id_module, item } = req.body.data || {};
+	if (!id_user || !id_course || !["item", "module", "course"].includes(scope)) return res.status(400).send({ message: "Invalid request" });
+
+	db.getConnection(async (error, conn) => {
+		if (error) return res.status(500).send({ message: "Error" });
+		const query = util.promisify(conn.query).bind(conn);
+		try {
+			await util.promisify(conn.beginTransaction).bind(conn)();
+			const users = await query("SELECT id FROM user WHERE id = ? AND is_deleted = 0", [id_user]);
+			const modules = await query("SELECT id, items FROM course_module WHERE id_course = ? AND is_deleted = 0", [id_course]);
+			if (users.length === 0 || modules.length === 0) {
+				await util.promisify(conn.rollback).bind(conn)();
+				conn.release();
+				return res.status(404).send({ message: "Not found" });
+			}
+			const moduleItems = modules.map((m) => ({ id: m.id, items: (m.items ? JSON.parse(m.items) : []).map((i) => ({ type: i.type, id: Number(i.id) })) }));
+
+			let targets = [];
+			if (scope === "course") targets = moduleItems.flatMap((m) => m.items.map((i) => ({ ...i, id_module: m.id })));
+			else if (scope === "module") targets = (moduleItems.find((m) => m.id === Number(id_module))?.items || []).map((i) => ({ ...i, id_module: Number(id_module) }));
+			else {
+				const owner = moduleItems.find((m) => m.items.some((i) => i.type === item?.type && i.id === Number(item?.id)));
+				if (owner) targets = [{ type: item.type, id: Number(item.id), id_module: owner.id }];
+			}
+			if (targets.length === 0) {
+				await util.promisify(conn.rollback).bind(conn)();
+				conn.release();
+				return res.status(400).send({ message: "Nothing to complete" });
+			}
+
+			const done = await query("SELECT activity_type, id_course_topic, id_course_test, id_course_module FROM course_user_activity WHERE id_user = ? AND id_course = ? AND is_completed = 1 AND is_deleted = 0", [id_user, id_course]);
+			const isDone = (type, id) => done.some((d) => d.activity_type === type && d[`id_course_${type}`] === id);
+			const rows = [];
+			const add = (activity_type, ids = {}, meta_data = null) => rows.push([id_course, id_user, activity_type, ids.test ?? null, ids.topic ?? null, ids.module ?? null, 1, meta_data]);
+
+			if (!done.some((d) => d.activity_type === "enroll")) add("enroll");
+			for (const t of targets) {
+				if (isDone(t.type, t.id)) continue;
+				if (t.type === "topic") add("topic", { topic: t.id, module: t.id_module });
+				else add("test", { test: t.id, module: t.id_module }, JSON.stringify({ items: [], completed_by_admin: true }));
+				done.push({ activity_type: t.type, [`id_course_${t.type}`]: t.id });
+			}
+			// Módulos que ficam completos e, se forem todos, o curso
+			let allModules = true;
+			for (const m of moduleItems) {
+				const complete = m.items.every((i) => isDone(i.type, i.id));
+				if (complete && !isDone("module", m.id) && m.items.length > 0) add("module", { module: m.id });
+				if (!complete) allModules = false;
+			}
+			if (allModules && !done.some((d) => d.activity_type === "course")) add("course");
+
+			if (rows.length > 0) {
+				await query("INSERT INTO course_user_activity (id_course, id_user, activity_type, id_course_test, id_course_topic, id_course_module, is_completed, meta_data) VALUES ?", [rows]);
+			}
+			await util.promisify(conn.commit).bind(conn)();
+			conn.release();
+			res.send({ inserted: rows.length });
+		} catch (err) {
+			await util.promisify(conn.rollback).bind(conn)().catch(() => {});
+			conn.release();
+			console.log(err);
+			res.status(500).send({ message: "Error" });
+		}
+	});
+});
+
 router.post("/resetProgress", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE PROGRESS ////");
 	db.getConnection(async (error, conn) => {

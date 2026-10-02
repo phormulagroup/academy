@@ -54,6 +54,7 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
      entra no backoffice; as outras funções ficam sem acesso até o Admin lhes dar permissões em *Gestão → Permissões*.
    - `2026-10-03-tickets.sql` e `2026-10-03-tickets-import.sql`: criam `ticket` e `ticket_message` (substituem a caixa de entrada) e copiam as
      conversas antigas de `thread`/`thread_message` (que ficam intactas). O segundo só copia se `ticket` estiver vazia.
+   - `2026-10-03-faqs-position.sql`: acrescenta `position` a `faqs` (ordem das FAQs por drag and drop) e preenche-a com a ordem atual.
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
    Esta pasta tem de sobreviver aos deploys: não a apagar ao extrair um novo `server-staging.zip`.
    Depois, importar as traduções novas (`docs/translations/admin-redesign-translations.xlsx`) para a tabela `language`.

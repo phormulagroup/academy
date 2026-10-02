@@ -111,6 +111,8 @@ router.post("/createPassword", async (req, res, next) => {
 	console.log("//// CREATE PASSWORD ////");
 	try {
 		let data = req.body.data;
+		// A palavra-passe só se define na própria conta, nunca na de outro utilizador (nem por um admin)
+		if (Number(data.id) !== req.user.id) return denied(res);
 		data.password = await bcrypt.hash(data.password, saltRounds);
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
@@ -152,6 +154,14 @@ router.post("/update", async (req, res, next) => {
 		// Editar outro utilizador exige permissão; o próprio nunca altera o seu papel, estado nem se apaga a si mesmo
 		const canManage = await hasPermission(req.user, "user", "update");
 		if (whereId !== req.user.id && !canManage) return denied(res);
+		// Ninguém altera a palavra-passe de outro utilizador, nem um admin (segurança): só a própria conta o pode fazer
+		if (whereId !== req.user.id) {
+			delete data.new_password;
+			delete data.confirm_new_password;
+			delete data.password;
+			delete data.recover_code;
+			delete data.generate_password;
+		}
 		if (!canManage) {
 			delete data.id_role;
 			delete data.status;
