@@ -2,6 +2,7 @@ var express = require("express");
 const dayjs = require("dayjs");
 const util = require("util");
 const fs = require("fs");
+const path = require("path");
 var fileUpload = require("express-fileupload");
 const middleware = require("../utils/middleware");
 const { uploadFile } = require("../utils/upload");
@@ -47,7 +48,7 @@ router.post("/singleUpload", async (req, res) => {
       fileName = await avatarFileName(data.id_user, req.files.file.name.split(".").pop().toLowerCase());
       const user = await query("SELECT img FROM user WHERE id = ?", [data.id_user]);
       if (user[0].img && user[0].img !== fileName) {
-        fs.unlink(`./media/${user[0].img}`, (err) => err && console.log(err));
+        fs.unlink(path.join(__dirname, "..", "media", user[0].img), (err) => err && console.log(err));
         await query("DELETE FROM media WHERE name = ?", [user[0].img]);
       }
     }
@@ -81,7 +82,7 @@ router.post("/delete", (req, res) => {
     if (error) throw error;
     let data = req.body.data;
     try {
-      fs.unlink(`./media/${data.name}`, async (err) => {
+      fs.unlink(path.join(__dirname, "..", "media", data.name), async (err) => {
         if (err) console.log(err);
         console.log(`File ${data.name} has been successfully removed.`);
         const query = util.promisify(conn.query).bind(conn);

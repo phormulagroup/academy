@@ -3,7 +3,6 @@ var dayjs = require("dayjs");
 const util = require("util");
 var router = express.Router();
 var db = require("../utils/database");
-const { getSocketInstance } = require("../socketInstance");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -102,12 +101,6 @@ router.post("/create", (req, res, next) => {
         const insertThread = await query("INSERT INTO thread SET ?", [{ title: data.title, id_user: data.from_id_user }]);
         data.id_thread = insertThread.insertId;
         delete data.title;
-
-        const socket = getSocketInstance();
-        socket.notifyByRoleId({ title: "Nova thread", description: "There is a new thread, someone needs to open it!", type: "thread", meta_data: data }, 1);
-      } else {
-        const socket = getSocketInstance();
-        socket.notifyUser({ title: "New message", description: "There is a new message, go check it out!", type: "message", meta_data: data }, data.to_id_user);
       }
 
       const insertRow = await query("INSERT INTO thread_message SET ?", [data]);

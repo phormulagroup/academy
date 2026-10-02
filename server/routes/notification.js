@@ -4,7 +4,6 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
-const { getSocketInstance } = require("../socketInstance");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -124,8 +123,6 @@ router.post("/send", async (req, res, next) => {
 
       await query("INSERT INTO notification_user (id_notification, id_user) VALUES ?", [insertData]);
 
-      const socket = getSocketInstance();
-      socket.notifyAllUsers(data);
       await commit();
       conn.release();
       res.send({ send: true });

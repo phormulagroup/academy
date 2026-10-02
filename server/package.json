@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "NODE_ENV=development nodemon index.js",
+    "staging": "NODE_ENV=staging node index.js",
+    "start": "NODE_ENV=production node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -22,23 +25,17 @@
     "fs": "^0.0.1-security",
     "helmet": "^8.0.0",
     "http": "^0.0.1-security",
-    "install": "^0.13.0",
     "ip": "^1.1.8",
     "jsonwebtoken": "^8.5.1",
     "mysql": "github:mysqljs/mysql",
     "mysql2": "^2.3.3",
-    "node": "^18.5.0",
-    "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.1",
     "nodemailer-express-handlebars": "^6.1.2",
     "nodemon": "^2.0.19",
-    "npm": "^11.11.0",
     "path": "^0.12.7",
     "short-unique-id": "^5.2.0",
     "slugify": "^1.6.9",
-    "socket.io": "^4.8.3",
     "util": "^0.12.5",
-    "uuid": "^8.3.2",
     "xlsx": "^0.18.5"
   }
 }

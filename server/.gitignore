@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 .env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +25,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# IECs enviados pelo backoffice (ficheiros em uso, não versionar)
+media/iec/

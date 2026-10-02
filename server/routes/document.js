@@ -32,10 +32,7 @@ router.get("/readByLang", async (req, res) => {
 	try {
 		// A app só vê documentos ativos; o backoffice pede também os inativos (include_deleted=1) para os mostrar como "Inativo"
 		const includeDeleted = req.query.include_deleted === "1";
-		const rows = await query(
-			`SELECT * FROM document WHERE id_lang = ?${includeDeleted ? "" : " AND is_deleted = 0"}`,
-			[req.query.id_lang],
-		);
+		const rows = await query(`SELECT * FROM document WHERE id_lang = ?${includeDeleted ? "" : " AND is_deleted = 0"}`, [req.query.id_lang]);
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -46,10 +43,7 @@ router.get("/readBySlug", async (req, res) => {
 	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query(
-			"SELECT * FROM document WHERE slug = ? AND id_lang = ? AND is_deleted = 0",
-			[req.query.slug, req.query.id_lang],
-		);
+		const rows = await query("SELECT * FROM document WHERE slug = ? AND id_lang = ? AND is_deleted = 0", [req.query.slug, req.query.id_lang]);
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -64,18 +58,13 @@ router.get("/readFile", async (req, res) => {
 	if (fileName && fs.existsSync(localFile)) {
 		buffer = fs.readFileSync(localFile);
 	} else {
-		const response = await fetch(
-			"https://academyapi.phormuladev.com/media/" + encodeURIComponent(fileName),
-		);
+		const response = await fetch((process.env.MEDIA_FALLBACK_URL || "https://academy.phormuladev.com/api/media/") + encodeURIComponent(fileName));
 		buffer = await response.arrayBuffer();
 	}
 
 	res.setHeader("Content-Type", "application/pdf");
 	res.setHeader("Access-Control-Allow-Origin", "*");
-	res.setHeader(
-		"Access-Control-Expose-Headers",
-		"Content-Length, Content-Range",
-	);
+	res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range");
 	res.setHeader("Accept-Ranges", "bytes");
 
 	res.send(Buffer.from(buffer));
@@ -86,10 +75,7 @@ router.post("/create", async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
-		data.country =
-			data.country && data.country.length > 0
-				? JSON.stringify(data.country)
-				: null;
+		data.country = data.country && data.country.length > 0 ? JSON.stringify(data.country) : null;
 		data.slug = slugify(data.name, { lower: true, strict: true });
 		const insertedRow = await query("INSERT INTO document SET ?", data);
 		res.send(insertedRow);
@@ -104,22 +90,13 @@ router.post("/update", async (req, res, next) => {
 		let data = req.body.data;
 		let whereId = data.id;
 		delete data.id;
-		data.country =
-			data.country && data.country.length > 0
-				? JSON.stringify(data.country)
-				: null;
+		data.country = data.country && data.country.length > 0 ? JSON.stringify(data.country) : null;
 
 		const columns = Object.keys(data);
 		const values = Object.values(data);
 
 		const query = util.promisify(db.query).bind(db);
-		const updatedRow = await query(
-			"UPDATE document SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
-		);
+		const updatedRow = await query("UPDATE document SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
 
 		res.send(updatedRow);
 	} catch (err) {
@@ -131,9 +108,7 @@ router.post("/delete", async (req, res, next) => {
 	console.log("//// DELETE DOCUMENT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
-		const deletedRow = await query(
-			"UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id,
-		);
+		const deletedRow = await query("UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id);
 		res.send(deletedRow);
 	} catch (err) {
 		throw err;

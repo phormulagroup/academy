@@ -1,12 +1,12 @@
 const mysql = require("mysql");
-const PORT = process.env.PORT || 3306;
 
+// Credenciais vêm do .env.<NODE_ENV> (carregado em index.js)
 const db = mysql.createPool({
-  host: "185.118.114.199",
-  database: "phormuladev_academy",
-  user: "phormuladev_academy_user",
-  password: "6%JSdBxc[5IB,zgA",
-  port: PORT,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 3306,
   multipleStatements: true,
 });
 

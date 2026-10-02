@@ -1,5 +1,9 @@
 var db = require("./database");
 var util = require("util");
+var path = require("path");
+
+// Relativo a este ficheiro (e não ao diretório de onde o processo foi arrancado)
+const MEDIA_DIR = path.join(__dirname, "..", "media");
 
 module.exports = {
   // fileName (opcional): guarda com esse nome exato, substituindo o ficheiro existente (ex.: avatar nome_apelido.png)
@@ -12,7 +16,7 @@ module.exports = {
           const existing = await query("SELECT id FROM media WHERE name = ?", [fileName]);
           if (existing.length === 0) await query("INSERT INTO media (name, type) VALUES (?, ?)", [fileName, type ? type : "multimedia"]);
           else await query("UPDATE media SET updated_at = NOW() WHERE id = ?", [existing[0].id]);
-          file.mv(`./media/${fileName}`, (err) => {
+          file.mv(path.join(MEDIA_DIR, fileName), (err) => {
             if (err) return reject(err);
             resolve(fileName);
           });
@@ -36,7 +40,7 @@ module.exports = {
 
           await query("INSERT INTO media (name, type) VALUES (?, ?)", [file_name, type ? type : "multimedia"]);
 
-          uploadPath = `./media/${file_name}`;
+          uploadPath = path.join(MEDIA_DIR, file_name);
           sampleFile.mv(uploadPath, async (err) => {
             if (err) throw err;
             resolve(file_name);
