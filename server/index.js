@@ -129,7 +129,7 @@ app.use(`${prefix}/settings`, require("./routes/settings"));
 app.use(`${prefix}/email`, middleware, require("./routes/email"));
 app.use(`${prefix}/certificate`, middleware, require("./routes/certificate"));
 app.use(`${prefix}/notification`, middleware, require("./routes/notification"));
-app.use(`${prefix}/inbox`, middleware, require("./routes/inbox"));
+app.use(`${prefix}/ticket`, middleware, require("./routes/ticket"));
 app.use(`${prefix}/document`, middleware, require("./routes/document"));
 app.use(`${prefix}/download`, middleware, require("./routes/download"));
 const iecRouter = require("./routes/iec");

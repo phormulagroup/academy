@@ -12,7 +12,7 @@ var router = express.Router();
 router.use(fileUpload());
 
 var db = require("../utils/database");
-const { requirePermission } = require("../utils/permissions");
+const { requirePermission, hasPermission, denied } = require("../utils/permissions");
 
 router.use((req, res, next) => {
   console.log("----------------------------");
@@ -36,12 +36,20 @@ router.get("/read", middleware, requirePermission("media", "read"), (req, res) =
   });
 });
 
-router.post("/singleUpload", async (req, res) => {
+// Dois usos: o avatar de um utilizador (data.id_user: o próprio ou quem pode editar utilizadores; fica com type "avatar",
+// por isso não aparece na biblioteca de Multimédia) e o upload para a biblioteca (exige permissão em Multimédia)
+router.post("/singleUpload", middleware, async (req, res) => {
   console.log("///// UPLOAD SINGLE MEDIA /////");
   try {
     console.log(req.files.file);
     const data = req.body.data ? JSON.parse(req.body.data) : null;
     let fileName = null;
+
+    if (data && data.id_user) {
+      if (Number(data.id_user) !== req.user.id && !(await hasPermission(req.user, "user", "update"))) return denied(res);
+    } else if (!(await hasPermission(req.user, "media", "create"))) {
+      return denied(res);
+    }
 
     // substitui o avatar atual do utilizador (se existir)
     if (data && data.id_user) {
@@ -54,7 +62,7 @@ router.post("/singleUpload", async (req, res) => {
       }
     }
 
-    const fileResponse = await uploadFile(req.files.file, data ? data.type : null, fileName);
+    const fileResponse = await uploadFile(req.files.file, data && data.id_user ? "avatar" : "multimedia", fileName);
     console.log(fileResponse);
     res.send(fileResponse);
   } catch (e) {

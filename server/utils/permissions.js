@@ -20,6 +20,7 @@ const RESOURCES = [
   "user",
   "user_group",
   "form_submission",
+  "ticket",
   "email_template",
   "settings",
 ];
