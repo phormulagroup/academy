@@ -38,6 +38,8 @@ export default function CourseDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
+  // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
+  const isListView = viewType === "list" && windowDimension.width > 640;
 
   useEffect(() => {
     if (user) getData();
@@ -400,7 +402,8 @@ export default function CourseDetails() {
               </div>
             )}
             <div
-              className={`grid ${(viewType === "list" && windowDimension.width > 640) || windowDimension.width < 700 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"} gap-5 sm:gap-7 lg:gap-8`}>
+              // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl
+              className={`grid ${isListView ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"} gap-5 sm:gap-6 lg:gap-6`}>
               {/* CARD COURSE */}
               {data.map((item) => (
                 <div
@@ -427,7 +430,9 @@ export default function CourseDetails() {
                       </div>
                     )}
                     */}
-                    {calcProgress(item.progress, item.modules) === 100 && (
+                    {/* Em lista o selo passa para o painel de informação (não sobrepõe a imagem) */}
+                    {calcProgress(item.progress, item.modules) === 100 &&
+                      !isListView && (
                       <div className="course-card-completed-badge">
                         <AiOutlineCheck className="shrink-0" />
                         <span>{t("Completed")}</span>
@@ -438,7 +443,8 @@ export default function CourseDetails() {
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
                       className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
-                      <div className="flex flex-col col-span-3">
+                      <div
+                        className={`flex flex-col col-span-3 ${isListView ? "justify-center h-full" : ""}`}>
                         {/* 
                                                 {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
@@ -466,9 +472,18 @@ export default function CourseDetails() {
 													</div>
 												</div>
 											)} */}
-                        <div className="mt-2 sm:mt-2 lg:mt-[6px] flex flex-col justify-center items-center">
+                        <div
+                          className={`${isListView ? "" : "mt-2 sm:mt-2 lg:mt-[6px]"} flex flex-col justify-center items-center`}>
                           {calcProgress(item.progress, item.modules) === 100 ? (
                             <>
+                              {isListView && (
+                                <div className="flex w-full mb-3">
+                                  <div className="course-card-completed-badge course-card-completed-badge-inline">
+                                    <AiOutlineCheck className="shrink-0" />
+                                    <span>{t("Completed")}</span>
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-row items-center justify-between w-full mb-3 sm:mb-3 gap-2 sm:gap-2 min-h-auto">
                                 <p
                                   className="uppercase font-bold text-[13px] sm:text-[10px] md:text-[12px] lg:text-[14px] text-[#2F8351] flex-shrink-0"

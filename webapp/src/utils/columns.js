@@ -163,6 +163,8 @@ export const getTestReportColumns = (t) => {
       title: t("Status"),
       dataIndex: "status",
       key: "status",
+      // Estado guardado em inglês (chave de tradução): traduz ao mostrar
+      render: (value) => (typeof value === "string" ? t(value) : value),
     },
   ];
 };
@@ -223,6 +225,8 @@ export const getExpandedStudentColumns = (t) => {
       title: t("Status"),
       dataIndex: "status",
       key: "status",
+      // Estado guardado em inglês (chave de tradução): traduz ao mostrar
+      render: (value) => (typeof value === "string" ? t(value) : value),
     },
   ];
 };
