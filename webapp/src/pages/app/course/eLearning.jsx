@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { courseAccessState } from "../../../utils/courseWindow";
 import { MenuOutlined } from "@ant-design/icons";
 import {
@@ -10,6 +10,7 @@ import {
   Progress,
   Tabs,
   Switch,
+  Tooltip,
 } from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -40,6 +41,7 @@ import {
   PiFileTextLight,
   PiBookBookmark,
   PiBookOpenLight,
+  PiCalendarXDuotone,
 } from "react-icons/pi";
 
 import dayjs from "dayjs";
@@ -54,6 +56,15 @@ import { courseMaterials } from "../../../utils/materials";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 import CourseCompletedModal from "../../../components/app/course/courseCompleted";
+import CourseFailedModal from "../../../components/app/course/courseFailed";
+import CourseStatusBanner from "../../../components/app/course/courseStatusBanner";
+import LockedMessage from "../../../components/app/course/lockedMessage";
+import {
+  isCourseFailed,
+  isTestFailed,
+  parseSettings,
+  testDateState,
+} from "../../../utils/courseStatus";
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import CourseLoading from "../../../components/app/courseLoading";
@@ -75,6 +86,10 @@ const Learning = () => {
   const [isTestInProgress, setIsTestInProgress] = useState(false);
   // Modal de parabéns: só abre no momento em que o curso fica concluído (registo "course" criado agora)
   const [isOpenCourseCompleted, setIsOpenCourseCompleted] = useState(false);
+  // Modal de reprovação: só abre no momento em que o utilizador reprova (última tentativa permitida falhada)
+  const [isOpenCourseFailed, setIsOpenCourseFailed] = useState(false);
+  // Estado de reprovação anterior (null = ainda não carregado), para detetar a passagem a reprovado
+  const wasFailedRef = useRef(null);
   // Elemento no fundo do ecrã onde o Test coloca a navegação entre perguntas (fixa durante o teste)
   const [testFooterSlot, setTestFooterSlot] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -176,13 +191,17 @@ const Learning = () => {
             ? courseMaterials({
                 ...auxCourse,
                 material: JSON.parse(auxCourse.material),
-              })
+              }, user)
             : null;
           auxCourse.objection = auxCourse.objection
             ? JSON.parse(auxCourse.objection)
             : null;
 
           let auxAllItems = [];
+          // Todos os testes colocados nos módulos (incluindo expirados), para a regra de reprovação
+          // ser a mesma dos relatórios
+          let courseTests = [];
+          wasFailedRef.current = null;
 
           if (res.data.modules.length > 0) {
             let auxModules = res.data.modules.sort(
@@ -217,10 +236,14 @@ const Learning = () => {
                       (_t) => _t.id === auxModules[i].items[y].id,
                     )[0];
                     if (testData) {
-                      itemToAdd = {
-                        type: auxModules[i].items[y].type,
-                        ...testData,
-                      };
+                      courseTests.push(testData);
+                      // Teste expirado (depois da data de fim): sai do curso para os alunos (não aparece nem
+                      // conta para o progresso/conclusão); o admin continua a vê-lo, marcado como expirado
+                      if (isAdmin || testDateState(testData) !== "expired")
+                        itemToAdd = {
+                          type: auxModules[i].items[y].type,
+                          ...testData,
+                        };
                     }
                   }
 
@@ -274,6 +297,7 @@ const Learning = () => {
               modules: res.data.modules,
               topics: res.data.topics,
               tests: res.data.tests,
+              courseTests,
             });
             setModules(newModules);
             setProgress(res.data.progress);
@@ -324,7 +348,28 @@ const Learning = () => {
     return allItems.every((item) => isItemCompleted(item, progressToCheck));
   }
 
+  // Reprovado no curso (mesma regra dos relatórios): esgotou as tentativas de um teste sem aprovar
+  const courseFailed = isCourseFailed(progress, data?.courseTests);
+
+  // Depois de reprovar só pode rever o que já fez: itens concluídos e o(s) teste(s) em que reprovou
+  function isAccessibleWhenFailed(item) {
+    if (!courseFailed || !item?.type) return true;
+    return (
+      isItemCompleted(item) ||
+      (item.type === "test" && isTestFailed(progress, item))
+    );
+  }
+
+  // Passagem a reprovado durante a sessão (não ao abrir um curso já reprovado): abre a modal uma vez
+  useEffect(() => {
+    if (!progress || !data) return;
+    if (wasFailedRef.current === false && courseFailed)
+      setIsOpenCourseFailed(true);
+    wasFailedRef.current = courseFailed;
+  }, [courseFailed, progress, data]);
+
   function selectCourseItem(item) {
+    if (!isAccessibleWhenFailed(item)) return;
     setSelectedCourseItem(item);
     // Only close drawer when selecting an actual topic/test item, not module headers
     if (item.type && windowDimension.width < 1080) {
@@ -344,7 +389,7 @@ const Learning = () => {
   // módulo seguinte. Devolve false quando já é o último item.
   function goToNextItem() {
     const nextItem = allItems?.[indexInCourse(selectedCourseItem) + 1];
-    if (!nextItem) return false;
+    if (!nextItem || !isAccessibleWhenFailed(nextItem)) return false;
     setSelectedCourseItem(nextItem);
     return true;
   }
@@ -455,6 +500,7 @@ const Learning = () => {
   function previous() {
     const index = indexInCourse(selectedCourseItem);
     if (index > 0) {
+      if (!isAccessibleWhenFailed(allItems[index - 1])) return;
       setSelectedCourseItem(allItems[index - 1]);
     } else {
       confirm({
@@ -501,6 +547,52 @@ const Learning = () => {
     (selectedCourseItem?.type === "topic" &&
       !isItemCompleted(selectedCourseItem));
   const nextLabel = isLastItem ? t("Finish") : t("Next");
+  // Reprovado: Anterior/Próximo só para itens que já fez (ver isAccessibleWhenFailed)
+  const prevBlocked =
+    courseFailed &&
+    currentIndex > 0 &&
+    !isAccessibleWhenFailed(allItems[currentIndex - 1]);
+  const nextBlocked =
+    courseFailed &&
+    !(
+      allItems?.[currentIndex + 1] &&
+      isAccessibleWhenFailed(allItems[currentIndex + 1])
+    );
+  // Item selecionado que já não pode ser aberto depois de reprovar (ex.: aberto por link direto)
+  const selectedBlocked =
+    !!selectedCourseItem?.type && !isAccessibleWhenFailed(selectedCourseItem);
+  // Estado do curso no eLearning: Aprovado (concluído) ou Reprovado
+  const courseStatus = courseFailed
+    ? "failed"
+    : isCourseCompleted()
+      ? "approved"
+      : null;
+
+  // Teste expirado (só o admin o vê): texto esbatido + ícone com a data de fim
+  function expiredInfo(item) {
+    if (item?.type !== "test" || testDateState(item) !== "expired") return null;
+    const { end_date } = parseSettings(item.settings);
+    return `${t("Expired test")} · ${dayjs(end_date).format("DD/MM/YYYY HH:mm")}`;
+  }
+
+  // Item da lista de módulos (Sider/Drawer): marcador de expirado e estado bloqueado após reprovar
+  function itemListExtras(item) {
+    const expired = expiredInfo(item);
+    const blocked = !isAccessibleWhenFailed(item);
+    return {
+      expired,
+      rowClass: blocked ? "opacity-50 cursor-not-allowed!" : "",
+      textClass: expired ? "text-[#8B9CC3]" : "text-[#163986]",
+      marker: expired ? (
+        <Tooltip title={expired}>
+          <PiCalendarXDuotone
+            className="text-[#8B9CC3] shrink-0 w-4 h-4"
+            aria-label={expired}
+          />
+        </Tooltip>
+      ) : null,
+    };
+  }
 
   // Ecrãs compactos: telemóvel ou telemóvel/tablet rodado na horizontal (ecrã tátil)
   const isLandscapeTouch =
@@ -586,6 +678,13 @@ const Learning = () => {
         onDownloadCertificate={() =>
           downloadCertificate(data.course, progress, user, config, endpoints)
         }
+      />
+      <CourseFailedModal
+        open={isOpenCourseFailed}
+        close={() => setIsOpenCourseFailed(false)}
+        courseName={data?.course?.name}
+        userName={user?.name}
+        onBackToCourses={() => navigate(`/${i18n.language}/courses`)}
       />
       <Logout
         open={isOpenLogout}
@@ -680,7 +779,7 @@ const Learning = () => {
                         icon={<RxChevronLeft />}
                         className="button-learning-header mr-2"
                         onClick={() => previous()}
-                        disabled={isTestInProgress}>
+                        disabled={isTestInProgress || prevBlocked}>
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
                           ? ""
@@ -695,7 +794,9 @@ const Learning = () => {
                         className="button-learning-header"
                         onClick={() => next()}
                         disabled={
-                          isTestInProgress || (!allowNext && user.id_role !== 1)
+                          isTestInProgress ||
+                          nextBlocked ||
+                          (!allowNext && user.id_role !== 1)
                         }>
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
@@ -940,7 +1041,7 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className="p-2 pl-6 cursor-pointer flex items-center gap-2">
+                                  className={`p-2 pl-6 cursor-pointer flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -957,12 +1058,15 @@ const Learning = () => {
                                       className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                   )}
                                   {_t.type === "test" && (
-                                    <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
+                                    <FaListCheck
+                                      className={`${itemListExtras(_t).textClass} shrink-0 w-4 h-4 sm:w-5 sm:h-5`}
+                                    />
                                   )}
                                   <p
-                                    className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
+                                    className={`text-sm ${itemListExtras(_t).textClass} ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
                                     {_t.title}
                                   </p>
+                                  {itemListExtras(_t).marker}
                                   {data?.course?.settings.progression_type ===
                                   "linear"
                                     ? ((_i > 0 && mInd === 0) ||
@@ -1141,7 +1245,7 @@ const Learning = () => {
                                 {item.items.map((_t, _i) => (
                                   <div
                                     onClick={() => selectCourseItem(_t)}
-                                    className="p-2 pl-6 cursor-pointer flex items-center gap-2">
+                                    className={`p-2 pl-6 cursor-pointer flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
                                     {progress.length > 0 &&
                                     progress.filter(
                                       (p) =>
@@ -1159,12 +1263,15 @@ const Learning = () => {
                                         className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
                                     )}
                                     {_t.type === "test" && (
-                                      <FaListCheck className="text-[#163986] shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
+                                      <FaListCheck
+                                        className={`${itemListExtras(_t).textClass} shrink-0 w-4 h-4 sm:w-5 sm:h-5`}
+                                      />
                                     )}
                                     <p
-                                      className={`text-sm text-[#163986] ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
+                                      className={`text-sm ${itemListExtras(_t).textClass} ${selectedCourseItem?.id === _t.id ? "font-bold" : "font-normal"}`}>
                                       {_t.title}
                                     </p>
+                                    {itemListExtras(_t).marker}
                                     {data?.course?.settings.progression_type ===
                                     "linear"
                                       ? ((_i > 0 && mInd === 0) ||
@@ -1250,6 +1357,8 @@ const Learning = () => {
                   <div
                     className="elearning-column mx-auto w-full"
                     style={{ maxWidth: contentMaxWidth }}>
+                    {/* Estado permanente do curso: Aprovado / Reprovado */}
+                    <CourseStatusBanner status={courseStatus} />
                     {progress?.length > 0 &&
                     progress.filter(
                       (p) =>
@@ -1277,7 +1386,14 @@ const Learning = () => {
                         {selectedCourseItem?.title}
                       </p>
                     )}
-                    {selectedCourseItem &&
+                    {selectedBlocked ? (
+                      <LockedMessage
+                        title={t("This content is not available")}
+                        description={t(
+                          "You can only review the steps you have already done in this course",
+                        )}
+                      />
+                    ) : selectedCourseItem &&
                     Object.keys(selectedCourseItem).length > 0 &&
                     (selectedCourseItem.type === "topic" ||
                       selectedCourseItem.type === "test") &&
@@ -1295,12 +1411,16 @@ const Learning = () => {
                         items={[
                           {
                             key: "1",
-                            // Mesma chave "topic" do resto da app, com a primeira letra em maiúscula
-                            label: tabLabel(
-                              "1",
-                              PiFileTextLight,
-                              capitalize(t("topic")),
-                            ),
+                            // Tópico: chave "topic" do resto da app, com a primeira letra em maiúscula;
+                            // teste: "Test" com o mesmo ícone dos testes na lista de módulos
+                            label:
+                              selectedCourseItem.type === "test"
+                                ? tabLabel("1", FaListCheck, t("Test"))
+                                : tabLabel(
+                                    "1",
+                                    PiFileTextLight,
+                                    capitalize(t("topic")),
+                                  ),
                             forceRender: true,
                             children:
                               selectedCourseItem.type === "topic" ? (
@@ -1436,6 +1556,7 @@ const Learning = () => {
                             ? "course-button-previous-mobile"
                             : "course-button-previous"
                         }
+                        disabled={prevBlocked}
                         onClick={() => previous()}>
                         {t("Previous")}
                       </Button>
@@ -1445,7 +1566,9 @@ const Learning = () => {
                         icon={<RxChevronRight />}
                         iconPlacement="end"
                         onClick={() => next()}
-                        disabled={!allowNext && user.id_role !== 1}
+                        disabled={
+                          nextBlocked || (!allowNext && user.id_role !== 1)
+                        }
                         size="small"
                         className="course-button-next">
                         {nextLabel}

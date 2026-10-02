@@ -1,7 +1,6 @@
 import axios from "axios";
-import { courseAccessState } from "../../../utils/courseWindow";
 import { useEffect, useState } from "react";
-import { Button, Empty, Progress } from "antd";
+import { Button, Empty, Progress, Tooltip } from "antd";
 import { useContext } from "react";
 
 import { Context } from "../../../utils/context";
@@ -20,17 +19,41 @@ import useScrollToTop from "../../../utils/scrollToTop";
 // import { FaListCheck } from "react-icons/fa6";
 import {
   AiOutlineCheck,
+  AiOutlineClose,
   AiOutlineCloudDownload,
   // AiOutlinePlayCircle
 } from "react-icons/ai";
+import {
+  PiCalendarBlank,
+  PiEye,
+  PiEyeSlash,
+  PiHourglassMedium,
+} from "react-icons/pi";
 
 import i18n from "../../../utils/i18n";
 import { downloadCertificate } from "../../../utils/certificate";
+import {
+  courseDateState,
+  isAllowedByCountry,
+  isCourseFailed,
+  testDateState,
+} from "../../../utils/courseStatus";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
-import Countdown from "../../../components/countdown";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
+
+// Cursos expirados que o admin escondeu do SEU catálogo (só no browser; não altera a BD)
+const hiddenExpiredKey = (userId) => `hidden_expired_courses_${userId}`;
+
+function readHiddenExpired(userId) {
+  try {
+    const value = JSON.parse(localStorage.getItem(hiddenExpiredKey(userId)));
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function CourseDetails() {
   const { t, user, windowDimension, selectedLanguage } = useContext(Context);
@@ -41,10 +64,41 @@ export default function CourseDetails() {
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
   // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
   const isListView = viewType === "list" && windowDimension.width > 640;
+  const isAdmin = user?.id_role === 1;
+  const [hiddenExpired, setHiddenExpired] = useState([]);
+  const [showHiddenExpired, setShowHiddenExpired] = useState(false);
 
   useEffect(() => {
     if (user) getData();
   }, [user, selectedLanguage]);
+
+  useEffect(() => {
+    if (user?.id) setHiddenExpired(readHiddenExpired(user.id));
+  }, [user?.id]);
+
+  // Esconder / voltar a mostrar um curso expirado no catálogo do admin
+  function toggleHiddenExpired(courseId) {
+    const next = hiddenExpired.includes(courseId)
+      ? hiddenExpired.filter((id) => id !== courseId)
+      : [...hiddenExpired, courseId];
+    setHiddenExpired(next);
+    try {
+      localStorage.setItem(hiddenExpiredKey(user.id), JSON.stringify(next));
+    } catch {
+      // sem acesso ao localStorage: fica só nesta sessão
+    }
+  }
+
+  const hiddenExpiredCount = data.filter(
+    (item) =>
+      item.dateState === "expired" && hiddenExpired.includes(item.course.id),
+  ).length;
+  const visibleData = data.filter(
+    (item) =>
+      showHiddenExpired ||
+      item.dateState !== "expired" ||
+      !hiddenExpired.includes(item.course.id),
+  );
 
   useEffect(() => {
     if (windowDimension < 1080) setViewType("grid");
@@ -68,20 +122,27 @@ export default function CourseDetails() {
         auxCourse.settings = auxCourse.settings
           ? JSON.parse(auxCourse.settings)
           : null;
-        if (!canAccess(auxCourse)) continue;
 
+        // Validade do curso: alunos só veem cursos ativos; o admin vê todos (expirados com estado próprio)
+        const dateState = courseDateState(auxCourse);
+        if (user.id_role !== 1 && dateState !== "active") continue;
+
+        // Restrição de países: aplica-se a alunos e admin
         if (
-          user.id_role !== 1 &&
-          auxCourse.settings.country_limit &&
-          auxCourse.settings.country &&
-          !auxCourse.settings.country.includes(user.country)
+          !isAllowedByCountry(
+            auxCourse.settings?.country_limit ? auxCourse.settings.country : null,
+            user,
+          )
         )
-          auxCourse = null;
+          continue;
 
         if (auxCourse) {
           let auxObj = {
             course: auxCourse,
+            dateState,
           };
+          // Todos os testes do curso (para o estado "Reprovado", mesmo que já tenham expirado)
+          let courseTests = [];
           let newModules = []; // Initialize here
           if (res.data.progress.length > 0)
             auxObj.progress = res.data.progress.filter(
@@ -121,10 +182,16 @@ export default function CourseDetails() {
                       testData.is_deleted !== 1 &&
                       (user.id_role === 1 || testData.status !== "draft")
                     ) {
-                      enrichedItem = {
-                        type: auxModules[i].items[y].type,
-                        ...testData,
-                      };
+                      courseTests.push(testData);
+                      // Alunos: testes expirados saem do eLearning, logo também do progresso
+                      if (
+                        user.id_role === 1 ||
+                        testDateState(testData) !== "expired"
+                      )
+                        enrichedItem = {
+                          type: auxModules[i].items[y].type,
+                          ...testData,
+                        };
                     }
                   }
 
@@ -142,6 +209,7 @@ export default function CourseDetails() {
 
             auxObj.modules = newModules;
           }
+          auxObj.isFailed = isCourseFailed(auxObj.progress, courseTests);
 
           auxData.push(auxObj);
         }
@@ -156,16 +224,17 @@ export default function CourseDetails() {
     }
   }
 
-  function canAccess(obj) {
-    if (user.id_role === 1) return true;
-    return courseAccessState(obj.settings) === "open";
+  // Datas de início/fim do curso (definições "Course access expiration")
+  function courseDate(course, key) {
+    const date = course.settings?.course_access_expiration_dates?.[key];
+    return date ? dayjs(date).format("DD/MM/YYYY") : "";
   }
 
   function calcProgress(items, modules) {
     if (items && items.length > 0) {
       // Build a set of visible item references from already-filtered modules
       const visibleItems = new Set();
-      modules.forEach((m) => {
+      (modules || []).forEach((m) => {
         if (m.items && m.items.length > 0) {
           m.items.forEach((item) => {
             const key =
@@ -224,14 +293,6 @@ export default function CourseDetails() {
 
   function handleDownloadCertificate(item, progress) {
     downloadCertificate(item, progress, user, config, endpoints);
-  }
-
-  function updateCourseAvailable(obj) {
-    setData((prev) =>
-      prev.map((item) =>
-        item.course.id === obj.id ? { ...item, is_available: true } : obj,
-      ),
-    );
   }
 
   // function hasCertificate(course) {
@@ -375,28 +436,52 @@ export default function CourseDetails() {
           </div>
         ) : data.length > 0 ? (
           <div>
-            {windowDimension.width > 768 && (
+            {(windowDimension.width > 768 ||
+              (isAdmin && hiddenExpiredCount > 0)) && (
               <div className="col-span-3 flex justify-end items-center gap-4 mb-8">
-                <GridIcon
-                  className="cursor-pointer"
-                  color="#163986"
-                  onClick={() => setViewType("grid")}
-                />
-                <ListIcon
-                  className="cursor-pointer"
-                  color="#163986"
-                  onClick={() => setViewType("list")}
-                />
+                {/* Admin: voltar a mostrar os cursos expirados que escondeu */}
+                {isAdmin && hiddenExpiredCount > 0 && (
+                  <Button
+                    size="small"
+                    className="course-hidden-expired-toggle"
+                    icon={showHiddenExpired ? <PiEyeSlash /> : <PiEye />}
+                    onClick={() => setShowHiddenExpired((v) => !v)}>
+                    {showHiddenExpired
+                      ? t("Hide expired courses again")
+                      : `${t("Show hidden expired courses")} (${hiddenExpiredCount})`}
+                  </Button>
+                )}
+                {windowDimension.width > 768 && (
+                  <>
+                    <GridIcon
+                      className="cursor-pointer"
+                      color="#163986"
+                      onClick={() => setViewType("grid")}
+                    />
+                    <ListIcon
+                      className="cursor-pointer"
+                      color="#163986"
+                      onClick={() => setViewType("list")}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+            {visibleData.length === 0 && (
+              <div className="flex flex-col justify-center items-center">
+                <Empty description={t("No courses found")} />
               </div>
             )}
             <div
               // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl
               className={`grid ${isListView ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"} gap-5 sm:gap-6 lg:gap-6`}>
               {/* CARD COURSE */}
-              {data.map((item) => (
+              {visibleData.map((item) => (
                 <div
-                  // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem
-                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : ""}`}>
+                  key={item.course.id}
+                  // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem;
+                  // reprovado: o mesmo em vermelho Bial; expirado (só admin): imagem esbatida com faixa "Expirado"
+                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""}`}>
                   <div
                     // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
                     className={`${viewType === "list" && windowDimension.width > 640 ? "w-40 lg:w-50 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
@@ -425,6 +510,55 @@ export default function CourseDetails() {
                         <AiOutlineCheck className="shrink-0" />
                         <span>{t("Completed")}</span>
                       </div>
+                    )}
+                    {calcProgress(item.progress, item.modules) !== 100 &&
+                      item.isFailed &&
+                      !isListView && (
+                        <div className="course-card-completed-badge course-card-failed-badge">
+                          <AiOutlineClose className="shrink-0" />
+                          <span>{t("Failed")}</span>
+                        </div>
+                      )}
+                    {/* Expirado (só o admin vê): faixa com a data de fim e ação para esconder do seu catálogo */}
+                    {item.dateState === "expired" && (
+                      <>
+                        <div className="course-card-expired-ribbon">
+                          <PiHourglassMedium className="shrink-0 course-card-expired-icon" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-ryker font-bold uppercase leading-none">
+                              {t("Expired")}
+                            </span>
+                            {courseDate(item.course, "end_date") && (
+                              <span className="course-card-expired-date">
+                                {t("Ended on")}{" "}
+                                {courseDate(item.course, "end_date")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Tooltip
+                          title={
+                            hiddenExpired.includes(item.course.id)
+                              ? t("Show in catalogue")
+                              : t("Hide from catalogue")
+                          }>
+                          <button
+                            type="button"
+                            className="course-card-expired-hide"
+                            aria-label={
+                              hiddenExpired.includes(item.course.id)
+                                ? t("Show in catalogue")
+                                : t("Hide from catalogue")
+                            }
+                            onClick={() => toggleHiddenExpired(item.course.id)}>
+                            {hiddenExpired.includes(item.course.id) ? (
+                              <PiEye />
+                            ) : (
+                              <PiEyeSlash />
+                            )}
+                          </button>
+                        </Tooltip>
+                      </>
                     )}
                   </div>
                   <div
@@ -550,6 +684,14 @@ export default function CourseDetails() {
                             </>
                           ) : (
                             <div className="flex flex-col w-full">
+                              {isListView && item.isFailed && (
+                                <div className="flex w-full mb-3">
+                                  <div className="course-card-completed-badge course-card-completed-badge-inline course-card-failed-badge">
+                                    <AiOutlineClose className="shrink-0" />
+                                    <span>{t("Failed")}</span>
+                                  </div>
+                                </div>
+                              )}
                               {item.progress?.length > 0 ? (
                                 <>
                                   <div className="flex items-center justify-center w-full mb-3">
@@ -774,9 +916,18 @@ export default function CourseDetails() {
                       </div>
                     </div>
                     <div className="px-4 sm:px-4 md:px-4 lg:px-6 py-4 sm:py-6 md:py-4 lg:py-6 flex flex-col justify-center items-center w-full flex-1">
-                      {/* Action button: Review/Start/Enter or Available countdown */}
-                      {canAccess(item.course) || item.is_available ? (
-                        <Link
+                      {/* Cursos por iniciar só chegam aqui para o admin (alunos não os veem): indicação da data de início */}
+                      {item.dateState === "upcoming" && (
+                        <p className="course-card-upcoming-hint">
+                          <PiCalendarBlank className="shrink-0" />
+                          <span>
+                            {t("Starts on")}{" "}
+                            {courseDate(item.course, "start_date")}
+                          </span>
+                        </p>
+                      )}
+                      {/* Action button: Review/Start/Enter */}
+                      <Link
                           to={`/${i18n.language}/courses/${item.course.slug}`}
                           onClick={(e) => startCourse(e, item)}
                           className="w-full! block">
@@ -813,24 +964,6 @@ export default function CourseDetails() {
                             </Button>
                           )}
                         </Link>
-                      ) : (
-                        <div className="flex flex-col justify-center items-center">
-                          <p className="font-bold text-[12px] sm:text-[14px]">
-                            {t("Available in")}
-                          </p>
-                          <Countdown
-                            targetDate={
-                              item.course.settings
-                                .course_access_expiration_dates.start_date
-                            }
-                            className="text-[20px]"
-                            countdownType="course"
-                            updateCourseAvailable={() =>
-                              updateCourseAvailable(item.course)
-                            }
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

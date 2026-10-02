@@ -11,18 +11,65 @@ import {
 import {
   RxChevronLeft,
   RxChevronRight,
-  RxClock,
   RxFileText,
-  RxLockClosed,
   RxReload,
 } from "react-icons/rx";
+import { MdTimerOff } from "react-icons/md";
+import { PiCalendarXDuotone, PiHourglassMediumDuotone } from "react-icons/pi";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
+import { isTestFailed, parseSettings, testDateState } from "../../../utils/courseStatus";
+import LockedMessage from "../../../components/app/course/lockedMessage";
+import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
-import Lottie from "lottie-react";
 import { Helmet } from "react-helmet";
+
+// Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
+// Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
+function evaluateQuestion(question, answer) {
+  const correct = (question?.answer || []).filter((a) => a.is_correct);
+  if (correct.length === 0) return null;
+  const answered = Array.isArray(answer) ? answer.length > 0 : !!answer;
+  let is_correct = false;
+  if (answered) {
+    is_correct =
+      typeof answer === "string"
+        ? answer === correct[0].title
+        : correct.every((c) => answer.includes(c.title));
+  }
+  return {
+    is_correct,
+    ...question,
+    myAnswer: answered ? answer : correct.length > 1 ? [] : null,
+    ...(answered ? {} : { unanswered: true }),
+  };
+}
+
+// Aviso de datas do teste para o admin (expirado / ainda não disponível para os alunos)
+function TestDateNotice({ type, date, t }) {
+  const expired = type === "expired";
+  const Icon = expired ? PiCalendarXDuotone : PiHourglassMediumDuotone;
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white ${expired ? "bg-[#8B9CC3]" : "bg-[#00B9D6]"}`}>
+      <Icon className="shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
+      <div className="min-w-0">
+        <p className="font-ryker font-bold leading-tight text-[14px] sm:text-[16px] lg:text-[18px]">
+          {expired
+            ? t("This test expired on")
+            : t("This test will be available to students on")}{" "}
+          {dayjs(date).format("DD/MM/YYYY HH:mm")}
+        </p>
+        <p className="text-[12px] sm:text-[13px] lg:text-[14px] mt-0.5">
+          {expired
+            ? t("Students no longer see this test in the course")
+            : t("Students see a countdown until this date")}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const Test = ({
   course,
@@ -39,6 +86,8 @@ const Test = ({
   footerSlot,
 }) => {
   const { user, messageApi, windowDimension } = useContext(Context);
+  // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
+  const isAdmin = user?.id_role === 1;
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
@@ -59,15 +108,26 @@ const Test = ({
     onInProgressChange?.(begin && !finished);
   }, [begin, finished]);
 
-  useEffect(() => () => onInProgressChange?.(false), []);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
-  const [countdownToBeAvailable, setCountdownToBeAvailable] = useState("");
 
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const timerRef = useRef(null);
-  const timerAvailableRef = useRef(null);
+
+  // Ao sair do teste: liberta a navegação e pára o temporizador
+  useEffect(
+    () => () => {
+      onInProgressChange?.(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    },
+    [],
+  );
+
+  // Tempo limite esgotado durante o teste: avalia as respostas dadas até ao momento
+  useEffect(() => {
+    if (timerEnded && begin && !finished && !isCalculating) finishByTimeUp();
+  }, [timerEnded]);
 
   function parseTestMetadata(metaData) {
     if (!metaData) return null;
@@ -84,9 +144,23 @@ const Test = ({
     setAllowNext(false);
     setMetaData(null);
 
+    // Novo teste selecionado (ex.: dois testes seguidos): recomeça o estado do teste anterior
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setBegin(false);
+    setFinished(false);
+    setResult([]);
+    setReview(false);
+    setTimerEnded(false);
+    setCurrentQuestion(0);
+    setTimePercentage(100);
+    setIsTopicLocked(false);
+    form.resetFields();
+
     prepareData();
 
-    console.log(course);
     // Verifica se o teste foi concluído ou se houve tentativas falhadas
     const completedTest = progress.filter(
       (p) =>
@@ -181,24 +255,8 @@ const Test = ({
       setCountdown(minutes + ":" + seconds);
     }
 
-    if (aux.settings.start_date) {
-      const date1 = dayjs();
-      const date2 = dayjs(aux.settings.start_date);
-
-      if (date1.diff(date2) < 0) {
-        setIsAvailable(false);
-        setCountdownToBeAvailable(
-          <div className="flex flex-col justify-center items-center mt-4">
-            <Lottie
-              animationData={trailLoadingAnimation}
-              loop={true}
-              className="max-w-20"
-            />
-          </div>,
-        );
-        startAvailableTimer(aux.settings.start_date);
-      }
-    }
+    // Antes da data de início os alunos veem a contagem decrescente (o admin não tem restrições)
+    setIsAvailable(isAdmin || testDateState(aux) !== "upcoming");
     setData(aux);
   }
 
@@ -226,46 +284,35 @@ const Test = ({
     }, 1000);
   }
 
-  function startAvailableTimer(date) {
-    const countDownDate = new Date(date).getTime();
-    // limpa interval antigo antes de criar outro
-    if (timerAvailableRef.current) clearInterval(timerAvailableRef.current);
+  // Tempo limite esgotado: avalia as respostas dadas durante o tempo (sem resposta = errada) e regista a
+  // tentativa como num envio normal (aprovada se atingir a percentagem mínima, senão falhada)
+  function finishByTimeUp() {
+    const values = form.getFieldsValue(true) || {};
+    const items = (data.question || [])
+      .map((q) => evaluateQuestion(q, values[q.title]?.answer))
+      .filter(Boolean);
+    const auxResult = {
+      items,
+      time: Number(data.settings?.time) * 60,
+      timeUp: true,
+    };
 
-    timerAvailableRef.current = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = countDownDate - now;
+    setResult(auxResult);
+    setMetaData(items);
+    setReview(false);
+    setFinished(true);
 
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(
-        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      let timer = `${days} d | ${hours} h | ${minutes} min`;
-
-      if (days === 0) {
-        if (hours === 0 && minutes === 0) {
-          timer = `${seconds} s`;
-        } else if (hours === 0) {
-          timer = `${minutes} min | ${seconds} s`;
-        } else {
-          timer = `${hours} h | ${minutes} min | ${seconds} s`;
-        }
-      }
-
-      setCountdownToBeAvailable(
-        <div className="flex flex-col justify-center items-center border rounded-[5px] border-[#707070] p-6 mt-4">
-          <p>{t("Time to be available:")}</p>
-          <p className="text-[30px]">{timer}</p>
-        </div>,
-      );
-
-      if (--timer < 0) {
-        setIsAvailable(true);
-        clearInterval(timerAvailableRef.current);
-      }
-    }, 1000);
+    const passingScore = data.settings?.passing_score ?? 80;
+    const percentage =
+      items.length > 0
+        ? (items.filter((r) => r.is_correct).length * 100) / items.length
+        : 0;
+    if (percentage >= passingScore) {
+      setAllowNext(true);
+      next(false, auxResult);
+    } else {
+      createActivity(auxResult);
+    }
   }
 
   function startTest() {
@@ -323,47 +370,14 @@ const Test = ({
       const interval = setInterval(() => {
         if (index < questions.length) {
           if (values[questions[index]]) {
-            if (typeof values[questions[index]].answer === "string") {
-              const auxQuestion = data.question.filter(
-                (q) => q.title === questions[index],
-              )[0];
-              const findCorrectAnswer = auxQuestion.answer.filter(
-                (a) => a.is_correct,
-              );
-              if (findCorrectAnswer.length > 0) {
-                auxResult.push({
-                  is_correct:
-                    values[questions[index]].answer ===
-                    findCorrectAnswer[0].title,
-                  ...auxQuestion,
-                  myAnswer: values[questions[index]].answer,
-                });
-              }
-            } else {
-              let is_correct = true;
-              const auxQuestion = data.question.filter(
-                (q) => q.title === questions[index],
-              )[0];
-              const findCorrectAnswer = auxQuestion.answer.filter(
-                (a) => a.is_correct,
-              );
-              if (findCorrectAnswer.length > 0) {
-                for (let y = 0; y < findCorrectAnswer.length; y++) {
-                  const findInMyAnswers = values[
-                    questions[index]
-                  ].answer.filter((a) => a === findCorrectAnswer[y].title);
-                  if (findInMyAnswers.length === 0) {
-                    is_correct = false;
-                  }
-                }
-
-                auxResult.push({
-                  is_correct,
-                  ...auxQuestion,
-                  myAnswer: values[questions[index]].answer,
-                });
-              }
-            }
+            const auxQuestion = data.question.find(
+              (q) => q.title === questions[index],
+            );
+            const evaluated = evaluateQuestion(
+              auxQuestion,
+              values[questions[index]].answer,
+            );
+            if (evaluated) auxResult.push(evaluated);
           }
 
           setCalculate({
@@ -432,7 +446,7 @@ const Test = ({
       .post(endpoints.course.updateProgress, {
         data: auxData,
       })
-      .then((res) => {
+      .then(() => {
         updateProgress(auxData[0]);
       })
       .catch((err) => {
@@ -451,21 +465,36 @@ const Test = ({
       </Helmet>
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
+          {/* Admin: aviso das datas do teste (expirado / ainda não disponível para os alunos) */}
+          {isAdmin &&
+            (() => {
+              const dateState = testDateState(selectedCourseItem);
+              const { start_date, end_date } = parseSettings(
+                selectedCourseItem.settings,
+              );
+              if (dateState === "expired")
+                return <TestDateNotice type="expired" date={end_date} t={t} />;
+              if (dateState === "upcoming")
+                return (
+                  <TestDateNotice type="upcoming" date={start_date} t={t} />
+                );
+              return null;
+            })()}
           {isTopicLocked ? (
-            <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
-              <RxLockClosed className="w-10 h-10 mr-2" />
-              <div>
-                <p className="text-[20px] font-bold">
-                  {t("This test is locked")}
-                </p>
-                <p>{t("You'll need to complete the previous topic first")}</p>
-              </div>
-            </div>
+            <LockedMessage
+              title={t("This test is locked")}
+              description={t(
+                "You'll need to complete the previous topic first",
+              )}
+            />
           ) : (
             Object.keys(data).length > 0 && (
               <div>
                 {!isAvailable ? (
-                  <div>{countdownToBeAvailable}</div>
+                  <TestCountdown
+                    startDate={data.settings?.start_date}
+                    onReachZero={() => setIsAvailable(true)}
+                  />
                 ) : !begin ? (
                   <div className="flex flex-col justify-center items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
                     <p className="font-ryker font-bold text-[16px]">
@@ -477,7 +506,7 @@ const Test = ({
                         <b>{t("Time")}:</b> {data.settings.time} {t("minutes")}
                       </p>
                     )}
-                    {data.settings.retries_allowed && (
+                    {Number(data.settings.retries_allowed) > 0 && (
                       <p className="text-[16px]">
                         <b>{t("Retries allowed")}:</b>{" "}
                         {data.settings.retries_allowed}
@@ -528,45 +557,74 @@ const Test = ({
                         (correctAnswers * 100) / totalQuestions;
                       const passingScore = data.settings?.passing_score ?? 80;
                       const isApproved = percentage >= passingScore;
-                      const retriesAllowed =
-                        data.settings?.retries_allowed ?? 5;
-                      const retriesUsed = progress.filter(
-                        (p) =>
-                          p.activity_type === "test" &&
-                          p.id_course_test === selectedCourseItem.id,
-                      ).length;
-                      const canStillRetry = retriesUsed < retriesAllowed;
+                      // Mesma regra dos relatórios (utils/courseStatus): só há limite de tentativas quando
+                      // retries_allowed está definido; sem limite pode repetir sempre
+                      const canStillRetry =
+                        !isApproved &&
+                        !isTestFailed(progress, selectedCourseItem);
+                      const statusLabel = isApproved
+                        ? t("Approved")
+                        : canStillRetry
+                          ? t("Failed test")
+                          : t("Repproved Test");
+                      const answeredCount =
+                        result.items?.filter((r) => !r.unanswered).length || 0;
 
                       return (
                         <>
-                          {/* LAYOUT UNIFICADO DE RESULTADOS PARA APROVADO, REPROVADO E EM ANDAMENTO */}
-                          <div className="flex flex-col justify-center items-center p-6 bg-white mt-4 rounded-lg">
-                            <p className="font-ryker mb-4 font-bold text-[24px]">
-                              {t("Result")}
-                            </p>
-                            {isApproved ? (
-                              <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
+                          {/* LAYOUT UNIFICADO DE RESULTADOS PARA APROVADO, REPROVADO E TEMPO ESGOTADO */}
+                          <div className="flex flex-col justify-center items-center p-4 sm:p-6 bg-white mt-4 rounded-[5px]">
+                            {result.timeUp ? (
+                              // Tempo limite esgotado: resultado com as respostas dadas durante o tempo
+                              <>
+                                <div className="w-14 h-14 sm:w-18 sm:h-18 lg:w-20 lg:h-20 rounded-full bg-[#FFF4F0] border-2 border-dashed border-[#FF7D5A] flex items-center justify-center">
+                                  <MdTimerOff className="text-[28px] sm:text-[36px] lg:text-[42px] text-[#FF7D5A]" />
+                                </div>
+                                <p className="font-ryker font-bold text-[#163986] leading-tight mt-3 sm:mt-4 text-[18px] sm:text-[21px] lg:text-[24px]">
+                                  {t("Time is up")}
+                                </p>
+                                <p className="text-center text-[#163986] text-[12px] sm:text-[14px] mt-2 max-w-125">
+                                  {t(
+                                    "The time limit for this test ran out. The answers you gave during the time were evaluated and unanswered questions count as wrong.",
+                                  )}
+                                </p>
+                                <span
+                                  className={`mt-3 sm:mt-4 px-3 py-1 rounded-[5px] text-white font-semibold text-[12px] sm:text-[13px] lg:text-[14px] ${isApproved ? "bg-[#2F8351]" : "bg-[#DB0709]"}`}>
+                                  {statusLabel}
+                                </span>
+                                <p className="text-[14px] sm:text-[16px] mt-4">
+                                  <b>{t("Answered questions")}:</b>{" "}
+                                  {answeredCount} / {result.items?.length || 0}
+                                </p>
+                              </>
                             ) : (
-                              <AiFillCloseCircle className="text-[80px] text-[#DB0709]" />
+                              <>
+                                <p className="font-ryker mb-4 font-bold text-[24px]">
+                                  {t("Result")}
+                                </p>
+                                {isApproved ? (
+                                  <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
+                                ) : (
+                                  <AiFillCloseCircle className="text-[80px] text-[#DB0709]" />
+                                )}
+                                <p className="font-ryker mt-4 mb-4 text-[24px] font-bold">
+                                  {statusLabel}
+                                </p>
+                              </>
                             )}
-                            <p className="font-ryker mt-4 mb-4 text-[24px] font-bold">
-                              {isApproved
-                                ? t("Approved")
-                                : canStillRetry
-                                  ? t("Failed test")
-                                  : t("Repproved Test")}
-                            </p>
-                            <p className="text-[16px] mt-4">
+                            <p
+                              className={`text-[14px] sm:text-[16px] ${result.timeUp ? "mt-1" : "mt-4"}`}>
                               <b>{t("Your tries")}:</b>{" "}
                               {
                                 progress.filter(
                                   (p) =>
                                     p.activity_type === "test" &&
+                                    p.is_deleted !== 1 &&
                                     p.id_course === course.id &&
                                     p.id_course_test === selectedCourseItem.id,
                                 ).length
                               }
-                              {data.settings?.retries_allowed ? (
+                              {Number(data.settings?.retries_allowed) > 0 ? (
                                 <> / {data.settings?.retries_allowed}</>
                               ) : null}
                             </p>
@@ -583,7 +641,7 @@ const Test = ({
 
                           {/* BANNER DE AVISO - APENAS PARA TESTES REPROVADOS SEM TENTATIVAS RESTANTES */}
                           {!isApproved && !canStillRetry && (
-                            <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4 rounded-lg">
+                            <div className="p-3 sm:p-4 flex items-center bg-[#FF7D5A] text-white mt-4 rounded-[5px]">
                               <div>
                                 <p className="text-[16px] font-bold">
                                   {t("You did not pass this test")}
@@ -625,15 +683,20 @@ const Test = ({
                     {result.items?.map((q, i) => (
                       <div
                         className={`p-4 sm:p-6 flex flex-col bg-white rounded-[5px] border-2 border-dashed border-[#00B9D6] ${review ? "flex mt-4 w-full" : "hidden"}`}>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-2">
                           <p className="mb-4">
                             <b>{i + 1}</b>. {q.title}
                           </p>
+                          {q.unanswered && (
+                            <span className="shrink-0 self-start px-2 py-0.5 rounded-[5px] bg-[#DB0709] text-white text-[11px] sm:text-[12px]">
+                              {t("Not answered")}
+                            </span>
+                          )}
                         </div>
                         <div>
                           {q.answer.filter((c) => c.is_correct).length > 1 ? (
                             <div>
-                              {q.answer.map((a, index) => (
+                              {q.answer.map((a) => (
                                 <div
                                   className={`review-test-question multiple ${q.myAnswer.includes(a.title) ? (a.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (q.myAnswer.includes(a.title) && !a.is_correct ? "incorrect" : a.is_correct ? "correct" : "") : ""}`}>
                                   <div className="flex">
@@ -677,7 +740,7 @@ const Test = ({
                             </div>
                           ) : (
                             <div>
-                              {q.answer.map((a, index) => (
+                              {q.answer.map((a) => (
                                 <div
                                   className={`review-test-question ${a.title === q.myAnswer ? (q.is_correct ? "correct" : "incorrect") : data.settings.show_correct_answers ? (a.is_correct ? "correct" : !a.is_correct ? "incorrect" : "") : ""}`}>
                                   <div className="flex">
@@ -720,16 +783,6 @@ const Test = ({
                         </div>
                       </div>
                     ))}
-                  </div>
-                ) : timerEnded ? (
-                  <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
-                    <RxClock className="w-10 h-10 mr-2" />
-                    <div>
-                      <p className="text-[20px] font-bold">
-                        {t("Timer ended")}
-                      </p>
-                      <p>{t("The time ended, please try again")}</p>
-                    </div>
                   </div>
                 ) : (
                   <Form form={form} onFinish={submit}>
@@ -784,7 +837,7 @@ const Test = ({
                                 </div>
                               ) : (
                                 <div>
-                                  {q.answer.map((a, index) => (
+                                  {q.answer.map((a) => (
                                     <Form.Item
                                       noStyle
                                       shouldUpdate={(

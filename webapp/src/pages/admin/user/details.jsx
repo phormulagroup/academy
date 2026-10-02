@@ -275,14 +275,14 @@ export default function UserDetails() {
           « {t("Go back")}
         </p>
       </div>
-      <div className="grid grid-cols-4 gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
         <UserCard
           user={data}
           courses={courseData}
           scrollToResults={scrollToResults}
         />
-        <div className="col-span-3">
-          <div className="bg-[#D0D7E7] p-10 flex flex-col h-full">
+        <div className="lg:col-span-3">
+          <div className="bg-[#D0D7E7] p-6 md:p-10 flex flex-col h-full rounded-[5px] shadow-[0px_3px_6px_#00000029]">
             <p className="text-[26px] font-bold text-center mb-6! font-ryker">
               {t("Account")}
             </p>
@@ -456,9 +456,9 @@ export default function UserDetails() {
           </div>
         </div>
       </div>
-      <div id="results" ref={resultsRef} className="grid grid-cols-4 gap-4">
-        <div></div>
-        <div className=" col-span-3 mt-10">
+      <div id="results" ref={resultsRef} className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="hidden lg:block"></div>
+        <div className="lg:col-span-3 mt-10">
           <p className="text-[26px] font-bold text-center mb-6! font-ryker">
             {t("Results")}
           </p>

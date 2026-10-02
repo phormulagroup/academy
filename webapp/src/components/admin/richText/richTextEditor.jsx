@@ -1,13 +1,22 @@
 import "react-quill-new/dist/quill.snow.css";
 
-import { Button, Input, Modal, message } from "antd";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button, Input, Modal, Tooltip, message } from "antd";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuRedo2, LuUndo2 } from "react-icons/lu";
+import {
+  RiDeleteColumn,
+  RiDeleteRow,
+  RiInsertColumnLeft,
+  RiInsertColumnRight,
+  RiInsertRowBottom,
+  RiInsertRowTop,
+} from "react-icons/ri";
 import ReactQuill, { Quill } from "react-quill-new";
 
 import config from "../../../utils/config";
 import Media from "../media/media";
+import { attachImageResize } from "./imageResize";
 import {
   BASIC_FORMATS,
   RAW_HTML_CLASS,
@@ -15,6 +24,7 @@ import {
   fromEditorHtml,
   toEditorHtml,
 } from "./quillSetup";
+import { cellColumn, cellRow, deleteColumn, deleteRow, findCell, insertColumn, insertRow } from "./tableEditing";
 
 const Delta = Quill.import("delta");
 
@@ -157,6 +167,13 @@ export default function RichTextEditor({
     return () => quill.root.removeEventListener("dblclick", onDblClick);
   }, [richMedia, toolbarEl]);
 
+  // Redimensionar imagens arrastando as pegas (guarda width/height na imagem)
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor();
+    if (!quill || !richMedia) return;
+    return attachImageResize(quill, { title: t("Drag to resize the image") });
+  }, [richMedia, toolbarEl, t]);
+
   async function closeMedia(res) {
     setIsOpenMedia(false);
     const file = res?.[MEDIA_KEY];
@@ -178,7 +195,8 @@ export default function RichTextEditor({
 
   function saveTable(html) {
     const quill = getQuill();
-    if (quill && tableEdit?.blot.domNode.isConnected) {
+    // Sem alterações: o bloco fica exatamente como estava
+    if (quill && tableEdit?.blot.domNode.isConnected && html !== tableEdit.html) {
       const delta = new Delta().retain(quill.getIndex(tableEdit.blot)).delete(1);
       quill.updateContents(html?.trim() ? delta.insert({ rawHtml: html.trim() }) : delta, "user");
     }
@@ -264,10 +282,88 @@ export default function RichTextEditor({
   );
 }
 
-// Edição do HTML de uma tabela, com pré-visualização (montado só enquanto está aberto)
+// Edição de uma tabela (montado só enquanto está aberto), sincronizada nos dois sentidos:
+// - editor visual (célula a célula, com inserir/eliminar linhas e colunas) -> atualiza o HTML;
+// - HTML -> atualiza o editor visual.
+// Enquanto nada for alterado o HTML fica exatamente igual ao original.
 function TableHtmlModal({ initialHtml, onSave, onCancel }) {
   const { t } = useTranslation();
   const [html, setHtml] = useState(initialHtml || "");
+  const gridRef = useRef(null);
+  const cellRef = useRef(null);
+  const [cellPos, setCellPos] = useState(null);
+
+  // Conteúdo inicial do editor visual (não é controlado pelo React para não perder o cursor)
+  const setGrid = useCallback(
+    (node) => {
+      if (node && gridRef.current !== node) node.innerHTML = initialHtml || "";
+      gridRef.current = node;
+    },
+    [initialHtml],
+  );
+
+  const selectCell = useCallback((cell) => {
+    cellRef.current = cell;
+    setCellPos(cell ? { row: cellRow(cell) + 1, col: cellColumn(cell) + 1 } : null);
+  }, []);
+
+  // Célula atual = célula onde está o cursor dentro do editor visual
+  useEffect(() => {
+    const onSelection = () => {
+      const grid = gridRef.current;
+      const node = window.getSelection()?.anchorNode;
+      if (!grid || !node || !grid.contains(node)) return;
+      const cell = findCell(node, grid);
+      if (cell !== cellRef.current) selectCell(cell);
+    };
+    document.addEventListener("selectionchange", onSelection);
+    return () => document.removeEventListener("selectionchange", onSelection);
+  }, [selectCell]);
+
+  function changeHtml(value) {
+    setHtml(value);
+    if (gridRef.current) gridRef.current.innerHTML = value;
+    selectCell(null);
+  }
+
+  function changeGrid() {
+    if (gridRef.current) setHtml(gridRef.current.innerHTML);
+    if (cellRef.current && !cellRef.current.isConnected) selectCell(null);
+  }
+
+  // Colar só texto (evita estilos/estrutura de outras páginas dentro das células)
+  function onPaste(event) {
+    event.preventDefault();
+    const text = event.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  }
+
+  function runAction(action) {
+    const cell = cellRef.current;
+    if (!cell?.isConnected) return;
+    const next = action(cell);
+    changeGrid();
+    selectCell(next?.isConnected ? next : null);
+    if (next?.isConnected) {
+      // Cursor na nova célula
+      const range = document.createRange();
+      range.selectNodeContents(next);
+      range.collapse(true);
+      gridRef.current?.focus();
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+
+  const actions = [
+    { key: "rowAbove", label: t("Insert row above"), icon: <RiInsertRowTop />, run: (c) => insertRow(c, false) },
+    { key: "rowBelow", label: t("Insert row below"), icon: <RiInsertRowBottom />, run: (c) => insertRow(c, true) },
+    { key: "colLeft", label: t("Insert column left"), icon: <RiInsertColumnLeft />, run: (c) => insertColumn(c, false) },
+    { key: "colRight", label: t("Insert column right"), icon: <RiInsertColumnRight />, run: (c) => insertColumn(c, true) },
+    { key: "delRow", label: t("Delete row"), icon: <RiDeleteRow />, run: deleteRow, danger: true },
+    { key: "delCol", label: t("Delete column"), icon: <RiDeleteColumn />, run: deleteColumn, danger: true },
+  ];
 
   return (
     <Modal
@@ -287,15 +383,46 @@ function TableHtmlModal({ initialHtml, onSave, onCancel }) {
           {t("Save")}
         </Button>,
       ]}>
-      <p className="text-[12px] italic mb-2 text-[#666]">{t("Edit the table HTML. Changes are shown in the preview.")}</p>
+      <p className="text-[12px] italic mb-2 text-[#666]">
+        {t("Click a cell to edit its text, or edit the HTML below. Both are kept in sync.")}
+      </p>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {actions.map((action) => (
+          <Tooltip key={action.key} title={action.label}>
+            <Button
+              size="small"
+              icon={action.icon}
+              danger={action.danger}
+              disabled={!cellPos}
+              aria-label={action.label}
+              // Não tira o cursor da célula
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runAction(action.run)}
+            />
+          </Tooltip>
+        ))}
+        <span className="text-[12px] text-[#8B9CC3] ml-2">
+          {cellPos
+            ? t("Row {{row}}, column {{col}}", { row: cellPos.row, col: cellPos.col })
+            : t("Click a cell to add or delete rows and columns.")}
+        </span>
+      </div>
+      <div
+        ref={setGrid}
+        className="rich-text-table-preview rich-text-table-visual"
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        onInput={changeGrid}
+        onPaste={onPaste}
+      />
+      <p className="font-bold mt-4 mb-2">{t("HTML")}</p>
       <Input.TextArea
         value={html}
-        onChange={(event) => setHtml(event.target.value)}
-        autoSize={{ minRows: 8, maxRows: 16 }}
+        onChange={(event) => changeHtml(event.target.value)}
+        autoSize={{ minRows: 6, maxRows: 14 }}
         className="font-mono! text-[12px]!"
       />
-      <p className="font-bold mt-4 mb-2">{t("Preview")}</p>
-      <div className="rich-text-table-preview" dangerouslySetInnerHTML={{ __html: html }} />
     </Modal>
   );
 }

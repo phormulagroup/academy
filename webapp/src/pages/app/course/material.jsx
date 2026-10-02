@@ -1,14 +1,17 @@
+import { useContext } from "react";
 import config from "../../../utils/config";
+import { Context } from "../../../utils/context";
 import { PiBookBookmark } from "react-icons/pi";
 import { courseMaterials } from "../../../utils/materials";
 
 export default function CourseMaterial({ data }) {
+  const { user } = useContext(Context);
   function downloadFile(item) {
     window.open(`${config.server_ip}/media/${item.file}`, "_blank");
   }
 
   // Materiais do curso filtrados por país (curso só de Angola -> materiais de Angola)
-  const materials = courseMaterials(data);
+  const materials = courseMaterials(data, user);
 
   return (
     <div className="mb-10">

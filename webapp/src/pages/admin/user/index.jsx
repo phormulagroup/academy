@@ -45,6 +45,12 @@ export default function User() {
   const { t } = useTranslation();
 
   const perm = usePermission("user");
+  // Rótulos traduzidos dos estados (filtro da coluna Estado)
+  const statusLabels = {
+    approved: t("Approved"),
+    pending: t("Pending"),
+    not_approved: t("Not Approved"),
+  };
 
   useEffect(() => {
     getData();
@@ -79,8 +85,9 @@ export default function User() {
         language: languages
           .filter((l) => l.id === array[i].id_lang)[0]
           .code.toUpperCase(),
-        country: array[i].country,
-        is_deleted: array[i].is_deleted ? (
+        country: t(array[i].country),
+        // Atividade = coluna is_deleted (0 ativo, 1 inativo); o valor bruto mantém-se para o filtro da tabela
+        activity_tag: array[i].is_deleted ? (
           <Tag variant="outlined" color={"#F04C4B"}>
             {t("Inactive")}
           </Tag>
@@ -260,11 +267,31 @@ export default function User() {
             sort: true,
             sortType: "text",
             render: (text, record) => record.status_tag,
+            filters:
+              tableData.filter((item) => item.status).length > 0
+                ? tableData
+                    .map((item, index) =>
+                      item.status
+                        ? { text: statusLabels[item.status] ?? item.status, value: item.status }
+                        : {},
+                    )
+                    .filter((value, index, self) =>
+                      value.text
+                        ? index ===
+                          self.findIndex((t) => t.value === value.text)
+                        : null,
+                    )
+                : null,
           },
           {
             title: t("Activity"),
             dataIndex: "is_deleted",
             key: "is_deleted",
+            render: (text, record) => record.activity_tag,
+            filters: [
+              { text: t("Active"), value: 0 },
+              { text: t("Inactive"), value: 1 },
+            ],
           },
           {
             title: "",

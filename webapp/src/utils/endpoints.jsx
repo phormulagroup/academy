@@ -91,6 +91,7 @@ const endpoints = {
 		update: "/email/update",
 		create: "/email/create",
 		delete: "/email/delete",
+		test: "/email/test",
 	},
 	course_certificate: {
 		read: "/certificate/read",

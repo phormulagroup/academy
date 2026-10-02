@@ -403,7 +403,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
                         showSearch={{ optionFilterProp: ["label"] }}
                         options={JSON.parse(
                           languages.filter((l) => l.id === course.id_lang)[0]?.country || "[]",
-                        ).map((item) => ({ value: item, label: item }))}
+                        ).map((item) => ({ value: item, label: t(item) }))}
                       />
                     </Form.Item>
                   ) : null
@@ -529,7 +529,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
                         options={JSON.parse(
                           languages.filter((l) => l.id === course.id_lang)[0]
                             ?.country || "[]",
-                        ).map((item) => ({ value: item, label: item }))}
+                        ).map((item) => ({ value: item, label: t(item) }))}
                       />
                     </Form.Item>
                   </div>

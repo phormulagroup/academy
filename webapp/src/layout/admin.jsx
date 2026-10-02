@@ -200,7 +200,7 @@ const Main = () => {
         ],
       },
     ],
-    [t, user.id],
+    [t],
   );
 
   // O Admin vê tudo; as outras funções só as secções em que podem ver. "Permissões" é só do Admin

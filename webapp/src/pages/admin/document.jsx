@@ -68,7 +68,7 @@ export default function Language() {
         name: array[i].name,
         file: array[i].file,
         country: array[i].country
-          ? array[i].country.join(", ")
+          ? array[i].country.map((c) => t(c)).join(", ")
           : t("All countries"),
         img: (
           <div className="flex justify-start items-center">

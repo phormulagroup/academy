@@ -403,7 +403,7 @@ export default function CourseReport({ data, isLoading }) {
             ).toFixed(2) + "%",
           students: students.length,
           country: course.settings.country_limit
-            ? course.settings.country.join(", ")
+            ? course.settings.country.map((c) => t(c)).join(", ")
             : t("All"),
           lang: languages
             .filter((l) => l.id === course.id_lang)[0]
@@ -691,7 +691,7 @@ export default function CourseReport({ data, isLoading }) {
                 className="w-full sm:w-[260px]!"
                 placeholder={t("Select country")}
                 showSearch={{ optionFilterProp: ["label"] }}
-                options={countries.map((c) => ({ label: c, value: c }))}
+                options={countries.map((c) => ({ label: t(c), value: c }))}
               />
             </Form.Item>
             <Button onClick={form.submit} type="primary" icon={<IoSearch />}>

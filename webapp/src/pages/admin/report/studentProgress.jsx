@@ -83,7 +83,7 @@ export default function StudentProgress({ data, isLoading }) {
               className="w-full sm:w-[260px]!"
               placeholder={t("Select country")}
               showSearch={{ optionFilterProp: ["label"] }}
-              options={countries.map((c) => ({ label: c, value: c }))}
+              options={countries.map((c) => ({ label: t(c), value: c }))}
             />
           </Form.Item>
           <Form.Item name="student" className="mb-0! w-full sm:w-auto">

@@ -54,7 +54,7 @@ router.post("/verifyTokenGeneratePassword", async (req, res, next) => {
       const query = util.promisify(db.query).bind(db);
       const user = await query("SELECT * FROM user WHERE user.email = ?", result.token_decoded.email);
       if (user.length > 0) {
-        if (user[0].email === result.token_decoded.email && user[0].is_deleted === 0 && (!user[0].password || user[0].generate_password)) {
+        if (user[0].email === result.token_decoded.email && (user[0].is_deleted === 0 || user[0].status !== "approved") && (!user[0].password || user[0].generate_password)) {
           console.log("TOKEN IS VALID");
           res.send({ token_valid: true, user: user[0] });
         } else {
@@ -90,14 +90,19 @@ router.post("/login", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     let data = req.body.data;
-    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+    // Pendentes/não aprovados estão inativos (is_deleted = 1) mas continuam a ser encontrados para receberem a mensagem do estado
+    const user = await query(
+      "SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved') ORDER BY is_deleted ASC, id DESC",
+      [data.email],
+    );
     if (user.length > 0) {
       console.log(data.password);
       console.log(user);
       const comparePassword = await bcrypt.compare(data.password, user[0].password);
       console.log(comparePassword);
       if (comparePassword) {
-        const token = await createToken(user[0]);
+        // Só contas aprovadas e ativas recebem token (pendentes/não aprovadas só recebem o estado)
+        const token = user[0].status === "approved" && user[0].is_deleted === 0 ? await createToken(user[0]) : null;
         res.send({ user: user[0], token, message: "Welcome " + user[0].name + "!" });
       } else {
         res.send({ user: null, message: "The password is not correct, try again." });
@@ -124,10 +129,16 @@ router.post("/register", async (req, res, next) => {
       await transaction();
       // Nome + Apelido do formulário → coluna name
       let data = mergeName(req.body.data);
-      const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+      // Contas pendentes/não aprovadas (inativas) também bloqueiam o e-mail
+      const user = await query("SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved')", [data.email]);
       if (user.length > 0) {
+        await commit();
+        conn.release();
         res.send({ message: "This e-mail already exists in our database!" });
       } else {
+        // Novo registo: estado pendente e atividade inativa (is_deleted = 1) até ser aprovado
+        data.status = "pending";
+        data.is_deleted = 1;
         data.password = await bcrypt.hash(data.password, saltRounds);
         const insertedRow = await query("INSERT INTO user SET ?", data);
         const emailResult = await email.register(data);
@@ -156,10 +167,15 @@ router.post("/recover", async (req, res, next) => {
     try {
       await transaction();
       let data = req.body.data;
-      const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
+      // Pendentes/não aprovados (inativos) recebem a mensagem do estado em vez de "e-mail inexistente"
+      const user = await query(
+        "SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved') ORDER BY is_deleted ASC, id DESC",
+        [data.email],
+      );
       if (user.length > 0) {
         if (user[0].status !== "approved") {
           await commit();
+          conn.release();
           res.send({
             status: false,
             message:
@@ -184,6 +200,7 @@ router.post("/recover", async (req, res, next) => {
         }
       } else {
         await commit();
+        conn.release();
         res.send({ status: false, message: "This e-mail does not exists in our database!" });
       }
     } catch (err) {

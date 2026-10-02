@@ -128,6 +128,9 @@ router.post("/create", requirePermission("user", "create"), async (req, res, nex
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
+		// Novo utilizador: estado pendente e atividade inativa (is_deleted = 1) até ser aprovado
+		data.status = "pending";
+		data.is_deleted = 1;
 		const token = await createToken(data);
 		const insertedRow = await query("INSERT INTO user SET ?", data);
 		const sendEmail = await generatePassword({ ...data, token });
@@ -186,9 +189,10 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 		delete data.id;
 
 		const query = util.promisify(db.query).bind(db);
+		// Atividade acompanha o estado: aprovado → ativo (is_deleted = 0); pendente/não aprovado → inativo (is_deleted = 1)
 		const updatedRow = await query(
-			"UPDATE user SET status = ? WHERE id = " + whereId,
-			data.status,
+			"UPDATE user SET status = ?, is_deleted = ? WHERE id = " + whereId,
+			[data.status, data.status === "approved" ? 0 : 1],
 		);
 		const emailResult = await email.change_status(data);
 		console.log("E-mail sent: ", emailResult.messageId);

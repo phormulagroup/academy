@@ -628,7 +628,7 @@ export default function TestProgress({ data, products, languages }) {
                                 {visibleCountries.map((c) => (
                                   <ScoreBar
                                     key={c.country}
-                                    label={c.country}
+                                    label={t(c.country)}
                                     value={c.avgScore}
                                     hasData={c.count > 0}
                                   />

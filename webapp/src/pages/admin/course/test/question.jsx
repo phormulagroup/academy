@@ -1,10 +1,10 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
 
 import { Context } from "../../../../utils/context";
 
 import { useTranslation } from "react-i18next";
-import { Button, Empty, Form, Input, InputNumber, Switch, Spin} from "antd";
+import { Button, Empty, Form, Input, InputNumber, Space, Switch, Spin} from "antd";
 import { RxArrowDown, RxArrowUp, RxTrash } from "react-icons/rx";
 import { TbTrash } from "react-icons/tb";
 
@@ -51,6 +51,24 @@ const validateQuestions = (questions) => {
   return true;
 };
 
+/* ---------- Undo/Redo (mesma abordagem do construtor de módulos) ---------- */
+// Alterações de texto seguidas no mesmo campo contam como um único passo
+const HISTORY_DELAY = 800;
+const MAX_HISTORY = 100;
+
+const cloneQuestions = (questions) => structuredClone(questions || []);
+
+// Nº de respostas de cada pergunta (muda quando se adiciona/remove uma pergunta ou resposta)
+const questionsShape = (questions) => JSON.stringify((questions || []).map((q) => (q?.answer || []).length));
+
+// Campos alterados (folhas) num changedValues do Form
+const collectLeaves = (value, path, out) => {
+  if (Array.isArray(value)) value.forEach((v, i) => collectLeaves(v, [...path, i], out));
+  else if (value && typeof value === "object") Object.entries(value).forEach(([k, v]) => collectLeaves(v, [...path, k], out));
+  else out.push({ path, value });
+  return out;
+};
+
 export default function Question({ data, onSaveSuccess, isLoading }) {
   const { update } = useContext(Context);
 
@@ -59,6 +77,68 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
   const [form] = Form.useForm();
   const [canSaveButton, setCanSaveButton] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  /* ---------- Undo/Redo ---------- */
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+  const [historyData, setHistoryData] = useState(data);
+  if (historyData !== data) {
+    setHistoryData(data);
+    setHistory([]);
+    setFuture([]);
+  }
+  const prevQuestionsRef = useRef([]); // Perguntas antes da última alteração
+  const typingRef = useRef(null); // Campo a ser escrito (agrupa as teclas num só passo)
+
+  const endTyping = () => {
+    if (typingRef.current) clearTimeout(typingRef.current.timer);
+    typingRef.current = null;
+  };
+
+  const recordChange = (changedValues) => {
+    if (!changedValues || !("question" in changedValues)) return;
+    const before = prevQuestionsRef.current;
+    const current = cloneQuestions(form.getFieldValue("question"));
+    if (JSON.stringify(before) === JSON.stringify(current)) return;
+    const leaves = collectLeaves(changedValues.question, [], []);
+    const isTyping =
+      leaves.length === 1 &&
+      typeof leaves[0].value === "string" &&
+      questionsShape(before) === questionsShape(current);
+    const path = isTyping ? leaves[0].path.join(".") : null;
+    if (!isTyping || typingRef.current?.path !== path) {
+      setHistory((h) => [...h, before].slice(-MAX_HISTORY));
+      setFuture([]);
+    }
+    endTyping();
+    if (isTyping) typingRef.current = { path, timer: setTimeout(() => (typingRef.current = null), HISTORY_DELAY) };
+    prevQuestionsRef.current = current;
+  };
+
+  const applyQuestions = (questions) => {
+    endTyping();
+    prevQuestionsRef.current = cloneQuestions(questions);
+    form.setFieldsValue({ question: cloneQuestions(questions) });
+    updateButtonState();
+  };
+
+  const undo = () => {
+    if (!history.length) return;
+    const prev = history[history.length - 1];
+    setFuture((f) => [cloneQuestions(form.getFieldValue("question")), ...f]);
+    setHistory((h) => h.slice(0, -1));
+    applyQuestions(prev);
+  };
+
+  const redo = () => {
+    if (!future.length) return;
+    const next = future[0];
+    setHistory((h) => [...h, cloneQuestions(form.getFieldValue("question"))]);
+    setFuture((f) => f.slice(1));
+    applyQuestions(next);
+  };
+
+  useEffect(() => endTyping, []);
 
   const updateButtonState = () => {
     // Verifica se o formulário está válido e se há perguntas para salvar
@@ -73,6 +153,9 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
     if (data) {
       form.resetFields();
       form.setFieldsValue(data);
+      // Novo carregamento (ou depois de guardar): histórico limpo
+      endTyping();
+      prevQuestionsRef.current = cloneQuestions(form.getFieldValue("question"));
       // Atualiza o estado do botão de salvar após definir os valores do formulário
       setTimeout(() => updateButtonState(), 0);
     }
@@ -81,6 +164,11 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
   const handleFormChange = () => {
     // Atualiza o estado do botão sempre que o formulário muda
     updateButtonState();
+  };
+
+  const handleValuesChange = (changedValues) => {
+    recordChange(changedValues);
+    handleFormChange();
   };
 
   const handleFieldsChange = () => {
@@ -129,7 +217,7 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
         <Form 
           form={form} 
           onFinish={submit}
-          onValuesChange={handleFormChange}
+          onValuesChange={handleValuesChange}
           onFieldsChange={handleFieldsChange}
         >
           <Form.Item name="id" hidden>
@@ -225,6 +313,13 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
         </Form>
       </Spin>
       <div className="mt-4 flex justify-center items-center">
+        <Space wrap>
+        <Button size="large" onClick={undo} disabled={!history.length || loading || isLoading}>
+          {t("Undo")}
+        </Button>
+        <Button size="large" onClick={redo} disabled={!future.length || loading || isLoading}>
+          {t("Redo")}
+        </Button>
         <Button 
           size="large" 
           type="primary" 
@@ -241,6 +336,7 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
         >
           {t("Save")}
         </Button>
+        </Space>
       </div>
     </div>
   );

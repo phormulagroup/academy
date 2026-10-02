@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
 
-import { RxLockClosed } from "react-icons/rx";
+import LockedMessage from "../../../components/app/course/lockedMessage";
 import { AiOutlineCheck } from "react-icons/ai";
 import { Helmet } from "react-helmet";
 
@@ -10,16 +9,10 @@ const Module = ({
   progress,
   selectCourseItem,
   modules,
-  allItems,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isTopicLocked, setIsTopicLocked] = useState(false);
-  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
+  // A vista do módulo nunca fica bloqueada (o bloqueio é feito em cada tópico/teste)
+  const isTopicLocked = false;
   const { t } = useTranslation();
-
-  useEffect(() => {
-    setIsTopicLocked(false);
-  }, [selectedCourseItem]);
 
   return (
     <div>
@@ -33,15 +26,12 @@ const Module = ({
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
           {isTopicLocked ? (
-            <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
-              <RxLockClosed className="w-10 h-10 mr-2" />
-              <div>
-                <p className="text-[20px] font-bold">
-                  {t("This topic is locked")}
-                </p>
-                <p>{t("You'll need to complete the previous topic first")}</p>
-              </div>
-            </div>
+            <LockedMessage
+              title={t("This topic is locked")}
+              description={t(
+                "You'll need to complete the previous topic first",
+              )}
+            />
           ) : (
             <div>
               {modules

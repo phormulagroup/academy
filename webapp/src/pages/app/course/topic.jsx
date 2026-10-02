@@ -3,7 +3,7 @@ import { configRender } from "../../../components/admin/editor";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import Player from "@vimeo/player";
-import { RxLockClosed } from "react-icons/rx";
+import LockedMessage from "../../../components/app/course/lockedMessage";
 import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
 import { Context } from "../../../utils/context";
@@ -12,13 +12,9 @@ const Topic = ({
   course,
   selectedCourseItem,
   progress,
-  progressPercentage,
   setAllowNext,
-  modules,
   allItems,
-  collapsed,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const [seo, setSeo] = useState({});
@@ -183,15 +179,12 @@ const Topic = ({
       <div className="flex justify-between flex-col h-full">
         <div className="overflow-y-auto">
           {isTopicLocked ? (
-            <div className="p-4 flex items-center bg-[#FF7D5A] text-white mt-4">
-              <RxLockClosed className="w-10 h-10 mr-2" />
-              <div>
-                <p className="text-[20px] font-bold">
-                  {t("This topic is locked")}
-                </p>
-                <p>{t("You'll need to complete the previous topic first")}</p>
-              </div>
-            </div>
+            <LockedMessage
+              title={t("This topic is locked")}
+              description={t(
+                "You'll need to complete the previous topic first",
+              )}
+            />
           ) : (
             <PuckRender config={configRender} data={parsedContent} />
           )}

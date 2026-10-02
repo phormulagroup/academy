@@ -168,7 +168,7 @@ const Main = () => {
               <div className="dm-header">
                 <button
                   type="button"
-                  aria-label="Close"
+                  aria-label={t("Close")}
                   className="dm-close"
                   onClick={closeDrawer}>
                   <MdClose />

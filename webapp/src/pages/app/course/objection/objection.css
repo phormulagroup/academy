@@ -253,3 +253,24 @@
 .prose-content img:not([width]) {
   max-width: min(100%, 600px);
 }
+
+/* -------------------------------------- */
+/* ---------- RESPOSTAS (ACORDEÃO) ------ */
+/* -------------------------------------- */
+
+/* O HTML do editor pode trazer tamanhos próprios (inline / ql-size-*): a resposta herda sempre o tamanho
+   definido no contentor, mais pequeno que o título da pergunta; os subtítulos só sobem ligeiramente */
+.objection-answer :is(p, li, span, a, strong, em, u, s, td, th, div, blockquote) {
+  font-size: inherit !important;
+}
+
+.objection-answer :is(h1, h2) {
+  font-size: 1.08em !important;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.objection-answer :is(h3, h4, h5, h6) {
+  font-size: 1em !important;
+  margin-top: 1rem;
+}

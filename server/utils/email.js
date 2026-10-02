@@ -8,7 +8,8 @@ function buildTransporter(smtpSettings) {
   const transporter = nodemailer.createTransport({
     host: smtpSettings.host,
     port: smtpSettings.port,
-    secure: smtpSettings.secure,
+    // As definições SMTP guardam o campo como is_secure
+    secure: smtpSettings.secure ?? smtpSettings.is_secure,
     auth: {
       user: smtpSettings.email,
       pass: smtpSettings.password,

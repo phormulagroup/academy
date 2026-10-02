@@ -6,25 +6,21 @@ import { useContext } from "react";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { useNavigate } from "react-router-dom";
 import UserCard from "../../components/app/user/card";
 import CourseContent from "./course/content";
 import { RxCheck, RxChevronDown, RxChevronUp } from "react-icons/rx";
-import DownloadCloudIcon from "../../assets/download-cloud.svg?react";
-import CertificateIconWhite from "../../assets/Certificado-digital.svg?react";
+import { AiOutlineCloudDownload } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import { downloadCertificate } from "../../utils/certificate";
+import { isAllowedByCountry } from "../../utils/courseStatus";
 import config from "../../utils/config";
 
 export default function Result() {
   const { user, selectedLanguage } = useContext(Context);
-  const [data, setData] = useState([]);
   const [coursesData, setCoursesData] = useState([]);
 
   const { t } = useTranslation();
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (user && Object.keys(user).length > 0) {
@@ -66,12 +62,12 @@ export default function Result() {
         let course = res.data.courses[c];
         course.settings = course.settings ? JSON.parse(course.settings) : null;
 
-        // Only apply country limit for regular students, not admins
+        // Restrição de países: aplica-se a alunos e admin (mesma regra do catálogo)
         if (
-          res.data.user.id_role !== 1 &&
-          course.settings &&
-          course.settings.country_limit &&
-          !course.settings.country.includes(res.data.user.country)
+          !isAllowedByCountry(
+            course.settings?.country_limit ? course.settings.country : null,
+            res.data.user,
+          )
         ) {
           // console.log("Course skipped due to country limit:", course.name);
           continue;
@@ -237,13 +233,12 @@ export default function Result() {
                                       )
                                     }>
                                     <div className="flex justify-center items-center">
-                                      <DownloadCloudIcon className="mr-2 h-3" />
+                                      <AiOutlineCloudDownload className="mr-1.5 w-4 h-4 text-[#163986]" />
                                       <p className="text-[12px]">
                                         {t("Certificate")}
                                       </p>
                                     </div>
                                   </Button>
-                                  <CertificateIconWhite className="ml-2 h-7" />
                                 </div>
                               )}
                             </div>

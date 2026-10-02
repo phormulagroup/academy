@@ -15,7 +15,7 @@ export default function Card({ user, courses, scrollToResults }) {
   }, []);
 
   return (
-    <div className="bg-white p-10 flex flex-col items-center">
+    <div className="bg-white p-10 flex flex-col items-center rounded-[5px] shadow-[0px_3px_6px_#00000029]">
       <p className="text-[26px] font-bold text-center font-ryker">{user.name}</p>
       {user.job && <p>{user.job}</p>}
       <UserAvatar user={user} size={160} className="mt-4! mb-4! shrink-0" />

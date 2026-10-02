@@ -1,4 +1,4 @@
-import { Collapse } from "antd";
+import { Collapse, Tooltip } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { useContext } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +28,18 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
       .length > 0;
 
   const canAccess = isEnrolled || isCourseCompleted;
+
+  // Sem inscrição os itens ficam com cursor "proibido": tooltip a explicar porquê
+  function withLockTooltip(node, key) {
+    if (canAccess) return node;
+    return (
+      <Tooltip
+        key={key}
+        title={t("You need to enroll in the course first to access the e-Learning")}>
+        {node}
+      </Tooltip>
+    );
+  }
 
   // Check if a module is truly completed based on its actual items
   function isModuleCompleted(module) {
@@ -79,8 +91,9 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
       let progressPercentage = (100 * completed) / items.length;
       const isInteger = progressPercentage % 1 === 0;
 
+      // Tamanho intermédio: entre o título do módulo e os itens (igual ao "Module content")
       return (
-        <p className="font-ryker text-[#FFFFFF] text-[12px] md:text-[13px] xl:text-[14px]">
+        <p className="font-ryker text-[#FFFFFF] text-[13px] sm:text-[14px] lg:text-[15px]">
           <span className="font-bold uppercase">
             {!isInteger
               ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
@@ -107,7 +120,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
               key: item.id,
               label: (
                 <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 p-2 w-full min-w-0">
-                  <div
+                  {withLockTooltip(<div
                     className={`p-2 flex min-w-0 ${canAccess ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
                     // onClick={() => handleNavigate(item.id, "module")}
                   >
@@ -135,7 +148,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                         {` ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? `${data.tests.filter((_t) => _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
                       </p>
                     </div>
-                  </div>
+                  </div>)}
                 </div>
               ),
               children: (
@@ -147,7 +160,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                         {windowDimension.width >= 600 && (
                           <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 sm:w-6 sm:h-6" />
                         )}
-                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[14px]">
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[14px] lg:text-[15px]">
                           {t("Module content")}
                         </p>
                       </div>
@@ -162,7 +175,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                     <div className="flex px-4 py-3 lg:px-5 bg-[#FF9E83] justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
                         <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 xl:w-6 xl:h-6" />
-                        <p className="font-ryker text-[#FFFFFF] font-bold text-[14px] xl:text-[15px]">
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[14px] lg:text-[15px]">
                           {t("Module content")}
                         </p>
                       </div>
@@ -171,11 +184,12 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                   )}
                   <div className="p-2 sm:p-4">
                     {item.items && item.items.length > 0 ? (
-                      item.items.map((_t, i) => (
+                      item.items.map((_t, i) => withLockTooltip(
                         <div
                           key={`${_t.type}-${_t.id}`}
                           onClick={() => handleNavigate(_t.id, _t.type)}
-                          className={`group p-3 pl-4 sm:pl-6 lg:py-3.5 flex items-center gap-3 sm:gap-4 text-[13px] sm:text-[14px] xl:text-[15px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
+                          // Itens mais pequenos que o título do módulo e que o "Module content"/progresso
+                          className={`group p-3 pl-4 sm:pl-6 lg:py-3.5 flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] xl:text-[14px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
                           {/* Circle check indicator */}
                           {progress.length > 0 &&
                           progress.filter(
@@ -206,7 +220,8 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                             className={`text-[#163986] font-medium transition-colors line-clamp-2 w-full ${canAccess ? "group-hover:text-[#FFFFFF] group-hover:font-bold" : ""}`}>
                             {_t.title}
                           </p>
-                        </div>
+                        </div>,
+                        `${_t.type}-${_t.id}`,
                       ))
                     ) : (
                       <div className="p-4 flex justify-center items-center">

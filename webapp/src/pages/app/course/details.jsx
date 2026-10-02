@@ -1,5 +1,4 @@
 import axios from "axios";
-import { courseAccessState } from "../../../utils/courseWindow";
 import { useEffect, useState, useCallback } from "react";
 import { Button, Empty, Progress, Tabs } from "antd";
 import { useContext } from "react";
@@ -16,6 +15,12 @@ import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
 import useScrollToTop from "../../../utils/scrollToTop";
 import { courseMaterials } from "../../../utils/materials";
+import {
+  courseDateState,
+  isAllowedByCountry,
+  isCourseFailed,
+  testDateState,
+} from "../../../utils/courseStatus";
 
 import i18n from "../../../utils/i18n";
 import {
@@ -25,6 +30,7 @@ import {
   PiBookOpenLight,
 } from "react-icons/pi";
 import { RxChevronUp } from "react-icons/rx";
+import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import Lottie from "lottie-react";
 import CourseObjection from "./objection/objection";
@@ -44,10 +50,14 @@ export default function CourseDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  // Mesmas regras do catálogo: restrição de países para alunos e admin; validade (datas) só para alunos
   const canAccess = useCallback(
     (obj) => {
-      if (user.id_role === 1) return true;
-      return courseAccessState(obj.settings) === "open";
+      const countries = obj.settings?.country_limit
+        ? obj.settings.country
+        : null;
+      if (!isAllowedByCountry(countries, user)) return false;
+      return user.id_role === 1 || courseDateState(obj) === "active";
     },
     [user],
   );
@@ -69,21 +79,22 @@ export default function CourseDetails() {
           auxCourse.settings = auxCourse.settings
             ? JSON.parse(auxCourse.settings)
             : null;
-          if (
-            auxCourse.settings &&
-            auxCourse.settings.country_limit &&
-            !auxCourse.settings.country.includes(user.country) &&
-            user.id_role !== 1
-          )
-            auxCourse = null;
           if (!canAccess(auxCourse)) auxCourse = null;
           if (auxCourse) {
+            // Alunos: testes expirados saem do eLearning, logo também dos módulos e do progresso
+            const allTests = res.data.tests.filter((_t) => _t.is_deleted !== 1);
+            const visibleTests =
+              user.id_role === 1
+                ? res.data.tests
+                : res.data.tests.filter(
+                    (_t) => testDateState(_t) !== "expired",
+                  );
             // Materiais filtrados pelos países do curso (ver utils/materials)
             auxCourse.material = auxCourse.material
               ? courseMaterials({
                   ...auxCourse,
                   material: JSON.parse(auxCourse.material),
-                })
+                }, user)
               : null;
             auxCourse.objection = auxCourse.objection
               ? JSON.parse(auxCourse.objection)
@@ -114,7 +125,7 @@ export default function CourseDetails() {
                     }
 
                     if (auxModules[i].items[y].type === "test") {
-                      const testData = res.data.tests.filter(
+                      const testData = visibleTests.filter(
                         (_t) => _t.id === auxModules[i].items[y].id,
                       )[0];
                       if (testData) {
@@ -142,12 +153,12 @@ export default function CourseDetails() {
               setProgress(res.data.progress);
             }
 
-            console.log(auxCourse);
             setData({
               course: auxCourse,
               modules: res.data.modules,
               topics: res.data.topics,
-              tests: res.data.tests,
+              tests: visibleTests,
+              allTests,
             });
           } else {
             messageApi.open({
@@ -283,6 +294,19 @@ export default function CourseDetails() {
     );
   }
 
+  // Estado do aluno no curso: Aprovado (curso concluído) ou Reprovado (mesma regra do relatório do backoffice)
+  const courseStatus = !data.course
+    ? null
+    : calcCourseProgress(
+          countCompletedItems(),
+          data.topics?.filter((t) => t.is_deleted !== 1)?.length || 0,
+          data.tests?.filter((t) => t.is_deleted !== 1)?.length || 0,
+        ) === 100
+      ? "approved"
+      : isCourseFailed(progress, data.allTests)
+        ? "failed"
+        : null;
+
   return (
     <div className="bg-[#FFFFFF] relative">
       {data.course && (
@@ -356,6 +380,19 @@ export default function CourseDetails() {
                               )}
                               % {t("Completed")}
                             </p>
+                            {courseStatus && (
+                              <span
+                                className={`course-status-badge ${courseStatus === "failed" ? "is-failed" : "is-approved"}`}>
+                                {courseStatus === "failed" ? (
+                                  <AiOutlineClose className="shrink-0" />
+                                ) : (
+                                  <AiOutlineCheck className="shrink-0" />
+                                )}
+                                {courseStatus === "failed"
+                                  ? t("Failed")
+                                  : t("Approved")}
+                              </span>
+                            )}
                             {progress.length > 0 && (
                               <p className="text-[#163986] whitespace-nowrap text-xs sm:text-[12px] md:text-[13px] lg:text-[14px]">
                                 {t("Last activity at")}{" "}
@@ -461,10 +498,10 @@ export default function CourseDetails() {
                             label: (
                               <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
                                 <PiFileTextLight
-                                  className={`transition w-4 h-4 lg:w-5 lg:h-5 lg:mr-2 ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  className={`transition w-5 h-5 lg:w-6 lg:h-6 lg:mr-2 ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
                                 />
                                 <p
-                                  className={`font-bold mt-1 lg:mt-0 text-[13px] sm:text-[14px] lg:text-[15px] xl:text-[16px] transition ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
+                                  className={`font-bold mt-1 lg:mt-0 text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px] transition ${activeKey === "1" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
                                   {t("Course")}
                                 </p>
                               </div>
@@ -488,10 +525,10 @@ export default function CourseDetails() {
                             label: (
                               <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
                                 <PiBookBookmark
-                                  className={`transition w-4 h-4 lg:w-5 lg:h-5 lg:mr-2 ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  className={`transition w-5 h-5 lg:w-6 lg:h-6 lg:mr-2 ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
                                 />
                                 <p
-                                  className={`font-bold mt-1 lg:mt-0 text-[13px] sm:text-[14px] lg:text-[15px] xl:text-[16px] transition ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
+                                  className={`font-bold mt-1 lg:mt-0 text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px] transition ${activeKey === "2" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
                                   {t("Materials")}
                                 </p>
                               </div>
@@ -511,10 +548,10 @@ export default function CourseDetails() {
                             label: (
                               <div className="group flex flex-col lg:flex-row p-2 justify-center items-center">
                                 <PiBookOpenLight
-                                  className={`transition w-4 h-4 lg:w-5 lg:h-5 lg:mr-2 ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
+                                  className={`transition w-5 h-5 lg:w-6 lg:h-6 lg:mr-2 ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}
                                 />
                                 <p
-                                  className={`font-bold mt-1 lg:mt-0 text-[13px] sm:text-[14px] lg:text-[15px] xl:text-[16px] transition ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
+                                  className={`font-bold mt-1 lg:mt-0 text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px] transition ${activeKey === "3" ? "text-[#163986]" : "text-[#8B9CC3] group-hover:text-[#163986]"}`}>
                                   {t("Objection books")}
                                 </p>
                               </div>

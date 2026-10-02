@@ -88,7 +88,8 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 		const transporter = nodemailer.createTransport({
 			host: smtpSettings.host,
 			port: smtpSettings.port,
-			secure: smtpSettings.secure, // true for port 465, false for other ports
+			// O formulário SMTP guarda o campo como is_secure (true para a porta 465)
+			secure: smtpSettings.secure ?? smtpSettings.is_secure,
 			auth: {
 				user: smtpSettings.email,
 				pass: smtpSettings.password,
@@ -102,9 +103,10 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 			text: "Este e-mail foi enviado foi de teste do SMTP",
 		};
 
+		// Um throw dentro do callback não chegava ao cliente (pedido ficava pendurado): devolve o resultado do envio
 		transporter.sendMail(mailOptions, (err, info) => {
-			if (err) throw err;
-			res.send(info);
+			if (err) res.send({ sent: false, message: err.message });
+			else res.send({ sent: true, messageId: info.messageId });
 		});
 	} catch (err) {
 		throw err;

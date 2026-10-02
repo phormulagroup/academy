@@ -22,6 +22,7 @@ import endpoints from "../../../utils/endpoints";
 import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { useNavigate, useParams } from "react-router-dom";
 import i18n from "../../../utils/i18n";
+import { isAllowedByCountry } from "../../../utils/courseStatus";
 
 export default function DocumentDetails({ themePreference = "light" }) {
   const { user, languages, windowDimension } = useContext(Context);
@@ -199,13 +200,8 @@ export default function DocumentDetails({ themePreference = "light" }) {
           let item = res.data[0];
           item.country = item.country ? JSON.parse(item.country) : null;
 
-          // Aluno de outro país não vê o documento; admin (id_role = 1) vê todos
-          if (
-            user?.id_role !== 1 &&
-            item.country &&
-            item.country.length > 0 &&
-            !item.country.includes(user.country)
-          ) {
+          // Documento com restrição de países: só utilizadores desses países (alunos e admin)
+          if (!isAllowedByCountry(item.country, user)) {
             setData(null);
             setIsLoading(false);
             return;
@@ -284,7 +280,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
             ref={fullscreenRef}
             className={`doc-viewer @container w-full max-w-[1100px] mx-auto ${isFullscreen ? "is-fullscreen" : ""}`}>
             <div
-              className="doc-viewer-box w-full h-[calc(56.25cqw+72px)] min-h-[260px] max-h-[82dvh] overflow-hidden rounded-[5px] border border-[#C5CEE1] bg-[#F4F6FB] shadow-[0px_3px_6px_#00000029]"
+              className="doc-viewer-box w-full h-[calc(70cqw+72px)] sm:h-[calc(56.25cqw+72px)] min-h-[300px] sm:min-h-[260px] max-h-[82dvh] overflow-hidden rounded-[5px] border border-[#C5CEE1] bg-[#F4F6FB] shadow-[0px_3px_6px_#00000029]"
               ref={viewerRef}>
               <PDFViewer
                 key={data.id}

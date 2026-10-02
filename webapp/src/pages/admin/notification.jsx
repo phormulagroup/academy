@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
 
 export default function Notification() {
-  const { selectedLanguage, notificationApi } = useContext(Context);
+  const { selectedLanguage, messageApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("notification");
   const [isLoading, setIsLoading] = useState(true);
@@ -96,11 +96,12 @@ export default function Notification() {
       .post(endpoints.notification.send, {
         data: obj,
       })
-      .then((res) => {
-        console.log(res);
+      .then(() => {
+        messageApi.success(t("Notification sent successfully"));
       })
       .catch((err) => {
         console.log(err);
+        messageApi.error(t("Something went wrong, please try again"));
       });
   }
 

@@ -39,6 +39,7 @@ export default function Status({ data, open, close, status }) {
       close(true);
     } catch (err) {
       console.log(err);
+      messageApi.error(t("Something went wrong, please try again"));
       setIsButtonLoading(false);
     }
   }
@@ -90,12 +91,22 @@ export default function Status({ data, open, close, status }) {
                     value: "approved",
                   },
                   {
+                    label: t("Pending"),
+                    value: "pending",
+                  },
+                  {
                     label: t("Not Approved"),
                     value: "not_approved",
                   },
                 ]}
               />
             </Form.Item>
+            {/* A atividade acompanha o estado: aprovado → ativo; pendente/não aprovado → inativo */}
+            <p className="text-[12px] text-[#8B9CC3]">
+              {t(
+                "Approved users become active; pending or not approved users become inactive.",
+              )}
+            </p>
           </Form>
         </div>
       </div>

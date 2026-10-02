@@ -2220,3 +2220,251 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #fff !important;
 }
+/* Redimensionar imagens no editor (components/admin/richText/imageResize.js) */
+.rich-text-editor .ql-image-resize-clip {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+.rich-text-editor .ql-image-resize {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #00b9d6;
+  pointer-events: none;
+}
+.rich-text-editor .ql-image-resize.ql-image-resize-active {
+  background: rgba(0, 185, 214, 0.12);
+  border-style: dashed;
+}
+.rich-text-editor .ql-image-resize-size {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #163986;
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.rich-text-editor .ql-image-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 2px solid #163986;
+  border-radius: 2px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.rich-text-editor .ql-image-resize-handle:hover {
+  background: #00b9d6;
+}
+.rich-text-editor .ql-image-resize-nw { left: -6px; top: -6px; cursor: nwse-resize; }
+.rich-text-editor .ql-image-resize-ne { right: -6px; top: -6px; cursor: nesw-resize; }
+.rich-text-editor .ql-image-resize-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.rich-text-editor .ql-image-resize-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.rich-text-editor .ql-image-resize-n { left: calc(50% - 5px); top: -6px; cursor: ns-resize; }
+.rich-text-editor .ql-image-resize-s { left: calc(50% - 5px); bottom: -6px; cursor: ns-resize; }
+.rich-text-editor .ql-image-resize-e { right: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+.rich-text-editor .ql-image-resize-w { left: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+.rich-text-editor .ql-editor img {
+  cursor: pointer;
+}
+/* Editor visual de tabelas (modal "Editar tabela") */
+.rich-text-table-visual {
+  min-height: 60px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid #c5cee1;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rich-text-table-visual:focus-within {
+  border-color: #00b9d6;
+  box-shadow: 0 0 0 2px rgba(0, 185, 214, 0.15);
+}
+.rich-text-table-visual :is(th, td) {
+  min-width: 40px;
+  height: 2.2em;
+  cursor: text;
+}
+
+/* ===== Catálogo de cursos: estados Reprovado / Expirado / Por iniciar + estado no detalhe do curso ===== */
+/* Reprovado: como o concluído (.course-card-completed*), mas em vermelho Bial */
+.course-card-failed {
+  box-shadow:
+    0 0 0 2px #db0709,
+    0px 3px 6px #00000029 !important;
+}
+
+.course-card-failed .course-card-info {
+  background-color: #fbe4e4 !important;
+}
+
+.course-card-completed-badge.course-card-failed-badge {
+  background-color: #db0709;
+}
+
+/* Expirado (só admin): imagem esbatida a azul Bial, faixa com ampulheta e data de fim */
+.course-card-expired {
+  box-shadow:
+    0 0 0 2px #8b9cc3,
+    0px 3px 6px #00000029 !important;
+}
+
+.course-card-expired > div:first-child::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(139, 156, 195, 0.55) 0%, rgba(22, 57, 134, 0.7) 100%);
+  pointer-events: none;
+}
+
+.course-card-expired .course-card-info {
+  background-color: #e3e8f2 !important;
+}
+
+.course-card-expired-ribbon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(22, 57, 134, 0.92);
+  border-top: 3px solid #00b9d6;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.course-card-expired-icon {
+  width: 20px;
+  height: 20px;
+  color: #00b9d6;
+}
+
+.course-card-expired-date {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #c5cee1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.course-card-expired-hide {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #c5cee1;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #163986;
+  font-size: 17px;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.course-card-expired-hide:hover {
+  background-color: #163986;
+  border-color: #163986;
+  color: #ffffff;
+}
+
+@media (min-width: 1024px) {
+  .course-card-expired-ribbon {
+    font-size: 14px;
+  }
+}
+
+.course-hidden-expired-toggle.ant-btn {
+  color: #163986;
+  border-color: #8b9cc3;
+}
+
+.course-hidden-expired-toggle.ant-btn:hover {
+  color: #00b9d6 !important;
+  border-color: #00b9d6 !important;
+}
+
+/* Por iniciar (só admin): data de início por cima do botão */
+.course-card-upcoming-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: #00b9d6;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Detalhe do curso: estado do aluno (Aprovado / Reprovado) junto ao progresso */
+.course-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+}
+
+.course-status-badge.is-approved {
+  background-color: #2f8351;
+}
+
+.course-status-badge.is-failed {
+  background-color: #db0709;
+}
+
+@media (min-width: 1024px) {
+  .course-status-badge {
+    font-size: 13px;
+    padding: 4px 14px;
+  }
+}
+/* ===== fim: estados do catálogo de cursos ===== */
+
+/* ===== início: backoffice - conta do aluno (resultados) ===== */
+/* Cartões dos resultados com o mesmo raio e sombra dos cartões de curso */
+.collapse-result .ant-collapse-item {
+  box-shadow: 0px 3px 6px #00000029;
+}
+/* ===== fim: backoffice - conta do aluno (resultados) ===== */
+
+/* ===== início: eLearning - estado do curso (Aprovado / Reprovado) e modal de reprovação ===== */
+/* Faixa de estado no topo do conteúdo: barra lateral com a cor do estado */
+.course-status-banner {
+  border-left: 4px solid #2f8351;
+  box-shadow: 0px 3px 6px #00000014;
+}
+.course-status-banner.failed {
+  border-left-color: #db0709;
+}
+/* Modal de reprovação: um só botão, centrado e sem ocupar a largura toda */
+.modal-course-failed .ant-modal-footer {
+  justify-content: center !important;
+}
+.modal-course-failed .ant-modal-footer .ant-btn {
+  flex: 0 1 260px;
+}
+/* ===== fim: eLearning - estado do curso ===== */

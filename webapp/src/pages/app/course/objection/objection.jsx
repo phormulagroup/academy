@@ -78,13 +78,14 @@ export default function CourseObjection({ data }) {
                       items={tabItem.items.map((_i, _ind) => ({
                         key: `${tabItem.label}-${_ind}`,
                         label: (
-                          <p className="font-ryker text-xs sm:text-sm md:text-base">
+                          <p className="font-ryker text-[13px] sm:text-[15px] md:text-[16px] lg:text-[17px]">
                             {_i.title}
                           </p>
                         ),
+                        // Resposta sempre mais pequena que a pergunta (ver .objection-answer em objection.css)
                         children: (
                           <div
-                            className="prose-content text-xs sm:text-sm md:text-base"
+                            className="prose-content objection-answer text-[12px] sm:text-[13px] md:text-[14px] lg:text-[15px]"
                             onClick={openImagePreview}
                             dangerouslySetInnerHTML={{ __html: withMediaUrl(_i.text) }}
                           />
