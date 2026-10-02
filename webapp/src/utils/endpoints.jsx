@@ -111,6 +111,13 @@ const endpoints = {
 		update: "/media/update",
 		delete: "/media/delete",
 	},
+	iec: {
+		read: "/iec/read",
+		check: "/iec/check",
+		upload: "/iec/upload",
+		file: "/iec/file",
+		delete: "/iec/delete",
+	},
 	notification: {
 		read: "/notification/read",
 		readByUser: "/notification/readByUser",

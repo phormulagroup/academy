@@ -16,6 +16,7 @@ import {
   LuLayoutDashboard,
   LuSquareMenu,
   LuImages,
+  LuQrCode,
   LuPalette,
   LuLanguages,
   LuBell,
@@ -80,6 +81,7 @@ const Main = () => {
         children: [
           { key: "/admin/menus", label: t("Menus"), icon: <LuSquareMenu /> },
           { key: "/admin/media", label: t("Multimedia"), icon: <LuImages /> },
+          { key: "/admin/iec", label: t("IECs"), icon: <LuQrCode /> },
           {
             key: "/admin/personalization",
             label: t("Personalization"),

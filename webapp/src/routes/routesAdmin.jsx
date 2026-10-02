@@ -5,6 +5,7 @@ import AdminLayout from "../layout/admin";
 import User from "../pages/admin/user/index";
 import Language from "../pages/admin/language";
 import Media from "../pages/admin/media";
+import Iec from "../pages/admin/iec";
 
 import Course from "../pages/admin/course";
 import CourseDetails from "../pages/admin/course/details";
@@ -46,6 +47,7 @@ export const adminRoutes = [
 			{ path: "documents", element: <Document /> },
 			{ path: "downloads", element: <Download /> },
 			{ path: "media", element: <Media /> },
+			{ path: "iec", element: <Iec /> },
 			{ path: "certificate", element: <Certificate /> },
 			{ path: "certificate/:id", element: <CertificateDetails /> },
 			{ path: "notification", element: <Notification /> },
