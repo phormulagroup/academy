@@ -49,6 +49,7 @@ import logo from "../../../assets/BIAL-Regional-Academy.png";
 import Module from "./module";
 
 import CourseMaterial from "./material";
+import { courseMaterials } from "../../../utils/materials";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 import CourseCompletedModal from "../../../components/app/course/courseCompleted";
@@ -159,8 +160,12 @@ const Learning = () => {
         )
           auxCourse = null;
         if (auxCourse) {
+          // Materiais filtrados pelos países do curso (ver utils/materials)
           auxCourse.material = auxCourse.material
-            ? JSON.parse(auxCourse.material)
+            ? courseMaterials({
+                ...auxCourse,
+                material: JSON.parse(auxCourse.material),
+              })
             : null;
           auxCourse.objection = auxCourse.objection
             ? JSON.parse(auxCourse.objection)

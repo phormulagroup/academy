@@ -3,6 +3,7 @@ import { useContext, useEffect } from "react";
 import { useState } from "react";
 
 import { Context } from "../../../utils/context";
+import { cleanMaterials } from "../../../utils/materials";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,7 @@ import { fileTypeRule } from "../../../utils/fileValidation";
 import { AiOutlinePlus } from "react-icons/ai";
 import { RxTrash } from "react-icons/rx";
 
-import TiptapFormField from "../../../components/admin/tipTap/tipTapFormField";
+import RichTextFormField from "../../../components/admin/richText/richTextFormField";
 import dayjs from "dayjs";
 
 export default function Settings({ course }) {
@@ -134,8 +135,9 @@ export default function Settings({ course }) {
       values.objection = values.objection
         ? JSON.stringify(values.objection)
         : null;
+      // A key "country" do material só é guardada quando tem países selecionados
       values.material = values.material
-        ? JSON.stringify(values.material)
+        ? JSON.stringify(cleanMaterials(values.material))
         : null;
       values.settings = values.settings
         ? JSON.stringify(values.settings)
@@ -456,6 +458,21 @@ export default function Settings({ course }) {
                     <Form.Item name={[field.name, "name"]}>
                       <Input size="large" placeholder={t("File name")} />
                     </Form.Item>
+                    {/* Restrição de países do material (vazio = sem restrição); mesmos países do limite de país */}
+                    <Form.Item name={[field.name, "country"]} className="-mt-2!">
+                      <Select
+                        mode="multiple"
+                        size="large"
+                        className="w-full"
+                        placeholder={t("No country restriction")}
+                        allowClear
+                        showSearch={{ optionFilterProp: ["label"] }}
+                        options={JSON.parse(
+                          languages.filter((l) => l.id === course.id_lang)[0]
+                            ?.country || "[]",
+                        ).map((item) => ({ value: item, label: item }))}
+                      />
+                    </Form.Item>
                   </div>
                 ))}
 
@@ -589,7 +606,7 @@ export default function Settings({ course }) {
             name={["objection", "text"]}
             className="mb-0!"
             label={t("Description")}>
-            <TiptapFormField placeholder={t("Write the content...")} richMedia />
+            <RichTextFormField placeholder={t("Write the content...")} richMedia />
           </Form.Item>
           <div className="mt-4">
             <Form.List name={["objection", "tabs"]}>
@@ -631,7 +648,7 @@ export default function Settings({ course }) {
                                   name={[sub.name, "text"]}
                                   className="w-full!"
                                   label={t("Text")}>
-                                  <TiptapFormField placeholder={t("Write the content...")} richMedia />
+                                  <RichTextFormField placeholder={t("Write the content...")} richMedia />
                                 </Form.Item>
                                 <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
                                   <Button

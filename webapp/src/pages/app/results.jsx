@@ -180,10 +180,10 @@ export default function Result() {
   }
 
   return (
-    <div className="py-4 sm:py-8 lg:py-10 bg-[#EAEAEA] min-h-full">
+    <div className="flex-1 py-4 sm:py-8 lg:py-10 bg-[#EAEAEA]">
       <div className="page-frame">
         {/* Mobile/tablet: cartão por cima; desktop: cartão à esquerda e resultados à direita */}
-        <div className="grid grid-cols-1 lg:grid-cols-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 rounded-[5px] overflow-hidden shadow-[0px_3px_6px_#00000029]">
           <UserCard courses={coursesData} />
           <div className="bg-[#F7F7F7] lg:col-span-3 p-3 sm:p-6 lg:p-10 min-w-0">
             <p className="font-ryker text-[20px] sm:text-[24px] lg:text-[26px] font-bold text-center mb-4! sm:mb-6!">

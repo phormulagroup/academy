@@ -26,7 +26,9 @@ export default function Document() {
     axios
       .get(endpoints.document.readByLang, {
         params: {
-          id_lang: languages.filter((l) => l.code === i18n.language)[0].id,
+          id_lang:
+            languages.find((l) => l.code === i18n.language)?.id ??
+            user?.id_lang,
         },
       })
       .then((res) => {
@@ -49,8 +51,9 @@ export default function Document() {
       });
   }
 
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
   useEffect(() => {
-    getData();
+    if (languages?.length > 0) getData();
   }, [user, languages]);
 
   return (
@@ -89,7 +92,8 @@ export default function Document() {
             />
           </div>
         ) : data && data.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full">
+          // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 w-full">
             {data.map((d) => (
               <Link
                 key={d.id}
@@ -103,12 +107,12 @@ export default function Document() {
                     backgroundColor: "rgba(0, 0, 0, 0.05)",
                     backgroundBlendMode: "overlay",
                   }}></div>
-                <div className="p-3 sm:p-4 lg:p-6 min-h-[72px] sm:min-h-[96px] lg:min-h-[120px] flex justify-center items-center bg-[#C5CEE1]">
-                  <p className="font-ryker font-bold text-[12px] sm:text-[14px] lg:text-[16px] xl:text-[18px] text-[#163986] text-center line-clamp-3">
+                <div className="px-2 py-2.5 sm:p-3 lg:p-4 min-h-[56px] sm:min-h-[80px] lg:min-h-[96px] flex justify-center items-center bg-[#C5CEE1]">
+                  <p className="font-ryker font-bold text-[12px] sm:text-[14px] lg:text-[16px] text-[#163986] text-center leading-snug line-clamp-3 break-words">
                     {d.name}
                   </p>
                 </div>
-                <div className="p-3 sm:p-4 lg:p-6 flex flex-col gap-2 justify-between items-center flex-1">
+                <div className="p-2 sm:p-3 lg:p-4 flex flex-col gap-2 justify-end items-center flex-1">
                   <Button
                     size={windowDimension.width < 640 ? "middle" : "large"}
                     type="primary"

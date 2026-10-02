@@ -80,7 +80,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
       const isInteger = progressPercentage % 1 === 0;
 
       return (
-        <p className="font-ryker text-[#FFFFFF] text-[12px] sm:text-[13px] md:text-[15px] lg:text-[17px]">
+        <p className="font-ryker text-[#FFFFFF] text-[12px] md:text-[13px] xl:text-[14px]">
           <span className="font-bold uppercase">
             {!isInteger
               ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
@@ -122,10 +122,10 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                     )}
                     <div className="flex flex-col ml-4 max-w-full flex-1 min-w-0 overflow-hidden">
                       <p
-                        className={`font-ryker text-[#163986] font-bold text-[14px] sm:text-[15px] md:text-[18px] lg:text-[20px] line-clamp-2 w-full overflow-hidden`}>
+                        className={`font-ryker text-[#163986] font-bold text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px] line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
-                      <p className="mt-1 text-[#163986] text-[12px] sm:text-[13px] lg:text-[14px] line-clamp-2">
+                      <p className="mt-1 text-[#163986] text-[12px] lg:text-[13px] line-clamp-2">
                         {data?.topics &&
                         data.topics.filter(
                           (_t) => _t.id_course_module === item.id,
@@ -147,7 +147,7 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                         {windowDimension.width >= 600 && (
                           <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 sm:w-6 sm:h-6" />
                         )}
-                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[15px]">
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[13px] sm:text-[14px]">
                           {t("Module content")}
                         </p>
                       </div>
@@ -159,10 +159,10 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
 
                   {/* Desktop (768px+): ícone + label + progresso na mesma linha */}
                   {windowDimension.width >= 768 && (
-                    <div className="flex p-4 lg:p-5 bg-[#FF9E83] justify-between items-center gap-4">
+                    <div className="flex px-4 py-3 lg:px-5 bg-[#FF9E83] justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                        <PiFileTextLight className="text-[#FFFFFF] w-6 h-6 lg:w-7 lg:h-7" />
-                        <p className="font-ryker text-[#FFFFFF] font-bold text-[15px] lg:text-[17px]">
+                        <PiFileTextLight className="text-[#FFFFFF] w-5 h-5 xl:w-6 xl:h-6" />
+                        <p className="font-ryker text-[#FFFFFF] font-bold text-[14px] xl:text-[15px]">
                           {t("Module content")}
                         </p>
                       </div>
@@ -173,8 +173,9 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                     {item.items && item.items.length > 0 ? (
                       item.items.map((_t, i) => (
                         <div
+                          key={`${_t.type}-${_t.id}`}
                           onClick={() => handleNavigate(_t.id, _t.type)}
-                          className={`group p-3 pl-4 sm:p-4 sm:pl-6 flex items-center gap-3 sm:gap-4 text-[13px] sm:text-[14px] lg:text-[16px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
+                          className={`group p-3 pl-4 sm:pl-6 lg:py-3.5 flex items-center gap-3 sm:gap-4 text-[13px] sm:text-[14px] xl:text-[15px] ${canAccess ? "cursor-pointer hover:bg-[#FF9E83]" : "cursor-not-allowed opacity-50"} ${i < item.items.length - 1 ? "border-b border-[#969696]" : ""} transition-all`}>
                           {/* Circle check indicator */}
                           {progress.length > 0 &&
                           progress.filter(
@@ -223,11 +224,11 @@ export default function CourseContent({ modules, progress, data, courseSlug }) {
                 {windowDimension.width >= 1024 && (
                   <div className="mr-2">
                     {panelProps.isActive ? (
-                      <p className="font-bold text-[#163986] text-sm sm:text-sm md:text-base">
+                      <p className="font-bold text-[#163986] text-[13px] xl:text-[14px]">
                         {t("Collapse")}
                       </p>
                     ) : (
-                      <p className="font-bold text-[#163986] text-sm sm:text-sm md:text-base">
+                      <p className="font-bold text-[#163986] text-[13px] xl:text-[14px]">
                         {t("Expand")}
                       </p>
                     )}
