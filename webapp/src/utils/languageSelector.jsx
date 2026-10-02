@@ -5,6 +5,8 @@ export default function LanguageSelector({
   selectedLanguage,
   onSelect,
   className = "",
+  placement = "bottomRight",
+  children, // botão personalizado (por omissão, a pastilha com a bandeira e o código)
 }) {
   const textSize = "text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]";
 
@@ -28,7 +30,8 @@ export default function LanguageSelector({
         })),
       }}
       trigger={["click"]}
-      placement="bottomRight">
+      placement={placement}>
+      {children || (
       <div
         className={`flex justify-center items-center cursor-pointer border border-[#163986] bg-[#E6F8FB] leading-1 p-2 rounded-full ${className}`}>
         <div
@@ -38,6 +41,7 @@ export default function LanguageSelector({
           {selectedLanguage?.code?.toUpperCase()}
         </p>
       </div>
+      )}
     </Dropdown>
   );
 }

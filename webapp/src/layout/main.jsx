@@ -97,6 +97,7 @@ const Main = () => {
     inbox,
     isLoggedIn,
     selectedLanguage,
+    isStaff,
   } = useContext(Context);
   const { t, i18n } = useTranslation();
 
@@ -236,7 +237,7 @@ const Main = () => {
                   <>
                     <p className="dm-section-title">{t("My account")}</p>
                     <div className="dm-nav">
-                      {user.id_role === 1 && (
+                      {isStaff && (
                         <DrawerLink
                           to="/admin"
                           icon={MdOutlineAdminPanelSettings}
@@ -363,7 +364,7 @@ const Main = () => {
                     <Dropdown
                       menu={{
                         items: [
-                          user.id_role === 1 && {
+                          isStaff && {
                             key: "backoffice",
                             label: (
                               <Link

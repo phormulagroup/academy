@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { CloseOutlined, MenuOutlined } from "@ant-design/icons";
-import { Button, Divider, Drawer, Dropdown, Layout, Menu, Tooltip } from "antd";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Badge, Button, ConfigProvider, Divider, Drawer, Layout, Menu, Tooltip } from "antd";
+import { adminTheme } from "../theme/antdTheme";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AiOutlineGlobal } from "react-icons/ai";
 
 import { Context } from "../utils/context";
+import { ADMIN_PATH_RESOURCES } from "../utils/permissions";
 import LanguageSelector from "../utils/languageSelector";
 import UserAvatar from "../utils/userAvatar";
 import Logout from "../components/logout";
@@ -14,7 +16,6 @@ import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
 import logoColor from "../assets/BIAL-Regional-Academy.png";
 import {
   LuLayoutDashboard,
-  LuSquareMenu,
   LuImages,
   LuQrCode,
   LuPalette,
@@ -28,18 +29,22 @@ import {
   LuDownload,
   LuPill,
   LuUsers,
+  LuUsersRound,
   LuShieldCheck,
   LuUserCog,
-  LuClipboardList,
   LuMessageSquareText,
   LuLayoutTemplate,
   LuServer,
-  LuPlug,
   LuLogOut,
+  LuPanelLeftClose,
+  LuPanelLeftOpen,
 } from "react-icons/lu";
 import { Helmet } from "react-helmet";
 
 const { Header, Content, Sider } = Layout;
+
+// Botão de ícone do rodapé do menu lateral (36x36, sobre o fundo azul)
+const SIDER_ICON_BUTTON = "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[18px] text-white! transition-colors hover:bg-white/10";
 
 const Main = () => {
   const {
@@ -52,15 +57,36 @@ const Main = () => {
     selectedLanguage,
     setSelectedLanguage,
     inbox,
+    permissions,
   } = useContext(Context);
+  const unreadMessages = (inbox || []).reduce((sum, n) => sum + (n.unread_messages || 0), 0);
   const [current, setCurrent] = useState("/admin/");
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
+  // Menu lateral recolhido (só favicon e ícones): lembrado entre visitas
+  const [isSiderCollapsed, setIsSiderCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("admin_sider_collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  function toggleSider() {
+    setIsSiderCollapsed((prev) => {
+      try {
+        localStorage.setItem("admin_sider_collapsed", prev ? "0" : "1");
+      } catch {
+        // sem localStorage: só não se lembra da escolha
+      }
+      return !prev;
+    });
+  }
 
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
-  const items = useMemo(
+  const allItems = useMemo(
     () => [
       {
         key: "grp-admin",
@@ -79,7 +105,6 @@ const Main = () => {
         label: t("Website"),
         type: "group",
         children: [
-          { key: "/admin/menus", label: t("Menus"), icon: <LuSquareMenu /> },
           { key: "/admin/media", label: t("Multimedia"), icon: <LuImages /> },
           { key: "/admin/iec", label: t("IECs"), icon: <LuQrCode /> },
           {
@@ -143,28 +168,21 @@ const Main = () => {
         type: "group",
         children: [
           { key: "/admin/users", label: t("Users"), icon: <LuUsers /> },
+          { key: "/admin/user-groups", label: t("User groups"), icon: <LuUsersRound /> },
           {
             key: "/admin/permissions",
             label: t("Permissions"),
             icon: <LuShieldCheck />,
           },
           {
-            key: `/admin/users/${user.id}`,
-            label: t("My account"),
-            icon: <LuUserCog />,
-          },
-        ],
-      },
-      {
-        key: "grp-forms",
-        label: t("Management"),
-        type: "group",
-        children: [
-          { key: "/admin/forms", label: t("Forms"), icon: <LuClipboardList /> },
-          {
             key: "/admin/answers",
             label: t("Answers"),
             icon: <LuMessageSquareText />,
+          },
+          {
+            key: `/admin/users/${user.id}`,
+            label: t("My account"),
+            icon: <LuUserCog />,
           },
         ],
       },
@@ -181,14 +199,26 @@ const Main = () => {
           { key: "/admin/smtp", label: t("SMTP"), icon: <LuServer /> },
         ],
       },
-      {
-        key: "grp-option",
-        label: t("Options"),
-        type: "group",
-        children: [{ key: "/admin/apis", label: t("APIS"), icon: <LuPlug /> }],
-      },
     ],
     [t, user.id],
+  );
+
+  // O Admin vê tudo; as outras funções só as secções em que podem ver. "Permissões" é só do Admin
+  const isAdmin = user.id_role === 1;
+  function canAccess(path) {
+    if (isAdmin || path === `/admin/users/${user.id}`) return true; // a própria conta é sempre acessível
+    const segment = path.split("/")[2];
+    if (segment === "permissions") return false;
+    const resource = ADMIN_PATH_RESOURCES[segment];
+    return !resource || permissions.some((p) => p.resource === resource && p.can_read);
+  }
+  const items = useMemo(
+    () =>
+      allItems
+        .map((group) => ({ ...group, children: group.children.filter((item) => canAccess(item.key)) }))
+        .filter((group) => group.children.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allItems, permissions, isAdmin],
   );
 
   const selectLanguage = (lang) => {
@@ -218,6 +248,7 @@ const Main = () => {
   }
 
   return (
+    <ConfigProvider theme={adminTheme}>
     <Layout className="admin-layout">
       <Helmet>
         <title>{t("Admin Dashboard")} | BIAL Regional Academy</title>
@@ -229,26 +260,94 @@ const Main = () => {
       />
       <Layout>
         {windowDimension.width > 1080 ? (
-          <Sider width={250} className="bg-[#163986]! overflow-auto">
-            <div className="flex flex-col justify-between items-start h-full p-4">
-              <Link to={`/${i18n.language}`} className="min-h-20">
+          <Sider width={250} collapsedWidth={80} collapsed={isSiderCollapsed} trigger={null} className="bg-[#163986]!" style={{ height: "100vh" }}>
+            <div className="flex h-full flex-col">
+              {/* Topo: logótipo completo ou, recolhido, o favicon: os dois sobrepostos, com uma transição suave entre eles */}
+              <Link
+                to={`/${i18n.language}`}
+                aria-label="Bial Academy"
+                className="relative mx-auto mt-4 mb-2 block h-[64px] w-full shrink-0">
                 <img
                   src={logo}
                   alt="Bial Academy Logo"
-                  className="h-full mb-2 pl-4 pr-4"
+                  className={`absolute left-1/2 top-1/2 h-[52px] w-auto max-w-[210px] -translate-x-1/2 -translate-y-1/2 object-contain transition-all duration-300 ease-out ${
+                    isSiderCollapsed ? "pointer-events-none scale-75 opacity-0" : "scale-100 opacity-100"
+                  }`}
                 />
+                <span
+                  className={`absolute left-1/2 top-1/2 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[10px] bg-white transition-all duration-300 ease-out ${
+                    isSiderCollapsed ? "scale-100 opacity-100" : "pointer-events-none scale-50 opacity-0"
+                  }`}>
+                  <img src="/FAVICON.png" alt="" className="h-6 w-6 object-contain" />
+                </span>
               </Link>
-              <div className="flex flex-col items-center justify-start w-full menu-scroll-div">
-                <div className="mt-2.5 w-full">
-                  <Menu
-                    data-tour-id="menu"
-                    className="principal-menu"
-                    selectedKeys={[current]}
-                    mode="inline"
-                    items={items}
-                    onClick={handleClickMenu}
-                  />
+
+              <div className={`min-h-0 flex-1 menu-scroll-div ${isSiderCollapsed ? "px-0 menu-scroll-div--collapsed" : "px-4"}`}>
+                <Menu
+                  data-tour-id="menu"
+                  className="principal-menu"
+                  selectedKeys={[current]}
+                  mode="inline"
+                  inlineCollapsed={isSiderCollapsed}
+                  items={items}
+                  onClick={handleClickMenu}
+                />
+              </div>
+
+              {/* Rodapé: o que estava no cabeçalho (utilizador, idioma, mensagens, website e terminar sessão) e o botão de recolher */}
+              <div className={`shrink-0 flex flex-col gap-3 border-0 border-t border-solid border-white/15 px-4 py-5 ${isSiderCollapsed ? "items-center" : ""}`}>
+                <Tooltip title={isSiderCollapsed ? user.name : undefined} placement="right">
+                  <Link
+                    to={`/admin/users/${user.id}`}
+                    aria-label={t("My account")}
+                    className={`flex min-w-0 items-center gap-2 rounded-[10px] p-1 transition-colors hover:bg-white/10 ${isSiderCollapsed ? "justify-center" : ""}`}>
+                    <UserAvatar user={user} size={35} className="shrink-0" />
+                    {!isSiderCollapsed && <p className="mb-0! truncate text-[13px] font-medium text-white">{user.name}</p>}
+                  </Link>
+                </Tooltip>
+
+                <div className={isSiderCollapsed ? "flex flex-col items-center gap-1" : "flex items-center justify-between gap-1"}>
+                  <Tooltip title={t("Go to website")} placement={isSiderCollapsed ? "right" : "top"}>
+                    <Link to={`/${i18n.language}`} aria-label={t("Go to website")} className={SIDER_ICON_BUTTON}>
+                      <AiOutlineGlobal />
+                    </Link>
+                  </Tooltip>
+                  <LanguageSelector languages={languages} selectedLanguage={selectedLanguage} onSelect={selectLanguage} placement={isSiderCollapsed ? "rightBottom" : "topLeft"}>
+                    <button type="button" aria-label={t("Language")} className={`${SIDER_ICON_BUTTON} cursor-pointer border-0 bg-transparent ${isSiderCollapsed ? "" : "w-auto gap-1.5 px-2"}`}>
+                      <span className="h-5 w-5 shrink-0 rounded-full bg-cover bg-center ring-1 ring-white/60" style={{ backgroundImage: `url(${selectedLanguage?.flag})` }} />
+                      {!isSiderCollapsed && <span className="text-[11px] font-medium leading-none">{selectedLanguage?.code?.toUpperCase()}</span>}
+                    </button>
+                  </LanguageSelector>
+                  <Tooltip title={t("Inbox")} placement={isSiderCollapsed ? "right" : "top"}>
+                    <Link to="/admin/inbox" aria-label={t("Inbox")} className={SIDER_ICON_BUTTON}>
+                      <Badge count={unreadMessages} size="small" color="#00B9D6" offset={[2, -2]}>
+                        <LuBell className="text-[18px] text-white!" />
+                      </Badge>
+                    </Link>
+                  </Tooltip>
+                  <Tooltip title={isSiderCollapsed ? t("Expand menu") : t("Collapse menu")} placement={isSiderCollapsed ? "right" : "top"}>
+                    <button
+                      type="button"
+                      onClick={toggleSider}
+                      aria-label={isSiderCollapsed ? t("Expand menu") : t("Collapse menu")}
+                      className={`${SIDER_ICON_BUTTON} cursor-pointer border-0 bg-transparent`}>
+                      {isSiderCollapsed ? <LuPanelLeftOpen /> : <LuPanelLeftClose />}
+                    </button>
+                  </Tooltip>
                 </div>
+
+                <Tooltip title={isSiderCollapsed ? t("Logout") : undefined} placement="right">
+                  <button
+                    type="button"
+                    onClick={() => setIsOpenLogout(true)}
+                    aria-label={t("Logout")}
+                    className={`flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-white/10 text-[13px] text-white transition-colors hover:bg-white/20 ${
+                      isSiderCollapsed ? "h-9 w-9 text-[18px]" : "h-9 w-full"
+                    }`}>
+                    <LuLogOut className="text-[18px]" />
+                    {!isSiderCollapsed && <span>{t("Logout")}</span>}
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </Sider>
@@ -305,104 +404,28 @@ const Main = () => {
         )}
 
         <Layout>
-          <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center">
-            <div className="flex justify-end items-center">
-              {windowDimension.width > 1080 ? (
-                <div className="flex justify-center items-center">
-                  {/* Regressar ao website (front) */}
-                  <Tooltip title={t("Go to website")}>
-                    <Link
-                      className="flex items-center mr-4"
-                      to={`/${i18n.language}`}
-                      aria-label={t("Go to website")}>
-                      <AiOutlineGlobal
-                        className="text-[20px]"
-                        style={{ color: "#163986" }}
-                      />
-                    </Link>
-                  </Tooltip>
-
-                  {/* Seletor de idioma: mesmo estilo do header do front (estados ativo e hover em index.css) */}
-                  <LanguageSelector
-                    languages={languages}
-                    selectedLanguage={selectedLanguage}
-                    onSelect={selectLanguage}
-                    className="mr-4"
-                  />
-
-                  <Link
-                    className={`flex items-center mr-4`}
-                    to={`/admin/inbox`}>
-                    <div className="flex items-center">
-                      <div className="w-5 h-5 flex justify-center items-center">
-                        {inbox.filter((n) => n.unread_messages > 0).length >
-                        0 ? (
-                          <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                            <p className="text-white text-[10px]">
-                              {inbox.map((n) => n.unread_messages)}
-                            </p>
-                          </div>
-                        ) : (
-                          <LuBell
-                            className="text-[18px]"
-                            style={{ color: "#163986" }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Utilizador: mesmo avatar e cor do nome do header do front */}
-                  <Dropdown
-                    menu={{
-                      items: [
-                        {
-                          key: "logout",
-                          label: (
-                            <div
-                              className="dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]"
-                              onClick={() => setIsOpenLogout(true)}>
-                              <LuLogOut className="mr-2" />
-                              <p>{t("Logout")}</p>
-                            </div>
-                          ),
-                        },
-                      ],
-                    }}
-                    trigger={["click"]}
-                    placement="bottomRight">
-                    <div className="flex justify-center items-center cursor-pointer">
-                      <UserAvatar user={user} />
-                      <p className="text-[12px] ml-2 text-[#163986] font-medium">
-                        {user.name.split(" ")[0]}{" "}
-                        {user.name.split(" ")[user.name.split(" ").length - 1]}
-                      </p>
-                    </div>
-                  </Dropdown>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  {/* Em mobile: seletor de idioma e depois o menu */}
-                  <LanguageSelector
-                    languages={languages}
-                    selectedLanguage={selectedLanguage}
-                    onSelect={selectLanguage}
-                    className="mr-4"
-                  />
-                  <MenuOutlined
-                    onClick={() => setIsOpenDrawerMenu(true)}
-                    style={{ color: "#163986" }}
-                  />
-                </div>
-              )}
+          {/* Em desktop não há cabeçalho (tudo vive no menu lateral); em mobile fica o idioma e o botão do menu */}
+          {windowDimension.width <= 1080 && (
+            <Header className="bg-white! shadow-[0px_4px_16px_#A7AFB754] flex justify-end items-center">
+              <div className="flex items-center">
+                <LanguageSelector languages={languages} selectedLanguage={selectedLanguage} onSelect={selectLanguage} className="mr-4" />
+                <MenuOutlined onClick={() => setIsOpenDrawerMenu(true)} style={{ color: "#163986" }} />
+              </div>
+            </Header>
+          )}
+          <div className={`relative flex flex-col ${windowDimension.width > 1080 ? "h-screen" : "h-[calc(100vh-64px)]"}`}>
+            <div className="p-6 flex-1 min-h-0 overflow-auto">
+              {canAccess(location.pathname.replace(/\/$/, "") || "/admin") ? <Outlet /> : <Navigate to="/admin/" replace />}
             </div>
-          </Header>
-          <div className="p-6 h-[calc(100vh-64px)] overflow-auto">
-            <Outlet />
+            {/* Espaço para um rodapé de página (ex.: o "Guardar" das configurações do curso), por BAIXO da área que faz
+                scroll e não por cima dela, senão o conteúdo aparecia a passar por trás dele por causa do padding. As
+                páginas apresentam lá o rodapé com um portal (components/admin/pageFooter.jsx); vazio, não ocupa nada. */}
+            <div id="admin-page-footer" className="shrink-0 empty:hidden" />
           </div>
         </Layout>
       </Layout>
     </Layout>
+    </ConfigProvider>
   );
 };
 export default Main;

@@ -1,113 +1,62 @@
-import jsPDF from "jspdf";
 import axios from "axios";
 import dayjs from "dayjs";
+import { message } from "antd";
 
-const certificate = {
-  generate: async (data, certificateData) => {
-    function renderVariables(template, data) {
-      // Para lidar com templates nulos ou vazios
-      if (!template) {
-        return "";
-      }
-      return template.replace(/{{\s*([^}]+)\s*}}/g, (_, key) => {
-        return data[key] ?? "";
-      });
-    }
+import endpoints from "./endpoints";
+import i18n from "./i18n";
 
-    // Carrega a imagem do URL como blob e converte para data URL
-    const loadImage = async (url) => {
-      if (!url) {
-        return null; // Devolve null se nenhum URL for fornecido
-      }
-      try {
-        const response = await axios.get(url, { responseType: "blob" });
-        const blob = response.data;
-        
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve(reader.result);
-          };
-          reader.onerror = () => {
-            reject(new Error(`Failed to read image blob from ${url}`));
-          };
-          reader.readAsDataURL(blob);
-        });
-      } catch (error) {
-        console.warn(`Warning: Failed to fetch image from ${url}: ${error.message}`);
-        return null; // Devolve null em caso de erro em vez de lançar uma exceção
-      }
-    };
+// Guarda no computador um ficheiro recebido do servidor
+function saveBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
-    try {
-      const imageDataUrl = await loadImage(data.background);
-      
-      const pdf = new jsPDF("landscape", "pt", "a4"); // A4 landscape
-
-      const width = 842;
-      const height = 595;
-
-      // Adiciona a imagem de fundo se estiver disponível, caso contrário, adiciona um fundo branco
-      if (imageDataUrl) {
-        pdf.addImage(imageDataUrl, "PNG", 0, 0, width, height);
-      } else {
-        // Fallback: background branco
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(0, 0, width, height, "F");
-      }
-
-      const textoFinal = renderVariables(data.text, certificateData);
-      pdf.html(`<div style="width: 1400px; font-size: 24px; font-family: Arial, sans-serif; line-height: 1.35; letter-spacing: 0;color: #000;">${textoFinal}</div>`, {
-        callback: function (doc) {
-          doc.save(data.fileName);
-        },
-        x: 60,
-        y: 140,
-        autoPaging: "text",
-      });
-    } catch (error) {
-      console.error("Certificate generation error:", error);
-      throw error;
-    }
-  },
-};
-
+// Com responseType "blob" a mensagem de erro do servidor também chega como blob: lê-a para a mostrar
+async function errorMessage(err) {
+  try {
+    const body = JSON.parse(await err.response.data.text());
+    if (body?.message) return body.message;
+  } catch {
+    // sem corpo legível: usa a mensagem genérica
+  }
+  return i18n.t("The certificate could not be generated");
+}
 
 /**
  * @function downloadCertificate
- * @description Utility function to download a certificate for a given course and user.
- * @param {Object} item - The course item containing certificate information.
- * @param {Array} progress - The user's progress data.
- * @param {Object} user - The user object.
- * @param {Object} config - Configuration object containing server IP.
- * @param {Object} endpoints - API endpoints for fetching certificate data.
+ * @description Descarrega o certificado de um curso para um utilizador. O PDF é gerado no servidor (o mesmo código da
+ * pré-visualização do backoffice), a partir do modelo do curso: fundo, texto, alinhamento e posição.
+ * @param {Object} item - O curso (id_course_certificate, id, name).
+ * @param {Array} progress - O progresso do utilizador (para a data de conclusão).
+ * @param {Object} user - O utilizador.
  */
+export const downloadCertificate = (item, progress, user) => {
+  const completed = progress.filter((p) => p.id_course === item.id && p.activity_type === "course");
+  const fileName = `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`;
 
-export const downloadCertificate = (item, progress, user, config, endpoints) => {
   axios
-    .get(endpoints.course_certificate.readById, {
-      params: { id: item.id_course_certificate },
-    })
-    .then((res) => {
-      certificate.generate(
-        {
-          background: `${config.server_ip}/media/${res.data[0].background}`,
-          text: res.data[0].text,
-          fileName: `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`,
-        },
-        {
+    .post(
+      endpoints.course_certificate.generate,
+      {
+        data: {
+          id: item.id_course_certificate,
           name: user.name,
           course: item.name,
-          date:
-            progress.filter((p) => p.id_course === item.id && p.activity_type === "course").length > 0
-              ? dayjs(progress.filter((p) => p.id_course === item.id && p.activity_type === "course")[0]?.created_at).format("YYYY-MM-DD HH:mm")
-              : null,
+          date: completed.length > 0 ? dayjs(completed[0]?.created_at).format("YYYY-MM-DD HH:mm") : null,
+          fileName,
         },
-      );
-    })
-    .catch((err) => {
+      },
+      { responseType: "blob" },
+    )
+    .then((res) => saveBlob(res.data, fileName))
+    .catch(async (err) => {
       console.log(err);
+      message.error(await errorMessage(err));
     });
 };
-
-export default certificate;

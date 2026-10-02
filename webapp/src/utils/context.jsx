@@ -22,6 +22,7 @@ const ContextProvider = ({ children }) => {
 	const [isLoadingLanguage, setIsLoadingLanguage] = useState(false);
 	const [user, setUser] = useState({});
 	const [roles, setRoles] = useState([]);
+	const [permissions, setPermissions] = useState([]); // permissões da função do utilizador (o Admin tem sempre tudo)
 	const [courses, setCourses] = useState([]);
 	const [languages, setLanguages] = useState([]);
 	const [selectedLanguage, setSelectedLanguage] = useState(null);
@@ -52,6 +53,7 @@ const ContextProvider = ({ children }) => {
 		document: t("Document"),
 		download: t("Download"),
 		personalization: t("Personalization"),
+		userGroup: t("User group"),
 	});
 
 	const [messageApi, contextMessageHolder] = message.useMessage();
@@ -264,6 +266,7 @@ const ContextProvider = ({ children }) => {
 		delete axios.defaults.headers.common["Authorization"];
 		setIsLoggedIn(false);
 		setUser({});
+		setPermissions([]);
 		setNotifications([]);
 		setInbox([]);
 		setSelectedInbox({});
@@ -299,7 +302,7 @@ const ContextProvider = ({ children }) => {
 				const res = await axios.post(endpoints.auth.verifyToken, {
 					data: token,
 				});
-				login({ user: res.data.user, token: token });
+				await login({ user: res.data.user, token: token });
 				getNotifications(res.data.user);
 				getMessages(res.data.user);
 				getCourses(res.data.user);
@@ -325,6 +328,21 @@ const ContextProvider = ({ children }) => {
 			setTimeout(() => {
 				setIsLoading(false);
 			}, 3000);
+		}
+	}
+
+	// Permissões da função do utilizador, para mostrar só o que pode usar no backoffice (o servidor volta a validar tudo)
+	async function loadPermissions(auxUser, token) {
+		if (!auxUser?.id_role || auxUser.id_role === 1) return setPermissions([]);
+		try {
+			const res = await axios.get(endpoints.permission.read, {
+				params: { id_role: auxUser.id_role },
+				headers: { Authorization: token },
+			});
+			setPermissions(res.data);
+		} catch (err) {
+			console.log(err);
+			setPermissions([]);
 		}
 	}
 
@@ -370,6 +388,7 @@ const ContextProvider = ({ children }) => {
 		setIsLoggedIn(false);
 		setIsLoading(true);
 		setUser({});
+		setPermissions([]);
 		navigate(`/${i18n.language}/login`);
 		createLog({
 			id_user: auxUser.id,
@@ -390,10 +409,12 @@ const ContextProvider = ({ children }) => {
 		api.token(res.token);
 		getInfoData(res.token);
 		setUser(res.user);
+		const loading = loadPermissions(res.user, res.token);
 
 		console.log(window.location.pathname);
 
 		setIsLoggedIn(true);
+		return loading;
 	}
 
 	async function createLog(obj) {
@@ -487,6 +508,8 @@ const ContextProvider = ({ children }) => {
 				t,
 				roles,
 				setRoles,
+				permissions,
+				isStaff: user?.id_role === 1 || permissions.some((p) => p.can_read),
 				windowDimension,
 				setWindowDimension,
 				selectedLanguage,

@@ -578,6 +578,12 @@ select,
   min-width: 40px !important;
 }
 
+/* O menu lateral do admin recolhido tem 80px (coluna de ícones), não os 40px acima, que são do menu do curso no site */
+.admin-layout .ant-layout-sider-collapsed {
+  max-width: 80px !important;
+  min-width: 80px !important;
+}
+
 /* eLearning: o menu do curso recolhido fica totalmente escondido (sem a faixa branca de 40px) */
 .learning-sider.ant-layout-sider-collapsed {
   max-width: 0 !important;
@@ -632,7 +638,10 @@ select,
 .principal-menu .ant-menu-item {
   margin: 0 !important;
   width: 100% !important;
-  height: 35px !important;
+  /* Mesma altura e cantos dos botões do rodapé do menu (36px, 10px), recolhido ou não */
+  height: 36px !important;
+  line-height: 36px !important;
+  border-radius: 10px !important;
   color: #fff !important;
 }
 
@@ -2145,4 +2154,69 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 .rich-text-editor .ql-raw-html :is(th, td) p,
 .rich-text-table-preview :is(th, td) p {
   margin: 0;
+}
+
+
+/* ---- Menu lateral do admin recolhido (só ícones), como no eLearning ---- */
+
+/* Recolhido, os títulos dos grupos ("Website", "e-Learning"...) não cabem: escondem-se */
+.principal-menu.ant-menu-inline-collapsed .ant-menu-item-group-title {
+  display: none;
+}
+
+/* Eixo comum do menu recolhido (80px de largura, centro a 40px): o logótipo/favicon, os ícones e o rodapé estão todos
+   centrados nessa coluna. O antd fixa o Menu recolhido a 80px e ainda lhe põe uma borda à direita. */
+.principal-menu {
+  border-inline-end: 0 !important;
+}
+
+.principal-menu.ant-menu-inline-collapsed {
+  width: 100% !important;
+}
+
+/* Recolhido: cada item é só o ícone, num tile de 36x36 centrado na coluna (igual aos botões do rodapé). Os itens estão
+   dentro de grupos e já existe uma regra com padding-inline !important nesse caminho, por isso o seletor tem de ser
+   igual de específico e !important. */
+.principal-menu.ant-menu-inline-collapsed .ant-menu-item,
+.principal-menu.ant-menu-inline-collapsed .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item {
+  display: flex !important;
+  align-items: center;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  margin: 4px auto !important;
+  padding-inline: 0 !important;
+  border-radius: 10px !important;
+  gap: 0;
+}
+
+.principal-menu.ant-menu-inline-collapsed .ant-menu-item .ant-menu-item-icon {
+  margin-right: 0 !important;
+  max-width: none;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+/* O texto do item continua a ocupar largura (só fica transparente): sem display:none o ícone ficava ~16px à esquerda do eixo */
+.principal-menu.ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
+  display: none !important;
+}
+
+/* A barra de scroll de 12px do menu tirava largura à coluna de ícones recolhida, descentrando-os */
+.menu-scroll-div--collapsed {
+  scrollbar-width: none;
+}
+
+.menu-scroll-div--collapsed::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
+/* Hover dos itens do menu lateral: o mesmo do botão de recolher (fundo branco a 10%), para se perceber melhor onde está o rato.
+   O item selecionado mantém o fundo branco. */
+.principal-menu .ant-menu-item:not(.ant-menu-item-selected):hover,
+.principal-menu .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
 }

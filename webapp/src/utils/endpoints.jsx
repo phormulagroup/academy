@@ -43,6 +43,10 @@ const endpoints = {
 		create: "/user/create",
 		delete: "/user/delete",
 	},
+	permission: {
+		read: "/permission/read",
+		set: "/permission/set",
+	},
 	role: {
 		read: "/role/read",
 		update: "/role/update",
@@ -50,6 +54,10 @@ const endpoints = {
 		delete: "/role/delete",
 	},
 	course: {
+		accessUsers: "/course/accessUsers",
+		setAccessUsers: "/course/setAccessUsers",
+		accessGroups: "/course/accessGroups",
+		setAccessGroups: "/course/setAccessGroups",
 		read: "/course/read",
 		readByLang: "/course/readByLang",
 		readById: "/course/readById",
@@ -87,6 +95,8 @@ const endpoints = {
 	course_certificate: {
 		read: "/certificate/read",
 		readById: "/certificate/readById",
+		preview: "/certificate/preview",
+		generate: "/certificate/generate",
 		update: "/certificate/update",
 		create: "/certificate/create",
 		delete: "/certificate/delete",
@@ -110,6 +120,14 @@ const endpoints = {
 		singleUpload: "/media/singleUpload",
 		update: "/media/update",
 		delete: "/media/delete",
+	},
+	userGroup: {
+		read: "/usergroup/read",
+		create: "/usergroup/create",
+		update: "/usergroup/update",
+		delete: "/usergroup/delete",
+		members: "/usergroup/members",
+		setMembers: "/usergroup/setMembers",
 	},
 	iec: {
 		read: "/iec/read",
