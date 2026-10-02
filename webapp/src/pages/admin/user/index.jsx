@@ -1,11 +1,14 @@
 import axios from "axios";
+import { usePermission } from "../../../utils/usePermission";
 import { useContext, useEffect } from "react";
+import RowActions from "../../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
-import { IoMdMore, IoMdRefresh } from "react-icons/io";
+import { Button, Tag } from "antd";
+import { IoMdRefresh } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
+import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import Create from "../../../components/admin/user/create";
 import Import from "../../../components/admin/import/import";
 import Delete from "../../../components/admin/delete";
@@ -17,7 +20,10 @@ import endpoints from "../../../utils/endpoints";
 import { RxSwitch } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
 import Status from "../../../components/admin/user/status";
+import UserCell from "../../../components/admin/userCell";
 import { useNavigate } from "react-router-dom";
+
+const unique = (values) => [...new Set(values.filter(Boolean))].sort().map((v) => ({ label: v, value: v }));
 
 export default function User() {
   const { user, languages, selectedLanguage } = useContext(Context);
@@ -37,6 +43,8 @@ export default function User() {
   const navigate = useNavigate();
 
   const { t } = useTranslation();
+
+  const perm = usePermission("user");
 
   useEffect(() => {
     getData();
@@ -67,6 +75,7 @@ export default function User() {
       aux.push({
         ...array[i],
         key: array[i].id,
+        deleted: array[i].is_deleted,
         language: languages
           .filter((l) => l.id === array[i].id_lang)[0]
           .code.toUpperCase(),
@@ -96,18 +105,14 @@ export default function User() {
           ) : null,
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
+            <RowActions items={[
                   {
                     label: t("Change status"),
                     key: `${array[i].id}-status`,
                     icon: <RxSwitch />,
                     onClick: () => openStatus(array[i]),
                   },
-                  {
+                  perm.canUpdate && {
                     label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
@@ -119,18 +124,13 @@ export default function User() {
                     icon: <FaRegFile />,
                     onClick: () => openLogs(array[i]),
                   },
-                  {
+                  perm.canDelete && {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
                   },
-                ],
-              }}>
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
+                ]} />
           </div>
         ),
       });
@@ -166,6 +166,26 @@ export default function User() {
     setIsOpenImport(false);
   }
 
+  // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
+  const { filterRows, toolbar } = useListFilters([
+    { key: "q", type: "text", primary: true, placeholder: t("Search by name or e-mail..."), match: (row, v) => includesText(row.name, v) || includesText(row.email, v) },
+    { key: "role", type: "select", primary: true, label: t("Role"), options: () => unique(tableData.map((r) => r.role_name)), match: (row, v) => row.role_name === v },
+    {
+      key: "status",
+      type: "select",
+      label: t("Status"),
+      options: [
+        { label: t("Approved"), value: "approved" },
+        { label: t("Pending"), value: "pending" },
+        { label: t("Not Approved"), value: "not_approved" },
+      ],
+      match: (row, v) => row.status === v,
+    },
+    { key: "activity", type: "select", label: t("Activity"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => (row.deleted ? 1 : 0) === v },
+    { key: "language", type: "select", label: t("Language"), options: () => unique(tableData.map((r) => r.language)), match: (row, v) => row.language === v },
+    { key: "country", type: "select", label: t("Country"), options: () => unique(tableData.map((r) => r.country)), match: (row, v) => row.country === v },
+  ]);
+
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
@@ -183,44 +203,38 @@ export default function User() {
         open={isOpenLogs}
         close={() => setIsOpenLogs(false)}
       />
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Users")}</p>
         </div>
-        <div className="flex justify-center">
-          <Button size="large" className="mr-2" onClick={() => getData()}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {toolbar}
+          <Button size="large" onClick={() => getData()}>
             <IoMdRefresh />
           </Button>
           <Button
             size="large"
-            className="mr-2"
             onClick={() => setIsOpenImport(true)}>
             {t("Import")}
           </Button>
-          <Button size="large" onClick={() => setIsOpenCreate(true)}>
+          {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)}>
             {t("Add User")}
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Table
-        dataSource={tableData}
+        dataSource={filterRows(tableData)}
         loading={isLoading}
         columns={[
           {
+            // Avatar, nome e e-mail juntos, como a coluna "Nome" dos relatórios
             title: t("Name"),
             dataIndex: "name",
             key: "name",
             sort: true,
             sortType: "text",
-            search: "name",
-          },
-          {
-            title: t("E-mail"),
-            dataIndex: "email",
-            key: "email",
-            sort: true,
-            sortType: "text",
-            search: "email",
+            width: 320,
+            render: (_, row) => <UserCell id={row.id} name={row.name} email={row.email} img={row.img} />,
           },
           {
             title: t("Language"),
@@ -238,21 +252,6 @@ export default function User() {
             key: "role_name",
             sort: true,
             sortType: "text",
-            filters:
-              tableData.filter((item) => item.role_name).length > 0
-                ? tableData
-                    .map((item, index) =>
-                      item.role_name
-                        ? { text: item.role_name, value: item.role_name }
-                        : {},
-                    )
-                    .filter((value, index, self) =>
-                      value.text
-                        ? index ===
-                          self.findIndex((t) => t.value === value.text)
-                        : null,
-                    )
-                : null,
           },
           {
             title: t("Status"),
@@ -261,30 +260,11 @@ export default function User() {
             sort: true,
             sortType: "text",
             render: (text, record) => record.status_tag,
-            filters:
-              tableData.filter((item) => item.status).length > 0
-                ? tableData
-                    .map((item, index) =>
-                      item.status
-                        ? { text: item.status, value: item.status }
-                        : {},
-                    )
-                    .filter((value, index, self) =>
-                      value.text
-                        ? index ===
-                          self.findIndex((t) => t.value === value.text)
-                        : null,
-                    )
-                : null,
           },
           {
             title: t("Activity"),
             dataIndex: "is_deleted",
             key: "is_deleted",
-            filters: [
-              { text: t("Active"), value: 0 },
-              { text: t("Inactive"), value: 1 },
-            ],
           },
           {
             title: "",

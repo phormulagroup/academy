@@ -1,11 +1,12 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
+import RowActions from "../../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Button, Tag } from "antd";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../../components/admin/table";
+import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import TemplateUpdate from "../../../components/admin/template/update";
 import Delete from "../../../components/admin/delete";
 
@@ -76,11 +77,7 @@ export default function Template() {
         full_data: array[i],
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
+            <RowActions items={[
                   {
                     label: t("Update"),
                     key: `${array[i].id}-update`,
@@ -99,12 +96,7 @@ export default function Template() {
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
                   },
-                ],
-              }}>
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
+                ]} />
           </div>
         ),
       });
@@ -133,6 +125,12 @@ export default function Template() {
     setIsOpenUpdate(false);
   }
 
+  // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
+  const { filterRows, toolbar } = useListFilters([
+    { key: "name", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.name, v) },
+    { key: "active", type: "select", primary: true, label: t("Is active"), options: [{ label: t("Yes"), value: 1 }, { label: t("No"), value: 0 }], match: (row, v) => (row.full_data.is_active ? 1 : 0) === v },
+  ]);
+
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} />
@@ -147,16 +145,17 @@ export default function Template() {
         close={closeAction}
         table="email"
       />
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Templates")}</p>
         </div>
-        <div className="flex justify-center">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {toolbar}
           <Button
             size="large"
             onClick={getData}
             icon={<RxReload />}
-            className="mr-2"
+           
           />
           <Button size="large" onClick={() => setIsOpenCreate(true)}>
             {t("Add template")}
@@ -164,7 +163,7 @@ export default function Template() {
         </div>
       </div>
       <Table
-        dataSource={tableData}
+        dataSource={filterRows(tableData)}
         loading={isLoading}
         columns={[
           {
@@ -173,7 +172,6 @@ export default function Template() {
             key: "name",
             sort: true,
             sortType: "text",
-            search: "name",
             width: "80%",
           },
           {

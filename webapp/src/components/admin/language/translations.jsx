@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from "react";
+import RowActions from "../rowActions";
 import {
   Button,
   Drawer,
@@ -9,10 +10,8 @@ import {
   Popconfirm,
   Pagination,
   message,
-  Dropdown,
-} from "antd";
+  } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
 import { useTranslation } from "react-i18next";
@@ -294,11 +293,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
         ];
 
         return (
-          <Dropdown menu={{ items }} placement="bottomRight">
-            <Button type="text" size="small">
-              <IoMdMore />
-            </Button>
-          </Dropdown>
+          <RowActions items={items} />
         );
       },
     },

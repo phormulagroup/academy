@@ -6,6 +6,8 @@ import User from "../pages/admin/user/index";
 import Language from "../pages/admin/language";
 import Media from "../pages/admin/media";
 import Iec from "../pages/admin/iec";
+import UserGroup from "../pages/admin/userGroup";
+import Role from "../pages/admin/role";
 
 import Course from "../pages/admin/course";
 import CourseDetails from "../pages/admin/course/details";
@@ -48,6 +50,8 @@ export const adminRoutes = [
 			{ path: "downloads", element: <Download /> },
 			{ path: "media", element: <Media /> },
 			{ path: "iec", element: <Iec /> },
+			{ path: "user-groups", element: <UserGroup /> },
+				{ path: "permissions", element: <Role /> },
 			{ path: "certificate", element: <Certificate /> },
 			{ path: "certificate/:id", element: <CertificateDetails /> },
 			{ path: "notification", element: <Notification /> },

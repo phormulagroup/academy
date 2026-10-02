@@ -1,24 +1,11 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
-import {
-  Dropdown,
-  Empty,
-  Pagination,
-  Progress,
-  Select,
-  Table,
-  Tag,
-} from "antd";
+import { useEffect, useMemo, useState } from "react";
+import RowActions from "../../components/admin/rowActions";
+import { Divider, Pagination, Progress, Select, Table, Tag } from "antd";
 import { FaRegEdit } from "react-icons/fa";
 import { useContext } from "react";
-import {
-  LuClipboardCheck,
-  LuGraduationCap,
-  LuMail,
-  LuSettings,
-  LuUser,
-  LuUsers,
-} from "react-icons/lu";
+import { LuClipboardCheck, LuAward, LuGraduationCap, LuSettings, LuUsers } from "react-icons/lu";
+import { AiOutlineClockCircle } from "react-icons/ai";
 
 import { Context } from "../../utils/context";
 
@@ -28,12 +15,45 @@ import dayjs from "dayjs";
 import { CheckCircle, CircleX } from "lucide-react";
 
 import { Link, useNavigate } from "react-router-dom";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
 import { RxSwitch } from "react-icons/rx";
 import Status from "../../components/admin/user/status";
+import UserCell from "../../components/admin/userCell";
+import { StackedBar, HorizontalBars } from "../../components/admin/charts";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Número-resumo compacto que liga à página respetiva (mesmo estilo dos cartões-resumo dos Relatórios)
+function StatTile({ to, icon, label, value }) {
+  return (
+    <Link to={to}>
+      <div className="flex flex-col items-center justify-center gap-1 bg-white shadow rounded-[16px] py-4 px-3 transition-shadow hover:shadow-md">
+        <span className="text-[20px] text-[#163986]">{icon}</span>
+        <p className="text-[18px] font-bold mb-0! whitespace-nowrap">{value ?? "—"}</p>
+        <p className="text-[12px] text-[#8A8D98] mb-0! text-center whitespace-nowrap">{label}</p>
+      </div>
+    </Link>
+  );
+}
+
+// Cartão do dashboard (branco, com sombra), com título e uma ligação opcional
+function Card({ title, subtitle, to, extra, className = "", children }) {
+  const { t } = useTranslation();
+  return (
+    <div className={`flex flex-col p-6 w-full bg-white shadow rounded-[16px] ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+        <div>
+          <p className="text-[16px] font-bold mb-0!">{title}</p>
+          {subtitle && <p className="text-[12px] text-[#8A8D98] mb-0!">{subtitle}</p>}
+        </div>
+        {extra}
+        {to && (
+          <Link to={to} className="text-[#163986]! underline! text-[11px]">
+            {t("Show all")} »
+          </Link>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function Main() {
   const { user, selectedLanguage } = useContext(Context);
@@ -64,6 +84,8 @@ export default function Main() {
   });
   const [tables] = useState({ course_module: "course module" });
   const [isOpenStatus, setIsOpenStatus] = useState(false);
+  // Curso escolhido no seletor: filtra os gráficos de progresso e a tabela de atividade
+  const [selectedCourse, setSelectedCourse] = useState(null);
 
   const [paginationByTable, setPaginationByTable] = useState({
     bestStudents: { currentPage: 1, pageSize: 5 },
@@ -82,6 +104,7 @@ export default function Main() {
         params: { id_lang: selectedLanguage.id },
       })
       .then((res) => {
+        setSelectedCourse(null);
         setData(res.data);
         prepareData(res.data);
       })
@@ -127,28 +150,10 @@ export default function Main() {
       }
 
       auxActivity.push({
-        user: (
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <LuUser className="w-5 h-5 p-0.5 mr-1 text-[#163986] shrink-0" />
-              <p className="text-[12px]">
-                {
-                  obj.users.filter((u) => u.id === obj.activity[i].id_user)[0]
-                    .name
-                }
-              </p>
-            </div>
-            <div className="flex items-center mt-1">
-              <LuMail className="w-5 h-5 p-0.5 mr-1 text-[#163986] shrink-0" />
-              <p className="text-[11px]">
-                {
-                  obj.users.filter((u) => u.id === obj.activity[i].id_user)[0]
-                    .email
-                }
-              </p>
-            </div>
-          </div>
-        ),
+        user: (() => {
+          const u = obj.users.find((x) => x.id === obj.activity[i].id_user);
+          return <UserCell id={u?.id} name={u?.name} email={u?.email} img={u?.img} />;
+        })(),
         course: obj.courses.filter((c) => c.id === obj.activity[i].id_course)[0]
           .name,
         progress: (
@@ -203,6 +208,7 @@ export default function Main() {
           </p>
         ),
         fullData: {
+          id_course: obj.activity[i].id_course,
           user_name: obj.users.filter(
             (u) => u.id === obj.activity[i].id_user,
           )[0].name,
@@ -241,7 +247,12 @@ export default function Main() {
       }
     }
 
-    auxBestStudents.sort((a, b) => (a < b ? -1 : 1));
+    // Melhores alunos: a melhor nota de cada pessoa (um aluno que fez vários testes só conta uma vez), da mais alta para a mais baixa
+    const bestByUser = new Map();
+    auxBestStudents.forEach((a) => {
+      if (!bestByUser.has(a.id_user) || a.percentage > bestByUser.get(a.id_user).percentage) bestByUser.set(a.id_user, a);
+    });
+    auxBestStudents = [...bestByUser.values()].sort((a, b) => b.percentage - a.percentage);
 
     for (let l = 0; l < obj.logs.length; l++) {
       obj.logs[l].meta_data = obj.logs[l].meta_data
@@ -277,11 +288,7 @@ export default function Main() {
         hour: dayjs(obj.users[u].created_at).format("HH:mm"),
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
+            <RowActions items={[
                   {
                     label: t("Change status"),
                     key: `${obj.users[u].id}-status`,
@@ -294,12 +301,7 @@ export default function Main() {
                     icon: <FaRegEdit />,
                     onClick: () => navigate(`/admin/users/${obj.users[u].id}`),
                   },
-                ],
-              }}>
-              <span className="inline-flex cursor-pointer">
-                <LuSettings className="text-[15px] text-[#163986]" />
-              </span>
-            </Dropdown>
+                ]} />
           </div>
         ),
         fullData: obj.users[u],
@@ -368,7 +370,8 @@ export default function Main() {
     }
   }
 
-  function filterProgressCourses(id_course, users, courseActivity, courses) {
+  // Distribuição e percentagem de progresso dos alunos, de todos os cursos ou só do curso escolhido (id_course)
+  function filterProgressCourses(id_course, users, courseActivity, courses = []) {
     let auxGraphicCourses = {
       notStarted: { value: 0, label: "Not started", color: "#C7F1F8" },
       inProgress: { value: 0, label: "In progress", color: "#80DCEB" },
@@ -383,63 +386,36 @@ export default function Main() {
       "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
     };
 
+    // Cursos em causa e se o curso está disponível para o aluno (limite de país)
+    const scopedCourses = id_course ? courses.filter((c) => c.id === id_course) : courses;
+    const isAvailableTo = (user) =>
+      scopedCourses.some((c) => {
+        if (!c.settings) return true;
+        const settings = typeof c.settings === "string" ? JSON.parse(c.settings) : c.settings;
+        return settings.country_limit ? !!settings.country?.includes(user.country) : true;
+      });
+
     for (let u = 0; u < users.length; u++) {
-      let findActivity = courseActivity.filter(
-        (_a) => _a.id_user === users[u].id,
-      );
+      // Só a atividade do curso escolhido (ou de todos, sem curso escolhido)
+      const findActivity = courseActivity.filter((_a) => _a.id_user === users[u].id && (!id_course || _a.id_course === id_course));
+
       if (findActivity.length > 0) {
-        if (id_course)
-          findActivity = findActivity.filter(
-            (_a) => _a.id_course === id_course,
-          );
-        if (
-          findActivity.filter(
-            (_f) => _f.activity_type === "course" && _f.is_completed === 1,
-          ).length > 0
-        ) {
+        if (findActivity.filter((_f) => _f.activity_type === "course" && _f.is_completed === 1).length > 0) {
           auxGraphicCourses.completed.value += 1;
         } else {
-          let totalSteps = findActivity.filter(
-            (_f) => _f.activity_type === "topic" || _f.activity_type === "test",
-          );
-          let percentage =
-            (totalSteps.filter((_t) => _t.is_completed).length * 100) /
-            totalSteps.length;
-          if (totalSteps > 0) {
-            if (percentage >= 0) {
-              if (percentage < 20)
-                auxGraphicCoursesProgress["< 20%"].value += 1;
-              else if (percentage < 40)
-                auxGraphicCoursesProgress["< 40%"].value += 1;
-              else if (percentage < 60)
-                auxGraphicCoursesProgress["< 60%"].value += 1;
-              else if (percentage < 80)
-                auxGraphicCoursesProgress["< 80%"].value += 1;
-              else if (percentage < 100)
-                auxGraphicCoursesProgress["< 100%"].value += 1;
-            }
-          } else {
-            auxGraphicCoursesProgress["< 20%"].value += 1;
-          }
+          const totalSteps = findActivity.filter((_f) => _f.activity_type === "topic" || _f.activity_type === "test");
+          const percentage = totalSteps.length > 0 ? (totalSteps.filter((_t) => _t.is_completed).length * 100) / totalSteps.length : 0;
+          if (percentage < 20) auxGraphicCoursesProgress["< 20%"].value += 1;
+          else if (percentage < 40) auxGraphicCoursesProgress["< 40%"].value += 1;
+          else if (percentage < 60) auxGraphicCoursesProgress["< 60%"].value += 1;
+          else if (percentage < 80) auxGraphicCoursesProgress["< 80%"].value += 1;
+          else auxGraphicCoursesProgress["< 100%"].value += 1;
 
           auxGraphicCourses.inProgress.value += 1;
         }
-      } else {
-        let findCourseAvailableToUser = courses.filter((c) => {
-          if (!c.settings) return true;
-
-          const settings = JSON.parse(c.settings);
-          if (settings.country_limit) {
-            return settings.country.includes(users[u].country);
-          }
-
-          return true;
-        });
-
-        if (findCourseAvailableToUser && findCourseAvailableToUser.length > 0) {
-          if (courses) auxGraphicCourses.notStarted.value += 1;
-          auxGraphicCoursesProgress["< 20%"].value += 1;
-        }
+      } else if (isAvailableTo(users[u])) {
+        auxGraphicCourses.notStarted.value += 1;
+        auxGraphicCoursesProgress["< 20%"].value += 1;
       }
     }
 
@@ -460,473 +436,208 @@ export default function Main() {
     setIsOpenStatus(false);
   }
 
+  // Conclusões = alunos que concluíram um curso (uma por par aluno+curso)
+  const completions = useMemo(() => {
+    const done = new Set();
+    (data.activity || []).forEach((a) => {
+      if (a.activity_type === "course" && a.is_completed === 1) done.add(`${a.id_user}-${a.id_course}`);
+    });
+    return done.size;
+  }, [data]);
+
+  const pageOf = (key, items) => {
+    const { currentPage, pageSize } = paginationByTable[key] || { currentPage: 1, pageSize: 5 };
+    return items.slice((currentPage - 1) * pageSize, (currentPage - 1) * pageSize + pageSize);
+  };
+
+  // Os rótulos dos estados vêm em inglês (chave de tradução): traduzem-se ao mostrar
+  const progressSegments = Object.values(graphicCourses).map((seg) => ({ ...seg, label: t(seg.label) }));
+  // Do escalão mais baixo ao mais alto
+  const progressBuckets = Object.values(graphicCoursesProgress).slice().reverse();
+
+  const pagination = (key, total) => (
+    <div className="flex justify-center items-center mt-4 w-full">
+      <Pagination
+        defaultPageSize={5}
+        pageSizeOptions={[5, 10, 20]}
+        simple
+        align="center"
+        onShowSizeChange={(page, pageSize) => pageSizeChange(key, page, pageSize)}
+        className="w-full!"
+        total={total}
+        current={paginationByTable[key]?.currentPage}
+        onChange={(page, pageSize) => changePage(key, page, pageSize)}
+        pageSize={paginationByTable[key]?.pageSize}
+      />
+    </div>
+  );
+
   return (
-    <div className="p-2">
+    <div className="p-2 flex flex-col gap-4">
       <Status data={selectedUser} open={isOpenStatus} close={closeSatus} />
-      <p className="text-[18px] font-bold mb-4 font-ryker">
-        {t("Overview e-Learning")}
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="flex justify-between items-center bg-[#FFF]">
-            <div className="grid grid-cols-3 w-full">
-              <div className="flex flex-col justify-center items-center border-l border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-l-[5px]">
-                <div className="w-17.5 h-17.5 rounded-full bg-white flex justify-center items-center">
-                  <LuUsers className="text-[32px] text-[#163986]" />
-                </div>
-                <p className="mt-4">{t("Total of students")}</p>
-                <p className="mt-1 font-bold text-[30px] font-ryker">
-                  {data.users?.length}
-                </p>
-              </div>
-              <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6">
-                <div className="w-17.5 h-17.5 rounded-full bg-[#C5CEE1] flex justify-center items-center">
-                  <LuGraduationCap className="text-[32px] text-[#163986]" />
-                </div>
-                <p className="mt-4">{t("Total of courses")}</p>
-                <p className="mt-1 font-bold text-[30px] font-ryker">
-                  {data.courses?.length}
-                </p>
-              </div>
-              <div className="flex flex-col justify-center items-center border-t border-b border-r border-[#C0C0C0] p-6 bg-[#C5CEE1] rounded-r-[5px]">
-                <div className="w-17.5 h-17.5 rounded-full bg-white flex justify-center items-center">
-                  <LuClipboardCheck className="text-[32px] text-[#163986]" />
-                </div>
-                <p className="mt-4">{t("Active tests")}</p>
-                <p className="mt-1 font-bold text-[30px] font-ryker">
-                  {calcActiveTests(data.tests)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col bg-[#FFF] p-6 border border-[#C0C0C0] rounded-[5px] mt-4">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <p className="font-bold mr-2 font-ryker">
-                  {t("Course progress")}
-                </p>
-                <Select
-                  className="min-w-50"
-                  placeholder={t("Choose a course")}
-                  showSearch={{ optionFilterProp: "label" }}
-                  allowClear
-                  onChange={(e) =>
-                    filterProgressCourses(e, data.users, data.activity)
-                  }
-                  options={data.courses?.map((item) => ({
-                    label: item.name,
-                    value: item.id,
-                  }))}
-                />
-              </div>
-              <div>
-                <Link
-                  to="/admin/users"
-                  className="text-[#163986]! underline! text-[10px]">
-                  {t("Show all")} »
-                </Link>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-10 w-full">
-              <div className="flex flex-col">
-                <p className="font-bold mb-4 font-ryker">
-                  {t("Progress distribution")}
-                </p>
-                <div className="flex justify-between items-center gap-4 w-full!">
-                  <div className="w-1/2">
-                    <Doughnut
-                      className="w-full! h-full!"
-                      data={{
-                        labels: [
-                          t(graphicCourses.notStarted?.label),
-                          t(graphicCourses.inProgress?.label),
-                          t(graphicCourses.completed?.label),
-                        ],
-                        datasets: [
-                          {
-                            data: [
-                              graphicCourses.notStarted.value,
-                              graphicCourses.inProgress.value,
-                              graphicCourses.completed.value,
-                            ],
-                            backgroundColor: [
-                              graphicCourses.notStarted.color,
-                              graphicCourses.inProgress.color,
-                              graphicCourses.completed.color,
-                            ],
-                            borderWidth: 1,
-                          },
-                        ],
-                      }}
-                      options={{
-                        plugins: {
-                          legend: {
-                            display: false,
-                          },
-                        },
-                      }}
-                    />
-                  </div>
-                  <div>
-                    {Object.keys(graphicCourses).map((_k) => (
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div
-                            className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`}
-                            style={{
-                              backgroundColor: graphicCourses[_k].color,
-                            }}></div>
-                          <p className="text-[11px]">
-                            {t(graphicCourses[_k].label)}
-                          </p>
-                        </div>
-                        <div className="min-w-10 flex justify-center items-center">
-                          <p className="text-[11px]">
-                            {graphicCourses[_k].value}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-bold mb-4 font-ryker">
-                  {t("Progress Percentage")}
-                </p>
-                <div className="flex justify-between items-center gap-4 w-full!">
-                  <div className="w-1/2">
-                    <Doughnut
-                      className="w-full! h-full!"
-                      data={{
-                        labels: [
-                          graphicCoursesProgress["< 100%"].label,
-                          graphicCoursesProgress["< 80%"].label,
-                          graphicCoursesProgress["< 60%"].label,
-                          graphicCoursesProgress["< 40%"].label,
-                          graphicCoursesProgress["< 20%"].label,
-                        ],
-                        datasets: [
-                          {
-                            data: [
-                              graphicCoursesProgress["< 100%"].value,
-                              graphicCoursesProgress["< 80%"].value,
-                              graphicCoursesProgress["< 60%"].value,
-                              graphicCoursesProgress["< 40%"].value,
-                              graphicCoursesProgress["< 20%"].value,
-                            ],
-                            backgroundColor: [
-                              graphicCoursesProgress["< 100%"].color,
-                              graphicCoursesProgress["< 80%"].color,
-                              graphicCoursesProgress["< 60%"].color,
-                              graphicCoursesProgress["< 40%"].color,
-                              graphicCoursesProgress["< 20%"].color,
-                            ],
-                            borderWidth: 1,
-                          },
-                        ],
-                      }}
-                      options={{
-                        plugins: {
-                          legend: {
-                            display: false,
-                          },
-                        },
-                      }}
-                    />
-                  </div>
-                  <div>
-                    {Object.keys(graphicCoursesProgress).map((_k) => (
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div
-                            className={`mr-2 min-w-3 w-3 min-h-3 h-3 rounded-full`}
-                            style={{
-                              backgroundColor: graphicCoursesProgress[_k].color,
-                            }}></div>
-                          <p className="text-[11px]">
-                            {graphicCoursesProgress[_k].label}
-                          </p>
-                        </div>
-                        <div className="min-w-10 flex justify-center items-center">
-                          <p className="text-[11px]">
-                            {graphicCoursesProgress[_k].value}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
-          <p className="font-bold text-[16px] mb-4 font-ryker">
-            {t("Activity")}
-          </p>
+
+      <p className="text-[18px] font-bold mb-0!">{t("Overview e-Learning")}</p>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <StatTile to="/admin/users" icon={<LuUsers />} label={t("Total of students")} value={data.users?.length} />
+        <StatTile to="/admin/courses" icon={<LuGraduationCap />} label={t("Total of courses")} value={data.courses?.length} />
+        <StatTile to="/admin/reports" icon={<LuClipboardCheck />} label={t("Active tests")} value={data.tests ? calcActiveTests(data.tests) : undefined} />
+        <StatTile to="/admin/reports" icon={<LuAward />} label={t("Completions")} value={data.activity ? completions : undefined} />
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4">
+        <p className="text-[18px] font-bold mb-0!">{t("Students progress")}</p>
+        <Select
+          className="w-full sm:w-[260px]!"
+          placeholder={t("Choose a course")}
+          value={selectedCourse ?? undefined}
+          showSearch={{ optionFilterProp: "label" }}
+          allowClear
+          onChange={(e) => {
+            setSelectedCourse(e ?? null);
+            filterProgressCourses(e, data.users, data.activity, data.courses);
+          }}
+          options={data.courses?.map((item) => ({ label: item.name, value: item.id }))}
+        />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title={t("Progress distribution")}>
+          <StackedBar segments={progressSegments} />
+        </Card>
+        <Card title={t("Progress Percentage")}>
+          <HorizontalBars rows={progressBuckets} />
+        </Card>
+      </div>
+
+      <Card title={t("Activity")}>
+        <Table
+          dataSource={selectedCourse ? courseActivity.filter((row) => row.fullData.id_course === selectedCourse) : courseActivity}
+          scroll={{ x: "max-content" }}
+          pagination={{
+            pageSize: 5, // máximo 5 por página
+            placement: ["none", "bottomCenter"], // paginação ao centro
+            showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
+          }}
+          columns={[
+            { title: t("User"), dataIndex: "user", key: "user", width: 240 },
+            { title: t("Progress"), dataIndex: "progress", key: "progress", responsive: ["md"] },
+            { title: t("Status"), dataIndex: "status", key: "status", width: "80px" },
+            { title: t("Date"), dataIndex: "date", key: "date", width: "190px" },
+          ]}
+        />
+      </Card>
+
+      <p className="text-[18px] font-bold mt-4 mb-0!">{t("Platform status")}</p>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {/* Registos de utilizadores */}
+        <Card
+          title={t("Registrations on the platform")}
+          subtitle={t("The most recent submissions made through the registration form are listed here.")}
+          to="/admin/users"
+          className="xl:col-span-2">
           <Table
-            dataSource={courseActivity}
+            dataSource={usersData}
+            rowKey="id"
+            scroll={{ x: "max-content" }}
+            onRow={(row) => ({ className: "cursor-pointer", onClick: () => navigate(`/admin/users/${row.fullData.id}`) })}
             pagination={{
               pageSize: 5, // máximo 5 por página
-              placement: ["bottomCenter"], // paginação ao centro
+              placement: ["none", "bottomCenter"], // paginação ao centro
+              showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
             }}
             columns={[
+              { title: t("ID"), dataIndex: "id", key: "id", width: "60px" },
               {
-                title: <span className="font-ryker">{t("User")}</span>,
-                dataIndex: "user",
+                title: t("User"),
                 key: "user",
-                width: 240,
+                width: "260px",
+                render: (_, row) => <UserCell id={row.fullData.id} name={row.fullData.name} email={row.fullData.email} img={row.fullData.img} linkToProfile={false} />,
               },
+              { title: t("Status"), dataIndex: "status", key: "status", width: "100px" },
               {
-                title: <span className="font-ryker">{t("Progress")}</span>,
-                dataIndex: "progress",
-                key: "progress",
+                title: t("Registered"),
+                key: "registered_at",
+                render: (_, row) => (
+                  <div>
+                    <p className="mb-0!">{row.date}</p>
+                    <p className="text-[11px] text-[#8A8D98] mb-0!">{row.hour}</p>
+                  </div>
+                ),
               },
-              {
-                title: <span className="font-ryker">{t("Status")}</span>,
-                dataIndex: "status",
-                key: "status",
-                width: "80px",
-              },
-              {
-                title: <span className="font-ryker">{t("Date")}</span>,
-                dataIndex: "date",
-                key: "date",
-                width: "170px",
-              },
+              // stopPropagation: a linha abre os detalhes ao clicar; o menu não deve abri-los também
+              { title: "", key: "actions", width: "60px", render: (_, row) => <div onClick={(e) => e.stopPropagation()}>{row.actions}</div> },
             ]}
           />
-        </div>
-      </div>
-      <div className="flex flex-col mt-4">
-        <p className="text-lg font-bold mb-4 font-ryker">
-          {t("Platform status")}
-        </p>
-        <div className="grid grid-cols-4 gap-4">
-          {/* USERS TABLE */}
-          <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px] col-span-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-lg font-bold font-ryker">
-                  {t("Registrations on the platform")}
-                </p>
-                <p className="mb-4 mt-1 font-ryker">
-                  {t(
-                    "The most recent submissions made through the registration form are listed here.",
-                  )}
-                </p>
-              </div>
-              <div>
-                <Link
-                  to="/admin/users"
-                  className="text-[#163986]! underline! text-[10px]">
-                  {t("Show all")} »
-                </Link>
-              </div>
-            </div>
-            <Table
-              dataSource={usersData}
-              pagination={{
-                pageSize: 5, // máximo 5 por página
-                position: ["bottomCenter"], // paginação ao centro
-              }}
-              columns={[
-                {
-                  title: <span className="font-ryker">{t("ID")}</span>,
-                  dataIndex: "id",
-                  key: "id",
-                  width: "60px",
-                },
-                {
-                  title: <span className="font-ryker">{t("User")}</span>,
-                  dataIndex: "name",
-                  key: "name",
-                  width: "200px",
-                },
-                {
-                  title: <span className="font-ryker">{t("Status")}</span>,
-                  dataIndex: "status",
-                  key: "status",
-                  width: "80px",
-                },
-                {
-                  title: <span className="font-ryker">{t("Day")}</span>,
-                  dataIndex: "date",
-                  key: "date",
-                },
-                {
-                  title: <span className="font-ryker">{t("Hour")}</span>,
-                  dataIndex: "hour",
-                  key: "hour",
-                },
-                {
-                  title: "",
-                  dataIndex: "actions",
-                  key: "actions",
-                },
-              ]}
-            />
-          </div>
+        </Card>
 
-          {/* BEST STUDENTS TABLE */}
-          <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-lg font-bold mb-4 font-ryker">
-                  {t("Best students")}
-                </p>
-              </div>
-              <div>
-                <Link
-                  to="/admin/users"
-                  className="text-[#163986]! underline! text-[10px]">
-                  {t("Show all")} »
-                </Link>
-              </div>
-            </div>
+        {/* Melhores alunos */}
+        <Card title={t("Best students")} to="/admin/users">
+          <div>
             {bestStudentsData.length === 0 ? (
-              <Empty />
+              <div className="py-6 text-center text-[#8A8D98] text-[13px]">{t("No students yet")}</div>
             ) : (
-              bestStudentsData
-                .slice(
-                  (paginationByTable.bestStudents?.currentPage - 1) *
-                    paginationByTable.bestStudents?.pageSize,
-                  (paginationByTable.bestStudents?.currentPage - 1) *
-                    paginationByTable.bestStudents?.pageSize +
-                    paginationByTable.bestStudents?.pageSize,
-                )
-                .map((u) => (
-                  <Link to={`/admin/users/${u.id_user}`}>
-                    <div className="flex justify-start items-center">
-                      <div
-                        className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
-                        style={{
-                          backgroundImage: u.img
-                            ? `url(${config.server_ip}/media/${u.img})`
-                            : "none",
-                          backgroundColor: u.img ? "transparent" : "#ccc",
-                        }}>
-                        {!u.img && (
-                          <p className="text-[#163986]">
-                            {u.user_name.split(" ")[0][0]}
-                            {u.user_name.split(" ")[1][0]}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <p className="text-[#163986]">{u.user_name}</p>
-                        <p className="text-[11px] text-[#163986] underline">
-                          {u.user_email}
-                        </p>
-                        <p className="text-[11px] text-[#163986] mt-1">
-                          ID: {u.id_user}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-            )}
-
-            {bestStudentsData.length > 0 && (
-              <div className="flex justify-center items-center mt-4 w-full">
-                <Pagination
-                  defaultPageSize={5}
-                  pageSizeOptions={[5, 10, 20]}
-                  simple
-                  align="center"
-                  onShowSizeChange={(page, pageSize) =>
-                    pageSizeChange("bestStudents", page, pageSize)
-                  }
-                  className="mt-8! w-full!"
-                  total={bestStudentsData.length}
-                  current={paginationByTable.bestStudents?.currentPage}
-                  onChange={(page, pageSize) =>
-                    changePage("logs", page, pageSize)
-                  }
-                  pageSize={paginationByTable.bestStudents?.pageSize}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* ACCESS LOGS TABLE */}
-          <div className="flex flex-col p-6 w-full bg-white border border-[#C0C0C0] rounded-[5px]">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-lg font-bold mb-4 font-ryker">
-                  {t("Access logs")}
-                </p>
-              </div>
-              <div>
-                <Link
-                  to="/admin/users"
-                  className="text-[#163986]! underline! text-[10px]">
-                  {t("Show all")} »
-                </Link>
-              </div>
-            </div>
-            {logsData.length === 0 ? (
-              <Empty />
-            ) : (
-              logsData
-                .slice(
-                  (paginationByTable.logs?.currentPage - 1) *
-                    paginationByTable.logs?.pageSize,
-                  (paginationByTable.logs?.currentPage - 1) *
-                    paginationByTable.logs?.pageSize +
-                    paginationByTable.logs?.pageSize,
-                )
-                .map((l) => (
-                  <div className="flex justify-between items-center mt-4">
-                    <div>
-                      <p>
-                        {dayjs(l.created_at).format("DD MMM, YYYY")} |{" "}
-                        {dayjs(l.created_at).format("HH:mm")}
-                      </p>
-                      <p className="font-bold">ID: {l.id_user}</p>
-                      <p className="underline">{l.user_name}</p>
-                    </div>
-                    <div className="flex flex-col justify-end items-end">
-                      <Tag color={colors[l.action]} variant="outlined">
-                        {l.action}
+              <div className="flex flex-col gap-4">
+                {pageOf("bestStudents", bestStudentsData).map((u, idx) => (
+                  <div key={`${u.id_user}-${idx}`} className="flex justify-between items-center gap-4">
+                    <UserCell id={u.id_user} name={u.user_name} email={u.user_email} img={u.img} />
+                    {u.percentage !== undefined && (
+                      <Tag color="green" className="shrink-0 m-0!">
+                        {Math.round(u.percentage)}%
                       </Tag>
-                      {l.table_name && l.meta_data ? (
-                        <Tag
-                          color={"grey"}
-                          variant="outlined"
-                          className="mt-2!">
-                          {tables[l.table_name] ?? l.table_name}
-                          {l.table_name.includes("course") && l.meta_data.name
-                            ? `: ${l.meta_data.name}`
-                            : null}
-                        </Tag>
-                      ) : null}
-                    </div>
+                    )}
                   </div>
-                ))
-            )}
-
-            {logsData.length > 0 && (
-              <div className="flex justify-center items-center mt-4 w-full">
-                <Pagination
-                  defaultPageSize={5}
-                  pageSizeOptions={[5, 10, 20]}
-                  simple
-                  align="center"
-                  onShowSizeChange={pageSizeChange}
-                  className="mt-8! w-full!"
-                  total={logsData.length}
-                  current={paginationByTable.logs?.currentPage}
-                  onChange={(page, pageSize) =>
-                    changePage("logs", page, pageSize)
-                  }
-                  pageSize={paginationByTable.logs?.pageSize}
-                />
+                ))}
               </div>
             )}
           </div>
-        </div>
+          {bestStudentsData.length > 0 && pagination("bestStudents", bestStudentsData.length)}
+        </Card>
+
+        {/* Registos de acesso */}
+        <Card title={t("Access logs")} subtitle={t("{{total}} accesses", { total: logsData.length })} to="/admin/users">
+          <div>
+            {logsData.length === 0 ? (
+              <div className="py-6 text-center text-[#8A8D98] text-[13px] flex flex-col items-center gap-2">
+                <AiOutlineClockCircle className="text-[40px] text-[#BFBFBF]" />
+                {t("No access logs yet")}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {(() => {
+                  // Agrupado por dia: o cabeçalho da data só aparece quando muda em relação ao registo anterior
+                  // (já vêm ordenados do mais recente para o mais antigo)
+                  let lastDay = null;
+                  return pageOf("logs", logsData).map((l, idx) => {
+                    const day = dayjs(l.created_at).format("DD MMM, YYYY");
+                    const isNewDay = day !== lastDay;
+                    lastDay = day;
+                    return (
+                      <div key={l.id ?? idx}>
+                        {isNewDay && (
+                          <>
+                            <p className={`text-[12px] text-[#8A8D98] mb-2! uppercase ${idx === 0 ? "mt-0!" : "mt-2!"}`}>{day}</p>
+                            <Divider className="my-2!" />
+                          </>
+                        )}
+                        <div className="flex justify-between items-center gap-4">
+                          <div className="flex flex-col min-w-0">
+                            <UserCell id={l.id_user} name={l.user_name} email={l.user_email} img={l.user_img} />
+                          </div>
+                          <div className="flex flex-col justify-center items-center shrink-0">
+                            <Tag color={colors[l.action]} variant="outlined">
+                              {l.action}
+                            </Tag>
+                            <p className="text-[11px] text-[#8A8D98] mb-0! mt-1! truncate">{dayjs(l.created_at).format("HH:mm")}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </div>
+          {logsData.length > 0 && pagination("logs", logsData.length)}
+        </Card>
       </div>
     </div>
   );

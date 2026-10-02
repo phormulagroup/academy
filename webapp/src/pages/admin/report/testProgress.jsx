@@ -3,6 +3,10 @@ import { Button, Form, Select, Switch } from "antd";
 
 import { useTranslation } from "react-i18next";
 import { Doughnut } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+
+// Os gráficos circulares precisam dos elementos registados (antes vinha do dashboard, que já não os usa)
+ChartJS.register(ArcElement, Tooltip, Legend);
 import { LuSearch } from "react-icons/lu";
 
 // Nº de países visíveis por idioma antes do "Mostrar tudo"
@@ -375,47 +379,22 @@ export default function TestProgress({ data, products, languages }) {
   }
 
   return (
-    <div className="p-4">
+    <div>
       <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8 mb-4 mt-4">
-          <div className="hidden md:block md:col-span-2"></div>
+        <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
           {/* Filtrar por produto */}
-          <Form.Item name="product" label={t("Product")} className="mb-0!">
+          <Form.Item name="product" className="mb-0! w-full sm:w-auto">
             <Select
               allowClear
-              size="large"
-              className="w-full"
+              className="w-full sm:w-[260px]!"
               placeholder={t("Select product")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
+              showSearch={{ optionFilterProp: ["label"] }}
               options={products?.map((p) => ({ label: p.name, value: p.id }))}
             />
           </Form.Item>
-
-          {/* Filtrar por curso */}
-          {/* <Form.Item name="course" label={t("Course")} className="mb-0!">
-            <Select
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select course")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={data.courses?.map((c) => ({ label: c.name, value: c.id }))}
-            />
-          </Form.Item> */}
-          <div className="flex justify-center items-end">
-            <Button
-              className="w-full"
-              size="large"
-              onClick={form.submit}
-              type="primary"
-              icon={<LuSearch className="text-[15px]" />}>
-              {t("Search")}
-            </Button>
-          </div>
+          <Button onClick={form.submit} type="primary" icon={<LuSearch />}>
+            {t("Search")}
+          </Button>
         </div>
       </Form>
       <div className="p-4 bg-white rounded-[5px]">

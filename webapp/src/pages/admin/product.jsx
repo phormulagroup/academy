@@ -1,11 +1,13 @@
 import axios from "axios";
+import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
+import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Dropdown } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Button } from "antd";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
+import useListFilters, { includesText } from "../../components/admin/listFilters";
 import Create from "../../components/admin/product/create";
 import Update from "../../components/admin/product/update";
 import Delete from "../../components/admin/delete";
@@ -22,6 +24,7 @@ import { RxReload } from "react-icons/rx";
 export default function Product() {
   const { user } = useContext(Context);
   const { t } = useTranslation();
+  const perm = usePermission("product");
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -61,29 +64,20 @@ export default function Product() {
         full_data: array[i],
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
-                  {
+            <RowActions items={[
+                  perm.canUpdate && {
                     label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  {
+                  perm.canDelete && {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
                   },
-                ],
-              }}>
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
+                ]} />
           </div>
         ),
       });
@@ -124,6 +118,12 @@ export default function Product() {
     setIsOpenTranslations(false);
   }
 
+  // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
+  const { filterRows, toolbar } = useListFilters([
+    { key: "name", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.name, v) },
+    { key: "status", type: "select", primary: true, label: t("Status"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => row.full_data.is_deleted === v },
+  ]);
+
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
@@ -139,27 +139,28 @@ export default function Product() {
         close={closeAction}
         table="product"
       />
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Products")}</p>
         </div>
-        <div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {toolbar}
           <Button
             size="large"
             onClick={getData}
             icon={<RxReload />}
-            className="mr-2"
+           
           />
-          <Button
+          {perm.canCreate && (<Button
             size="large"
             onClick={() => setIsOpenCreate(true)}
             icon={<AiOutlinePlus />}>
             {t("Add product")}
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Table
-        dataSource={tableData}
+        dataSource={filterRows(tableData)}
         loading={isLoading}
         columns={[
           {
@@ -168,7 +169,6 @@ export default function Product() {
             key: "name",
             sort: true,
             sortType: "text",
-            search: "name",
             width: "50%",
           },
           {
@@ -176,10 +176,6 @@ export default function Product() {
             dataIndex: "is_deleted",
             key: "is_deleted",
             width: "150px",
-            filters: [
-              { text: t("Active"), value: 0 },
-              { text: t("Inactive"), value: 1 },
-            ],
           },
           {
             title: "",

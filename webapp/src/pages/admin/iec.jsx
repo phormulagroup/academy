@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePermission } from "../../utils/usePermission";
 import { DeleteOutlined, FilePdfOutlined, VideoCameraOutlined, FileImageOutlined, InboxOutlined, QrcodeOutlined, LinkOutlined, SwapRightOutlined, EyeOutlined, ExclamationCircleFilled } from "@ant-design/icons";
 import { Upload, Card, Pagination, Input, Modal, Button, QRCode, Tag, ConfigProvider } from "antd";
 import dayjs from "dayjs";
@@ -111,6 +112,7 @@ function ReplaceModal({ dialog, onClose, t }) {
 
 function Iec() {
   const { t, messageApi } = useContext(Context);
+  const perm = usePermission("iec");
   const [iecs, setIecs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -324,6 +326,7 @@ function Iec() {
       <div className="flex justify-between items-center mb-4">
         <p className="text-xl font-bold font-ryker">{t("IECs")}</p>
       </div>
+      {perm.canCreate && (
       <Dragger {...props}>
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
@@ -331,6 +334,7 @@ function Iec() {
         <p className="ant-upload-text">{t("Click or drag PDF, MP4, PNG or JPG files to this area to upload")}</p>
         <p className="ant-upload-hint">{t("Uploading a file with an existing name replaces it. The QR code of each IEC never changes.")}</p>
       </Dragger>
+      )}
       <div className="flex justify-end mt-6">
         <Input.Search
           allowClear
@@ -356,8 +360,8 @@ function Iec() {
               actions={[
                 <QrcodeOutlined key="qr" onClick={() => setQrItem(item)} />,
                 <LinkOutlined key="open" onClick={() => window.open(fileUrl(item), "_blank")} />,
-                <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />,
-              ]}>
+                perm.canDelete && <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />,
+              ].filter(Boolean)}>
               <Meta
                 title={
                   <div>

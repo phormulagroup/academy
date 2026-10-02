@@ -1,12 +1,12 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Button, Dropdown, Form, Select, Tag } from "antd";
+import { Button, Dropdown, Form, Select, Table, Tag } from "antd";
+import { IoSearch } from "react-icons/io5";
 import { IoMdMore } from "react-icons/io";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 import { RxReload } from "react-icons/rx";
 
-import Table from "../../../components/admin/table";
 
 import { Context } from "../../../utils/context";
 
@@ -16,7 +16,7 @@ import ExportTable from "../../../components/admin/export/export";
 import { LuDownload, LuSearch } from "react-icons/lu";
 import { getTestReportColumns } from "../../../utils/columns";
 
-export default function TestReport({ data }) {
+export default function TestReport({ data, isLoading }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -406,17 +406,12 @@ export default function TestReport({ data }) {
     }
 
     return (
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <p className="font-bold mb-2 mt-4">{t("Attempts")}</p>
-          <Button
-            className="min-w-50"
-            size="large"
-            variant="solid"
-            color="blue"
-            disabled={dataExpanded.length === 0}
-            onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<LuDownload className="text-[18px]" />}>
+      <div className="flex flex-col gap-3 p-4 md:p-5 bg-[#F7F8FA] rounded-[14px]">
+        <div className="flex flex-wrap justify-between items-center gap-3">
+          <p className="font-bold text-[14px] mb-0!">
+            {t("Attempts")} <span className="font-normal text-[#8A8D98]">({dataExpanded.length})</span>
+          </p>
+          <Button disabled={dataExpanded.length === 0} onClick={() => openExport(dataExpanded, columnsExpanded)} icon={<LuDownload />}>
             {t("Export excel")}
           </Button>
         </div>
@@ -431,10 +426,7 @@ export default function TestReport({ data }) {
               record.meta_data.items &&
               record.meta_data.items.length > 0,
           }}
-          pagination={{
-            pageSize: 5,
-            position: ["bottomCenter"],
-          }}
+          pagination={dataExpanded.length > 5 ? { pageSize: 5, placement: ["none", "bottomCenter"] } : false}
         />
       </div>
     );
@@ -511,90 +503,61 @@ export default function TestReport({ data }) {
   };
 
   return (
-    <div className="p-4">
-      <ExportTable
-        open={isOpenExport}
-        close={closeExport}
-        data={dataToExport}
-        table={"TestReport"}
-        columns={columnsToExport}
-      />
-      <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
-          <div className="flex justify-end items-end">
+    <div>
+      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={"TestReport"} columns={columnsToExport} />
+      <div className="flex justify-end items-center w-full">
+        <Form form={form} layout="vertical" onFinish={filterData} className="w-full">
+          <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
             <Button
-              className="w-full!"
-              size="large"
-              variant="solid"
-              color="blue"
-              // Quando não existe dados na tabela, o botão de exportar é desativado
+              // Sem dados na tabela, o botão de exportar fica desativado
               disabled={tableData.length === 0}
-              onClick={() =>
-                openExport(
-                  filteredData.length > 0 ? filteredData : tableData,
-                  getTestReportColumns(t),
-                )
-              }
-              icon={<LuDownload className="text-[18px]" />}>
-              {t("Export excel")}
+              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, getTestReportColumns(t))}
+              icon={<LuDownload />}>
+              <span className="hidden sm:inline">{t("Export excel")}</span>
             </Button>
-          </div>
-          <Form.Item name="course" label={t("Course")} className="mb-0!">
-            <Select
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select course")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={courses.map((c) => ({ label: c.name, value: c.id }))}
-            />
-          </Form.Item>
-          <Form.Item name="country" label={t("Country")} className="mb-0!">
-            <Select
-              mode="multiple"
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select country")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={countries.map((c) => ({
-                label: c,
-                value: c,
-              }))}
-            />
-          </Form.Item>
-          <div className="flex justify-center items-end">
-            <Button
-              className="w-full"
-              size="large"
-              onClick={form.submit}
-              type="primary"
-              icon={<LuSearch className="text-[15px]" />}>
+            <Form.Item name="course" className="mb-0! w-full sm:w-auto">
+              <Select
+                allowClear
+                className="w-full sm:w-[260px]!"
+                placeholder={t("Select course")}
+                showSearch={{ optionFilterProp: ["label"] }}
+                options={courses.map((c) => ({ label: c.name, value: c.id }))}
+              />
+            </Form.Item>
+            <Form.Item name="country" className="mb-0! w-full sm:w-auto">
+              <Select
+                mode="multiple"
+                allowClear
+                maxTagCount="responsive"
+                className="w-full sm:w-[260px]!"
+                placeholder={t("Select country")}
+                showSearch={{ optionFilterProp: ["label"] }}
+                options={countries.map((c) => ({ label: c, value: c }))}
+              />
+            </Form.Item>
+            <Button onClick={form.submit} type="primary" icon={<IoSearch />}>
               {t("Search")}
             </Button>
           </div>
-        </div>
-      </Form>
-      <div className="p-4 bg-white rounded-[5px]">
-        <Table
-          rowKey="id"
-          onChange={onChange}
-          expandable={{
-            expandedRowRender: expandedAttemptRowRender,
-            rowExpandable: (record) => record.attempts > 0,
-          }}
-          dataSource={tableData}
-          pagination={{
-            pageSize: 5, // máximo 5 por página
-            position: ["bottomCenter"], // paginação ao centro
-          }}
-          columns={getTestReportColumns(t)}
-        />
+        </Form>
       </div>
+      <Table
+        rowKey="id"
+        onChange={onChange}
+        loading={isLoading}
+        expandable={{
+          expandedRowRender: expandedAttemptRowRender,
+          rowExpandable: (record) => record.attempts > 0,
+        }}
+        dataSource={tableData}
+        scroll={{ x: "max-content" }}
+        pagination={{
+          pageSize: 5, // máximo 5 por página
+          placement: ["none", "bottomCenter"], // paginação ao centro
+          showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
+        }}
+        columns={getTestReportColumns(t)}
+      />
     </div>
   );
 }

@@ -1,15 +1,16 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { useState } from "react";
-import { Button, Empty, Form, Input, Select, Spin } from "antd";
+import { Button, Empty, Form, Input, Select, Spin, Tag, Tooltip } from "antd";
+import { MdOutlineBook } from "react-icons/md";
+import { IoSearch } from "react-icons/io5";
 
 import { Context } from "../../../utils/context";
 
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import config from "../../../utils/config";
-import { LuSearch } from "react-icons/lu";
+import UserCell from "../../../components/admin/userCell";
 
-export default function StudentProgress({ data }) {
+export default function StudentProgress({ data, isLoading }) {
   const { languages, selectedLanguage } = useContext(Context);
   const [countries, setCountries] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -37,6 +38,17 @@ export default function StudentProgress({ data }) {
     );
   }, [selectedLanguage]);
 
+  // Cursos em que cada aluno tem atividade (os dados que o relatório já devolve, sem pedido novo ao servidor)
+  const courseCountByUser = useMemo(() => {
+    const map = new Map();
+    (data.activity || []).forEach((a) => {
+      if (a.is_deleted === 1) return;
+      if (!map.has(a.id_user)) map.set(a.id_user, new Set());
+      map.get(a.id_user).add(a.id_course);
+    });
+    return map;
+  }, [data]);
+
   function filterData(values) {
     setIsSearching(true);
     console.log(values);
@@ -60,81 +72,49 @@ export default function StudentProgress({ data }) {
   }
 
   return (
-    <div className="p-4">
+    <div>
       <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
-          <div></div>
-          <Form.Item name="country" label={t("Country")} className="mb-0!">
+        <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
+          <Form.Item name="country" className="mb-0! w-full sm:w-auto">
             <Select
               mode="multiple"
               allowClear
-              size="large"
-              className="w-full"
+              maxTagCount="responsive"
+              className="w-full sm:w-[260px]!"
               placeholder={t("Select country")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={countries.map((c) => ({
-                label: c,
-                value: c,
-              }))}
+              showSearch={{ optionFilterProp: ["label"] }}
+              options={countries.map((c) => ({ label: c, value: c }))}
             />
           </Form.Item>
-          <Form.Item name="student" label={t("Student")} className="mb-0!">
-            <Input
-              size="large"
-              placeholder={t("Search for name, ID or e-mail")}
-              allowClear
-            />
+          <Form.Item name="student" className="mb-0! w-full sm:w-auto">
+            <Input className="w-full sm:w-[260px]!" placeholder={t("Search for name, ID or e-mail")} allowClear />
           </Form.Item>
-          <div className="flex justify-center items-end">
-            <Button
-              className="w-full"
-              size="large"
-              onClick={form.submit}
-              type="primary"
-              icon={<LuSearch className="text-[15px]" />}>
-              {t("Search")}
-            </Button>
-          </div>
+          <Button onClick={form.submit} type="primary" icon={<IoSearch />}>
+            {t("Search")}
+          </Button>
         </div>
       </Form>
-      <div className="grid grid-cols-4 gap-4 bg-white rounded-[5px] p-4">
-        <div className="col-span-4">
-          <p className="font-bold font-ryker">{t("Students")}</p>
-        </div>
-        {filteredData.length > 0 ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white rounded-[5px]">
+        {isLoading ? (
+          <div className="col-span-full flex justify-center py-10">
+            <Spin spinning={true} />
+          </div>
+        ) : filteredData.length > 0 ? (
           filteredData.map((u) => (
-            <Link to={`/admin/users/${u.id}`}>
-              <div className="bg-white border border-solid border-[#707070] rounded-[5px] p-4 flex justify-start items-center">
-                <div
-                  className="w-10 h-10 min-w-10 min-h-10 rounded-full bg-center bg-cover flex justify-center items-center mr-2"
-                  style={{
-                    backgroundImage: u.img
-                      ? `url(${config.server_ip}/media/${u.img})`
-                      : "none",
-                    backgroundColor: u.img ? "transparent" : "#ccc",
-                  }}>
-                  {!u.img && (
-                    <p className="text-[#163986]">
-                      {u.name.split(" ")[0][0]}
-                      {u.name.split(" ")[1][0]}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-[#163986]">{u.name}</p>
-                  <p className="text-[11px] text-[#163986] underline">
-                    {u.email}
-                  </p>
-                  <p className="text-[11px] text-[#163986]">ID: {u.id}</p>
-                </div>
+            <Link key={u.id} to={`/admin/users/${u.id}`}>
+              <div className="bg-white border border-solid border-[#D9D9D9] rounded-[15px] p-4 flex justify-between items-center gap-2">
+                <UserCell id={u.id} name={u.name} email={u.email} img={u.img} linkToProfile={false} />
+                <Tooltip title={t("Number of courses")}>
+                  <Tag icon={<MdOutlineBook />} className="shrink-0 flex items-center gap-1!">
+                    {courseCountByUser.get(u.id)?.size || 0}
+                  </Tag>
+                </Tooltip>
               </div>
             </Link>
           ))
         ) : (
-          <div className="col-span-4">
-            {isSearching ? <Spin spinning={true} /> : <Empty />}
+          <div className="col-span-full">
+            {isSearching ? <Spin spinning={true} /> : <Empty image={<IoSearch className="text-[56px] text-[#BFBFBF] mx-auto" />} styles={{ image: { height: 56 } }} description={t("No student found")} />}
           </div>
         )}
       </div>

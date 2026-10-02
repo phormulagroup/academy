@@ -1,4 +1,5 @@
 import axios from "axios";
+import { courseAccessState } from "../../../utils/courseWindow";
 import { useEffect, useState } from "react";
 import { Button, Empty, Progress } from "antd";
 import { useContext } from "react";
@@ -156,21 +157,8 @@ export default function CourseDetails() {
   }
 
   function canAccess(obj) {
-    let settings = obj.settings;
     if (user.id_role === 1) return true;
-    if (settings.course_access_expiration) {
-      let today = dayjs();
-      if (
-        today.diff(
-          dayjs(settings.course_access_expiration_dates.start_date).diff(today),
-        ) > 0 &&
-        today.diff(dayjs(settings.course_access_expiration_dates.end_date)) < 0
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    } else return true;
+    return courseAccessState(obj.settings) === "open";
   }
 
   function calcProgress(items, modules) {

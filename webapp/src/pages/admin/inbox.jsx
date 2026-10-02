@@ -1,8 +1,8 @@
 import axios from "axios";
 import { useContext, useEffect } from "react";
+import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Avatar, Button, Dropdown, Empty, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Avatar, Button, Empty, Tag } from "antd";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import { Context } from "../../utils/context";
@@ -96,24 +96,14 @@ export default function Inbox() {
                 <Avatar />
                 <p className="ml-2">{m.user_name}</p>
 
-                <Dropdown
-                  trigger={"click"}
-                  placement="bottomRight"
-                  menu={{
-                    items: [
+                <RowActions items={[
                       {
                         label: t("Close"),
                         key: `${m.id}-close`,
                         icon: <CgClose />,
                         onClick: () => closeThread(m),
                       },
-                    ],
-                  }}
-                >
-                  <span className="ml-2 inline-flex cursor-pointer">
-                    <LuSettings className="text-[20px] text-[#163986]" />
-                  </span>
-                </Dropdown>
+                    ]} />
               </div>
             </div>
             <div className="grid grid-cols-4 pt-4 pb-4 border-b border-[#E8E9F3]">

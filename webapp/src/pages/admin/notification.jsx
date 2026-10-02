@@ -1,8 +1,9 @@
 import axios from "axios";
+import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
+import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Dropdown, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Button, Tag } from "antd";
 import { FaArrowAltCircleRight, FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
@@ -20,6 +21,7 @@ import { RxReload } from "react-icons/rx";
 export default function Notification() {
   const { selectedLanguage, notificationApi } = useContext(Context);
   const { t } = useTranslation();
+  const perm = usePermission("notification");
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -60,36 +62,26 @@ export default function Notification() {
         full_data: array[i],
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
+            <RowActions items={[
                   {
                     label: t("Send"),
                     key: `${array[i].id}-send`,
                     icon: <FaArrowAltCircleRight />,
                     onClick: () => sendNotification(array[i]),
                   },
-                  {
+                  perm.canUpdate && {
                     label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  {
+                  perm.canDelete && {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
                   },
-                ],
-              }}
-            >
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
+                ]} />
           </div>
         ),
       });
@@ -143,9 +135,9 @@ export default function Notification() {
         </div>
         <div>
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
+          {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
             {t("Add notification")}
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Table

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { courseAccessState } from "../../../utils/courseWindow";
 import { useEffect, useState, useCallback } from "react";
 import { Button, Empty, Progress, Tabs } from "antd";
 import { useContext } from "react";
@@ -45,25 +46,8 @@ export default function CourseDetails() {
 
   const canAccess = useCallback(
     (obj) => {
-      let settings = obj.settings;
-      console.log(user);
       if (user.id_role === 1) return true;
-      if (settings.course_access_expiration) {
-        let today = dayjs();
-        if (
-          today.diff(
-            dayjs(settings.course_access_expiration_dates.start_date).diff(
-              today,
-            ),
-          ) > 0 &&
-          today.diff(dayjs(settings.course_access_expiration_dates.end_date)) <
-            0
-        ) {
-          return true;
-        } else {
-          return false;
-        }
-      } else return true;
+      return courseAccessState(obj.settings) === "open";
     },
     [user],
   );
@@ -251,7 +235,7 @@ export default function CourseDetails() {
             modified_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
           },
         ]);
-        navigate(`/${i18n.language}/courses/${slug}/learning`);
+        navigate(`/${i18n.language}/courses/${slug}/learning`, { state: { course: { name: data?.course?.name, thumbnail: data?.course?.thumbnail } } });
       })
       .catch((err) => {
         console.log(err);
@@ -410,9 +394,9 @@ export default function CourseDetails() {
                             variant="solid"
                             size="large"
                             onClick={() =>
-                              navigate(
-                                `/${i18n.language}/courses/${slug}/learning`,
-                              )
+                              navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                                state: { course: { name: data?.course?.name, thumbnail: data?.course?.thumbnail } },
+                              })
                             }>
                             {t("Review")}
                           </Button>
@@ -432,9 +416,9 @@ export default function CourseDetails() {
                             variant="solid"
                             size="large"
                             onClick={() =>
-                              navigate(
-                                `/${i18n.language}/courses/${slug}/learning`,
-                              )
+                              navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                                state: { course: { name: data?.course?.name, thumbnail: data?.course?.thumbnail } },
+                              })
                             }>
                             {t("Enter")}
                           </Button>

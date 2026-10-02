@@ -11,7 +11,6 @@ import {
   Button,
   Card,
   DatePicker,
-  Divider,
   Form,
   Input,
   InputNumber,
@@ -24,18 +23,45 @@ import Media from "../../../components/admin/media/media";
 import MediaField from "../../../utils/mediaField";
 import useMediaPicker from "../../../utils/useMediaPicker";
 import { fileTypeRule } from "../../../utils/fileValidation";
+import { requiredRule, uniqueRule } from "../../../utils/formFieldError";
 import { AiOutlinePlus } from "react-icons/ai";
+import { LuAward, LuBookOpen, LuClock, LuImage, LuLock, LuPill, LuRoute, LuSettings } from "react-icons/lu";
+import { SettingsSection, SettingsSectionNav } from "../../../components/admin/settingsSection";
+import PageFooter from "../../../components/admin/pageFooter";
 import { RxTrash } from "react-icons/rx";
 
 import RichTextFormField from "../../../components/admin/richText/richTextFormField";
 import dayjs from "dayjs";
 
-export default function Settings({ course }) {
+// Secções do separador, pela ordem em que aparecem: alimenta o índice lateral
+const SECTIONS = [
+  { id: "general", icon: <LuSettings />, key: "General" },
+  { id: "duration", icon: <LuClock />, key: "Course dates" },
+  { id: "product", icon: <LuPill />, key: "Product" },
+  { id: "access", icon: <LuLock />, key: "Access" },
+  { id: "display", icon: <LuImage />, key: "Content" },
+  { id: "navigation", icon: <LuRoute />, key: "Navigation" },
+  { id: "awards", icon: <LuAward />, key: "Completion awards" },
+  { id: "objection", icon: <LuBookOpen />, key: "Objection book" },
+];
+
+export default function Settings({ course, isActive = true, onSaved }) {
   const { languages, createLog, user, selectedLanguage, messageApi } =
     useContext(Context);
   const [products, setProducts] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [activeKey, setActiveKey] = useState("0");
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  // Utilizadores e grupos com acesso (tabelas à parte, não fazem parte do curso): guardam-se depois de o curso
+  const [allUsers, setAllUsers] = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
+  const [accessUserIds, setAccessUserIds] = useState([]);
+  const [accessGroupIds, setAccessGroupIds] = useState([]);
+  // Se os acessos atuais não carregaram, não se guardam (senão apagavam-se os que já existem)
+  const [accessLoaded, setAccessLoaded] = useState(false);
+  // Cursos do mesmo idioma: o nome e o nome interno não se podem repetir
+  const [languageCourses, setLanguageCourses] = useState([]);
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
@@ -63,8 +89,33 @@ export default function Settings({ course }) {
 
       getProducts();
       getCertificates();
+      getAccess();
     }
   }, [course]);
+
+  // Utilizadores e grupos disponíveis e os que já têm acesso a este curso
+  function getAccess() {
+    setAccessLoaded(false);
+    Promise.all([
+      axios.get(endpoints.user.read),
+      axios.get(endpoints.userGroup.read),
+      axios.get(endpoints.course.accessUsers, { params: { id_course: course.id } }),
+      axios.get(endpoints.course.accessGroups, { params: { id_course: course.id } }),
+      axios.get(endpoints.course.read),
+    ])
+      .then(([users, groups, accessUsers, accessGroups, courses]) => {
+        setLanguageCourses(courses.data.courses.filter((c) => c.id_lang === course.id_lang));
+        setAllUsers(users.data.filter((u) => !u.is_deleted && u.id_role !== 1));
+        setAllGroups(groups.data);
+        setAccessUserIds(accessUsers.data.map((u) => u.id));
+        setAccessGroupIds(accessGroups.data.map((g) => g.id));
+        setAccessLoaded(true);
+      })
+      .catch((err) => {
+        console.log(err);
+        messageApi.open({ type: "error", content: t("Failed to load the users and groups with access to this course") });
+      });
+  }
 
   // Function to get products from the API and set them in the state
   function getProducts() {
@@ -131,6 +182,7 @@ export default function Settings({ course }) {
   }
 
   async function save(values) {
+    setIsSaving(true);
     try {
       values.objection = values.objection
         ? JSON.stringify(values.objection)
@@ -139,12 +191,27 @@ export default function Settings({ course }) {
       values.material = values.material
         ? JSON.stringify(cleanMaterials(values.material))
         : null;
+      // As datas de início e de fim são opcionais: o curso só tem janela de acesso se houver pelo menos uma
+      if (values.settings) {
+        const dates = values.settings.course_access_expiration_dates || {};
+        values.settings.course_access_expiration = !!(dates.start_date || dates.end_date);
+      }
+      const restrictToPeople = !!values.settings?.restrict_to_users;
       values.settings = values.settings
         ? JSON.stringify(values.settings)
         : null;
       const res = await axios.post(endpoints.course.update, {
         data: values,
       });
+
+      // Utilizadores e grupos com acesso (só se a lista atual carregou, para não apagar o que já existe)
+      if (accessLoaded) {
+        await axios.post(endpoints.course.setAccessUsers, { data: { id_course: course.id, id_users: accessUserIds } });
+        await axios.post(endpoints.course.setAccessGroups, { data: { id_course: course.id, id_groups: accessGroupIds } });
+      }
+      if (restrictToPeople && accessLoaded && accessUserIds.length === 0 && accessGroupIds.length === 0) {
+        messageApi.open({ type: "warning", content: t("The course is limited to users and groups, but none was selected: only administrators can access it") });
+      }
 
       await createLog({
         id_user: user.id,
@@ -155,6 +222,8 @@ export default function Settings({ course }) {
       });
 
       console.log(res);
+      setIsDirty(false);
+      onSaved?.({ name: values.name, internal_name: values.internal_name, status: values.status });
       messageApi.open({
         type: "success",
         content: t("Course settings updated successfully"),
@@ -163,116 +232,123 @@ export default function Settings({ course }) {
       console.log(err);
       messageApi.open({
         type: "error",
-        content: t("Failed to update course settings"),
+        content: err.response?.status === 409 ? t("A course with this address already exists") : t("Failed to update course settings"),
       });
+    } finally {
+      setIsSaving(false);
     }
   }
 
   return (
-    <div className="p-2">
+    <div>
       <Media
         mediaKey={media.mediaKey}
         open={media.isOpenMedia}
         close={media.closeMedia}
       />
-      <div>
-        <Form form={form} onFinish={save} layout="vertical">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-6 items-start">
+        <SettingsSectionNav items={SECTIONS.map((item) => ({ ...item, label: t(item.key) }))} />
+        <div>
+        <Form form={form} onFinish={save} layout="vertical" onValuesChange={() => setIsDirty(true)}>
           <Form.Item hidden name="id">
             <Input />
           </Form.Item>
-          <Form.Item name="name" hidden>
-            <Input />
-          </Form.Item>
 
-          {/* Header Information settings + Toogle Show Info course */}
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-[18px] font-bold font-ryker">{t("Duration")}</p>
-              <p className="text-[12px] italic mb-4 text-[#666]">
-                {t("Control the duration time of the course")}
-              </p>
-            </div>
-
-            {/* <div>
-              <p className="text-[18px] font-bold font-ryker">{t("Information")}</p>
-              <p className="text-[12px] italic mb-4 text-[#666]">
-                {t(
-                  "Controls additional information that users will see on course page",
-                )}
-              </p>
-            </div> */}
-            {/* <div className="flex justify-center items-center gap-2">
-              <p>{t("Show this info on course page")}</p>
+          {/* Identificação e estado do curso (o endereço do curso é gerado a partir do nome) */}
+          <SettingsSection
+            id="general"
+            icon={<LuSettings />}
+            title={t("General")}
+            description={t("Course identification and status")}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
               <Form.Item
-                name={["settings", "show_info_on_course_page"]}
+                name="name"
+                label={t("Course name")}
                 className="mb-0!"
-                valuePropName="checked">
-                <Switch
+                tooltip={t("The name that students see")}
+                rules={[requiredRule, uniqueRule(languageCourses, t("A course with this name already exists"), { excludeId: course?.id })]}>
+                <Input size="large" placeholder={t("Enter course name")} />
+              </Form.Item>
+              <Form.Item
+                name="internal_name"
+                label={t("Internal name")}
+                className="mb-0!"
+                tooltip={t("Only the team sees it: used in the dashboard lists and reports")}
+                rules={[
+                  requiredRule,
+                  uniqueRule(languageCourses, t("A course with this internal name already exists"), { field: "internal_name", excludeId: course?.id }),
+                ]}>
+                <Input size="large" placeholder={t("Enter internal course name")} />
+              </Form.Item>
+              <Form.Item
+                name="slug"
+                label={t("Address (slug)")}
+                className="mb-0! lg:col-span-2"
+                extra={t("Part of the course public link (/courses/...). Changing it changes the link: links already shared stop working")}
+                rules={[
+                  requiredRule,
+                  { pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, message: t("Only lowercase letters, numbers and hyphens (e.g. course-name)") },
+                  uniqueRule(languageCourses, t("A course with this address already exists"), { field: "slug", excludeId: course?.id }),
+                ]}>
+                <Input size="large" placeholder={t("course-name")} />
+              </Form.Item>
+              <Form.Item
+                name="status"
+                label={t("Status")}
+                className="mb-0!"
+                tooltip={t("A draft course is not visible to students")}>
+                <Radio.Group
+                  optionType="button"
+                  buttonStyle="solid"
                   size="large"
-                  checkedChildren={t("Yes")}
-                  unCheckedChildren={t("No")}
+                  options={[
+                    { label: t("Draft"), value: "draft" },
+                    { label: t("Published"), value: "published" },
+                  ]}
                 />
               </Form.Item>
-            </div> */}
-          </div>
-
-          <div className="grid grid-cols-3 gap-8">
-            <div>
-              <p className="pb-2">{t("Duration")}</p>
-              <div className="grid grid-cols-2 gap-4">
-                <Form.Item
-                  name={["settings", "duration_hours"]}
-                  className="mb-0!">
-                  <InputNumber
-                    size="large"
-                    suffix={t("hours")}
-                    className="w-full!"
-                  />
-                </Form.Item>
-                <Form.Item
-                  name={["settings", "duration_minutes"]}
-                  className="mb-0!">
-                  <InputNumber
-                    size="large"
-                    suffix={t("minutes")}
-                    className="w-full!"
-                  />
-                </Form.Item>
-              </div>
             </div>
+          </SettingsSection>
 
-            {/* <Form.Item
-              name={["settings", "trainer"]}
-              label={t("Trainer")}
-              className="mb-0!"
-            >
-              <Select
-                size="large"
-                className="w-full"
-                placeholder={t("Select...")}
-                allowClear
-                showSearch={{
-                  optionFilterProp: ["label"],
-                }}
-                options={[]}
-              />
-            </Form.Item> */}
-
-            {/* <Form.Item
-              name={["settings", "video"]}
-              label={t("Video")}
-              className="mb-0!"
-            >
-              <InputNumber size="large" className="w-full!" />
-            </Form.Item> */}
-          </div>
-
-          <Divider />
-
-          <p className="text-[18px] font-bold font-ryker">{t("Product")}</p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t("Change the product associated with this course")}
+          <SettingsSection
+            id="duration"
+            icon={<LuClock />}
+            title={t("Course dates")}
+            description={t("When the course opens and closes (optional)")}>
+          {/* Datas de início e de fim do curso: opcionais. Sem datas, o curso está sempre disponível; com uma só,
+              só se limita esse lado (só início = abre nessa data; só fim = fecha nessa data). */}
+          <p className="text-[12px] text-[#8A8D98] mb-3!">
+            {t("Leave empty for no limit. Outside these dates, students cannot access the course")}
           </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+            <Form.Item
+              name={["settings", "course_access_expiration_dates", "start_date"]}
+              label={t("Start date")}
+              className="mb-0!"
+              getValueProps={(value) => ({ value: value ? dayjs(value) : null })}>
+              <DatePicker showTime size="large" className="w-full" allowClear placeholder={t("Select date")} />
+            </Form.Item>
+            <Form.Item
+              name={["settings", "course_access_expiration_dates", "end_date"]}
+              label={t("End date")}
+              className="mb-0!"
+              dependencies={[["settings", "course_access_expiration_dates", "start_date"]]}
+              getValueProps={(value) => ({ value: value ? dayjs(value) : null })}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const start = getFieldValue(["settings", "course_access_expiration_dates", "start_date"]);
+                    if (!value || !start || dayjs(value).isAfter(dayjs(start))) return Promise.resolve();
+                    return Promise.reject(new Error(t("The end date must be after the start date")));
+                  },
+                }),
+              ]}>
+              <DatePicker showTime size="large" className="w-full" allowClear placeholder={t("Select date")} />
+            </Form.Item>
+          </div>
+          </SettingsSection>
+
+          <SettingsSection id="product" icon={<LuPill />} title={t("Product")} description={t("Change the product associated with this course")}>
 
           {/* Select Product */}
           <div className="grid grid-cols-3 gap-8">
@@ -293,129 +369,112 @@ export default function Settings({ course }) {
             </Form.Item>
           </div>
 
-          <Divider />
+          </SettingsSection>
 
-          <p className="text-[18px] font-bold font-ryker">{t("Access")}</p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t(
-              "Controls additional restrictions that enrollees need to meet to access the course",
-            )}
-          </p>
-          <div className="grid grid-cols-3 gap-8">
-            <div className="gap-4 flex flex-col">
-              <Form.Item
-                name={["settings", "course_access_expiration"]}
-                label={<span className="font-ryker">{t("Course access expiration")}</span>}
-                valuePropName="checked"
-                className="mb-0!">
-                <Switch
-                  size="large"
-                  checkedChildren={t("Yes")}
-                  unCheckedChildren={t("No")}
-                />
-              </Form.Item>
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.settings?.course_access_expiration !==
-                  currentValues.settings?.course_access_expiration
-                }>
-                {({ getFieldValue }) =>
-                  getFieldValue("settings")?.course_access_expiration ? (
-                    <div className="flex flex-col gap-4">
-                      <Form.Item
-                        name={[
-                          "settings",
-                          "course_access_expiration_dates",
-                          "start_date",
-                        ]}
-                        label={t("Start date")}
-                        className="mb-0!"
-                        getValueProps={(value) => ({
-                          value: value && dayjs(value),
-                        })}>
-                        <DatePicker showTime size="large" className="w-full" />
-                      </Form.Item>
-                      <Form.Item
-                        name={[
-                          "settings",
-                          "course_access_expiration_dates",
-                          "end_date",
-                        ]}
-                        label={t("End date")}
-                        className="mb-0!"
-                        getValueProps={(value) => ({
-                          value: value && dayjs(value),
-                        })}>
-                        <DatePicker showTime size="large" className="w-full" />
-                      </Form.Item>
-                    </div>
-                  ) : null
-                }
-              </Form.Item>
-            </div>
+          <SettingsSection
+            id="access"
+            icon={<LuLock />}
+            title={t("Access")}
+            description={t("Who can access the course. When more than one limit is active, the person has to meet all of them")}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+            {/* Limitar por país */}
             <div className="gap-4 flex flex-col">
               <Form.Item
                 name={["settings", "country_limit"]}
                 label={t("Country limit")}
                 valuePropName="checked"
                 className="mb-0!">
-                <Switch
-                  size="large"
-                  checkedChildren={t("Yes")}
-                  unCheckedChildren={t("No")}
-                />
+                <Switch size="large" checkedChildren={t("Yes")} unCheckedChildren={t("No")} />
               </Form.Item>
               <Form.Item
                 noStyle
                 shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.settings?.country_limit !==
-                  currentValues.settings?.country_limit
+                  prevValues.settings?.country_limit !== currentValues.settings?.country_limit
                 }>
                 {({ getFieldValue }) =>
                   getFieldValue("settings")?.country_limit ? (
+                    <Form.Item name={["settings", "country"]} label={t("Country")} className="mb-0!">
+                      <Select
+                        mode="multiple"
+                        size="large"
+                        className="w-full"
+                        placeholder={t("Select...")}
+                        allowClear
+                        showSearch={{ optionFilterProp: ["label"] }}
+                        options={JSON.parse(
+                          languages.filter((l) => l.id === course.id_lang)[0]?.country || "[]",
+                        ).map((item) => ({ value: item, label: item }))}
+                      />
+                    </Form.Item>
+                  ) : null
+                }
+              </Form.Item>
+            </div>
+
+            {/* Limitar a utilizadores e grupos de utilizadores */}
+            <div className="gap-4 flex flex-col">
+              <Form.Item
+                name={["settings", "restrict_to_users"]}
+                label={t("Limit to users and groups")}
+                valuePropName="checked"
+                className="mb-0!">
+                <Switch size="large" checkedChildren={t("Yes")} unCheckedChildren={t("No")} />
+              </Form.Item>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.settings?.restrict_to_users !== currentValues.settings?.restrict_to_users
+                }>
+                {({ getFieldValue }) =>
+                  getFieldValue("settings")?.restrict_to_users ? (
                     <div className="flex flex-col gap-4">
-                      <Form.Item
-                        name={["settings", "country"]}
-                        label={t("Country")}
-                        className="mb-0!">
+                      <div>
+                        <p className="pb-2">{t("Users")}</p>
                         <Select
                           mode="multiple"
                           size="large"
                           className="w-full"
-                          placeholder={t("Select...")}
+                          placeholder={t("Select users...")}
                           allowClear
-                          showSearch={{
-                            optionFilterProp: ["label"],
+                          optionFilterProp="label"
+                          value={accessUserIds}
+                          onChange={(ids) => {
+                            setAccessUserIds(ids);
+                            setIsDirty(true);
                           }}
-                          options={JSON.parse(
-                            languages.filter((l) => l.id === course.id_lang)[0]
-                              .country,
-                          ).map((item) => ({ value: item, label: item }))}
+                          options={allUsers.map((u) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
                         />
-                      </Form.Item>
+                      </div>
+                      <div>
+                        <p className="pb-2">{t("User groups")}</p>
+                        <Select
+                          mode="multiple"
+                          size="large"
+                          className="w-full"
+                          placeholder={t("Select groups...")}
+                          allowClear
+                          optionFilterProp="label"
+                          value={accessGroupIds}
+                          onChange={(ids) => {
+                            setAccessGroupIds(ids);
+                            setIsDirty(true);
+                          }}
+                          options={allGroups.map((g) => ({ value: g.id, label: g.name }))}
+                          notFoundContent={t("No groups yet. Create them in User groups")}
+                        />
+                      </div>
+                      <p className="text-[12px] text-[#8A8D98] mb-0!">
+                        {t("Only the selected users and the members of the selected groups can access this course")}
+                      </p>
                     </div>
                   ) : null
                 }
               </Form.Item>
             </div>
-            <Form.Item
-              name={["settings", "student_limit"]}
-              label={t("Student limit")}
-              className="mb-0!">
-              <InputNumber size="large" className="w-full!" placeholder="0" />
-            </Form.Item>
           </div>
+          </SettingsSection>
 
-          <Divider />
-          <p className="text-[18px] font-bold font-ryker">
-            {t("Display and content options")}
-          </p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t(
-              "Controls the look and feel of the course and optional content settings",
-            )}
-          </p>
+          <SettingsSection id="display" icon={<LuImage />} title={t("Display and content options")} description={t("Controls the look and feel of the course and optional content settings")}>
 
           <div className="grid grid-cols-2 gap-8">
             {renderImageField("img", t("Banner image"))}
@@ -489,13 +548,9 @@ export default function Settings({ course }) {
               </div>
             )}
           </Form.List>
-          <Divider />
-          <p className="text-[18px] font-bold font-ryker">{t("Navigation")}</p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t(
-              "Controls how students interact with the content and their navigational experience",
-            )}
-          </p>
+          </SettingsSection>
+
+          <SettingsSection id="navigation" icon={<LuRoute />} title={t("Navigation")} description={t("Controls how students interact with the content and their navigational experience")}>
           <div className="grid grid-cols-3 gap-8">
             <Form.Item
               name={["settings", "progression_type"]}
@@ -520,66 +575,10 @@ export default function Settings({ course }) {
               </Radio.Group>
             </Form.Item>
           </div>
-          <Divider />
-          <p className="text-[18px] font-bold font-ryker">{t("Enrollment")}</p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t("Controls how students gain access to the course")}
-          </p>
-          <div className="grid grid-cols-3 gap-8">
-            <div>
-              <Form.Item name={"enrollment"} className="mb-0!">
-                <Radio.Group>
-                  <Radio value="free" className="mb-4!">
-                    <p className="font-bold">{t("Free")}</p>
-                    <p className="text-[12px]">
-                      {t(
-                        "The course is protected. Registration and enrolment are required in order to access the content.",
-                      )}
-                    </p>
-                  </Radio>
-                  <Radio value="buy_now" className="mb-4!">
-                    <p className="font-bold">{t("Buy now")}</p>
-                    <p className="text-[12px]">
-                      {t(
-                        "The course is protected via the LearnDash built-in PayPal and/or Stripe. Students need to purchase the course (one-time fee) in order to gain access.",
-                      )}
-                    </p>
-                  </Radio>
-                </Radio.Group>
-              </Form.Item>
+          </SettingsSection>
 
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.enrollment !== currentValues.enrollment
-                }>
-                {({ getFieldValue }) =>
-                  getFieldValue("enrollment") === "buy_now" && (
-                    <div>
-                      <Form.Item
-                        name={["settings", "course_price"]}
-                        label={t("Course price")}
-                        className="mb-0! ml-6!">
-                        <InputNumber
-                          size="large"
-                          className="w-full!"
-                          placeholder="0"
-                          suffix="€"
-                        />
-                      </Form.Item>
-                    </div>
-                  )
-                }
-              </Form.Item>
-            </div>
-          </div>
-          <Divider />
-          <p className="text-[18px] font-bold font-ryker">{t("Completion awards")}</p>
-          <p className="text-[12px] italic mb-4 text-[#666]">
-            {t(
-              "Controls the look and feel of the course and optional content settings",
-            )}
-          </p>
+
+          <SettingsSection id="awards" icon={<LuAward />} title={t("Completion awards")} description={t("Controls the look and feel of the course and optional content settings")}>
 
           {/* Select certificated */}
           <div className="grid grid-cols-3 gap-8">
@@ -600,8 +599,9 @@ export default function Settings({ course }) {
             </Form.Item>
           </div>
 
-          <Divider />
-          <p className="text-[18px] font-bold mb-4 font-ryker">{t("Objection book")}</p>
+          </SettingsSection>
+
+          <SettingsSection id="objection" icon={<LuBookOpen />} title={t("Objection book")}>
           <Form.Item
             name={["objection", "text"]}
             className="mb-0!"
@@ -704,15 +704,18 @@ export default function Settings({ course }) {
               }}
             </Form.List>
           </div>
+          </SettingsSection>
         </Form>
 
-        <Button
-          className="mt-4"
-          size="large"
-          type="primary"
-          onClick={form.submit}>
-          {t("Save")}
-        </Button>
+        {/* Rodapé fixo com o Guardar (components/admin/pageFooter.jsx), por baixo da área com scroll. O padding lateral
+            alinha o botão com a borda direita dos cartões das secções. */}
+        <PageFooter active={isActive} className="justify-end px-12 md:px-14">
+          {isDirty && <span className="text-[12px] text-[#8A8D98]">{t("Unsaved changes")}</span>}
+          <Button type="primary" loading={isSaving} onClick={form.submit}>
+            {t("Save")}
+          </Button>
+        </PageFooter>
+        </div>
       </div>
     </div>
   );

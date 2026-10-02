@@ -20,7 +20,7 @@ import i18n from "../utils/i18n";
 import I18nextBrowserLanguageDetector from "i18next-browser-languagedetector";
 
 export default function AppRoutes() {
-	const { isLoggedIn, isLoading, isLoadingLanguage, user, languages } =
+	const { isLoggedIn, isLoading, isLoadingLanguage, user, languages, isStaff } =
 		useContext(Context);
 	const { lang } = useParams();
 
@@ -49,8 +49,8 @@ export default function AppRoutes() {
 			];
 		}
 
-		// ADMIN
-		if (user.id_role === 1) {
+		// BACKOFFICE: Admin ou função com acesso a pelo menos uma secção
+		if (isStaff) {
 			return [
 				...adminRoutes,
 				{

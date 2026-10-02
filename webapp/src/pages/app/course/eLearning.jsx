@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { courseAccessState } from "../../../utils/courseWindow";
 import { MenuOutlined } from "@ant-design/icons";
 import {
   Button,
@@ -55,6 +56,7 @@ import { Helmet } from "react-helmet";
 import CourseCompletedModal from "../../../components/app/course/courseCompleted";
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
+import CourseLoading from "../../../components/app/courseLoading";
 
 const { confirm } = Modal;
 
@@ -81,6 +83,15 @@ const Learning = () => {
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
+
+  // Ecrã de entrada no curso: fica visível até o carregamento terminar e, no mínimo, este tempo, para o utilizador
+  // perceber que está a entrar no e-Learning (sem isto, um carregamento rápido era só um piscar)
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const { t, i18n } = useTranslation();
 
@@ -276,22 +287,15 @@ const Learning = () => {
       }
     } catch (err) {
       console.log(err);
+    } finally {
+      setIsLoaded(true);
     }
   }
 
+  // true quando o acesso está bloqueado (curso ainda não aberto ou já fechado); os administradores passam sempre
   function canAccess(obj) {
-    // Admins bypass access expiration checks
     if (user.id_role === 1) return false;
-
-    // Check if course access has expired based on end_date
-    if (
-      obj.course_access_expiration_dates &&
-      obj.course_access_expiration_dates.end_date
-    ) {
-      const endDate = dayjs(obj.course_access_expiration_dates.end_date);
-      return dayjs().isAfter(endDate); // true if expired (after end date)
-    }
-    return false;
+    return courseAccessState(obj) !== "open";
   }
 
   // Um tópico/teste está concluído quando existe um registo de conclusão (não apagado) desse item
@@ -548,6 +552,16 @@ const Learning = () => {
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
+  }
+
+  // Nome e capa vêm da página de detalhe (location.state) para aparecerem logo, antes de o curso carregar
+  if (!isLoaded || !minTimeElapsed) {
+    const loadingCourse = data?.course ?? location.state?.course;
+    return (
+      <div className="w-screen h-screen">
+        <CourseLoading courseName={loadingCourse?.name} thumbnail={loadingCourse?.thumbnail} />
+      </div>
+    );
   }
 
   return (

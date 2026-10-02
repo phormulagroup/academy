@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import PageFooter from "../../../components/admin/pageFooter";
 import {
   DndContext,
   PointerSensor,
@@ -29,7 +30,7 @@ import {
   AiOutlineEdit,
   AiOutlineSave,
 } from "react-icons/ai";
-import { LuLetterText } from "react-icons/lu";
+import { LuChevronDown, LuChevronRight, LuLetterText } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
@@ -277,12 +278,35 @@ function SortableModule({
   onMoveDown,
   activeId,
   overId,
+  isCollapsed,
+  onToggleCollapse,
 }) {
   const { setNodeRef, attributes, listeners } = useSortable({ id: module.id });
   const { t } = useTranslation();
 
+  // Edição do título igual à do tópico: botão de editar, Guardar e Cancelar
   const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(module.title);
   const isDropTarget = overId === module.id;
+
+  const moduleItems = Array.isArray(module.items) ? module.items : [];
+  const topicCount = moduleItems.filter((i) => i?.type !== "test").length;
+  const testCount = moduleItems.length - topicCount;
+
+  useEffect(() => {
+    setValue(module.title);
+  }, [module.title]);
+
+  const commit = () => {
+    const title = value.trim();
+    if (title && title !== module.title) onTitleChange(module.id, title);
+    else setValue(module.title);
+    setEditing(false);
+  };
+  const cancel = () => {
+    setValue(module.title);
+    setEditing(false);
+  };
 
   return (
     <RemoveAnim isRemoving={isDeleting}>
@@ -296,50 +320,77 @@ function SortableModule({
               title={t("Drag module")}
             />
 
+            <Button
+              type="text"
+              title={isCollapsed ? t("Expand module") : t("Collapse module")}
+              aria-label={isCollapsed ? t("Expand module") : t("Collapse module")}
+              aria-expanded={!isCollapsed}
+              onClick={() => onToggleCollapse(module.id)}
+              icon={isCollapsed ? <LuChevronRight /> : <LuChevronDown />}
+            />
+
             {editing ? (
-              <Input
-                autoFocus
-                defaultValue={module.title}
-                onBlur={(e) => {
-                  onTitleChange(module.id, e.target.value);
-                  setEditing(false);
-                }}
-                onPressEnter={(e) => {
-                  onTitleChange(module.id, e.currentTarget.value);
-                  setEditing(false);
-                }}
-                className="max-w-[70%]"
-              />
+              <div className="flex items-center gap-2 w-full">
+                <Input
+                  autoFocus
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  onPressEnter={commit}
+                  onBlur={commit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.stopPropagation();
+                      cancel();
+                    }
+                  }}
+                />
+                {/* mousedown não tira o foco ao input: senão o onBlur gravava antes do clique em "Cancelar" chegar a correr */}
+                <Button
+                  type="primary"
+                  title={t("Save title")}
+                  aria-label={t("Save title")}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={commit}
+                  icon={<AiOutlineSave />}
+                />
+                <Button
+                  title={t("Cancel")}
+                  aria-label={t("Cancel")}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={cancel}
+                  icon={<AiOutlineClose />}
+                />
+              </div>
             ) : (
-              <span
-                className="cursor-text font-medium font-ryker"
-                onClick={() => setEditing(true)}
-                title={t("Edit module title")}>
-                {module.title}
-              </span>
+              <>
+                <span className="font-medium font-ryker">{module.title}</span>
+                {isCollapsed && (
+                  <span className="text-[12px] text-[#8A8D98] whitespace-nowrap">
+                    {topicCount} {topicCount === 1 ? t("topic") : t("topics")} · {testCount} {testCount === 1 ? t("test") : t("tests")}
+                  </span>
+                )}
+
+                {/* Setas ↑ ↓ para mover módulo uma posição */}
+                <Space size={4} className="ml-auto">
+                  <Button icon={<ArrowUpOutlined />} onClick={() => onMoveUp(module.id)} disabled={!canMoveUp} />
+                  <Button icon={<ArrowDownOutlined />} onClick={() => onMoveDown(module.id)} disabled={!canMoveDown} />
+                </Space>
+
+                <Button
+                  title={t("Edit title")}
+                  aria-label={t("Edit title")}
+                  onClick={() => setEditing(true)}
+                  icon={<LuLetterText />}
+                />
+                <Popconfirm
+                  title={t("Delete module?")}
+                  okText={t("Yes")}
+                  cancelText={t("No")}
+                  onConfirm={() => onDeleteModule(module.id)}>
+                  <Button danger icon={<AiOutlineDelete />} />
+                </Popconfirm>
+              </>
             )}
-
-            {/* Setas ↑ ↓ para mover módulo uma posição */}
-            <Space size={4} className="ml-auto">
-              <Button
-                icon={<ArrowUpOutlined />}
-                onClick={() => onMoveUp(module.id)}
-                disabled={!canMoveUp}
-              />
-              <Button
-                icon={<ArrowDownOutlined />}
-                onClick={() => onMoveDown(module.id)}
-                disabled={!canMoveDown}
-              />
-            </Space>
-
-            <Popconfirm
-              title={t("Delete module?")}
-              okText={t("Yes")}
-              cancelText={t("No")}
-              onConfirm={() => onDeleteModule(module.id)}>
-              <Button danger icon={<AiOutlineDelete />} />
-            </Popconfirm>
           </div>
         }
         style={{
@@ -351,26 +402,39 @@ function SortableModule({
           pointerEvents: isActive ? "none" : "auto",
         }}
         className={`shadow-md ${dropRing ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
-        bodyStyle={{ paddingTop: 12 }}>
-        <Space>
-          <Button type="primary" onClick={() => onAddTopic(module.id)}>
-            + {t("Topic")}
-          </Button>
-          <Button onClick={() => onAddTest(module.id)}>+ {t("Test")}</Button>
-        </Space>
-
-        <div className="mt-3">{children}</div>
+        bodyStyle={isCollapsed ? { padding: 0 } : { paddingTop: 12 }}>
+        {/* Recolhido = só escondido, não desmontado: assim os tópicos/testes continuam registados no dnd-kit e o estado
+            deles não se perde. Os botões ficam no fundo da lista, para não obrigar a subir ao topo num módulo grande. */}
+        <div hidden={isCollapsed}>
+          <div>{children}</div>
+          <Space className="mt-3">
+            <Button type="primary" onClick={() => onAddTopic(module.id)}>
+              + {t("Topic")}
+            </Button>
+            <Button onClick={() => onAddTest(module.id)}>+ {t("Test")}</Button>
+          </Space>
+        </div>
       </Card>
     </RemoveAnim>
   );
 }
 
-export default function Constructor({ course }) {
+export default function Constructor({ course, isActive = true }) {
   const { createLog, user, selectedLanguage, t } = useContext(Context);
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [original, setOriginal] = useState([]);
   const [modules, setModules] = useState([]);
+  // Módulos recolhidos (só escondidos, não desmontados)
+  const [collapsedModules, setCollapsedModules] = useState(() => new Set());
+  function toggleCollapse(id) {
+    setCollapsedModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   /* ---------- Undo/Redo ---------- */
   const [history, setHistory] = useState([]);
@@ -1158,22 +1222,32 @@ export default function Constructor({ course }) {
 
   return (
     <div>
-      <Space wrap>
-        <Button onClick={addModule}>+ {t("New module")}</Button>
-        <Button onClick={undo} disabled={!history.length || isSaving}>
-          {t("Undo")}
-        </Button>
-        <Button onClick={redo} disabled={!future.length || isSaving}>
-          {t("Redo")}
-        </Button>
-        <Button
-          type="primary"
-          onClick={save}
-          disabled={!isUnsaved || isSaving}
-          loading={isSaving}>
-          {t("Save")}
-        </Button>
-      </Space>
+      {/* Botões do construtor num rodapé fixo (components/admin/pageFooter.jsx), por baixo da área com scroll: com muitos
+          módulos, ter a barra só no topo obrigava a fazer scroll para cima para guardar ou adicionar. À esquerda o que
+          estrutura (novo módulo), à direita o que grava (anular, refazer, guardar). */}
+      <PageFooter active={isActive} className="justify-between px-10 md:px-12">
+        <Space wrap>
+          <Button onClick={addModule}>+ {t("New module")}</Button>
+          {modules.length > 0 &&
+            (collapsedModules.size < modules.length ? (
+              <Button onClick={() => setCollapsedModules(new Set(modules.map((m) => m.id)))}>{t("Collapse all")}</Button>
+            ) : (
+              <Button onClick={() => setCollapsedModules(new Set())}>{t("Expand all")}</Button>
+            ))}
+        </Space>
+        <Space wrap className="justify-end">
+          {isUnsaved && <span className="text-[12px] text-[#8A8D98]">{t("Unsaved changes")}</span>}
+          <Button onClick={undo} disabled={!history.length || isSaving}>
+            {t("Undo")}
+          </Button>
+          <Button onClick={redo} disabled={!future.length || isSaving}>
+            {t("Redo")}
+          </Button>
+          <Button type="primary" onClick={save} disabled={!isUnsaved || isSaving} loading={isSaving}>
+            {t("Save")}
+          </Button>
+        </Space>
+      </PageFooter>
 
       <DndContext
         sensors={sensors}
@@ -1222,7 +1296,9 @@ export default function Constructor({ course }) {
                     onMoveUp={(id) => moveModule(id, "up")}
                     onMoveDown={(id) => moveModule(id, "down")}
                     activeId={activeId}
-                    overId={overId}>
+                    overId={overId}
+                    isCollapsed={collapsedModules.has(mod.id)}
+                    onToggleCollapse={toggleCollapse}>
                     {/* ZONA DROPPABLE DO MÓDULO (aceita drop em área vazia) */}
                     <ModuleDropArea id={mod.id}>
                       {/* TÓPICOS/TESTES: lista VERTICAL */}

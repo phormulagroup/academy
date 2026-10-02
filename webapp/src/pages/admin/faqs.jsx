@@ -1,11 +1,13 @@
 import axios from "axios";
+import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
+import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Dropdown, Image, Tag } from "antd";
-import { IoMdMore } from "react-icons/io";
+import { Button, Image, Tag } from "antd";
 import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
 
 import Table from "../../components/admin/table";
+import useListFilters, { includesText } from "../../components/admin/listFilters";
 import Create from "../../components/admin/faqs/create";
 import Update from "../../components/admin/faqs/update";
 import Delete from "../../components/admin/delete";
@@ -23,6 +25,7 @@ import i18n from "../../utils/i18n";
 export default function Faqs() {
   const { user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
+  const perm = usePermission("faqs");
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -79,30 +82,20 @@ export default function Faqs() {
         full_data: array[i],
         actions: (
           <div className="flex justify-end items-center">
-            <Dropdown
-              trigger={"click"}
-              placement="bottomRight"
-              menu={{
-                items: [
-                  {
+            <RowActions items={[
+                  perm.canUpdate && {
                     label: t("Update"),
                     key: `${array[i].id}-udpate`,
                     icon: <FaRegEdit />,
                     onClick: () => openUpdate(array[i]),
                   },
-                  {
+                  perm.canDelete && {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
                     icon: <FaRegTrashAlt />,
                     onClick: () => openDelete(array[i]),
                   },
-                ],
-              }}
-            >
-              <Button>
-                <IoMdMore />
-              </Button>
-            </Dropdown>
+                ]} />
           </div>
         ),
       });
@@ -135,24 +128,30 @@ export default function Faqs() {
   const nameRule = (excludeId = null) =>
     uniqueRule(data, t("A faq with this title already exists"), { field: "title", excludeId });
 
+  // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
+  const { filterRows, toolbar } = useListFilters([
+    { key: "title", type: "text", primary: true, placeholder: t("Search by title..."), match: (row, v) => includesText(row.full_data.title, v) },
+  ]);
+
   return (
     <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
       <Update data={selectedData} open={isOpenUpdate} close={closeAction} nameRule={nameRule} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="faqs" />
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Faqs")}</p>
         </div>
-        <div>
-          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {toolbar}
+          <Button size="large" onClick={getData} icon={<RxReload />} />
+          {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
             {t("Add faq")}
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Table
-        dataSource={tableData}
+        dataSource={filterRows(tableData)}
         loading={isLoading}
         columns={[
           {
@@ -161,7 +160,6 @@ export default function Faqs() {
             key: "title",
             sort: true,
             sortType: "text",
-            search: "title",
             width: "400px",
           },
           {

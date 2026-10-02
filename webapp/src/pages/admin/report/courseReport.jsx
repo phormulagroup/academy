@@ -1,21 +1,179 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useState } from "react";
-import { Button, Form, Select } from "antd";
-
-import Table from "../../../components/admin/table";
+import { Avatar, Button, ConfigProvider, Form, Input, Segmented, Select, Table, Tag } from "antd";
+import { CiCalendar } from "react-icons/ci";
+import config from "../../../utils/config";
+import { IoSearch } from "react-icons/io5";
 
 import { Context } from "../../../utils/context";
 
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
-import { LuDownload, LuSearch } from "react-icons/lu";
+import UserCell from "../../../components/admin/userCell";
+import { StackedBar, HorizontalBars, emptyProgressBuckets, progressBucketKey } from "../../../components/admin/charts";
+import { LuDownload } from "react-icons/lu";
 import {
   getCourseReportColumns,
   getExpandedStudentColumns,
 } from "../../../utils/columns";
 
-export default function CourseReport({ data }) {
+// Cores da marca Bial para os gráficos (do mais claro ao mais escuro)
+const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
+
+function Kpi({ label, value, hint }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-[12px] border border-[#ECEEF1] bg-white px-4 py-3">
+      <span className="text-[12px] text-[#8A8D98]">{label}</span>
+      <span className="text-[22px] font-bold leading-none">{value}</span>
+      {hint && <span className="text-[11px] text-[#8A8D98]">{hint}</span>}
+    </div>
+  );
+}
+
+// Rótulo de um filtro com a contagem numa etiqueta (cor da marca quando ativo)
+function FilterLabel({ text, count, active }) {
+  return (
+    <span className="inline-flex items-center gap-2 px-1">
+      {text}
+      <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[11px] font-semibold leading-none ${active ? "bg-[#163986] text-white" : "bg-[#ECEEF1] text-[#5B5F6B]"}`}>
+        {count}
+      </span>
+    </span>
+  );
+}
+
+// "2/5" -> percentagem de cumprimento, para a barra de progresso do aluno
+const ratio = (value) => {
+  const m = String(value ?? "").match(/^(\d+)\/(\d+)$/);
+  return m && Number(m[2]) > 0 ? Number(m[1]) / Number(m[2]) : null;
+};
+
+// Painel da linha expandida de um curso: resumo, gráficos e a lista de alunos (com pesquisa e filtro por estado).
+// Só apresentação: as linhas vêm todas já calculadas de expandedRowRender.
+function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+
+  const NOT_STARTED = t("Not started");
+  const IN_PROGRESS = t("In progress");
+  const APPROVED = t("Approved");
+  const REPPROVED = t("Repproved");
+
+  const counts = useMemo(() => {
+    const c = { all: rows.length, [IN_PROGRESS]: 0, [APPROVED]: 0, [REPPROVED]: 0, [NOT_STARTED]: 0 };
+    rows.forEach((r) => (c[r.status] = (c[r.status] || 0) + 1));
+    return c;
+  }, [rows, IN_PROGRESS, APPROVED, REPPROVED, NOT_STARTED]);
+
+  // Progresso de cada aluno: média do que concluiu em módulos, tópicos e testes (só os que o curso tem)
+  const withProgress = useMemo(
+    () =>
+      rows.map((r) => {
+        const parts = [ratio(r.nr_modules), ratio(r.nr_topics), ratio(r.nr_tests)].filter((v) => v !== null);
+        const progress = r.status === APPROVED ? 100 : parts.length ? Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100) : 0;
+        return { ...r, progress };
+      }),
+    [rows, APPROVED],
+  );
+  const avgProgress = withProgress.length ? Math.round(withProgress.reduce((s, r) => s + r.progress, 0) / withProgress.length) : 0;
+
+  const charts = useMemo(() => {
+    const distribution = {
+      notStarted: { value: counts[NOT_STARTED], label: NOT_STARTED, color: PALETTE.lighter },
+      inProgress: { value: counts[IN_PROGRESS], label: IN_PROGRESS, color: PALETTE.light },
+      completed: { value: counts[APPROVED], label: t("Completed"), color: PALETTE.base },
+    };
+    const buckets = emptyProgressBuckets(PALETTE);
+    withProgress.forEach((r) => (buckets[progressBucketKey(r.progress)].value += 1));
+    return { distribution, buckets };
+  }, [counts, withProgress, NOT_STARTED, IN_PROGRESS, APPROVED, t]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return withProgress.filter((r) => (status === "all" || r.status === status) && (!q || `${r.name} ${r.email}`.toLowerCase().includes(q)));
+  }, [withProgress, search, status]);
+
+  const dash = (v) => (v && v !== "—" ? v : <span className="text-[#C0C3CC]">—</span>);
+
+  // Mesmas colunas do relatório (e do Excel), só com a apresentação do aluno e do estado melhorada
+  const tableColumns = columns
+    .filter((c) => c.key !== "ID" && c.key !== "email")
+    .map((c) => {
+      if (c.key === "name") return { ...c, width: 260, sorter: (a, b) => (a.name || "").localeCompare(b.name || ""), render: (_, row) => <UserCell id={row.ID} name={row.name} email={row.email} /> };
+      if (c.key === "status") {
+        const colors = { [APPROVED]: "green", [REPPROVED]: "red", [IN_PROGRESS]: "blue" };
+        return { ...c, width: 130, render: (v) => <Tag color={colors[v] || "default"}>{v}</Tag> };
+      }
+      return { ...c, render: dash };
+    });
+
+  return (
+    <div className="flex flex-col gap-5 p-4 md:p-5 bg-[#F7F8FA] rounded-[14px]" style={width ? { width: Math.max(width - 32, 320), position: "sticky", left: 0 } : undefined}>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Kpi label={t("Students")} value={counts.all} />
+        <Kpi label={IN_PROGRESS} value={counts[IN_PROGRESS]} />
+        <Kpi label={t("Completed")} value={counts[APPROVED]} hint={counts[REPPROVED] ? `${counts[REPPROVED]} ${t("failed")}` : undefined} />
+        <Kpi label={NOT_STARTED} value={counts[NOT_STARTED]} />
+        <Kpi label={t("Average progress")} value={`${avgProgress}%`} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+          <p className="font-bold text-[14px] mb-4!">{t("Progress distribution")}</p>
+          <StackedBar segments={[charts.distribution.notStarted, charts.distribution.inProgress, charts.distribution.completed]} />
+        </div>
+        <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+          <p className="font-bold text-[14px] mb-4!">{t("Progress percentage")}</p>
+          <HorizontalBars rows={Object.values(charts.buckets)} />
+        </div>
+      </div>
+
+      <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <p className="font-bold text-[14px] mb-0!">
+            {t("Students")}{" "}
+            <span className="font-normal text-[#8A8D98]">
+              ({filtered.length}
+              {filtered.length !== rows.length ? ` ${t("of")} ${rows.length}` : ""})
+            </span>
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Mesma altura (40px) da pesquisa e do botão: o Segmented usa a altura de controlo global (32) */}
+            <ConfigProvider theme={{ components: { Segmented: { controlHeight: 40, itemSelectedColor: "#163986" } } }}>
+              <Segmented
+                value={status}
+                onChange={setStatus}
+                options={[
+                  { label: <FilterLabel text={t("All")} count={counts.all} active={status === "all"} />, value: "all" },
+                  { label: <FilterLabel text={IN_PROGRESS} count={counts[IN_PROGRESS]} active={status === IN_PROGRESS} />, value: IN_PROGRESS },
+                  { label: <FilterLabel text={t("Completed")} count={counts[APPROVED]} active={status === APPROVED} />, value: APPROVED },
+                  { label: <FilterLabel text={NOT_STARTED} count={counts[NOT_STARTED]} active={status === NOT_STARTED} />, value: NOT_STARTED },
+                  ...(counts[REPPROVED] ? [{ label: <FilterLabel text={t("Failed")} count={counts[REPPROVED]} active={status === REPPROVED} />, value: REPPROVED }] : []),
+                ]}
+              />
+            </ConfigProvider>
+            <Input allowClear placeholder={t("Search student...")} prefix={<IoSearch className="text-[#8A8D98]" />} className="w-56!" value={search} onChange={(ev) => setSearch(ev.target.value)} />
+            <Button onClick={onExport} disabled={rows.length === 0} icon={<LuDownload />}>
+              {t("Export excel")}
+            </Button>
+          </div>
+        </div>
+        <Table
+          className="expanded_table"
+          rowKey="ID"
+          columns={tableColumns}
+          dataSource={filtered}
+          pagination={filtered.length > 10 ? { pageSize: 10, placement: ["none", "bottomCenter"] } : false}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: rows.length === 0 ? t("No students in this course yet") : t("No student matches the filters") }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function CourseReport({ data, isLoading }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -24,6 +182,18 @@ export default function CourseReport({ data }) {
   const [courses, setCourses] = useState([]);
   const [countries, setCountries] = useState([]);
   const [isOpenExport, setIsOpenExport] = useState(false);
+
+  // A tabela tem scroll horizontal: sem uma largura fixa, a linha expandida ficava tão larga como a tabela toda e
+  // cortada à direita. O painel acompanha a largura visível do contentor da tabela.
+  const tableWrapRef = useRef(null);
+  const [panelWidth, setPanelWidth] = useState(null);
+  useEffect(() => {
+    const el = tableWrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => setPanelWidth(Math.floor(entry.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const { t } = useTranslation();
 
@@ -207,6 +377,7 @@ export default function CourseReport({ data }) {
         aux.push({
           id: course.id,
           course_name: course.name,
+          thumbnail: course.thumbnail, // só para mostrar na tabela; não faz parte das colunas do Excel
           start_date:
             course.settings.course_access_expiration &&
             course.settings.course_access_expiration_dates.start_date
@@ -487,116 +658,82 @@ export default function CourseReport({ data }) {
       }
     }
 
-    return (
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <p className="font-bold mb-2 mt-4">{t("Students")}</p>
-          <Button
-            className="min-w-50"
-            size="large"
-            variant="solid"
-            color="blue"
-            disabled={dataExpanded.length === 0}
-            onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<LuDownload className="text-[18px]" />}>
-            {t("Export excel")}
-          </Button>
-        </div>
-        <Table
-          className="expanded_table"
-          columns={columnsExpanded}
-          dataSource={dataExpanded}
-          pagination={{
-            pageSize: 5, // máximo 5 por página
-            position: ["bottomCenter"],
-          }}
-        />
-      </div>
-    );
+    return <CourseExpandedPanel width={panelWidth} rows={dataExpanded} columns={columnsExpanded} onExport={() => openExport(dataExpanded, columnsExpanded)} t={t} />;
   };
 
   return (
-    <div className="p-4">
-      <ExportTable
-        open={isOpenExport}
-        close={closeExport}
-        data={dataToExport}
-        table={"CoursesReport"}
-        columns={columnsToExport}
-      />
-      <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
-          <div className="flex justify-end items-end">
+    <div>
+      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={"CoursesReport"} columns={columnsToExport} />
+      <div className="flex justify-end items-center w-full">
+        <Form form={form} layout="vertical" onFinish={filterData} className="w-full">
+          <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
             <Button
-              className="w-full!"
-              size="large"
-              variant="solid"
-              color="blue"
-              // Quando não existe dados na tabela, o botão de exportar é desativado
+              // Sem dados na tabela, o botão de exportar fica desativado
               disabled={tableData.length === 0}
-              onClick={() =>
-                openExport(
-                  filteredData.length > 0 ? filteredData : tableData,
-                  getCourseReportColumns(t, false),
-                )
-              }
-              icon={<LuDownload className="text-[18px]" />}>
-              {t("Export excel")}
+              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, getCourseReportColumns(t, false))}
+              icon={<LuDownload />}>
+              <span className="hidden sm:inline">{t("Export excel")}</span>
             </Button>
-          </div>
-          <Form.Item name="course" label={t("Course")} className="mb-0!">
-            <Select
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select course")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={courses.map((c) => ({ label: c.name, value: c.id }))}
-            />
-          </Form.Item>
-          <Form.Item name="country" label={t("Country")} className="mb-0!">
-            <Select
-              mode="multiple"
-              allowClear
-              size="large"
-              className="w-full"
-              placeholder={t("Select country")}
-              showSearch={{
-                optionFilterProp: ["label"],
-              }}
-              options={countries.map((c) => ({
-                label: c,
-                value: c,
-              }))}
-            />
-          </Form.Item>
-          <div className="flex justify-center items-end">
-            <Button
-              className="w-full"
-              size="large"
-              onClick={form.submit}
-              type="primary"
-              icon={<LuSearch className="text-[15px]" />}>
+            <Form.Item name="course" className="mb-0! w-full sm:w-auto">
+              <Select
+                allowClear
+                className="w-full sm:w-[260px]!"
+                placeholder={t("Select course")}
+                showSearch={{ optionFilterProp: ["label"] }}
+                options={courses.map((c) => ({ label: c.name, value: c.id }))}
+              />
+            </Form.Item>
+            <Form.Item name="country" className="mb-0! w-full sm:w-auto">
+              <Select
+                mode="multiple"
+                allowClear
+                maxTagCount="responsive"
+                className="w-full sm:w-[260px]!"
+                placeholder={t("Select country")}
+                showSearch={{ optionFilterProp: ["label"] }}
+                options={countries.map((c) => ({ label: c, value: c }))}
+              />
+            </Form.Item>
+            <Button onClick={form.submit} type="primary" icon={<IoSearch />}>
               {t("Search")}
             </Button>
           </div>
-        </div>
-      </Form>
-      <div className="p-4 bg-white rounded-[5px]">
+        </Form>
+      </div>
+      <div ref={tableWrapRef}>
         <Table
           onChange={onChange}
-          expandable={{
-            expandedRowRender,
-          }}
+          loading={isLoading}
+          expandable={{ expandedRowRender }}
           rowKey="id"
           dataSource={tableData}
+          scroll={{ x: "max-content" }}
           pagination={{
             pageSize: 5, // máximo 5 por página
-            position: ["bottomCenter"], // paginação ao centro
+            placement: ["none", "bottomCenter"], // paginação ao centro
+            showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
           }}
-          columns={getCourseReportColumns(t)}
+          columns={getCourseReportColumns(t).map((col) =>
+            col.key === "course_name"
+              ? {
+                  ...col,
+                  // Miniatura do curso ao lado do nome (só na tabela: as colunas do Excel não mudam)
+                  render: (name, record) => (
+                    <div className="flex items-center">
+                      <Avatar
+                        shape="square"
+                        size={40}
+                        style={{ backgroundColor: "#163986" }}
+                        src={record.thumbnail ? `${config.server_ip}/media/${record.thumbnail}` : undefined}
+                        icon={<CiCalendar className="text-white/60" />}
+                        className="mr-2! min-w-[40px]!"
+                      />
+                      <p className="mb-0!">{name}</p>
+                    </div>
+                  ),
+                }
+              : col,
+          )}
         />
       </div>
     </div>

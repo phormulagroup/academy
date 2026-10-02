@@ -1,4 +1,5 @@
 import axios from "axios";
+import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 import { Button, Divider, Form } from "antd";
@@ -11,6 +12,7 @@ import RichTextFormField from "../../components/admin/richText/richTextFormField
 
 export default function Personalization() {
   const { t, selectedLanguage, update, create, languages, getPersonalization } = useContext(Context);
+  const perm = usePermission("personalization");
   const [isLoading, setIsLoading] = useState(true);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [data, setData] = useState([]);
@@ -63,9 +65,9 @@ export default function Personalization() {
         </div>
         <div className="flex justify-center">
           <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
-          <Button size="large" onClick={form.submit} type="primary" className="mr-2" loading={isButtonLoading}>
+          {perm.canUpdate && (<Button size="large" onClick={form.submit} type="primary" className="mr-2" loading={isButtonLoading}>
             {t("Save Changes")}
-          </Button>
+          </Button>)}
         </div>
       </div>
       <Form form={form} onFinish={submit} layout="vertical">
