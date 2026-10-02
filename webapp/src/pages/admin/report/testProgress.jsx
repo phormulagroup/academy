@@ -1,19 +1,63 @@
 import { useEffect, useState, useCallback } from "react";
-import { Button, Form, Select } from "antd";
+import { Button, Form, Select, Switch } from "antd";
 
 import { useTranslation } from "react-i18next";
 import { Doughnut } from "react-chartjs-2";
 import { LuSearch } from "react-icons/lu";
 
+// Nº de países visíveis por idioma antes do "Mostrar tudo"
+const COUNTRIES_PREVIEW = 5;
+
+// Barra horizontal compacta (label + barra + valor) usada na média por idioma/país
+function ScoreBar({ label, value, hasData, flag, bold }) {
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <div className="flex items-center gap-2 w-24 min-w-24 sm:w-36 sm:min-w-36">
+        {flag && (
+          <img
+            src={flag}
+            alt={label}
+            className="max-w-5 max-h-5 rounded-sm"
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
+          />
+        )}
+        <span
+          title={label}
+          className={`truncate text-[13px] ${bold ? "font-bold text-[#163986]" : "text-[#163986]"}`}>
+          {label}
+        </span>
+      </div>
+      <div className="flex-1 min-w-8 h-2 rounded-full bg-[#E8ECF4] overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${hasData ? Math.max(value, 1) : 0}%`,
+            backgroundColor: bold ? "#163986" : "#00B9D6",
+          }}
+        />
+      </div>
+      <span
+        className={`w-14 min-w-14 sm:w-16 sm:min-w-16 text-right text-[13px] ${hasData ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}>
+        {hasData ? `${value.toFixed(2)}%` : "—"}
+      </span>
+    </div>
+  );
+}
+
 export default function TestProgress({ data, products, languages }) {
   const { t } = useTranslation();
 
+  // Guarda a chave (inglês) da label e traduz no render - as traduções são carregadas de forma assíncrona
   const [graphicGlobal, setGraphicGlobal] = useState({
-    notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
-    inProgress: { value: 0, label: t("In progress"), color: "#9BE3EF" },
-    approved: { value: 0, label: t("Approved"), color: "#40CBE0" },
-    notApproved: { value: 0, label: t("Repproved"), color: "#0397AE" },
+    notStarted: { value: 0, label: "Not started", color: "#C7F1F8" },
+    inProgress: { value: 0, label: "In progress", color: "#9BE3EF" },
+    approved: { value: 0, label: "Approved", color: "#40CBE0" },
+    notApproved: { value: 0, label: "Repproved", color: "#0397AE" },
   });
+  const [groupByCountry, setGroupByCountry] = useState(false);
+  const [expandedLangs, setExpandedLangs] = useState({});
   const [graphicScore, setGraphicScore] = useState({
     "<= 100%": { value: 0, label: "<= 100%", color: "#0397AE" },
     "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
@@ -47,8 +91,11 @@ export default function TestProgress({ data, products, languages }) {
           (languages || []).map((lang) => ({
             id: lang.id,
             code: lang.code.toUpperCase(),
+            name: lang.name,
             avgScore: 0,
+            count: 0,
             flag: lang.flag,
+            countries: [],
           })),
         );
         return;
@@ -83,6 +130,11 @@ export default function TestProgress({ data, products, languages }) {
         (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
       );
       let testScoreMap = {};
+      let testScoreByCountry = {}; // { [id_lang]: { [country]: { total, count } } }
+      let userCountry = {};
+      users.forEach((u) => {
+        userCountry[u.id] = u.country;
+      });
       let testUserAttempts = {}; // Agrupa tentativas por combinação de user e test
       let notApprovedTests = new Set(); // Rastreia combinações de user/test que não foram aprovadas
 
@@ -176,6 +228,15 @@ export default function TestProgress({ data, products, languages }) {
           }
           testScoreMap[c.id_lang].total += avgPercentage;
           testScoreMap[c.id_lang].count += 1;
+
+          // Registra a pontuação por país do utilizador, dentro do idioma do curso
+          const country = userCountry[firstItem.id_user] || "—";
+          if (!testScoreByCountry[c.id_lang]) testScoreByCountry[c.id_lang] = {};
+          if (!testScoreByCountry[c.id_lang][country]) {
+            testScoreByCountry[c.id_lang][country] = { total: 0, count: 0 };
+          }
+          testScoreByCountry[c.id_lang][country].total += avgPercentage;
+          testScoreByCountry[c.id_lang][country].count += 1;
         }
 
         // Verifica se o teste tem limite de tentativas e se o user excedeu esse limite sem passar, para marcar como "Not Approved"
@@ -247,11 +308,25 @@ export default function TestProgress({ data, products, languages }) {
         const avgScore = langData
           ? (langData.total / langData.count).toFixed(2)
           : 0;
+        // Média por país (apenas países com tentativas), ordenada da maior para a menor
+        const countries = Object.entries(testScoreByCountry[lang.id] || {})
+          .map(([country, d]) => ({
+            country,
+            avgScore: parseFloat((d.total / d.count).toFixed(2)),
+            count: d.count,
+          }))
+          .sort(
+            (a, b) =>
+              b.avgScore - a.avgScore || a.country.localeCompare(b.country),
+          );
         return {
           id: lang.id,
           code: lang.code.toUpperCase(),
+          name: lang.name,
           avgScore: parseFloat(avgScore),
+          count: langData ? langData.count : 0,
           flag: lang.flag,
+          countries,
         };
       });
 
@@ -302,8 +377,8 @@ export default function TestProgress({ data, products, languages }) {
   return (
     <div className="p-4">
       <Form form={form} layout="vertical" onFinish={filterData}>
-        <div className="grid grid-cols-4 gap-8 mb-4 mt-4">
-          <div className="col-span-2"></div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8 mb-4 mt-4">
+          <div className="hidden md:block md:col-span-2"></div>
           {/* Filtrar por produto */}
           <Form.Item name="product" label={t("Product")} className="mb-0!">
             <Select
@@ -345,11 +420,11 @@ export default function TestProgress({ data, products, languages }) {
       </Form>
       <div className="p-4 bg-white rounded-[5px]">
         <p className="font-bold font-ryker">{t("Test progress")}</p>
-        <div className="grid grid-cols-2 gap-16 mt-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16 mt-4">
           <div>
             <p className="font-bold mb-2 font-ryker">{t("Global")}</p>
             <div className="p-4 border border-[#C0C0C0] rounded-[5px] flex flex-col">
-              <div className="grid grid-cols-2 gap-10 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full">
                 <div className="flex flex-col">
                   <p className="font-bold mb-4 font-ryker">{t("Status distribution")}</p>
                   <div className="flex justify-between items-center gap-4 w-full!">
@@ -358,10 +433,10 @@ export default function TestProgress({ data, products, languages }) {
                         className="w-full! h-full!"
                         data={{
                           labels: [
-                            graphicGlobal.notStarted?.label,
-                            graphicGlobal.approved?.label,
-                            graphicGlobal.inProgress?.label,
-                            graphicGlobal.notApproved?.label,
+                            t(graphicGlobal.notStarted?.label),
+                            t(graphicGlobal.approved?.label),
+                            t(graphicGlobal.inProgress?.label),
+                            t(graphicGlobal.notApproved?.label),
                           ],
                           datasets: [
                             {
@@ -404,7 +479,7 @@ export default function TestProgress({ data, products, languages }) {
                                 style={{
                                   backgroundColor: item.color,
                                 }}></div>
-                              <p className="text-[11px]">{item.label}</p>
+                              <p className="text-[11px]">{t(item.label)}</p>
                             </div>
                             <div className="min-w-10 flex justify-center items-center">
                               <p className="text-[11px]">{item.value}</p>
@@ -487,31 +562,125 @@ export default function TestProgress({ data, products, languages }) {
             </div>
           </div>
           <div>
-            <p className="font-bold mb-2 font-ryker">{t("Average score by language")}</p>
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+              <p className="font-bold font-ryker">
+                {t("Average score by language")}
+              </p>
+              {/* Alterna entre média por idioma e média por país (dentro de cada idioma) - afeta apenas esta secção */}
+              <div className="flex items-center gap-2 text-[13px]">
+                <span
+                  className={`cursor-pointer ${!groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}
+                  onClick={() => setGroupByCountry(false)}>
+                  {t("By language")}
+                </span>
+                <Switch
+                  size="small"
+                  checked={groupByCountry}
+                  onChange={setGroupByCountry}
+                  aria-label={t("By country")}
+                />
+                <span
+                  className={`cursor-pointer ${groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}
+                  onClick={() => setGroupByCountry(true)}>
+                  {t("By country")}
+                </span>
+              </div>
+            </div>
             <div className="p-4 border border-[#C0C0C0] rounded-[5px]">
               {graphicAvgScoreByLang && graphicAvgScoreByLang.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {graphicAvgScoreByLang.map((item, index) => (
-                    <div
-                      key={item.id || index}
-                      className="flex justify-between items-center pb-2 border-b border-[#E0E0E0]">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={item.flag}
-                          alt={item.code}
-                          className="max-w-5 max-h-5 rounded-sm"
-                          onError={(e) => {
-                            e.target.style.display = "none";
-                          }}
-                        />
-                        <span className="text-sm font-medium">{item.code}</span>
-                      </div>
-                      <span className="text-sm font-bold">
-                        {item.avgScore.toFixed(2)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                !groupByCountry ? (
+                  <div className="flex flex-col divide-y divide-[#E8ECF4]">
+                    {graphicAvgScoreByLang.map((item, index) => (
+                      <ScoreBar
+                        key={item.id || index}
+                        label={item.code}
+                        flag={item.flag}
+                        value={item.avgScore}
+                        hasData={item.count > 0}
+                        bold
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 max-h-130 overflow-y-auto pr-1">
+                    {graphicAvgScoreByLang.map((item, index) => {
+                      const expanded = !!expandedLangs[item.id];
+                      const visibleCountries = expanded
+                        ? item.countries
+                        : item.countries.slice(0, COUNTRIES_PREVIEW);
+                      return (
+                        <div
+                          key={item.id || index}
+                          className="shrink-0 rounded-[5px] border border-[#C5CEE1] overflow-hidden">
+                          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#F3F5FA]">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <img
+                                src={item.flag}
+                                alt={item.code}
+                                className="max-w-5 max-h-5 rounded-sm"
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                }}
+                              />
+                              <span className="text-[13px] font-bold text-[#163986]">
+                                {item.code}
+                              </span>
+                              {item.name && (
+                                <span className="hidden sm:inline text-[12px] text-[#8B9CC3] truncate">
+                                  {item.name}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] text-[#8B9CC3] whitespace-nowrap">
+                                {item.countries.length} {t("Countries")}
+                              </span>
+                              <span
+                                className={`text-[13px] font-bold px-2 py-0.5 rounded-full ${item.count > 0 ? "bg-[#163986] text-white" : "bg-[#E8ECF4] text-[#8B9CC3]"}`}>
+                                {item.count > 0
+                                  ? `${item.avgScore.toFixed(2)}%`
+                                  : "—"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="px-3 py-2">
+                            {item.countries.length > 0 ? (
+                              <>
+                                {visibleCountries.map((c) => (
+                                  <ScoreBar
+                                    key={c.country}
+                                    label={c.country}
+                                    value={c.avgScore}
+                                    hasData={c.count > 0}
+                                  />
+                                ))}
+                                {item.countries.length > COUNTRIES_PREVIEW && (
+                                  <button
+                                    type="button"
+                                    className="mt-1 text-[12px] font-bold text-[#00B9D6] cursor-pointer hover:underline"
+                                    onClick={() =>
+                                      setExpandedLangs((prev) => ({
+                                        ...prev,
+                                        [item.id]: !prev[item.id],
+                                      }))
+                                    }>
+                                    {expanded
+                                      ? t("Show less")
+                                      : `${t("Show all")} (${item.countries.length})`}
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-[12px] text-[#8B9CC3] py-1">
+                                {t("No data available")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
                 <p className="text-sm text-gray-500 text-center py-4">
                   {t("No data available")}

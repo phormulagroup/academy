@@ -45,9 +45,9 @@ export default function Main() {
   const [selectedUser, setSelectedUser] = useState({});
   const [bestStudentsData, setBestStudentsData] = useState([]);
   const [graphicCourses, setGraphicCourses] = useState({
-    notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
-    inProgress: { value: 0, label: t("In progress"), color: "#80DCEB" },
-    completed: { value: 0, label: t("Completed"), color: "#00B9D6" },
+    notStarted: { value: 0, label: "Not started", color: "#C7F1F8" },
+    inProgress: { value: 0, label: "In progress", color: "#80DCEB" },
+    completed: { value: 0, label: "Completed", color: "#00B9D6" },
   });
   const [graphicCoursesProgress, setGraphicCoursesProgress] = useState({
     "< 100%": { value: 0, label: "< 100%", color: "#0397AE" },
@@ -370,9 +370,9 @@ export default function Main() {
 
   function filterProgressCourses(id_course, users, courseActivity, courses) {
     let auxGraphicCourses = {
-      notStarted: { value: 0, label: t("Not started"), color: "#C7F1F8" },
-      inProgress: { value: 0, label: t("In progress"), color: "#80DCEB" },
-      completed: { value: 0, label: t("Completed"), color: "#00B9D6" },
+      notStarted: { value: 0, label: "Not started", color: "#C7F1F8" },
+      inProgress: { value: 0, label: "In progress", color: "#80DCEB" },
+      completed: { value: 0, label: "Completed", color: "#00B9D6" },
     };
 
     let auxGraphicCoursesProgress = {
@@ -538,9 +538,9 @@ export default function Main() {
                       className="w-full! h-full!"
                       data={{
                         labels: [
-                          graphicCourses.notStarted?.label,
-                          graphicCourses.inProgress?.label,
-                          graphicCourses.completed?.label,
+                          t(graphicCourses.notStarted?.label),
+                          t(graphicCourses.inProgress?.label),
+                          t(graphicCourses.completed?.label),
                         ],
                         datasets: [
                           {
@@ -577,7 +577,7 @@ export default function Main() {
                               backgroundColor: graphicCourses[_k].color,
                             }}></div>
                           <p className="text-[11px]">
-                            {graphicCourses[_k].label}
+                            {t(graphicCourses[_k].label)}
                           </p>
                         </div>
                         <div className="min-w-10 flex justify-center items-center">
