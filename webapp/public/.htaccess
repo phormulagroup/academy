@@ -1,0 +1,62 @@
+# Webapp React (SPA) em https://academy.<dominio>/ com a API Node em /api e os IECs em /wp-content/uploads/iec (ou /regional/wp-content/uploads/iec)
+# Copiado para dist/ pelo build; fica na raiz do domínio (public_html).
+
+Options -Indexes
+DirectoryIndex index.html
+
+# Nunca expor ficheiros que começam por ponto (.env, .git…), exceto o próprio .htaccess (que o Apache já protege)
+<FilesMatch "^\.(?!well-known)">
+  Require all denied
+</FilesMatch>
+
+# Erros do próprio servidor web (o Apache responde, mas não consegue servir a app): página estática de manutenção.
+# Não inclui 404: um IEC que não existe deve dar 404 e as rotas da app são tratadas pelo fallback abaixo.
+ErrorDocument 500 /maintenance.html
+ErrorDocument 502 /maintenance.html
+ErrorDocument 503 /maintenance.html
+ErrorDocument 504 /maintenance.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Marca os ficheiros com hash para a regra de cache mais abaixo
+  RewriteRule ^assets/ - [E=IMMUTABLE_ASSET:1]
+
+  # IECs: o ficheiro pode ser substituído mantendo o URL (QRCode impresso), por isso tem de revalidar sempre
+  RewriteRule ^(?:regional/)?wp-content/uploads/iec/ - [E=IEC_REVALIDATE:1]
+
+  # HTTPS
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # A pasta dos IECs aberta sem nome de ficheiro (nunca listamos a pasta): vai para a página inicial da app
+  RewriteRule ^(?:regional/)?wp-content/uploads/iec/?$ / [R=302,L]
+
+  # IEC que não está na pasta pública (ainda está na pasta da API): redireciona para o mesmo ficheiro servido pelo Node.
+  # Se o ficheiro existir aqui, o Apache serve-o diretamente (sem redirect). 302 (e não 301) para ninguém o guardar em cache.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(?:regional/)?wp-content/uploads/iec/(.+)$ /api/iecs/$1 [R=302,L]
+
+  # A API Node (/api) e os IECs (QRCodes impressos) nunca são reescritos para a app.
+  # Os IECs são ficheiros reais servidos diretamente pelo Apache; se o ficheiro não existir devolve 404 (e não o index.html).
+  RewriteRule ^(api|(?:regional/)?wp-content/uploads/iec)(/|$) - [L]
+
+  # SPA: tudo o que não é ficheiro nem pasta existente vai para a app (react-router)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ /index.html [L]
+</IfModule>
+
+# Cache: só o que está em /assets tem hash no nome (imutável). O resto (index.html, animation.json, imagens) revalida sempre.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE_ASSET
+  Header set Cache-Control "no-cache" env=IEC_REVALIDATE
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

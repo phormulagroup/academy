@@ -7,12 +7,14 @@ import endpoints from "./endpoints";
 import api from "./api";
 import { message, notification, Tour } from "antd";
 import i18n from "./i18n";
-import { socket } from "./socket";
 import { useTranslation } from "react-i18next";
 
 export const Context = createContext();
 
 api.init();
+
+// Segundos entre cada consulta de novas notificações/mensagens (VITE_POLL_INTERVAL)
+const POLL_INTERVAL = (Number(import.meta.env.VITE_POLL_INTERVAL) || 30) * 1000;
 
 const ContextProvider = ({ children }) => {
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -23,13 +25,15 @@ const ContextProvider = ({ children }) => {
 	const [courses, setCourses] = useState([]);
 	const [languages, setLanguages] = useState([]);
 	const [selectedLanguage, setSelectedLanguage] = useState(null);
-	const [isConnected, setIsConnected] = useState(socket.connected);
 	const [notifications, setNotifications] = useState([]);
 	const [inbox, setInbox] = useState([]);
 	const [selectedInbox, setSelectedInbox] = useState({});
 	const [personalization, setPersonalization] = useState({});
 
 	const inboxRef = useRef(inbox);
+	const knownNotificationsRef = useRef(null); // ids já conhecidos (null até à 1ª leitura, para não avisar das antigas)
+	const inboxLoadedRef = useRef(false);
+	const isExpiringRef = useRef(false); // evita várias mensagens quando vários pedidos falham ao mesmo tempo
 	const selectedInboxRef = useRef(selectedInbox);
 
 	const [windowDimension, setWindowDimension] = useState({
@@ -82,52 +86,19 @@ const ContextProvider = ({ children }) => {
 		getPersonalization(languages);
 	}, [i18n.language]);
 
+	// Polling: de X em X segundos procura notificações e mensagens novas (em vez de socket)
 	useEffect(() => {
-		if (Object.keys(user).length === 0) return;
-		else socket.connect();
-
-		socket.on("connect", () => {
-			console.log("🟢 Socket ligado", socket.id);
-			console.log("User: ", user);
-			console.log("socket.connected: ", socket.connected);
-			if (user && user.id)
-				socket.emit("register_user", {
-					userId: user.id,
-					lang: user.id_lang,
-					country: user.country,
-					id_role: user.id_role,
-				}); // Exemplo
-		});
-
-		socket.on("disconnect", () => {
-			console.log("🔴 Socket desligado");
-		});
-
-		socket.on("reconnect_attempt", (attempt) => {
-			console.log(`🔄 A tentar reconectar... tentativa ${attempt}`);
-		});
-
-		socket.on("reconnect", () => {
-			console.log("🟢 Reconectado com sucesso!");
-			if (user && user.id)
-				socket.emit("register_user", {
-					userId: user.id,
-					lang: user.id_lang,
-					country: user.country,
-					id_role: user.id_role,
-				}); // Exemplo
-		});
-
-		socket.on("received", (data) => receivedNotification(data));
-
+		if (!user.id) return;
+		const timer = setInterval(() => {
+			if (!document.hidden) pollUpdates(user);
+		}, POLL_INTERVAL);
+		const onVisible = () => !document.hidden && pollUpdates(user);
+		document.addEventListener("visibilitychange", onVisible);
 		return () => {
-			socket.off("connect");
-			socket.off("disconnect");
-			socket.off("reconnect_attempt");
-			socket.off("reconnect");
-			socket.off("received");
+			clearInterval(timer);
+			document.removeEventListener("visibilitychange", onVisible);
 		};
-	}, [user]);
+	}, [user.id]);
 
 	useEffect(() => {
 		inboxRef.current = inbox;
@@ -151,50 +122,57 @@ const ContextProvider = ({ children }) => {
 		};
 	}, [windowDimension]);
 
-	function receivedNotification(d) {
+	function showToast(title, description) {
 		notificationApi.open({
 			type: "info",
 			placement: "top",
-			title: <div dangerouslySetInnerHTML={{ __html: d.title }}></div>,
-			description: (
-				<div dangerouslySetInnerHTML={{ __html: d.description }}></div>
-			),
+			title: <div dangerouslySetInnerHTML={{ __html: title }}></div>,
+			description: <div dangerouslySetInnerHTML={{ __html: description }}></div>,
 		});
+	}
 
-		if (d.type === "message" || d.type === "thread") {
-			setInbox((prev) =>
-				prev.filter((m) =>
-					m.id === d.meta_data.id_thread
-						? prev.filter((m) =>
-								m.id === d.meta_data.id_thread
-									? {
-											...m,
-											text: d.meta_data.text,
-											from_id_user: d.meta_data.from_id_user,
-											to_id_user: d.meta_data.to_id_user,
-											unread_messages: ++m.unread_messages,
-										}
-									: m,
-							)
-						: [...prev, d.meta_data],
-				),
-			);
+	async function pollUpdates(auxUser) {
+		const [notificationsRes, inboxRes] = await Promise.allSettled([
+			axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser.id } }),
+			axios.get(auxUser.id_role === 1 ? endpoints.inbox.readBySupport : endpoints.inbox.readByUser, { params: { id_user: auxUser.id } }),
+		]);
 
-			if (
-				selectedInboxRef.current &&
-				selectedInboxRef.current.id === d.meta_data.id_thread
-			)
-				setSelectedInbox((prev) => ({
-					...prev,
-					text: d.meta_data.text,
-					from_id_user: d.meta_data.from_id_user,
-					to_id_user: d.meta_data.to_id_user,
-					unread_messages: 0,
-				}));
-		} else {
-			const auxNotifications = Object.assign([], notifications);
-			auxNotifications.unshift(d);
-			setNotifications(auxNotifications);
+		// Notificações: avisa das que ainda não tinham aparecido e não foram lidas
+		if (notificationsRes.status === "fulfilled") {
+			const rows = notificationsRes.value.data;
+			if (knownNotificationsRef.current) {
+				rows
+					.filter((n) => !knownNotificationsRef.current.has(n.id) && !n.is_read)
+					.forEach((n) => showToast(n.title, n.description));
+			}
+			knownNotificationsRef.current = new Set(rows.map((n) => n.id));
+			setNotifications(rows);
+		}
+
+		// Mensagens: nova thread (suporte) ou mais mensagens por ler numa thread
+		if (inboxRes.status === "fulfilled") {
+			const previous = inboxRef.current;
+			const openId = selectedInboxRef.current?.id;
+			const rows = inboxRes.value.data.map((m) => (m.id === openId ? { ...m, unread_messages: 0 } : m));
+
+			if (inboxLoadedRef.current) {
+				rows.forEach((m) => {
+					const before = previous.find((p) => p.id === m.id);
+					if (!before && auxUser.id_role === 1 && m.id_user !== auxUser.id && !m.id_user_responsible) {
+						showToast("Nova thread", "There is a new thread, someone needs to open it!");
+					} else if (before && m.unread_messages > before.unread_messages) {
+						showToast("New message", "There is a new message, go check it out!");
+					}
+				});
+			}
+			inboxLoadedRef.current = true;
+			setInbox(rows);
+
+			// Thread aberta: só a atualiza se chegou mensagem nova (isto volta a carregar a conversa)
+			const open = rows.find((m) => m.id === openId);
+			if (open && open.created_at !== selectedInboxRef.current.created_at) {
+				setSelectedInbox((prev) => ({ ...prev, text: open.text, created_at: open.created_at, from_id_user: open.from_id_user, to_id_user: open.to_id_user, unread_messages: 0 }));
+			}
 		}
 	}
 
@@ -254,6 +232,7 @@ const ContextProvider = ({ children }) => {
 			const res = await axios.get(endpoints.notification.readByUser, {
 				params: { id_user: auxUser ? auxUser.id : user.id },
 			});
+			knownNotificationsRef.current = new Set(res.data.map((n) => n.id));
 			setNotifications(res.data);
 		} catch (err) {
 			console.log(err);
@@ -270,11 +249,48 @@ const ContextProvider = ({ children }) => {
 					params: { id_user: auxUser.id },
 				},
 			);
+			inboxLoadedRef.current = true;
 			setInbox(res.data);
 		} catch (err) {
 			console.log(err);
 		}
 	}
+
+	// Token inválido/expirado: limpa a sessão, avisa uma única vez e vai para a homepage (não para o login)
+	function expireSession() {
+		if (isExpiringRef.current) return;
+		isExpiringRef.current = true;
+		localStorage.removeItem("token");
+		delete axios.defaults.headers.common["Authorization"];
+		setIsLoggedIn(false);
+		setUser({});
+		setNotifications([]);
+		setInbox([]);
+		setSelectedInbox({});
+		messageApi.open({
+			key: "session-expired",
+			type: "warning",
+			content: t("Your session has expired. Please log in again."),
+			duration: 6,
+		});
+		navigate(`/${i18n.language}`, { replace: true });
+	}
+
+	// A meio da sessão: qualquer pedido da API recusado com 401 (token expirou ou deixou de ser válido).
+	// Os pedidos de /auth (login, recuperar palavra-passe, verificar token) têm tratamento próprio.
+	const expireSessionRef = useRef(expireSession);
+	expireSessionRef.current = expireSession;
+	useEffect(() => {
+		const id = axios.interceptors.response.use(
+			(res) => res,
+			(err) => {
+				const url = err.config?.url || "";
+				if (err.response?.status === 401 && !url.includes("/auth/") && localStorage.getItem("token")) expireSessionRef.current();
+				return Promise.reject(err);
+			},
+		);
+		return () => axios.interceptors.response.eject(id);
+	}, []);
 
 	async function getData() {
 		let token = localStorage.getItem("token");
@@ -292,8 +308,13 @@ const ContextProvider = ({ children }) => {
 				}, 3000);
 			} catch (err) {
 				console.log(err);
-				setIsLoggedIn(false);
-				navigate(`/${i18n.language}/login`);
+				if (err.response?.status === 401) {
+					// O token guardado já não é válido
+					expireSession();
+				} else {
+					setIsLoggedIn(false);
+					navigate(`/${i18n.language}/login`);
+				}
 				setTimeout(() => {
 					setIsLoading(false);
 				}, 3000);
@@ -364,6 +385,7 @@ const ContextProvider = ({ children }) => {
 	}
 
 	function login(res) {
+		isExpiringRef.current = false;
 		localStorage.setItem("token", res.token);
 		api.token(res.token);
 		getInfoData(res.token);

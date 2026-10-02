@@ -1,5 +1,6 @@
 import axios from "axios";
 import config from "./config";
+import "./serverStatus"; // regista os interceptores que detetam o servidor em baixo
 
 const api = {
   init: () => {

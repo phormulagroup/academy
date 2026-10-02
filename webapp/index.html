@@ -5,9 +5,33 @@
     <link rel="icon" type="image/svg+xml" href="/FAVICON.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bial Academy</title>
+    <script>
+      // Se o JavaScript da app não carregar (rede instável, ficheiro em falta), mostra o aviso em vez de uma página em branco.
+      // O aviso está dentro de #root: quando a app arranca, o React substitui-o.
+      window.addEventListener(
+        "error",
+        function (e) {
+          var el = e.target;
+          if (el && el.tagName === "SCRIPT") {
+            var box = document.getElementById("boot-fallback");
+            if (box) box.style.display = "flex";
+          }
+        },
+        true,
+      );
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-fallback" style="display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; font-family: system-ui, sans-serif; color: #163986">
+        <h1 style="margin: 0; font-size: 1.5rem">Bial Regional Academy</h1>
+        <p style="margin: 0; max-width: 460px; line-height: 1.5">Não foi possível carregar a aplicação. / Unable to load the application.</p>
+        <button type="button" onclick="location.reload()" style="font: inherit; font-weight: 600; color: #fff; background: #00b9d6; border: 1px solid #00b9d6; border-radius: 6px; padding: 12px 28px; cursor: pointer">Recarregar / Reload</button>
+      </div>
+    </div>
+    <noscript>
+      <p style="text-align: center; font-family: system-ui, sans-serif; padding: 24px">Esta aplicação precisa de JavaScript. / This application requires JavaScript.</p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
