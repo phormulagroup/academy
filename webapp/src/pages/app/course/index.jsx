@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState } from "react";
 import { Button, Empty, Progress, Tooltip } from "antd";
 import { useContext } from "react";
@@ -9,7 +10,6 @@ import endpoints from "../../../utils/endpoints";
 import { Link, useNavigate } from "react-router-dom";
 
 import dayjs from "dayjs";
-import Lottie from "lottie-react";
 
 import config from "../../../utils/config";
 import { getMarginClasses } from "../../../utils/responsive";
@@ -38,7 +38,6 @@ import {
   isCourseFailed,
   testDateState,
 } from "../../../utils/courseStatus";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
@@ -428,11 +427,7 @@ export default function CourseDetails() {
         </div>
         {isLoading ? (
           <div className="flex justify-center items-center w-full h-full col-span-3">
-            <Lottie
-              animationData={trailLoadingAnimation}
-              loop={true}
-              className="max-w-30"
-            />
+            <BialSpin />
           </div>
         ) : data.length > 0 ? (
           <div>

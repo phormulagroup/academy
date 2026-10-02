@@ -3,7 +3,7 @@ import { MdOutlineBook } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 
 import config from "../../utils/config";
-import logoWhite from "../../assets/Backoffice/BIAL-Regional-Academy.svg";
+import logoColor from "../../assets/BIAL-Regional-Academy.png";
 import "./courseLoading.css";
 
 // Ecrã de entrada no e-Learning (pages/app/course/eLearning.jsx): fundo com as cores da Bial, a capa do curso com um anel
@@ -35,7 +35,7 @@ export default function CourseLoading({ courseName, thumbnail }) {
 
   return (
     <div
-      className={`course-loader ${continuing ? "course-loader-continue" : ""} relative flex h-full w-full flex-col items-center justify-center overflow-hidden text-white px-6`}
+      className={`course-loader ${continuing ? "course-loader-continue" : ""} relative flex h-full w-full flex-col items-center justify-center overflow-hidden text-[#163986] px-6`}
       style={{ "--cl-elapsed": `${elapsed}s` }}
       role="status"
       aria-live="polite">
@@ -44,16 +44,16 @@ export default function CourseLoading({ courseName, thumbnail }) {
       <div className="relative flex flex-col items-center">
         <div className="course-loader-mark">
           <div
-            className="w-[84px] h-[84px] rounded-[22px] bg-white/10 bg-cover bg-center flex items-center justify-center border border-solid border-white/20"
+            className="w-[84px] h-[84px] rounded-[22px] bg-white bg-cover bg-center flex items-center justify-center border border-solid border-[#163986]/15 shadow-[0px_6px_20px_#16398620]"
             style={thumbnail ? { backgroundImage: `url(${config.server_ip}/media/${thumbnail})` } : undefined}>
-            {!thumbnail && <MdOutlineBook className="text-[38px] text-white" />}
+            {!thumbnail && <MdOutlineBook className="text-[38px] text-[#163986]" />}
           </div>
           <span className="course-loader-ring" aria-hidden="true" />
         </div>
 
         <div className="course-loader-wordmark mt-8">
-          <img src={logoWhite} alt="" className="h-10 w-auto max-w-[200px] object-contain" />
-          <span className="course-loader-shine" aria-hidden="true" style={{ WebkitMaskImage: `url("${logoWhite}")`, maskImage: `url("${logoWhite}")` }} />
+          <img src={logoColor} alt="" className="h-12 w-auto max-w-[220px] object-contain" />
+          <span className="course-loader-shine" aria-hidden="true" style={{ WebkitMaskImage: `url("${logoColor}")`, maskImage: `url("${logoColor}")` }} />
         </div>
 
         <div className="course-loader-bar mt-10" aria-hidden="true">
@@ -61,9 +61,9 @@ export default function CourseLoading({ courseName, thumbnail }) {
         </div>
 
         <div className="course-loader-fade mt-6 flex min-h-16 max-w-[520px] flex-col items-center text-center">
-          <p className="text-[11px] tracking-[4px] uppercase text-white/60 mb-2!">{t("Loading the course")}</p>
-          <p className="text-lg sm:text-xl font-semibold text-white! mb-1!">{courseName || "…"}</p>
-          <p className="text-sm text-white/70! mb-0!">{t("Preparing your modules and your progress")}…</p>
+          <p className="text-[11px] tracking-[4px] uppercase text-[#163986]/60 mb-2!">{t("Loading the course")}</p>
+          <p className="text-lg sm:text-xl font-semibold text-[#163986]! mb-1!">{courseName || "…"}</p>
+          <p className="text-sm text-[#163986]/70! mb-0!">{t("Preparing your modules and your progress")}…</p>
         </div>
       </div>
     </div>

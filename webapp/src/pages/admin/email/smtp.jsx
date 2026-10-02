@@ -1,4 +1,5 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 import { Button, Form, Input, Spin, Switch } from "antd";
@@ -7,7 +8,6 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 
 export default function SMTP() {
   // toastApi do Context: o contextHolder já está montado no Provider (antes a página não mostrava nenhuma mensagem)
@@ -98,7 +98,7 @@ export default function SMTP() {
           <p className="text-xl font-bold font-ryker">{t("SMTP")}</p>
         </div>
         <div>
-          <Button size="large" onClick={getData} icon={<RxReload />} />
+          <RefreshButton size="large" onClick={getData} />
         </div>
       </div>
       <Spin spinning={isLoading}>

@@ -1,9 +1,10 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
+import ExportButton, { createdColumn } from "../../components/admin/export/exportButton";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Badge, Button, Table, Tag, Tooltip } from "antd";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 import { IoEyeOutline } from "react-icons/io5";
 import { PiTicketFill, PiCheckCircleFill, PiUserFocusFill, PiWarningCircleFill } from "react-icons/pi";
 
@@ -106,7 +107,7 @@ export default function AdminTicket() {
   );
 
   return (
-    <div className="p-6 bg-white shadow rounded-[16px]">
+    <div className="p-2">
       <Details ticketId={selectedId} open={isOpenDetails} close={closeAction} />
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
@@ -115,15 +116,32 @@ export default function AdminTicket() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {toolbar}
-          <Button onClick={getData} icon={<RxReload />} aria-label={t("Refresh")} title={t("Refresh")} />
-          <Button type={onlyMine ? "primary" : "default"} icon={<PiUserFocusFill />} onClick={() => setOnlyMine((prev) => !prev)}>
-            <span className="hidden sm:inline">{t("My tickets")}</span>
-          </Button>
+          <RefreshButton onClick={getData} />
+          <ExportButton
+            table="tickets"
+            data={tableData}
+            columns={[
+              { title: "ID", dataIndex: "id" },
+              { title: "Name", dataIndex: "name" },
+              { title: "E-mail", dataIndex: "email" },
+              { title: "Subject", dataIndex: "subject" },
+              { title: "Priority", dataIndex: "priority", value: (row, { t }) => t(PRIORITY_LABELS[row.priority]) },
+              { title: "Status", dataIndex: "status", value: (row, { t }) => t(STATUS_LABELS[row.status]) },
+              { title: "Assignee", dataIndex: "assignee_name" },
+              { title: "Last message", dataIndex: "last_message_at", value: (row) => String(row.last_message_at ?? "").replace("T", " ").slice(0, 19) },
+              createdColumn,
+            ]}
+          />
+          <Tooltip title={t("Show only the tickets assigned to me")}>
+            <Button type={onlyMine ? "primary" : "default"} icon={<PiUserFocusFill />} onClick={() => setOnlyMine((prev) => !prev)}>
+              <span className="hidden sm:inline">{t("My tickets")}</span>
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
       <div className="flex flex-wrap lg:flex-nowrap items-stretch gap-3 mb-6">
-        <div className="flex flex-col items-center justify-center gap-1 bg-[#F6F7F9] rounded-[15px] py-4 px-4 flex-1 min-w-[100px]">
+        <div className="flex flex-col items-center justify-center gap-1 bg-white shadow rounded-[15px] py-4 px-4 flex-1 min-w-[100px]">
           <PiTicketFill className="text-[20px] text-[#163986]" />
           <p className="text-[18px] font-bold mb-0! whitespace-nowrap">{rows.length}</p>
           <p className="text-[12px] text-[#8A8D98] mb-0! text-center whitespace-nowrap">{t("Total")}</p>
@@ -143,7 +161,7 @@ export default function AdminTicket() {
               type="button"
               onClick={() => setPriorityFilter(isActive ? null : priority)}
               className="relative flex flex-col items-center justify-center gap-1 rounded-[15px] py-4 px-4 flex-1 min-w-[100px] cursor-pointer border-2 transition-colors"
-              style={{ backgroundColor: isActive ? `${color}1A` : "#F6F7F9", borderColor: isActive ? color : "transparent" }}>
+              style={{ backgroundColor: isActive ? `${color}1A` : "#FFFFFF", borderColor: isActive ? color : "transparent" }}>
               {isActive && <PiCheckCircleFill className="absolute top-1.5 right-1.5 text-[14px]" style={{ color }} />}
               <p className="text-[18px] font-bold mb-0! whitespace-nowrap" style={{ color: isActive ? color : undefined }}>
                 {priorityCounts[priority] || 0}

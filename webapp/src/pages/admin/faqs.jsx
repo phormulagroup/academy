@@ -1,6 +1,13 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
+import { DndContext } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { LuGripVertical } from "react-icons/lu";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
-import { useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
 import { Button, Image, Tag } from "antd";
@@ -18,12 +25,34 @@ import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 import config from "../../utils/config";
 import i18n from "../../utils/i18n";
 
+// Ordenar com drag and drop (exemplo do antd): cada linha é ordenável e o pegador de arrastar vem do contexto
+const RowContext = createContext({});
+
+function DragHandle() {
+  const { setActivatorNodeRef, listeners } = useContext(RowContext);
+  return (
+    <button type="button" ref={setActivatorNodeRef} {...listeners} aria-label="Drag" className="flex h-8 w-8 cursor-grab items-center justify-center rounded-[8px] border-0 bg-transparent text-[#8A8D98] hover:bg-[#F2F3F5] hover:text-[#163986]">
+      <LuGripVertical />
+    </button>
+  );
+}
+
+function SortableRow(props) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: props["data-row-key"] });
+  const style = { ...props.style, transform: CSS.Translate.toString(transform), transition, ...(isDragging ? { position: "relative", zIndex: 9999, background: "#F1F9FF" } : {}) };
+  const contextValue = useMemo(() => ({ setActivatorNodeRef, listeners }), [setActivatorNodeRef, listeners]);
+  return (
+    <RowContext.Provider value={contextValue}>
+      <tr {...props} ref={setNodeRef} style={style} {...attributes} />
+    </RowContext.Provider>
+  );
+}
+
 export default function Faqs() {
-  const { user, selectedLanguage } = useContext(Context);
+  const { user, selectedLanguage, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("faqs");
   const [isLoading, setIsLoading] = useState(true);
@@ -129,9 +158,29 @@ export default function Faqs() {
     uniqueRule(data, t("A faq with this title already exists"), { field: "title", excludeId });
 
   // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
-  const { filterRows, toolbar } = useListFilters([
+  const { filterRows, toolbar, hasActiveFilters } = useListFilters([
     { key: "title", type: "text", primary: true, placeholder: t("Search by title..."), match: (row, v) => includesText(row.full_data.title, v) },
   ]);
+
+  // Só se reordena a lista completa: com filtros ativos a ordem das linhas visíveis não diz respeito à lista toda
+  const canSort = perm.canUpdate && !hasActiveFilters;
+
+  function onDragEnd({ active, over }) {
+    if (!over || active.id === over.id) return;
+    const previous = tableData;
+    const oldIndex = previous.findIndex((r) => r.id === active.id);
+    const newIndex = previous.findIndex((r) => r.id === over.id);
+    const next = arrayMove(previous, oldIndex, newIndex);
+    setTableData(next);
+    axios
+      .post(endpoints.faqs.reorder, { data: { ids: next.map((r) => r.id) } })
+      .then(() => toastApi.success(t("Order saved")))
+      .catch((err) => {
+        console.log(err);
+        setTableData(previous);
+        toastApi.error(err.response?.data?.message || t("Could not save the order"));
+      });
+  }
 
   return (
     <div className="p-2">
@@ -141,19 +190,27 @@ export default function Faqs() {
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Faqs")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} FAQs", { total: filterRows(tableData).length })}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
-          <Button size="large" onClick={getData} icon={<RxReload />} />
+          <ExportButton table="faqs" data={filterRows(tableData).map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Title", dataIndex: "title" }, languageColumn, createdColumn]} />
+          <RefreshButton size="large" onClick={getData} />
           {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
             {t("Add faq")}
           </Button>)}
         </div>
       </div>
+      <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
+        <SortableContext items={filterRows(tableData).map((r) => r.id)} strategy={verticalListSortingStrategy}>
       <Table
+        rowKey="id"
+        components={canSort ? { body: { row: SortableRow } } : undefined}
+        pagination={{ pageSize: 1000, hideOnSinglePage: true }}
         dataSource={filterRows(tableData)}
         loading={isLoading}
         columns={[
+          ...(canSort ? [{ key: "sort", dataIndex: "sort", width: 56, render: () => <DragHandle /> }] : []),
           {
             title: t("Title"),
             dataIndex: "title",
@@ -180,6 +237,8 @@ export default function Faqs() {
           },
         ]}
       />
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }

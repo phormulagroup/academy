@@ -1,23 +1,17 @@
-import { useContext } from "react";
-import Lottie from "lottie-react";
-import bialLogoAnimation from "../assets/Bial-Academy-Logo-Animated.json";
-import trailLoadingAnimation from "../assets/Trail-loading.json";
-import { Context } from "../utils/context";
-import mutedVideo from "../assets/260518-BialAcademyLogo-Animated-Paths.mp4";
 import LottieAnim from "../components/lottieAnimations";
+import "../components/app/courseLoading.css";
 
-import { Spin } from "antd";
-
+// Carregamento principal da app: o logótipo animado e, por baixo, a barra a deslizar (a mesma do ecrã de entrada no e-Learning),
+// sobre o azul claro que a Bial usa como fundo no resto do site.
 const Loading = () => {
-  const { isLoading } = useContext(Context);
-
   return (
-    <div className={`flex flex-col justify-center items-center w-full h-full bg-cover bg-center`}>
-      <div className="max-w-150 h-40 mb-10">
+    <div className="app-loader flex min-h-screen w-full flex-col items-center justify-center px-6" role="status" aria-live="polite">
+      {/* multiply: o fundo branco do Lottie funde-se com o azul claro da página, mantendo as cores do logótipo */}
+      <div className="mb-6 w-[600px] max-w-full" style={{ mixBlendMode: "multiply" }}>
         <LottieAnim />
       </div>
-      <div className="max-h-10!">
-        <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
+      <div className="app-loader-bar" aria-hidden="true">
+        <span />
       </div>
     </div>
   );

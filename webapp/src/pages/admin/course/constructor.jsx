@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../../components/admin/confirmModal";
 import { toastRef } from "../../../utils/notify";
 import PageFooter from "../../../components/admin/pageFooter";
 import {
@@ -20,7 +21,6 @@ import {
   Input,
   Space,
   Typography,
-  Popconfirm,
   Tag,
 } from "antd";
 import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
@@ -297,6 +297,8 @@ function SortableModule({
     setValue(module.title);
   }, [module.title]);
 
+  const [confirm, confirmHolder] = useConfirm();
+
   const commit = () => {
     const title = value.trim();
     if (title && title !== module.title) onTitleChange(module.id, title);
@@ -310,6 +312,7 @@ function SortableModule({
 
   return (
     <RemoveAnim isRemoving={isDeleting}>
+      {confirmHolder}
       <Card
         ref={setNodeRef}
         title={
@@ -382,13 +385,13 @@ function SortableModule({
                   onClick={() => setEditing(true)}
                   icon={<LuLetterText />}
                 />
-                <Popconfirm
-                  title={t("Delete module?")}
-                  okText={t("Yes")}
-                  cancelText={t("No")}
-                  onConfirm={() => onDeleteModule(module.id)}>
-                  <Button danger icon={<AiOutlineDelete />} />
-                </Popconfirm>
+                <Button
+                  danger
+                  title={t("Delete module")}
+                  aria-label={t("Delete module")}
+                  icon={<AiOutlineDelete />}
+                  onClick={() => confirm({ tone: "danger", title: t("Delete module?"), description: module.title, okText: t("Delete"), onOk: () => onDeleteModule(module.id) })}
+                />
               </>
             )}
           </div>

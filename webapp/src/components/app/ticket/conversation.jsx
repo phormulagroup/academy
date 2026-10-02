@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Button, Empty, Form, Popconfirm, Select, Spin, Tag, Upload } from "antd";
+import { Button, Empty, Form, Select, Spin, Tag, Upload } from "antd";
 import { PiPaperclip } from "react-icons/pi";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ import { usePermission } from "../../../utils/usePermission";
 import { ATTACHMENT_ACCEPT, MAX_ATTACHMENT_BYTES, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_COLORS, STATUS_LABELS, isEmptyHtml, parseAttachments } from "../../../utils/ticket";
 import UserAvatar from "../../../utils/userAvatar";
 import RichTextFormField from "../../admin/richText/richTextFormField";
+import { useConfirm } from "../../admin/confirmModal";
 
 // Conversa de um ticket, partilhada pela página do utilizador e pela gaveta do backoffice. Os controlos da equipa
 // (prioridade, responsável, fechar) só aparecem a quem não é o dono do ticket e pode editar tickets.
@@ -30,6 +31,7 @@ export default function TicketConversation({ ticketId }) {
   const [fileList, setFileList] = useState([]);
   const [assignableUsers, setAssignableUsers] = useState([]);
 
+  const [confirm, confirmHolder] = useConfirm();
   const [form] = Form.useForm();
   const messagesEndRef = useRef();
 
@@ -127,6 +129,7 @@ export default function TicketConversation({ ticketId }) {
 
   return (
     <div className="flex flex-col w-full h-full">
+      {confirmHolder}
       <div className="flex justify-between items-center flex-wrap gap-2 pb-4 border-b border-[#E8E9F3] mb-4">
         <div>
           <p className="font-bold text-[18px] mb-1!">{ticket.subject}</p>
@@ -164,13 +167,19 @@ export default function TicketConversation({ ticketId }) {
           </div>
           <div className="flex items-end">
             {ticket.status === "aberto" ? (
-              <Popconfirm
-                title={t("Close this ticket?")}
-                okText={t("Yes, close")}
-                cancelText={t("No")}
-                onConfirm={() => update(endpoints.ticket.updateStatus, { status: "fechado" }, t("Could not update the status."))}>
-                <Button block>{t("Close ticket")}</Button>
-              </Popconfirm>
+              <Button
+                block
+                onClick={() =>
+                  confirm({
+                    tone: "warning",
+                    title: t("Close this ticket?"),
+                    description: ticket.subject,
+                    okText: t("Yes, close"),
+                    onOk: () => update(endpoints.ticket.updateStatus, { status: "fechado" }, t("Could not update the status.")),
+                  })
+                }>
+                {t("Close ticket")}
+              </Button>
             ) : (
               <Button block onClick={() => update(endpoints.ticket.updateStatus, { status: "aberto" }, t("Could not update the status."))}>
                 {t("Reopen ticket")}

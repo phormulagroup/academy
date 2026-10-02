@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState } from "react";
 import { Button } from "antd";
 import {
@@ -26,8 +27,6 @@ import i18n from "../../../utils/i18n";
 
 import config from "../../../utils/config";
 import downloadFile from "../../../utils/downloadFile";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
-import Lottie from "lottie-react";
 
 // Tipo de ficheiro pela extensão: ícone/cor na lista e forma de pré-visualizar
 const FILE_TYPES = [
@@ -187,11 +186,7 @@ export default function DownloadDetails() {
     <div className="page-frame py-6">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
-          <Lottie
-            animationData={trailLoadingAnimation}
-            loop={true}
-            className="max-w-30"
-          />
+          <BialSpin />
         </div>
       ) : data ? (
         <div>

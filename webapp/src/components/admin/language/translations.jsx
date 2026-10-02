@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from "react";
+import ConfirmModal from "./../confirmModal";
 import { toastRef } from "../../../utils/notify";
 import RowActions from "../rowActions";
 import {
@@ -8,7 +9,6 @@ import {
   Form,
   Table,
   Space,
-  Popconfirm,
   Pagination,
   } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
@@ -380,17 +380,15 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           </Form>
 
           {/* Modal de Confirmação de Deleção */}
-          {deleteConfirmRecord && (
-            <Popconfirm
-              title={t("Delete Translation")}
-              description={t("Are you sure you want to delete this translation?")}
-              open={!!deleteConfirmRecord}
-              okText={t("Yes")}
-              cancelText={t("No")}
-              onConfirm={handleDeleteConfirm}
-              onCancel={() => setDeleteConfirmRecord(null)}
-            />
-          )}
+          <ConfirmModal
+            open={!!deleteConfirmRecord}
+            tone="danger"
+            title={t("Delete Translation")}
+            description={t("Are you sure you want to delete this translation?")}
+            okText={t("Delete")}
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setDeleteConfirmRecord(null)}
+          />
         </div>
       ) : (
         <p>{t("Loading...")}</p>

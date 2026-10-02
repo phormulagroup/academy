@@ -324,7 +324,10 @@ function Iec() {
       </Modal>
 
       <div className="flex justify-between items-center mb-4">
-        <p className="text-xl font-bold font-ryker">{t("IECs")}</p>
+        <div>
+          <p className="text-xl font-bold font-ryker">{t("IECs")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} files", { total: iecs.length })}</p>
+        </div>
       </div>
       {perm.canCreate && (
       <Dragger {...props}>

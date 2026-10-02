@@ -23,9 +23,9 @@ import Media from "../../../components/admin/media/media";
 import MediaField from "../../../utils/mediaField";
 import useMediaPicker from "../../../utils/useMediaPicker";
 import { fileTypeRule } from "../../../utils/fileValidation";
-import { requiredRule, uniqueRule } from "../../../utils/formFieldError";
+import { requiredRule, requiredSelectRule, uniqueRule } from "../../../utils/formFieldError";
 import { AiOutlinePlus } from "react-icons/ai";
-import { LuAward, LuBookOpen, LuClock, LuImage, LuLock, LuPill, LuRoute, LuSettings } from "react-icons/lu";
+import { LuAward, LuBookOpen, LuClock, LuImage, LuLock, LuRoute, LuSettings } from "react-icons/lu";
 import { SettingsSection, SettingsSectionNav } from "../../../components/admin/settingsSection";
 import PageFooter from "../../../components/admin/pageFooter";
 import { RxTrash } from "react-icons/rx";
@@ -37,7 +37,6 @@ import dayjs from "dayjs";
 const SECTIONS = [
   { id: "general", icon: <LuSettings />, key: "General" },
   { id: "duration", icon: <LuClock />, key: "Course dates" },
-  { id: "product", icon: <LuPill />, key: "Product" },
   { id: "access", icon: <LuLock />, key: "Access" },
   { id: "display", icon: <LuImage />, key: "Content" },
   { id: "navigation", icon: <LuRoute />, key: "Navigation" },
@@ -259,7 +258,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
             id="general"
             icon={<LuSettings />}
             title={t("General")}
-            description={t("Course identification and status")}>
+            description={t("Course identification, status and product")}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
               <Form.Item
                 name="name"
@@ -307,6 +306,9 @@ export default function Settings({ course, isActive = true, onSaved }) {
                   ]}
                 />
               </Form.Item>
+              <Form.Item name="id_product" label={t("Product")} className="mb-0!" tooltip={t("The product this course belongs to")} rules={[requiredSelectRule]}>
+                <Select size="large" className="w-full" placeholder={t("Select...")} showSearch={{ optionFilterProp: ["label"] }} options={products} />
+              </Form.Item>
             </div>
           </SettingsSection>
 
@@ -346,29 +348,6 @@ export default function Settings({ course, isActive = true, onSaved }) {
               <DatePicker showTime size="large" className="w-full" allowClear placeholder={t("Select date")} />
             </Form.Item>
           </div>
-          </SettingsSection>
-
-          <SettingsSection id="product" icon={<LuPill />} title={t("Product")} description={t("Change the product associated with this course")}>
-
-          {/* Select Product */}
-          <div className="grid grid-cols-3 gap-8">
-            <Form.Item
-              name={"id_product"}
-              label={t("Product")}
-              className="mb-0!">
-              <Select
-                size="large"
-                className="w-full"
-                placeholder={t("Select...")}
-                allowClear
-                showSearch={{
-                  optionFilterProp: ["label"],
-                }}
-                options={products}
-              />
-            </Form.Item>
-          </div>
-
           </SettingsSection>
 
           <SettingsSection

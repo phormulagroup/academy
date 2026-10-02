@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../components/bialSpin";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 import { Button, Collapse, Dropdown, Empty, Image, Pagination, Tag } from "antd";
@@ -22,8 +23,6 @@ import { RiCloseCircleLine } from "react-icons/ri";
 import i18n from "../../utils/i18n";
 import config from "../../utils/config";
 
-import trailLoadingAnimation from "../../assets/Trail-loading.json";
-import Lottie from "lottie-react";
 import { Helmet } from "react-helmet";
 
 export default function Faqs() {
@@ -69,7 +68,7 @@ export default function Faqs() {
       </div>
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full">
-          <Lottie animationData={trailLoadingAnimation} loop={true} className="max-w-30" />
+          <BialSpin />
         </div>
       ) : data && data.length > 0 ? (
         <div className="w-full flex flex-col justify-center items-center">

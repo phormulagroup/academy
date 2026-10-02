@@ -1765,10 +1765,6 @@ iframe {
     transition: color 0.2s;
   }
 
-  .admin-layout .ant-btn-color-default:not(:disabled):hover svg {
-    color: #00b9d6;
-  }
-
   /* Dropdowns são renderizados no body (portal), por isso o scope é feito com :has() */
   body:has(.admin-layout)
     .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
@@ -2504,4 +2500,79 @@ deles invalida a regra inteira. */
 }
 .ant-notification-notice-error .ant-notification-notice-progress::-moz-progress-bar {
   background: #ff4d4f !important;
+}
+
+/* Progresso de um aluno por módulo (backoffice > utilizador): cada módulo é um cartão com borda */
+.user-module-collapse.ant-collapse {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.user-module-collapse.ant-collapse > .ant-collapse-item {
+  border-bottom: 0;
+}
+.user-module-collapse.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+  align-items: center;
+  padding: 12px 16px;
+}
+.user-module-collapse.ant-collapse .ant-collapse-panel {
+  border-top: 1px solid #eef0f5;
+}
+.user-module-collapse.ant-collapse .ant-collapse-panel > .ant-collapse-body {
+  padding: 4px 16px 8px;
+}
+
+/* Módulos mais baixos (Resultados do utilizador): menos margem e cabeçalho mais curto, mesmas cores. O border-radius (12px) é o
+   mesmo dos restantes cartões e blocos da página. */
+.collapse-course.collapse-course-compact .ant-collapse-item {
+  margin-bottom: 12px !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.collapse-course.collapse-course-compact .ant-collapse-header {
+  padding: 14px 18px !important;
+  border-radius: 12px !important;
+}
+.collapse-course.collapse-course-compact .ant-collapse-item-active > .ant-collapse-header {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.collapse-course.collapse-course-compact .ant-collapse-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Spinner da Bial (components/bialSpin.jsx): o rasto de pontos acelera e abranda ao dar a volta, como na animação original */
+.bial-spin {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.bial-spin-orbit {
+  position: absolute;
+  inset: 0;
+  animation: bial-spin-turn 1.4s cubic-bezier(0.55, 0.1, 0.45, 0.9) infinite;
+}
+.bial-spin-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+@keyframes bial-spin-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bial-spin-orbit {
+    animation-duration: 3.5s;
+  }
+}
+
+/* Botões "default" do backoffice: o ícone acompanha sempre a cor do texto e da borda do botão (também ao passar o rato), em todos,
+   com ou sem texto e só com ícone. Fora do @layer porque o antd (sem layer) sobrepunha-se à regra nos botões só com ícone. */
+.admin-layout .ant-btn.ant-btn-color-default:not(:disabled) svg {
+  color: inherit;
 }

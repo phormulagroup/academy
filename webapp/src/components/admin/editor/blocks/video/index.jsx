@@ -1,6 +1,5 @@
 import { useState } from "react";
-import Lottie from "lottie-react";
-import trailLoadingAnimation from "../../../../../assets/Trail-loading.json";
+import BialSpin from "../../../../../components/bialSpin";
 import { Section } from "../../components/section";
 
 const Video = {
@@ -50,11 +49,7 @@ function VideoPlayer({ link, maxWidth, title, justifyContent, alignItems }) {
         style={{ padding: "56.25% 0 0 0", position: "relative" }}>
         {!isLoaded && (
           <div className="absolute inset-0 flex justify-center items-center bg-white">
-            <Lottie
-              animationData={trailLoadingAnimation}
-              loop={true}
-              className="max-w-24 sm:max-w-30"
-            />
+            <BialSpin />
           </div>
         )}
         <iframe

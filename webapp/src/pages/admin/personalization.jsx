@@ -1,4 +1,5 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
 import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
@@ -7,7 +8,6 @@ import { Button, Divider, Form } from "antd";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { RxReload } from "react-icons/rx";
 import RichTextFormField from "../../components/admin/richText/richTextFormField";
 
 export default function Personalization() {
@@ -64,7 +64,7 @@ export default function Personalization() {
           <p className="text-xl font-bold font-ryker">{t("Personalization")}</p>
         </div>
         <div className="flex justify-center">
-          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
+          <RefreshButton size="large" onClick={getData} className="mr-2" />
           {perm.canUpdate && (<Button size="large" onClick={form.submit} type="primary" className="mr-2" loading={isButtonLoading}>
             {t("Save Changes")}
           </Button>)}

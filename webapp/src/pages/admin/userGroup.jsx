@@ -1,11 +1,12 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
+import ExportButton, { createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Button, Input, Table } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { AiOutlinePlus } from "react-icons/ai";
-import { RxReload } from "react-icons/rx";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 
@@ -94,7 +95,7 @@ export default function UserGroup() {
   }, [tableData, search]);
 
   return (
-    <div className="p-6 bg-white shadow rounded-[16px]">
+    <div className="p-2">
       <UserGroupForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="userGroup" />
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
@@ -111,7 +112,8 @@ export default function UserGroup() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Button onClick={getData} icon={<RxReload />} aria-label={t("Refresh")} title={t("Refresh")} />
+          <RefreshButton onClick={getData} />
+          <ExportButton table="userGroups" data={filteredData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, createdColumn]} />
           {perm.canCreate && (<Button type="primary" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
             <span className="hidden sm:inline">{t("Add group")}</span>
           </Button>)}

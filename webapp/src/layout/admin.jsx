@@ -32,7 +32,6 @@ import {
   LuUsersRound,
   LuShieldCheck,
   LuTicket,
-  LuUserCog,
   LuMessageSquareText,
   LuLayoutTemplate,
   LuServer,
@@ -184,11 +183,6 @@ const Main = () => {
             label: t("Answers"),
             icon: <LuMessageSquareText />,
           },
-          {
-            key: `/admin/users/${user.id}`,
-            label: t("My account"),
-            icon: <LuUserCog />,
-          },
         ],
       },
       {
@@ -211,7 +205,7 @@ const Main = () => {
   // O Admin vê tudo; as outras funções só as secções em que podem ver. "Permissões" é só do Admin
   const isAdmin = user.id_role === 1;
   function canAccess(path) {
-    if (isAdmin || path === `/admin/users/${user.id}`) return true; // a própria conta é sempre acessível
+    if (isAdmin || path === "/admin/perfil" || path === `/admin/users/${user.id}`) return true; // o próprio perfil é sempre acessível
     const segment = path.split("/")[2];
     if (segment === "permissions") return false;
     const resource = ADMIN_PATH_RESOURCES[segment];
@@ -233,6 +227,7 @@ const Main = () => {
   };
 
   const navigate = useNavigate();
+  const isProfileActive = location.pathname.replace(/\/$/, "") === "/admin/perfil";
 
   useEffect(() => {
     let pathname = location.pathname.split("/");
@@ -303,11 +298,13 @@ const Main = () => {
               <div className={`shrink-0 flex flex-col gap-3 border-0 border-t border-solid border-white/15 px-4 py-5 ${isSiderCollapsed ? "items-center" : ""}`}>
                 <Tooltip title={isSiderCollapsed ? user.name : undefined} placement="right">
                   <Link
-                    to={`/admin/users/${user.id}`}
-                    aria-label={t("My account")}
-                    className={`flex min-w-0 items-center gap-2 rounded-[10px] p-1 transition-colors hover:bg-white/10 ${isSiderCollapsed ? "justify-center" : ""}`}>
+                    to="/admin/perfil"
+                    aria-label={t("My profile")}
+                    // Na página de perfil fica selecionado, como um item do menu (fundo branco e texto azul)
+                    className={`flex min-w-0 items-center gap-2 rounded-[10px] p-1 transition-colors ${isProfileActive ? "" : "hover:bg-white/10"} ${isSiderCollapsed ? "justify-center" : ""}`}
+                    style={isProfileActive ? { backgroundColor: "#fff" } : undefined}>
                     <UserAvatar user={user} size={35} className="shrink-0" />
-                    {!isSiderCollapsed && <p className="mb-0! truncate text-[13px] font-medium text-white">{user.name}</p>}
+                    {!isSiderCollapsed && <p className={`mb-0! truncate text-[13px] font-medium ${isProfileActive ? "" : "text-white"}`} style={isProfileActive ? { color: "#163986" } : undefined}>{user.name}</p>}
                   </Link>
                 </Tooltip>
 

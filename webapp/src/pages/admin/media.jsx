@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../components/admin/confirmModal";
 import { usePermission } from "../../utils/usePermission";
 import {
   CheckOutlined,
@@ -18,7 +19,6 @@ import {
   Input,
   Modal,
   Pagination,
-  Popconfirm,
   Progress,
   Select,
   Skeleton,
@@ -87,6 +87,7 @@ function Media() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [confirm, confirmHolder] = useConfirm();
 
   // Ecrã de detalhes (pré-visualização, tipo, dimensões e tamanho), aberto ao clicar num ficheiro da grelha
   const [detailsItem, setDetailsItem] = useState(null);
@@ -322,6 +323,7 @@ function Media() {
 
   return (
     <div className="p-4 md:p-6 bg-white shadow rounded-[16px]">
+      {confirmHolder}
       <Delete
         table="media"
         open={isOpenDelete}
@@ -448,18 +450,22 @@ function Media() {
         </div>
         {isSelectMode ? (
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <Popconfirm
-              title={t("Delete files")}
-              description={t("Are you sure you want to delete {{total}} file(s)?", { total: selectedIds.length })}
-              onConfirm={handleBulkDelete}
-              okText={t("Yes")}
-              cancelText={t("No")}
-              disabled={selectedIds.length === 0}>
-              <Button type="primary" loading={isBulkDeleting} disabled={selectedIds.length === 0}>
-                {t("Delete selected")}
-                {selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
-              </Button>
-            </Popconfirm>
+            <Button
+              type="primary"
+              loading={isBulkDeleting}
+              disabled={selectedIds.length === 0}
+              onClick={() =>
+                confirm({
+                  tone: "danger",
+                  title: t("Delete files"),
+                  description: t("Are you sure you want to delete {{total}} file(s)?", { total: selectedIds.length }),
+                  okText: t("Delete"),
+                  onOk: handleBulkDelete,
+                })
+              }>
+              {t("Delete selected")}
+              {selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+            </Button>
             <Button onClick={exitSelectMode}>{t("Cancel")}</Button>
           </div>
         ) : (

@@ -1,4 +1,6 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
@@ -19,7 +21,6 @@ import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 
 export default function Product() {
   const { user } = useContext(Context);
@@ -142,15 +143,12 @@ export default function Product() {
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Products")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} products", { total: filterRows(tableData).length })}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
-          <Button
-            size="large"
-            onClick={getData}
-            icon={<RxReload />}
-           
-          />
+          <ExportButton table="products" data={filterRows(tableData).map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, activityColumn, createdColumn]} />
+          <RefreshButton size="large" onClick={getData} />
           {perm.canCreate && (<Button
             size="large"
             onClick={() => setIsOpenCreate(true)}

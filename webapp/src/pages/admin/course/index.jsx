@@ -1,20 +1,21 @@
 import axios from "axios";
+import dayjs from "dayjs";
+import RefreshButton from "../../../components/admin/refreshButton";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
 import { usePermission } from "../../../utils/usePermission";
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Avatar, Badge, Button, Input, Select, Table } from "antd";
-import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import { Avatar, Button, Table } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { FaCopy, FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { CiCalendar } from "react-icons/ci";
 import { CgDetailsMore } from "react-icons/cg";
-import { RxReload } from "react-icons/rx";
 import { AiOutlinePlus } from "react-icons/ai";
 
 import Create from "../../../components/admin/course/create";
-import Update from "../../../components/admin/course/update";
 import Delete from "../../../components/admin/delete";
 import Duplicate from "../../../components/admin/course/duplicate";
-import FiltersDrawer from "../../../components/admin/filtersDrawer";
+import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import RowActions from "../../../components/admin/rowActions";
 
 import StatusTag from "../../../utils/statusTag";
@@ -26,8 +27,23 @@ import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-// Filtros de pesquisa/estado: vivem dentro do FiltersDrawer e só se aplicam ao clicar em "Aplicar"
-const EMPTY_FILTERS = { search: "", status: null };
+// Datas de início e de fim do curso (opcionais), guardadas nas definições do curso
+function courseDateFields(course) {
+  let dates = {};
+  try {
+    const settings = typeof course.settings === "string" ? JSON.parse(course.settings) : course.settings;
+    dates = settings?.course_access_expiration_dates || {};
+  } catch {
+    // definições inválidas: sem datas
+  }
+  const fmt = (value) => (value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "—");
+  return {
+    start_label: fmt(dates.start_date),
+    end_label: fmt(dates.end_date),
+    start_value: dates.start_date ? dayjs(dates.start_date).valueOf() : null,
+    end_value: dates.end_date ? dayjs(dates.end_date).valueOf() : null,
+  };
+}
 
 export default function Course() {
   const { user, selectedLanguage } = useContext(Context);
@@ -39,13 +55,9 @@ export default function Course() {
   const [selectedData, setSelectedData] = useState({});
 
   const [isOpenCreate, setIsOpenCreate] = useState(false);
-  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenDuplicate, setIsOpenDuplicate] = useState(false);
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const { t } = useTranslation();
 
@@ -121,6 +133,7 @@ export default function Course() {
             </div>
           </div>
         ),
+        ...courseDateFields(array[i]),
         is_deleted: <StatusTag isDeleted={array[i].is_deleted} />,
         full_data: array[i],
         actions: (
@@ -129,16 +142,11 @@ export default function Course() {
             <RowActions
               items={[
                 {
-                  label: t("Details"),
+                  // Atualizar e Detalhes são o mesmo ecrã: o separador Geral tem todos os campos de identificação e estado
+                  label: perm.canUpdate ? t("Update") : t("Details"),
                   key: `${array[i].id}-details`,
-                  icon: <CgDetailsMore />,
+                  icon: perm.canUpdate ? <FaRegEdit /> : <CgDetailsMore />,
                   onClick: () => navigate(`/admin/courses/${array[i].id}`),
-                },
-                perm.canUpdate && {
-                  label: t("Update"),
-                  key: `${array[i].id}-udpate`,
-                  icon: <FaRegEdit />,
-                  onClick: () => openUpdate(array[i]),
                 },
                 perm.canCreate && {
                   label: t("Duplicate"),
@@ -162,11 +170,6 @@ export default function Course() {
     setTableData(aux);
   }
 
-  function openUpdate(obj) {
-    setSelectedData(obj);
-    setIsOpenUpdate(true);
-  }
-
   function openDelete(obj) {
     setSelectedData(obj);
     setIsOpenDelete(true);
@@ -181,7 +184,6 @@ export default function Course() {
     if (c) {
       getData();
     }
-    setIsOpenUpdate(false);
     setIsOpenDuplicate(false);
     setIsOpenCreate(false);
     setIsOpenDelete(false);
@@ -211,58 +213,19 @@ export default function Course() {
     );
 
   const canSeeStatus = user.id_role === 1 || user.id_role === 2;
-  const activeFiltersCount = Object.values(appliedFilters).filter(
-    (v) => v !== null && v !== "" && v !== undefined,
-  ).length;
-
-  function updateFilter(key, value) {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  }
-  function toggleFilters(open) {
-    if (open) setFilters(appliedFilters);
-    setIsFiltersOpen(open);
-  }
-  function applyFilters() {
-    setAppliedFilters(filters);
-    setIsFiltersOpen(false);
-  }
-  function clearFilters() {
-    setFilters(EMPTY_FILTERS);
-    setAppliedFilters(EMPTY_FILTERS);
-    setIsFiltersOpen(false);
-  }
-
-  const filteredData = useMemo(() => {
-    const term = appliedFilters.search.trim().toLowerCase();
-    return tableData.filter((row) => {
-      if (
-        term &&
-        !`${row.full_data.internal_name || ""} ${row.full_data.name || ""}`
-          .toLowerCase()
-          .includes(term)
-      )
-        return false;
-      if (
-        appliedFilters.status !== null &&
-        row.full_data.is_deleted !== appliedFilters.status
-      )
-        return false;
-      return true;
-    });
-  }, [tableData, appliedFilters]);
+  // Pesquisa e estado ficam à vista na barra do cabeçalho (são só dois filtros, não precisam de gaveta)
+  const { filterRows, toolbar } = useListFilters([
+    { key: "q", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.internal_name, v) || includesText(row.full_data.name, v) },
+    ...(canSeeStatus
+      ? [{ key: "status", type: "select", primary: true, label: t("Status"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => row.full_data.is_deleted === v }]
+      : []),
+  ]);
+  const filteredData = filterRows(tableData);
 
   return (
-    <div className="p-6 bg-white shadow rounded-[16px]">
+    <div className="p-2">
       <Create
         open={isOpenCreate}
-        close={closeAction}
-        products={products}
-        nameRule={nameRule}
-        internalNameRule={internalNameRule}
-      />
-      <Update
-        data={selectedData}
-        open={isOpenUpdate}
         close={closeAction}
         products={products}
         nameRule={nameRule}
@@ -282,38 +245,6 @@ export default function Course() {
         nameRule={nameRule}
         internalNameRule={internalNameRule}
       />
-      <FiltersDrawer
-        open={isFiltersOpen}
-        onClose={() => toggleFilters(false)}
-        onApply={applyFilters}
-        onClear={clearFilters}>
-        <div>
-          <p className="text-sm text-[#6B6B6B] pb-2">{t("Search")}</p>
-          <Input
-            allowClear
-            placeholder={t("Search by name...")}
-            prefix={<SearchOutlined />}
-            value={filters.search}
-            onChange={(e) => updateFilter("search", e.target.value)}
-          />
-        </div>
-        {canSeeStatus && (
-          <div>
-            <p className="text-sm text-[#6B6B6B] pb-2">{t("Status")}</p>
-            <Select
-              allowClear
-              className="w-full"
-              placeholder={t("Status")}
-              value={filters.status ?? undefined}
-              onChange={(value) => updateFilter("status", value ?? null)}
-              options={[
-                { label: t("Active"), value: 0 },
-                { label: t("Inactive"), value: 1 },
-              ]}
-            />
-          </div>
-        )}
-      </FiltersDrawer>
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
           <p className="text-xl font-bold">{t("Courses")}</p>
@@ -322,20 +253,9 @@ export default function Course() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge count={activeFiltersCount} size="small">
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => toggleFilters(true)}
-              aria-label={t("Filters")}
-              title={t("Filters")}
-            />
-          </Badge>
-          <Button
-            onClick={getData}
-            icon={<RxReload />}
-            aria-label={t("Refresh")}
-            title={t("Refresh")}
-          />
+          {toolbar}
+          <ExportButton table="courses" data={filteredData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, { title: "Internal name", dataIndex: "internal_name" }, { title: "Slug", dataIndex: "slug" }, languageColumn, { title: "Status", dataIndex: "status" }, { title: "Start date", dataIndex: "start_label", value: (row) => courseDateFields(row).start_label }, { title: "End date", dataIndex: "end_label", value: (row) => courseDateFields(row).end_label }, activityColumn, createdColumn]} />
+          <RefreshButton onClick={getData} />
           {perm.canCreate && (<Button
             type="primary"
             icon={<AiOutlinePlus />}
@@ -387,6 +307,22 @@ export default function Course() {
             key: "testCount",
             sorter: (a, b) => a.testCount - b.testCount,
             width: "100px",
+          },
+          {
+            title: t("Start date"),
+            dataIndex: "start_label",
+            key: "start_label",
+            onHeaderCell: () => ({ style: { whiteSpace: "nowrap" } }), // o título nunca quebra em duas linhas
+            sorter: (a, b) => (a.start_value || 0) - (b.start_value || 0),
+            width: "175px",
+          },
+          {
+            title: t("End date"),
+            dataIndex: "end_label",
+            key: "end_label",
+            onHeaderCell: () => ({ style: { whiteSpace: "nowrap" } }), // o título nunca quebra em duas linhas
+            sorter: (a, b) => (a.end_value || 0) - (b.end_value || 0),
+            width: "175px",
           },
           canSeeStatus && {
             title: t("Status"),

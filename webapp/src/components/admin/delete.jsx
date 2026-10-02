@@ -1,26 +1,22 @@
 import { useContext, useState } from "react";
-import { Button, Col, Row, Modal } from "antd";
 import axios from "axios";
-import endpoints from "../../utils/endpoints";
-import { Context } from "../../utils/context";
 import { useTranslation } from "react-i18next";
 
+import endpoints from "../../utils/endpoints";
+import { Context } from "../../utils/context";
+import ConfirmModal from "./confirmModal";
+
+// Confirmação para apagar um registo (data.id e data.name/title); `table` escolhe o endpoint e o nome mostrado
 export default function Delete({ open, close, data, table, onDeleteSuccess }) {
   const { toastApi, createLog, user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media"), user: t("User"), document: t("Document"), download: t("Download"), iec: t("IEC"), userGroup: t("User group"), role: t("Role") });
 
-  function onClose() {
-    close();
-  }
-
   async function submit() {
     try {
       setIsButtonLoading(true);
-      await axios.post(endpoints[table].delete, {
-        data: data,
-      });
+      await axios.post(endpoints[table].delete, { data });
       createLog({
         id_user: user.id,
         action: "delete",
@@ -29,46 +25,25 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
         id_lang: selectedLanguage.id,
       });
       close(true);
-      
-      // Utilizar callback personalizado se fornecido, caso contrário mostrar mensagem padrão
-      if (onDeleteSuccess) {
-        onDeleteSuccess(data);
-      } else {
-        toastApi.success(`${tablesName[table]} ${t("was successfully deleted and is considered inactive.")}`);
-      }
-      setIsButtonLoading(false);
+
+      // Callback personalizado, se existir; senão a mensagem padrão
+      if (onDeleteSuccess) onDeleteSuccess(data);
+      else toastApi.success(`${tablesName[table]} ${t("was successfully deleted and is considered inactive.")}`);
     } catch (err) {
       console.log(err);
+      toastApi.error(err.response?.data?.message || t("Something went wrong, please try again"));
+    } finally {
+      setIsButtonLoading(false);
     }
   }
 
   return (
-    <Modal
-      key="modal-logout"
-      width={400}
-      style={{ top: 20 }}
-      onCancel={onClose}
-      open={open}
-      maskClosable={false}
-      footer={[
-        <Button disabled={isButtonLoading} onClick={onClose}>
-          {t("No")}
-        </Button>,
-        <Button loading={isButtonLoading} type="primary" onClick={submit}>
-          {t("Yes")}
-        </Button>,
-      ]}
-    >
-      <div className="p-2 pb-0">
-        <p className="text-[16px] font-bold font-ryker">{t("Are you sure you want to delete this item?")}</p>
-        <div className="flex flex-col mt-4">
-          <p className="font-semibold">{tablesName[table]}</p>
-          <p>ID: {data.id}</p>
-          <p>
-            {t("Name")}/{t("Title")}: <b>{data.name}</b>
-          </p>
-        </div>
+    <ConfirmModal open={open} onCancel={() => close()} onConfirm={submit} loading={isButtonLoading} tone="danger" title={t("Are you sure you want to delete this item?")} okText={t("Delete")} cancelText={t("Cancel")}>
+      <div className="rounded-[10px] bg-[#F6F7F9] p-3 text-[13px]">
+        <p className="mb-1! text-[11px] uppercase tracking-wide text-[#8A8D98]">{tablesName[table]}</p>
+        <p className="mb-0! font-bold">{data?.name ?? data?.title ?? "-"}</p>
+        <p className="mb-0! text-[#8A8D98]">ID: {data?.id}</p>
       </div>
-    </Modal>
+    </ConfirmModal>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, Button, Input, Select } from "antd";
+import { Badge, Button, Input, Select, Tooltip } from "antd";
 import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 
@@ -85,9 +85,11 @@ export default function useListFilters(definitions) {
       {extra.length > 0 && (
         <>
           <Badge count={extraCount} size="small">
-            <Button icon={<FilterOutlined />} onClick={() => toggleDrawer(true)}>
-              {t("More filters")}
-            </Button>
+            <Tooltip title={t("Filter the list by more fields")}>
+              <Button icon={<FilterOutlined />} onClick={() => toggleDrawer(true)}>
+                {t("More filters")}
+              </Button>
+            </Tooltip>
           </Badge>
           <FiltersDrawer title={t("More filters")} open={isOpen} onClose={() => toggleDrawer(false)} onApply={applyDrawer} onClear={clearDrawer}>
             {extra.map((d) => (

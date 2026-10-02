@@ -1,18 +1,19 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
 import { usePermission } from "../../../utils/usePermission";
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect } from "react";
 import { useState } from "react";
-import { Badge, Button, Input, Select, Table } from "antd";
-import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Table } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CgDetailsMore } from "react-icons/cg";
-import { RxReload } from "react-icons/rx";
 import { AiOutlinePlus } from "react-icons/ai";
 
 import Delete from "../../../components/admin/delete";
 import Create from "../../../components/admin/certificate/create";
 import Logs from "../../../components/admin/logs";
-import FiltersDrawer from "../../../components/admin/filtersDrawer";
+import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import RowActions from "../../../components/admin/rowActions";
 
 import StatusTag from "../../../utils/statusTag";
@@ -22,9 +23,6 @@ import endpoints from "../../../utils/endpoints";
 import { uniqueRule } from "../../../utils/formFieldError";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-
-// Filtros de pesquisa/estado: vivem dentro do FiltersDrawer e só se aplicam ao clicar em "Aplicar"
-const EMPTY_FILTERS = { search: "", status: null };
 
 export default function Certificate() {
   const { user, toastApi, selectedLanguage } = useContext(Context);
@@ -37,9 +35,6 @@ export default function Certificate() {
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenLogs, setIsOpenLogs] = useState(false);
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const { t } = useTranslation();
 
@@ -136,42 +131,17 @@ export default function Certificate() {
     });
 
   const canSeeStatus = user.id_role === 1 || user.id_role === 2;
-  const activeFiltersCount = Object.values(appliedFilters).filter(
-    (v) => v !== null && v !== "" && v !== undefined,
-  ).length;
-
-  function updateFilter(key, value) {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  }
-  function toggleFilters(open) {
-    if (open) setFilters(appliedFilters);
-    setIsFiltersOpen(open);
-  }
-  function applyFilters() {
-    setAppliedFilters(filters);
-    setIsFiltersOpen(false);
-  }
-  function clearFilters() {
-    setFilters(EMPTY_FILTERS);
-    setAppliedFilters(EMPTY_FILTERS);
-    setIsFiltersOpen(false);
-  }
-
-  const filteredData = useMemo(() => {
-    const term = appliedFilters.search.trim().toLowerCase();
-    return tableData.filter((row) => {
-      if (term && !row.full_data.name?.toLowerCase().includes(term)) return false;
-      if (
-        appliedFilters.status !== null &&
-        row.full_data.is_deleted !== appliedFilters.status
-      )
-        return false;
-      return true;
-    });
-  }, [tableData, appliedFilters]);
+  // Pesquisa e estado ficam à vista na barra do cabeçalho (são só dois filtros, não precisam de gaveta)
+  const { filterRows, toolbar } = useListFilters([
+    { key: "q", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.name, v) },
+    ...(canSeeStatus
+      ? [{ key: "status", type: "select", primary: true, label: t("Status"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => row.full_data.is_deleted === v }]
+      : []),
+  ]);
+  const filteredData = filterRows(tableData);
 
   return (
-    <div className="p-6 bg-white shadow rounded-[16px]">
+    <div className="p-2">
       <Create open={isOpenCreate} close={closeAction} nameRule={nameRule} />
       <Delete
         data={selectedData}
@@ -186,38 +156,6 @@ export default function Certificate() {
         open={isOpenLogs}
         close={() => setIsOpenLogs(false)}
       />
-      <FiltersDrawer
-        open={isFiltersOpen}
-        onClose={() => toggleFilters(false)}
-        onApply={applyFilters}
-        onClear={clearFilters}>
-        <div>
-          <p className="text-sm text-[#6B6B6B] pb-2">{t("Search")}</p>
-          <Input
-            allowClear
-            placeholder={t("Search by name...")}
-            prefix={<SearchOutlined />}
-            value={filters.search}
-            onChange={(e) => updateFilter("search", e.target.value)}
-          />
-        </div>
-        {canSeeStatus && (
-          <div>
-            <p className="text-sm text-[#6B6B6B] pb-2">{t("Status")}</p>
-            <Select
-              allowClear
-              className="w-full"
-              placeholder={t("Status")}
-              value={filters.status ?? undefined}
-              onChange={(value) => updateFilter("status", value ?? null)}
-              options={[
-                { label: t("Active"), value: 0 },
-                { label: t("Inactive"), value: 1 },
-              ]}
-            />
-          </div>
-        )}
-      </FiltersDrawer>
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
           <p className="text-xl font-bold">{t("Certificates")}</p>
@@ -226,20 +164,9 @@ export default function Certificate() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge count={activeFiltersCount} size="small">
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => toggleFilters(true)}
-              aria-label={t("Filters")}
-              title={t("Filters")}
-            />
-          </Badge>
-          <Button
-            onClick={getData}
-            icon={<RxReload />}
-            aria-label={t("Refresh")}
-            title={t("Refresh")}
-          />
+          {toolbar}
+          <ExportButton table="certificates" data={filteredData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, languageColumn, activityColumn, createdColumn]} />
+          <RefreshButton onClick={getData} />
           {perm.canCreate && (<Button
             type="primary"
             icon={<AiOutlinePlus />}

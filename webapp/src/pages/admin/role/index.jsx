@@ -1,10 +1,10 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Button, Input, Table, Tag } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { AiOutlinePlus } from "react-icons/ai";
-import { RxReload } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
 
 import RoleForm from "../../../components/admin/role/form";
@@ -79,7 +79,7 @@ export default function Role() {
   );
 
   return (
-    <div className="p-6 bg-white shadow rounded-[16px]">
+    <div className="p-2">
       <RoleForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} />
       <Delete
         data={selectedData}
@@ -102,7 +102,7 @@ export default function Role() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Button onClick={getData} icon={<RxReload />} aria-label={t("Refresh")} title={t("Refresh")} />
+          <RefreshButton onClick={getData} />
           <Button type="primary" icon={<AiOutlinePlus />} onClick={() => setIsOpenCreate(true)}>
             <span className="hidden sm:inline">{t("Add role")}</span>
           </Button>

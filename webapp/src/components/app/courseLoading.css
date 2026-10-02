@@ -1,12 +1,13 @@
 /* Ecrã de entrada no e-Learning (components/app/courseLoading.jsx), com as cores da Bial. */
+/* Fundo liso: o azul claro que a Bial já usa como fundo no resto do site (sem gradiente) */
 .course-loader {
-  background: linear-gradient(160deg, #0a0a0b 0%, #163986 65%, #00b9d6 100%);
+  background: #f1f9ff;
 }
 
 .course-loader-glow {
   position: absolute;
   inset: -20%;
-  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, #00b9d6 30%, transparent), transparent 55%);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, #00b9d6 14%, transparent), transparent 55%);
   animation: course-loader-breathe 3.2s ease-in-out calc(0s - var(--cl-elapsed, 0s)) infinite;
 }
 
@@ -19,7 +20,7 @@
   position: absolute;
   inset: -6px;
   border-radius: 26px;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(22, 57, 134, 0.55);
   opacity: 0;
   animation: course-loader-ring 1.8s ease-out calc(0.5s - var(--cl-elapsed, 0s)) infinite;
 }
@@ -33,7 +34,7 @@
 .course-loader-shine {
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.95) 50%, transparent 65%);
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.9) 50%, transparent 65%);
   background-size: 250% 100%;
   -webkit-mask-size: contain;
   mask-size: contain;
@@ -50,7 +51,7 @@
   height: 3px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(22, 57, 134, 0.14);
   animation: course-loader-rise 0.8s ease-out 0.3s both;
 }
 
@@ -60,7 +61,7 @@
   bottom: 0;
   width: 40%;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, #fff, transparent);
+  background: linear-gradient(90deg, transparent, #163986, transparent);
   animation: course-loader-slide 1.3s cubic-bezier(0.45, 0, 0.55, 1) calc(0s - var(--cl-elapsed, 0s)) infinite;
 }
 
@@ -105,5 +106,33 @@
   .course-loader *,
   .course-loader-glow {
     animation: none !important;
+  }
+}
+
+/* Ecrã de carregamento principal (layout/loading.jsx): a mesma barra a deslizar, sobre o mesmo azul claro */
+.app-loader {
+  background: #f1f9ff;
+}
+.app-loader-bar {
+  position: relative;
+  width: 220px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(22, 57, 134, 0.14);
+}
+.app-loader-bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #163986, transparent);
+  animation: course-loader-slide 1.3s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-loader-bar > span {
+    animation: none;
+    left: 30%;
   }
 }

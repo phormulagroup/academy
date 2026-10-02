@@ -1,4 +1,5 @@
 import axios from "axios";
+import RefreshButton from "../../../components/admin/refreshButton";
 import { useContext, useEffect } from "react";
 import RowActions from "../../../components/admin/rowActions";
 import { useState } from "react";
@@ -15,7 +16,6 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 import { useNavigate } from "react-router-dom";
 import Create from "../../../components/admin/template/create";
 
@@ -148,15 +148,11 @@ export default function Template() {
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Templates")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} templates", { total: filterRows(tableData).length })}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
-          <Button
-            size="large"
-            onClick={getData}
-            icon={<RxReload />}
-           
-          />
+          <RefreshButton size="large" onClick={getData} />
           <Button size="large" onClick={() => setIsOpenCreate(true)}>
             {t("Add template")}
           </Button>

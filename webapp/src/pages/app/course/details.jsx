@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState, useCallback } from "react";
 import { Button, Empty, Progress, Tabs } from "antd";
 import { useContext } from "react";
@@ -31,8 +32,6 @@ import {
 } from "react-icons/pi";
 import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
-import Lottie from "lottie-react";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 
@@ -320,11 +319,7 @@ export default function CourseDetails() {
       )}
       {isLoading ? (
         <div className="flex justify-center items-center w-full min-h-75 col-span-3">
-          <Lottie
-            animationData={trailLoadingAnimation}
-            loop={true}
-            className="max-w-30"
-          />
+          <BialSpin />
         </div>
       ) : data.course ? (
         <div>

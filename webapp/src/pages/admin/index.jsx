@@ -127,27 +127,18 @@ export default function Main() {
         (t) => t.id_course === obj.activity[i].id_course,
       );
 
-      let progressCompleted = obj.activity.filter(
-        (a) =>
-          a.activity_type !== "enroll" &&
-          a.activity_type !== "course" &&
-          a.activity_type !== "module" &&
-          a.id_user === obj.activity[i].id_user &&
-          a.id_course === a.id_course,
-      );
-
-      if (
-        obj.activity[i].activity_type !== "enroll" &&
-        obj.activity[i].activity_type !== "course" &&
-        obj.activity[i].activity_type !== "module" &&
-        obj.activity[i].is_completed === 1
-      ) {
-        percentageProgress = calcCourseProgress(
-          progressCompleted,
-          topics.length + tests.length,
-          obj.activity[i].id,
-        );
-      }
+      // Progresso do aluno neste curso depois desta atividade: tópicos e testes distintos concluídos até esta data, sobre o total do curso
+      const current = obj.activity[i];
+      const done = new Set();
+      obj.activity.forEach((a) => {
+        if (a.id_user === current.id_user && a.id_course === current.id_course && a.is_completed === 1 && (a.activity_type === "topic" || a.activity_type === "test") && new Date(a.created_at) <= new Date(current.created_at)) {
+          done.add(`${a.activity_type}-${a.id_course_topic ?? a.id_course_test}`);
+        }
+      });
+      const totalItems = topics.length + tests.length;
+      if (totalItems > 0) percentageProgress = Math.min(100, Math.round((done.size * 100) / totalItems));
+      // Curso concluído: 100%
+      if (current.activity_type === "course" && current.is_completed === 1) percentageProgress = 100;
 
       auxActivity.push({
         user: (() => {
@@ -164,16 +155,7 @@ export default function Main() {
                   .name
               }
             </p>
-            {obj.activity[i].activity_type !== "enroll" &&
-              obj.activity[i].activity_type !== "course" &&
-              obj.activity[i].activity_type !== "module" &&
-              obj.activity[i].is_completed === 1 && (
-                <Progress
-                  percent={percentageProgress}
-                  size="small"
-                  showInfo={percentageProgress === 100 ? false : true}
-                />
-              )}
+            <Progress percent={percentageProgress} size="small" strokeColor="#2F8351" />
             <p className="text-[12px] line-clamp-1">
               {obj.activity[i].activity_type === "test"
                 ? obj.tests.filter(
@@ -313,15 +295,6 @@ export default function Main() {
     setBestStudentsData(auxBestStudents);
     setUsersData(auxUsers);
     setLogsData(obj.logs);
-  }
-
-  function calcCourseProgress(a, b, idActivity) {
-    let findIndex = a.findIndex((_a) => _a.id === idActivity);
-    let progressPercentage = (100 * a.slice(findIndex, a.length).length) / b;
-    const isInteger = progressPercentage % 1 === 0;
-    return !isInteger
-      ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-      : progressPercentage;
   }
 
   function changePage(tableKey, page, pageSize) {

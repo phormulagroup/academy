@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState } from "react";
 import { Button, Empty } from "antd";
 import { useContext } from "react";
@@ -10,8 +11,6 @@ import i18n from "../../../utils/i18n";
 import config from "../../../utils/config";
 import { getMarginClasses } from "../../../utils/responsive";
 import useScrollToTop from "../../../utils/scrollToTop";
-import Lottie from "lottie-react";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
 
@@ -85,11 +84,7 @@ export default function Document() {
         </div>
         {isLoading ? (
           <div className="flex justify-center items-center w-full h-full col-span-3">
-            <Lottie
-              animationData={trailLoadingAnimation}
-              loop={true}
-              className="max-w-30"
-            />
+            <BialSpin />
           </div>
         ) : data && data.length > 0 ? (
           // Grelha comum aos catálogos (cursos, documentos, downloads): 1 coluna em telemóvel, 2 em sm/md, 3 em lg e 4 em xl

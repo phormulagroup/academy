@@ -1,4 +1,5 @@
 import axios from "axios";
+import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState } from "react";
 import { Button, Switch } from "antd";
 import { useContext, useRef } from "react";
@@ -14,12 +15,10 @@ import {
   ZoomMode,
 } from "@embedpdf/react-pdf-viewer";
 import { Helmet } from "react-helmet";
-import Lottie from "lottie-react";
 
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
-import trailLoadingAnimation from "../../../assets/Trail-loading.json";
 import { useNavigate, useParams } from "react-router-dom";
 import i18n from "../../../utils/i18n";
 import { isAllowedByCountry } from "../../../utils/courseStatus";
@@ -234,11 +233,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
     <div className="page-frame py-6">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
-          <Lottie
-            animationData={trailLoadingAnimation}
-            loop={true}
-            className="max-w-30"
-          />
+          <BialSpin />
         </div>
       ) : data ? (
         <div>

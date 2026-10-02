@@ -14,9 +14,8 @@ const endpoints = {
 		password: "/auth/password",
 	},
 	import: {
-		table: "/import/table",
-		project: "/import/project",
-		account: "/import/account",
+		fields: "/import/fields",
+		user: "/import/user",
 	},
 	logs: {
 		read: "/logs/read",
@@ -70,6 +69,7 @@ const endpoints = {
 		update: "/course/update",
 		updateTopic: "/course/updateTopic",
 		updateProgress: "/course/updateProgress",
+		completeProgress: "/course/completeProgress",
 		resetProgress: "/course/resetProgress",
 		module: "/course/module",
 		create: "/course/create",
@@ -164,6 +164,7 @@ const endpoints = {
 		update: "/faqs/update",
 		create: "/faqs/create",
 		delete: "/faqs/delete",
+		reorder: "/faqs/reorder",
 	},
 	download: {
 		read: "/download/read",

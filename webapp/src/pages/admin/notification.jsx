@@ -1,4 +1,6 @@
 import axios from "axios";
+import RefreshButton from "../../components/admin/refreshButton";
+import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
@@ -16,7 +18,6 @@ import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
-import { RxReload } from "react-icons/rx";
 
 export default function Notification() {
   const { selectedLanguage, toastApi } = useContext(Context);
@@ -133,9 +134,11 @@ export default function Notification() {
       <div className="flex justify-between items-center mb-4">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Notifications")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} notifications", { total: tableData.length })}</p>
         </div>
         <div>
-          <Button size="large" onClick={getData} icon={<RxReload />} className="mr-2" />
+          <ExportButton table="notifications" data={tableData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Title", dataIndex: "title" }, { title: "Type", dataIndex: "type" }, languageColumn, { title: "Country", dataIndex: "country" }, createdColumn]} />
+          <RefreshButton size="large" onClick={getData} className="mr-2" />
           {perm.canCreate && (<Button size="large" onClick={() => setIsOpenCreate(true)} icon={<AiOutlinePlus />}>
             {t("Add notification")}
           </Button>)}
