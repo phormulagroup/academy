@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { requireStaff } = require("../utils/permissions");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -12,7 +13,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get("/read", async (req, res) => {
+router.get("/read", requireStaff(), async (req, res) => {
   console.log("/// READ DASHBOARD ////");
   const query = util.promisify(db.query).bind(db);
   try {

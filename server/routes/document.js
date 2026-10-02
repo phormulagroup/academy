@@ -7,6 +7,7 @@ var fs = require("fs");
 var path = require("path");
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 router.use((req, res, next) => {
 	console.log("---------------------------");
@@ -70,7 +71,7 @@ router.get("/readFile", async (req, res) => {
 	res.send(Buffer.from(buffer));
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", requirePermission("document", "create"), async (req, res, next) => {
 	console.log("//// CREATE DOCUMENT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
@@ -84,7 +85,7 @@ router.post("/create", async (req, res, next) => {
 	}
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", requirePermission("document", "update"), async (req, res, next) => {
 	console.log("//// UPDATE DOCUMENT ////");
 	try {
 		let data = req.body.data;
@@ -104,7 +105,7 @@ router.post("/update", async (req, res, next) => {
 	}
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", requirePermission("document", "delete"), async (req, res, next) => {
 	console.log("//// DELETE DOCUMENT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);

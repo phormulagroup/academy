@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
 router.use((req, res, next) => {
@@ -35,7 +36,7 @@ router.get("/readByLang", async (req, res) => {
   }
 });
 
-router.post("/create", middleware, async (req, res, next) => {
+router.post("/create", middleware, requirePermission("personalization", "update"), async (req, res, next) => {
   console.log("//// CREATE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
@@ -48,7 +49,7 @@ router.post("/create", middleware, async (req, res, next) => {
   }
 });
 
-router.post("/update", middleware, async (req, res, next) => {
+router.post("/update", middleware, requirePermission("personalization", "update"), async (req, res, next) => {
   console.log("//// UPDATE PERSONALIZATION ////");
   try {
     let data = req.body.data;
@@ -68,7 +69,7 @@ router.post("/update", middleware, async (req, res, next) => {
   }
 });
 
-router.post("/delete", middleware, async (req, res, next) => {
+router.post("/delete", middleware, requirePermission("personalization", "delete"), async (req, res, next) => {
   console.log("//// DELETE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);

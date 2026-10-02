@@ -4,6 +4,8 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const middleware = require("../utils/middleware");
+const { requirePermission } = require("../utils/permissions");
 
 router.use((req, res, next) => {
 	console.log("---------------------------");
@@ -23,7 +25,7 @@ router.get("/read", async (req, res) => {
 	}
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", middleware, requirePermission("product", "create"), async (req, res, next) => {
 	console.log("//// CREATE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
@@ -35,7 +37,7 @@ router.post("/create", async (req, res, next) => {
 	}
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", middleware, requirePermission("product", "update"), async (req, res, next) => {
 	console.log("//// UPDATE PRODUCT ////");
 	try {
 		let data = req.body.data;
@@ -60,7 +62,7 @@ router.post("/update", async (req, res, next) => {
 	}
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", middleware, requirePermission("product", "delete"), async (req, res, next) => {
 	console.log("//// DELETE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);

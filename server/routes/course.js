@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 const { read } = require("fs");
 
 // Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
@@ -16,6 +17,56 @@ router.use((req, res, next) => {
 	console.log("---------------------------");
 	next();
 });
+
+
+// ---- Acesso restrito a utilizadores e grupos (course.settings.restrict_to_users) ----
+// A verificação é feita aqui, no servidor: o que o utilizador não pode ver nem chega ao browser. Os administradores
+// vêem sempre tudo. As tabelas vêm da migração 2026-10-02-course-access.sql; se ainda não existirem, os cursos
+// restritos ficam escondidos (falha fechada) e os outros funcionam como sempre.
+function isRestrictedCourse(course) {
+	let settings = course.settings;
+	if (typeof settings === "string") {
+		try {
+			settings = settings ? JSON.parse(settings) : null;
+		} catch {
+			settings = null;
+		}
+	}
+	return !!settings?.restrict_to_users;
+}
+
+// Cursos restritos a que o utilizador tem acesso: diretamente (course_user_access) ou por um grupo a que pertence
+async function accessibleCourseIds(query, userId) {
+	if (!userId) return new Set();
+	try {
+		const rows = await query(
+			"SELECT id_course FROM course_user_access WHERE id_user = ? " +
+				"UNION SELECT cg.id_course FROM course_group cg " +
+				"INNER JOIN user_group ug ON ug.id = cg.id_group AND ug.is_deleted = 0 " +
+				"INNER JOIN user_group_member ugm ON ugm.id_group = cg.id_group WHERE ugm.id_user = ?",
+			[userId, userId],
+		);
+		return new Set(rows.map((r) => r.id_course));
+	} catch (err) {
+		if (err.code !== "ER_NO_SUCH_TABLE") console.log(err);
+		return new Set();
+	}
+}
+
+// O papel vem da base de dados (id_user do pedido), não do que o cliente diz ser
+async function isAdminUser(query, userId) {
+	if (!userId) return false;
+	const rows = await query("SELECT id_role FROM user WHERE id = ? AND is_deleted = 0", [userId]);
+	return rows[0]?.id_role === 1;
+}
+
+// Cursos que o utilizador pode ver (todos para administradores; os restritos só se tiver acesso)
+async function visibleCourses(query, courses, userId) {
+	if (!courses.some(isRestrictedCourse)) return courses;
+	if (await isAdminUser(query, userId)) return courses;
+	const allowed = await accessibleCourseIds(query, userId);
+	return courses.filter((c) => !isRestrictedCourse(c) || allowed.has(c.id));
+}
 
 router.get("/read", async (req, res) => {
 	console.log("//// READ COURSE ////");
@@ -91,8 +142,19 @@ router.get("/readByLang", async (req, res) => {
 			],
 		);
 
+		// Cursos restritos a utilizadores/grupos: só os que o utilizador pode ver (e o que lhes pertence)
+		const courses = await visibleCourses(query, rows[0], req.query.id_user);
+		if (courses.length !== rows[0].length) {
+			const courseIds = new Set(courses.map((c) => c.id));
+			const moduleIds = new Set(rows[1].filter((m) => courseIds.has(m.id_course)).map((m) => m.id));
+			rows[1] = rows[1].filter((m) => moduleIds.has(m.id));
+			rows[2] = rows[2].filter((tp) => moduleIds.has(tp.id_course_module));
+			rows[3] = rows[3].filter((ts) => moduleIds.has(ts.id_course_module));
+			rows[4] = rows[4].filter((p) => courseIds.has(p.id_course));
+		}
+
 		res.send({
-			courses: rows[0],
+			courses,
 			modules: rows[1],
 			topics: rows[2],
 			tests: rows[3],
@@ -165,6 +227,12 @@ router.get("/readBySlug", async (req, res) => {
 				req.query.id_lang,
 			],
 		);
+		// Curso restrito a que o utilizador não tem acesso: responde como se não existisse
+		const courses = await visibleCourses(query, rows[0], req.query.id_user);
+		if (courses.length === 0 && rows[0].length > 0) {
+			return res.send({ course: [], modules: [], topics: [], tests: [], progress: [] });
+		}
+
 		res.send({
 			course: rows[0],
 			modules: rows[1],
@@ -209,7 +277,7 @@ router.get("/readByTestId", async (req, res) => {
 	}
 });
 
-router.get("/report", async (req, res) => {
+router.get("/report", requirePermission("report", "read"), async (req, res) => {
 	console.log("/// REPORTS COURSE ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
@@ -264,7 +332,69 @@ router.get("/report", async (req, res) => {
 	}
 });
 
-router.post("/create", async (req, res, next) => {
+// Utilizadores e grupos com acesso a um curso restrito (definições do curso → Acesso)
+router.get("/accessUsers", requirePermission("course", "update"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	try {
+		res.send(
+			await query(
+				"SELECT user.id, user.name, user.email FROM course_user_access " +
+					"INNER JOIN user ON user.id = course_user_access.id_user " +
+					"WHERE course_user_access.id_course = ? AND user.is_deleted = 0",
+				[req.query.id_course],
+			),
+		);
+	} catch (err) {
+		console.log(err);
+		res.status(500).send({ message: "Error" });
+	}
+});
+
+router.get("/accessGroups", requirePermission("course", "update"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	try {
+		res.send(
+			await query(
+				"SELECT user_group.id, user_group.name FROM course_group " +
+					"INNER JOIN user_group ON user_group.id = course_group.id_group " +
+					"WHERE course_group.id_course = ? AND user_group.is_deleted = 0",
+				[req.query.id_course],
+			),
+		);
+	} catch (err) {
+		console.log(err);
+		res.status(500).send({ message: "Error" });
+	}
+});
+
+// Substitui por completo a lista (utilizadores ou grupos) de um curso pela lista enviada
+function replaceAccessList(table, column, idsKey) {
+	return (req, res) => {
+		db.getConnection(async (error, conn) => {
+			if (error) return res.status(500).send({ message: "Error" });
+			const q = util.promisify(conn.query).bind(conn);
+			try {
+				await util.promisify(conn.beginTransaction).bind(conn)();
+				const { id_course } = req.body.data || {};
+				const ids = req.body.data?.[idsKey] || [];
+				await q(`DELETE FROM ${table} WHERE id_course = ?`, [id_course]);
+				if (ids.length > 0) await q(`INSERT INTO ${table} (id_course, ${column}) VALUES ?`, [ids.map((id) => [id_course, id])]);
+				await util.promisify(conn.commit).bind(conn)();
+				conn.release();
+				res.send({ id_course, [idsKey]: ids });
+			} catch (err) {
+				console.log(err);
+				await util.promisify(conn.rollback).bind(conn)();
+				conn.release();
+				res.status(500).send({ message: "Error" });
+			}
+		});
+	};
+}
+router.post("/setAccessUsers", requirePermission("course", "update"), replaceAccessList("course_user_access", "id_user", "id_users"));
+router.post("/setAccessGroups", requirePermission("course", "update"), replaceAccessList("course_group", "id_group", "id_groups"));
+
+router.post("/create", requirePermission("course", "create"), async (req, res, next) => {
 	console.log("//// CREATE COURSE ////");
 	try {
     const query = util.promisify(db.query).bind(db);
@@ -290,18 +420,33 @@ router.post("/create", async (req, res, next) => {
 	}
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
-		data.slug = courseSlug(data.name);
 		delete data.id;
+
+		const query = util.promisify(db.query).bind(db);
+
+		// Endereço (slug) do curso: se vier um, usa-se (normalizado) desde que nenhum outro curso do mesmo idioma o tenha;
+		// sem ele, o endereço automático acompanha o nome, mas um endereço personalizado nunca é reescrito sozinho.
+		const [current] = await query("SELECT name, slug, id_lang FROM course WHERE id = ?", [whereId]);
+		if (typeof data.slug === "string" && data.slug.trim()) {
+			const slug = courseSlug(data.slug);
+			if (!slug) return res.status(400).send({ message: "Invalid slug" });
+			const clash = await query("SELECT id FROM course WHERE slug = ? AND id_lang = ? AND id <> ? AND is_deleted = 0", [slug, current?.id_lang, whereId]);
+			if (clash.length > 0) return res.status(409).send({ message: "A course with this address already exists" });
+			data.slug = slug;
+		} else if (data.name && current && current.slug === courseSlug(current.name)) {
+			data.slug = courseSlug(data.name);
+		} else {
+			delete data.slug;
+		}
 
 		const columns = Object.keys(data);
 		const values = Object.values(data);
 
-		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
 			"UPDATE course SET " +
 				columns.join(" = ?, ") +
@@ -316,7 +461,7 @@ router.post("/update", async (req, res, next) => {
 	}
 });
 
-router.post("/updateTopic", async (req, res, next) => {
+router.post("/updateTopic", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE TOPIC ////");
 	try {
 		let data = req.body.data;
@@ -341,7 +486,7 @@ router.post("/updateTopic", async (req, res, next) => {
 	}
 });
 
-router.post("/updateTest", async (req, res, next) => {
+router.post("/updateTest", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE TOPIC ////");
 	try {
 		let data = req.body.data;
@@ -391,7 +536,7 @@ router.post("/updateProgress", async (req, res, next) => {
 	}
 });
 
-router.post("/resetProgress", async (req, res, next) => {
+router.post("/resetProgress", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE PROGRESS ////");
 	db.getConnection(async (error, conn) => {
 		if (error) throw error;
@@ -444,7 +589,7 @@ router.post("/resetProgress", async (req, res, next) => {
 	});
 });
 
-router.post("/module", async (req, res, next) => {
+router.post("/module", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// UPDATE COURSE MODULE ////");
 	db.getConnection(async (error, conn) => {
 		if (error) throw error;
@@ -639,7 +784,7 @@ router.post("/module", async (req, res, next) => {
 	});
 });
 
-router.post("/duplicate", async (req, res, next) => {
+router.post("/duplicate", requirePermission("course", "create"), async (req, res, next) => {
 	console.log("//// DUPLICATE COURSE ////");
 	db.getConnection(async (error, conn) => {
 		if (error) throw error;
@@ -737,7 +882,7 @@ router.post("/duplicate", async (req, res, next) => {
 	});
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", requirePermission("course", "delete"), async (req, res, next) => {
 	console.log("//// DELETE COURSE ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
@@ -750,7 +895,7 @@ router.post("/delete", async (req, res, next) => {
 	}
 });
 
-router.post("/deleteTry", async (req, res, next) => {
+router.post("/deleteTry", requirePermission("course", "update"), async (req, res, next) => {
 	console.log("//// DELETE TRY ////");
 	try {
 		console.log();

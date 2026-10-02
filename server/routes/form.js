@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
 router.use((req, res, next) => {
@@ -14,7 +15,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get("/read", middleware, async (req, res) => {
+router.get("/read", middleware, requirePermission("form_submission", "read"), async (req, res) => {
   console.log("//// READ FORM ////");
   const query = util.promisify(db.query).bind(db);
   try {
@@ -25,7 +26,7 @@ router.get("/read", middleware, async (req, res) => {
   }
 });
 
-router.get("/readByLang", middleware, async (req, res) => {
+router.get("/readByLang", middleware, requirePermission("form_submission", "read"), async (req, res) => {
   console.log("//// READ FORM ////");
   const query = util.promisify(db.query).bind(db);
   try {
@@ -44,11 +45,12 @@ router.post("/create", async (req, res, next) => {
     const insertedRow = await query("INSERT INTO form_submission SET ?", data);
     res.send(insertedRow);
   } catch (err) {
-    throw err;
+    console.log(err);
+    res.status(400).send({ message: "Invalid form data" });
   }
 });
 
-router.post("/delete", middleware, async (req, res, next) => {
+router.post("/delete", middleware, requirePermission("form_submission", "delete"), async (req, res, next) => {
   console.log("//// DELETE FORM ////");
   try {
     const query = util.promisify(db.query).bind(db);

@@ -7,6 +7,7 @@ const fileUpload = require("express-fileupload");
 
 const email = require("../utils/email");
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 const { uploadFile } = require("../utils/upload");
 
@@ -19,7 +20,7 @@ router.use((req, res, next) => {
 	next();
 });
 
-router.get("/read", (req, res, next) => {
+router.get("/read", requirePermission("email_template", "read"), (req, res, next) => {
 	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
@@ -35,7 +36,7 @@ router.get("/read", (req, res, next) => {
 	});
 });
 
-router.get("/readByLang", (req, res, next) => {
+router.get("/readByLang", requirePermission("email_template", "read"), (req, res, next) => {
 	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
@@ -54,7 +55,7 @@ router.get("/readByLang", (req, res, next) => {
 	});
 });
 
-router.get("/readById", (req, res, next) => {
+router.get("/readById", requirePermission("email_template", "read"), (req, res, next) => {
 	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
@@ -73,13 +74,13 @@ router.get("/readById", (req, res, next) => {
 	});
 });
 
-router.post("/upload", async (req, res) => {
+router.post("/upload", requirePermission("email_template", "update"), async (req, res) => {
 	let file = req.files.file;
 	const uploadedFile = await handleUploadFile(file, req.body.data.id_event);
 	res.send({ data: { url: uploadedFile } });
 });
 
-router.post("/test", (req, res, next) => {
+router.post("/test", requirePermission("settings", "update"), (req, res, next) => {
 	console.log("---- TEST E-MAIL SMTP ----");
 
 	try {
@@ -110,7 +111,7 @@ router.post("/test", (req, res, next) => {
 	}
 });
 
-router.post("/create", (req, res, next) => {
+router.post("/create", requirePermission("email_template", "create"), (req, res, next) => {
 	console.log("---- CREATE EMAIL TEMPLATE ----");
 	db.getConnection(async (error, conn) => {
 		if (error) throw error;
@@ -135,7 +136,7 @@ router.post("/create", (req, res, next) => {
 	});
 });
 
-router.post("/update", (req, res, next) => {
+router.post("/update", requirePermission("email_template", "update"), (req, res, next) => {
 	console.log("---- UPDATE EMAIL TEMPLATE ----");
 	db.getConnection(async (error, conn) => {
 		if (error) throw error;
@@ -167,7 +168,7 @@ router.post("/update", (req, res, next) => {
 	});
 });
 
-router.post("/delete", (req, res, next) => {
+router.post("/delete", requirePermission("email_template", "delete"), (req, res, next) => {
 	console.log("---- DELETE EMAIL TEMPLATE ----");
 	let data = req.body.data;
 

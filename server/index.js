@@ -15,6 +15,9 @@ const http = require("http"); // <--- ADICIONADO
 const middleware = require("./utils/middleware");
 const db = require("./utils/database");
 
+// Várias rotas fazem `throw` dentro de handlers async: sem isto, um pedido inválido deitava o processo abaixo
+process.on("unhandledRejection", (err) => console.log("Unhandled rejection:", err));
+
 const app = express();
 const port = process.env.PORT || 4000;
 // Quando a API partilha o domínio com o webapp (ex.: https://academy.bial.com/api) define-se API_PREFIX=/api
@@ -116,8 +119,10 @@ app.use(`${prefix}/dashboard`, middleware, require("./routes/dashboard"));
 app.use(`${prefix}/logs`, middleware, require("./routes/logs"));
 app.use(`${prefix}/user`, middleware, require("./routes/user"));
 app.use(`${prefix}/course`, middleware, require("./routes/course"));
+app.use(`${prefix}/usergroup`, middleware, require("./routes/userGroup"));
 app.use(`${prefix}/language`, require("./routes/language"));
 app.use(`${prefix}/role`, middleware, require("./routes/role"));
+app.use(`${prefix}/permission`, middleware, require("./routes/permission"));
 app.use(`${prefix}/media`, require("./routes/media"));
 app.use(`${prefix}/import`, middleware, require("./routes/import"));
 app.use(`${prefix}/settings`, require("./routes/settings"));

@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { requirePermission, hasPermission, denied } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const { generatePassword } = require("../utils/email");
@@ -21,7 +22,7 @@ router.use((req, res, next) => {
 	next();
 });
 
-router.get("/read", async (req, res) => {
+router.get("/read", requirePermission("user", "read"), async (req, res) => {
 	console.log("//// READ USER ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
@@ -38,6 +39,8 @@ router.get("/readById", async (req, res) => {
 	console.log("//// READ USER BY ID ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
+		// Cada um lê os seus dados; ver os de outros exige permissão na secção Utilizadores
+		if (Number(req.query.id) !== req.user.id && !(await hasPermission(req.user, "user", "read"))) return denied(res);
 		const userRow = await query(
 			"SELECT user.*, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE user.id = ?",
 			[req.query.id],
@@ -120,7 +123,7 @@ router.post("/createPassword", async (req, res, next) => {
 	}
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", requirePermission("user", "create"), async (req, res, next) => {
 	console.log("//// CREATE USER ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
@@ -139,8 +142,18 @@ router.post("/update", async (req, res, next) => {
 	try {
 		// Nome + Apelido do formulário → coluna name
 		let data = mergeName(req.body.data);
-		let whereId = data.id;
+		let whereId = Number(data.id);
 		delete data.id;
+		if (!whereId) return res.status(400).send({ message: "Invalid user" });
+
+		// Editar outro utilizador exige permissão; o próprio nunca altera o seu papel, estado nem se apaga a si mesmo
+		const canManage = await hasPermission(req.user, "user", "update");
+		if (whereId !== req.user.id && !canManage) return denied(res);
+		if (!canManage) {
+			delete data.id_role;
+			delete data.status;
+			delete data.is_deleted;
+		}
 
 		if (data.new_password) {
 			data.password = await bcrypt.hash(data.new_password, saltRounds);
@@ -152,23 +165,20 @@ router.post("/update", async (req, res, next) => {
 		const values = Object.values(data);
 
 		const query = util.promisify(db.query).bind(db);
-		await query(
-			"UPDATE user SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
-		);
+		if (columns.length > 0) {
+			await query("UPDATE user SET " + columns.map((c) => `${db.escapeId(c)} = ?`).join(", ") + " WHERE id = ?", [...values, whereId]);
+		}
 		let user = await query("SELECT * FROM user WHERE id = ?", whereId);
 
 		let newToken = await createToken(user[0]);
 		res.send({ user: user[0], token: newToken });
 	} catch (err) {
-		throw err;
+		console.log(err);
+		res.status(500).send({ message: "Error updating user" });
 	}
 });
 
-router.post("/changeStatus", async (req, res, next) => {
+router.post("/changeStatus", requirePermission("user", "update"), async (req, res, next) => {
 	console.log("//// CHANGE USER STATUS ////");
 	try {
 		let data = req.body.data;
@@ -188,7 +198,7 @@ router.post("/changeStatus", async (req, res, next) => {
 	}
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", requirePermission("user", "delete"), async (req, res, next) => {
 	console.log("//// DELETE USER ////");
 	try {
 		const query = util.promisify(db.query).bind(db);

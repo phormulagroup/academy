@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -50,7 +51,7 @@ router.get("/readByLang", async (req, res) => {
   }
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", requirePermission("notification", "create"), async (req, res, next) => {
   console.log("//// CREATE NOTIFICATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
@@ -63,7 +64,7 @@ router.post("/create", async (req, res, next) => {
   }
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", requirePermission("notification", "update"), async (req, res, next) => {
   console.log("//// UPDATE NOTIFICATION ////");
   try {
     let data = req.body.data;
@@ -101,7 +102,7 @@ router.post("/markAsRead", async (req, res, next) => {
   }
 });
 
-router.post("/send", async (req, res, next) => {
+router.post("/send", requirePermission("notification", "update"), async (req, res, next) => {
   console.log("//// SEND NOTIFICATION ////");
   db.getConnection(async (error, conn) => {
     if (error) throw error;
@@ -134,7 +135,7 @@ router.post("/send", async (req, res, next) => {
   });
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", requirePermission("notification", "delete"), async (req, res, next) => {
   console.log("//// DELETE LANGUAGE ////");
   try {
     const query = util.promisify(db.query).bind(db);

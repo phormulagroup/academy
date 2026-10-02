@@ -33,6 +33,7 @@
     "nodemailer-express-handlebars": "^6.1.2",
     "nodemon": "^2.0.19",
     "path": "^0.12.7",
+    "pdfkit": "^0.20.2",
     "short-unique-id": "^5.2.0",
     "slugify": "^1.6.9",
     "util": "^0.12.5",

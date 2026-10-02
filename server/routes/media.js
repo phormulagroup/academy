@@ -12,6 +12,7 @@ var router = express.Router();
 router.use(fileUpload());
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 router.use((req, res, next) => {
   console.log("----------------------------");
@@ -20,7 +21,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get("/read", (req, res) => {
+router.get("/read", middleware, requirePermission("media", "read"), (req, res) => {
   console.log("///// READ MEDIA /////");
   db.getConnection(async (error, conn) => {
     if (error) throw error;
@@ -61,7 +62,7 @@ router.post("/singleUpload", async (req, res) => {
   }
 });
 
-router.post("/upload", async (req, res) => {
+router.post("/upload", middleware, requirePermission("media", "create"), async (req, res) => {
   console.log("///// UPLOAD MEDIA /////");
   try {
     let files = req.files.file.length ? req.files.file : [req.files.file];
@@ -76,7 +77,7 @@ router.post("/upload", async (req, res) => {
   }
 });
 
-router.post("/delete", (req, res) => {
+router.post("/delete", middleware, requirePermission("media", "delete"), (req, res) => {
   console.log("///// DELETE MEDIA /////");
   db.getConnection(async (error, conn) => {
     if (error) throw error;

@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 router.use((req, res, next) => {
 	console.log("---------------------------");
@@ -57,7 +58,7 @@ router.get("/readBySlug", async (req, res) => {
 	}
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", requirePermission("download", "create"), async (req, res, next) => {
 	console.log("//// CREATE DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
@@ -91,7 +92,7 @@ router.post("/create", async (req, res, next) => {
 	}
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", requirePermission("download", "update"), async (req, res, next) => {
 	console.log("//// UPDATE DOWNLOAD ////");
 	try {
 		let data = req.body.data;
@@ -165,7 +166,7 @@ router.post("/download", async (req, res, next) => {
 	}
 });
 
-router.post("/delete", async (req, res, next) => {
+router.post("/delete", requirePermission("download", "delete"), async (req, res, next) => {
 	console.log("//// DELETE DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);

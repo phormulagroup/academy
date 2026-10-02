@@ -2,6 +2,7 @@ var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 
 var router = express.Router();
 
@@ -12,7 +13,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get("/table", (req, res, next) => {
+router.get("/table", requirePermission("user", "create"), (req, res, next) => {
   console.log("---- TABLE COLUMNS ----");
   db.getConnection(async (error, conn) => {
     if (error) throw error;
@@ -29,7 +30,7 @@ router.get("/table", (req, res, next) => {
   });
 });
 
-router.post("/course", (req, res, next) => {
+router.post("/course", requirePermission("course", "create"), (req, res, next) => {
   console.log("---- IMPORT COURSE ----");
   db.getConnection(async (error, conn) => {
     if (error) throw error;

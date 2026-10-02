@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { requireAdmin, ADMIN_ROLE_ID } = require("../utils/permissions");
 
 router.use((req, res, next) => {
   console.log("---------------------------");
@@ -12,56 +13,54 @@ router.use((req, res, next) => {
   next();
 });
 
+const query = util.promisify(db.query).bind(db);
+
+// Qualquer utilizador autenticado lê as funções (precisa delas para mostrar o nome); criar, editar e apagar é só Admin
 router.get("/read", async (req, res) => {
-  console.log("//// READ ROLE ////");
-  const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("SELECT * FROM role");
-    res.send(rows);
+    res.send(await query("SELECT * FROM role"));
   } catch (e) {
-    throw e;
+    console.log(e);
+    res.status(500).send({ message: "Error" });
   }
 });
 
-router.post("/create", async (req, res, next) => {
-  console.log("//// CREATE ROLE ////");
+router.post("/create", requireAdmin, async (req, res) => {
   try {
-    const query = util.promisify(db.query).bind(db);
-    const data = req.body.data;
-    const insertedRow = await query("INSERT INTO role SET ?", data);
-    res.send(insertedRow);
+    const name = String(req.body.data?.name || "").trim();
+    if (!name) return res.status(400).send({ message: "The name is required" });
+    res.send(await query("INSERT INTO role SET ?", { name }));
   } catch (err) {
-    throw err;
+    console.log(err);
+    res.status(500).send({ message: "Error" });
   }
 });
 
-router.post("/update", async (req, res, next) => {
-  console.log("//// UPDATE ROLE ////");
+router.post("/update", requireAdmin, async (req, res) => {
   try {
-    let data = req.body.data;
-    let whereId = data.id;
-    delete data.id;
-
-    const columns = Object.keys(data);
-    const values = Object.values(data);
-
-    const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE role SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
-
-    res.send(updatedRow);
+    const { id } = req.body.data || {};
+    const name = String(req.body.data?.name || "").trim();
+    if (!id || !name) return res.status(400).send({ message: "The name is required" });
+    if (id === ADMIN_ROLE_ID) return res.status(400).send({ message: "The Admin role cannot be changed" });
+    res.send(await query("UPDATE role SET name = ? WHERE id = ?", [name, id]));
   } catch (err) {
-    throw err;
+    console.log(err);
+    res.status(500).send({ message: "Error" });
   }
 });
 
-router.post("/delete", async (req, res, next) => {
-  console.log("//// DELETE ROLE ////");
+// Não se apaga o Admin nem uma função que ainda tenha utilizadores (ficavam com uma função inexistente).
+// As permissões da função apagam-se em cascata.
+router.post("/delete", requireAdmin, async (req, res) => {
   try {
-    const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE role SET is_deleted = 1 WHERE id = " + req.body.data.id);
-    res.send(deletedRow);
+    const id = req.body.data?.id;
+    if (id === ADMIN_ROLE_ID) return res.status(400).send({ message: "The Admin role cannot be deleted" });
+    const used = await query("SELECT COUNT(*) AS n FROM user WHERE id_role = ? AND is_deleted = 0", [id]);
+    if (used[0].n > 0) return res.status(400).send({ message: "A role with users cannot be deleted. Change their role first" });
+    res.send(await query("DELETE FROM role WHERE id = ?", [id]));
   } catch (err) {
-    throw err;
+    console.log(err);
+    res.status(500).send({ message: "Error" });
   }
 });
 

@@ -7,6 +7,7 @@ const middleware = require("../utils/middleware");
 
 var router = express.Router();
 var db = require("../utils/database");
+const { requirePermission } = require("../utils/permissions");
 const util = require("util");
 const query = util.promisify(db.query).bind(db);
 
@@ -66,7 +67,7 @@ async function syncFolder() {
   if (names.length) await query("INSERT INTO iec (name) VALUES ? ON DUPLICATE KEY UPDATE is_deleted = 0", [names.map((n) => [n])]);
 }
 
-router.get("/read", middleware, async (req, res) => {
+router.get("/read", middleware, requirePermission("iec", "read"), async (req, res) => {
   try {
     await syncFolder();
     const rows = await query("SELECT id, name, created_at, updated_at FROM iec WHERE is_deleted = 0");
@@ -83,7 +84,7 @@ router.get("/read", middleware, async (req, res) => {
 });
 
 /* Diz quais dos nomes enviados já existem, para o backoffice pedir confirmação antes de substituir */
-router.post("/check", middleware, async (req, res) => {
+router.post("/check", middleware, requirePermission("iec", "create"), async (req, res) => {
   try {
     const names = (Array.isArray(req.body.names) ? req.body.names : []).filter(isValidName);
     const rows = names.length ? await query("SELECT name FROM iec WHERE is_deleted = 0 AND name IN (?)", [names]) : [];
@@ -96,7 +97,7 @@ router.post("/check", middleware, async (req, res) => {
   }
 });
 
-router.post("/upload", middleware, fileUpload({ defParamCharset: "utf8" }), async (req, res) => {
+router.post("/upload", middleware, requirePermission("iec", "create"), fileUpload({ defParamCharset: "utf8" }), async (req, res) => {
   try {
     const file = req.files && req.files.file;
     if (!file) return res.status(400).send({ message: "No file" });
@@ -126,7 +127,7 @@ router.post("/upload", middleware, fileUpload({ defParamCharset: "utf8" }), asyn
 });
 
 /* Nunca apaga: move para _deleted, recuperável à mão (um QRCode impresso deixa de funcionar enquanto lá estiver) */
-router.post("/delete", middleware, async (req, res) => {
+router.post("/delete", middleware, requirePermission("iec", "delete"), async (req, res) => {
   try {
     const name = req.body.data && req.body.data.name;
     if (!isValidName(name)) return res.status(404).send({ message: "Not found" });
