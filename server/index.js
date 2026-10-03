@@ -18,6 +18,7 @@ const db = require("./utils/database");
 // Erros de handlers async, respostas 5xx e erros do processo ficam registados em server_log (ver utils/asyncErrors.js)
 const { patchAsyncHandlers, requestMonitor, errorHandler, installProcessHandlers } = require("./utils/asyncErrors");
 const { startMonitoring, logError } = require("./utils/monitor");
+const { startCommunications } = require("./utils/communications");
 patchAsyncHandlers();
 installProcessHandlers();
 
@@ -57,9 +58,12 @@ db.getConnection((error, conn) => {
 	// Sem BD no arranque o servidor não cai: o /health devolve 503 e o heartbeat recupera quando a BD voltar
 	if (error) logError({ source: "database", message: `Database connection failed: ${error.message}`, stack: error.stack });
 	else conn.release();
+	startCommunications(); // envio das comunicações agendadas, em lotes
 	startMonitoring(); // sinal de vida, tempo em baixo e limpeza de logs antigos (recupera sozinho quando a BD voltar)
 });
 
+// Rastreio de cliques das comunicações (público, sem login): redireccionamento assinado
+app.use(`${prefix}/t`, require("./routes/tracking"));
 app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media")));
 // Fontes da marca para os e-mails (ficheiros em server/public/fonts): os e-mails vão buscá-las a este endereço
 app.use(`${prefix}/fonts`, express.static(require("path").join(__dirname, "public", "fonts"), { maxAge: "30d" }));
@@ -119,6 +123,7 @@ app.use(`${prefix}/course`, middleware, require("./routes/course"));
 app.use(`${prefix}/usergroup`, middleware, require("./routes/userGroup"));
 app.use(`${prefix}/language`, require("./routes/language"));
 app.use(`${prefix}/role`, middleware, require("./routes/role"));
+app.use(`${prefix}/communication`, middleware, require("./routes/communication"));
 app.use(`${prefix}/permission`, middleware, require("./routes/permission"));
 app.use(`${prefix}/media`, require("./routes/media"));
 app.use(`${prefix}/import`, middleware, require("./routes/import"));

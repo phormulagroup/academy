@@ -5,6 +5,8 @@ const JWT_SECRET =
 var privateKey = JWT_SECRET;
 
 module.exports = {
+  // Segredo para assinar os links de rastreio das comunicações (utils/tracking.js)
+  secret: privateKey,
   verifyToken: function (token) {
     return new Promise((resolve, reject) => {
       jwt.verify(token, privateKey, function (err, decoded) {

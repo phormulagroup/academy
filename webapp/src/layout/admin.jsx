@@ -33,6 +33,7 @@ import {
   LuShieldCheck,
   LuTicket,
   LuActivity,
+  LuSend,
   LuMessageSquareText,
   LuLayoutTemplate,
   LuServer,
@@ -196,6 +197,7 @@ const Main = () => {
         label: t("E-mail"),
         type: "group",
         children: [
+          { key: "/admin/communications", label: t("Communications"), icon: <LuSend /> },
           {
             key: "/admin/templates",
             label: t("Templates"),

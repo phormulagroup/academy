@@ -25,6 +25,9 @@ import Notification from "../pages/admin/notification";
 import Document from "../pages/admin/document";
 import Ticket from "../pages/admin/ticket";
 import Monitoring from "../pages/admin/monitoring";
+import Communication from "../pages/admin/communication/index";
+import CommunicationDetails from "../pages/admin/communication/details";
+import CommunicationEditor from "../pages/admin/communication/editor";
 import Report from "../pages/admin/report";
 import Download from "../pages/admin/download";
 import Faqs from "../pages/admin/faqs";
@@ -61,6 +64,9 @@ export const adminRoutes = [
 			{ path: "notification", element: <Notification /> },
 			{ path: "tickets", element: <Ticket /> },
 			{ path: "monitoring", element: <Monitoring /> },
+			{ path: "communications", element: <Communication /> },
+			{ path: "communications/:id", element: <CommunicationDetails /> },
+			{ path: "communications/:id/editor", element: <CommunicationEditor /> },
 			{ path: "inbox", element: <Navigate to="/admin/tickets" replace /> },
 			{ path: "faqs", element: <Faqs /> },
 			{ path: "answers", element: <FormSubmission /> },

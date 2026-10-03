@@ -5,6 +5,7 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
   LuActivity,
+  LuSend,
   LuAward,
   LuBell,
   LuChartColumn,
@@ -51,7 +52,7 @@ const GROUPS = [
   { key: "web", label: "Website", resources: ["media", "iec", "personalization", "language", "notification", "faqs"] },
   { key: "learning", label: "e-Learning", resources: ["course", "certificate", "report", "document", "download", "product"] },
   { key: "manage", label: "Management", resources: ["user", "user_group", "form_submission", "ticket"] },
-  { key: "email", label: "E-mail", resources: ["email_template", "settings"] },
+  { key: "email", label: "E-mail", resources: ["communication", "email_template", "settings"] },
   { key: "system", label: "System", resources: ["monitoring"] },
 ];
 
@@ -73,6 +74,7 @@ const RESOURCE_ICONS = {
   form_submission: <LuMessageSquareText />,
   ticket: <LuTicket />,
   monitoring: <LuActivity />,
+  communication: <LuSend />,
   email_template: <LuLayoutTemplate />,
   settings: <LuServer />,
 };

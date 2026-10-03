@@ -242,3 +242,6 @@ for (const [name, fn] of Object.entries(module.exports)) {
       }
     });
 }
+
+// Para o serviço de comunicações (utils/communications.js): o mesmo transportador e contexto de registo, sem o invólucro acima
+module.exports.internals = { buildTransporter, smtpFromRows, emailContext };

@@ -5,6 +5,7 @@ const query = util.promisify(db.query).bind(db);
 
 // Secções do backoffice a que se pode dar permissão (mesmas chaves do frontend: webapp/src/utils/permissions.jsx)
 const RESOURCES = [
+  "communication",
   "course",
   "certificate",
   "report",

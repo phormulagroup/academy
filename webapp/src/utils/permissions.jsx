@@ -18,6 +18,7 @@ export const RESOURCES = [
 	{ key: "form_submission", label: "Answers" },
 	{ key: "ticket", label: "Tickets" },
 	{ key: "monitoring", label: "System monitoring" },
+	{ key: "communication", label: "Communications" },
 	{ key: "email_template", label: "Templates" },
 	{ key: "settings", label: "Settings (SMTP)" },
 ];
@@ -43,6 +44,7 @@ export const ADMIN_PATH_RESOURCES = {
 	answers: "form_submission",
 	tickets: "ticket",
 	monitoring: "monitoring",
+	communications: "communication",
 	templates: "email_template",
 	smtp: "settings",
 };
