@@ -36,6 +36,10 @@ function requestMonitor(req, res, next) {
       try {
         const parsed = typeof body === "object" ? body : JSON.parse(body);
         if (parsed?.message) message = `${parsed.message}`;
+        // As rotas enviam a razão real em `error` (texto ou o erro do MySQL): mostra-a no registo em vez de só "Some error on server."
+        const err = parsed?.error;
+        const reason = typeof err === "string" ? err : err?.sqlMessage || err?.message || err?.code;
+        if (reason && !message.includes(reason)) message = `${message} — ${reason}`;
       } catch {
         // corpo não é JSON
       }
