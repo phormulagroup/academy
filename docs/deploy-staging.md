@@ -45,6 +45,9 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `IEC_PUBLIC_URL` | `https://academy.phormuladev.com/regional/wp-content/uploads/iec` |
    | `MEDIA_FALLBACK_URL` | vazio (usa `https://academy.phormuladev.com/api/media/`) |
    | `API_PUBLIC_URL` | `https://academy.phormuladev.com/api` (endereço público da API: links de rastreio das comunicações) |
+   | `JWT_SECRET` | **Obrigatório.** Segredo que assina as sessões e os links de rastreio (a API não arranca sem ele). Em staging/produção usar um valor longo e aleatório e nunca o pôr no código. Mudá-lo termina todas as sessões |
+   | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
+   | `TRUST_PROXY` | opcional: nº de proxies à frente da API (Cloudflare = 1; Cloudflare + Apache = 2), para o limite de pedidos usar o IP real |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
 3. **Base de dados** (uma vez por ambiente, antes de arrancar): correr, por esta ordem, os ficheiros de `server/database/migrations/`
    (todos são aditivos e podem repetir-se sem estragar nada):
@@ -71,6 +74,8 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
      Sem esta tabela o editor funciona na mesma, só que a biblioteca da equipa fica vazia e não deixa guardar.
    - `2026-10-09-notification-schedule.sql`: acrescenta `scheduled_at` e `sent_at` à tabela `notification` (agendar notificações) e marca como enviadas as que já tinham destinatários.
      Sem ela as notificações funcionam como antes, só não é possível agendar. O envio das agendadas corre no mesmo serviço em segundo plano das comunicações.
+   - `2026-10-10-security-blocks.sql`: cria `security_block` (bloqueios por tentativas excessivas de login e de recuperação de password, visíveis e desbloqueáveis em *Monitorização → Bloqueios*).
+     Sem ela os limites funcionam em memória, mas não se veem nem se desbloqueiam.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
