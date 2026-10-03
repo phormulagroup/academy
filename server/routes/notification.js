@@ -5,6 +5,7 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
+const { scheduleReady, countAudience, deliver } = require("../utils/notifications");
 
 router.get("/read", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
@@ -33,19 +34,69 @@ router.get("/readByUser", async (req, res) => {
 router.get("/readByLang", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("SELECT * FROM notification WHERE id_lang = ?", [req.query.id_lang]);
+    // Com quantos recebeu e quantos já leram (a coluna scheduled_at/sent_at vem com SELECT * quando a migração está aplicada)
+    const rows = await query(
+      `SELECT n.*, (SELECT COUNT(*) FROM notification_user nu WHERE nu.id_notification = n.id) AS recipients,
+        (SELECT COUNT(*) FROM notification_user nu WHERE nu.id_notification = n.id AND nu.is_read = 1) AS read_count
+       FROM notification n WHERE n.id_lang = ? ORDER BY n.id DESC`,
+      [req.query.id_lang],
+    );
     res.send(rows);
   } catch (e) {
     throw e;
   }
 });
 
+// Quantas pessoas recebem uma notificação para este idioma e países (para o ecrã mostrar antes de enviar)
+router.post("/audience", requirePermission("notification", "read"), async (req, res) => {
+  const { id_lang, country } = req.body.data || {};
+  res.send({ total: await countAudience({ id_lang, country }), scheduling: await scheduleReady() });
+});
+
+// Campos que o formulário pode gravar; o resto (envio, datas de envio) decide-o o servidor
+const FIELDS = ["title", "description", "id_lang", "country"];
+
+// Aplica o modo escolhido: "draft" (guardar), "schedule" (agendar para scheduled_at) ou "now" (enviar já).
+// Devolve { error } com o código HTTP se o pedido não for válido.
+async function applyMode(id, mode, scheduledAt) {
+  const query = util.promisify(db.query).bind(db);
+  if (!mode || mode === "draft") {
+    if (await scheduleReady()) await query("UPDATE notification SET scheduled_at = NULL WHERE id = ? AND sent_at IS NULL", [id]);
+    return {};
+  }
+  if (mode === "schedule") {
+    if (!(await scheduleReady())) return { error: [409, "Scheduling is not available yet (database migration pending)"] };
+    const when = new Date(scheduledAt);
+    if (Number.isNaN(when.getTime())) return { error: [400, "Invalid date"] };
+    if (when.getTime() < Date.now() - 60 * 1000) return { error: [400, "The date must be in the future"] };
+    await query("UPDATE notification SET scheduled_at = ? WHERE id = ? AND sent_at IS NULL", [when, id]);
+    return {};
+  }
+  if (mode === "now") {
+    if (await scheduleReady()) await query("UPDATE notification SET scheduled_at = NULL WHERE id = ? AND sent_at IS NULL", [id]);
+    return { sent: await deliver(id) };
+  }
+  return { error: [400, "Invalid mode"] };
+}
+
+const pick = (data) => {
+  const out = {};
+  for (const f of FIELDS) if (data[f] !== undefined) out[f] = f === "country" && Array.isArray(data[f]) ? (data[f].length ? JSON.stringify(data[f]) : null) : data[f];
+  return out;
+};
+
 router.post("/create", requirePermission("notification", "create"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const data = req.body.data;
-    const insertedRow = await query("INSERT INTO notification SET ?", data);
-    res.send(insertedRow);
+    const data = req.body.data || {};
+    const insertedRow = await query("INSERT INTO notification SET ?", pick(data));
+    const result = await applyMode(insertedRow.insertId, data.mode, data.scheduled_at);
+    // Um pedido inválido (ex.: data no passado) não deixa a notificação criada a meio
+    if (result.error) {
+      await query("DELETE FROM notification WHERE id = ?", [insertedRow.insertId]);
+      return res.status(result.error[0]).send({ message: result.error[1] });
+    }
+    res.send({ ...insertedRow, ...result });
   } catch (err) {
     throw err;
   }
@@ -53,17 +104,26 @@ router.post("/create", requirePermission("notification", "create"), async (req, 
 
 router.post("/update", requirePermission("notification", "update"), async (req, res, next) => {
   try {
-    let data = req.body.data;
-    let whereId = data.id;
-    delete data.id;
-
-    const columns = Object.keys(data);
-    const values = Object.values(data);
-
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE notification SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const data = req.body.data || {};
+    const id = Number(data.id);
+    const [current] = await query("SELECT * FROM notification WHERE id = ?", [id]);
+    if (!current) return res.status(404).send({ message: "Notification not found" });
 
-    res.send(updatedRow);
+    const [{ delivered }] = await query("SELECT COUNT(*) AS delivered FROM notification_user WHERE id_notification = ?", [id]);
+    const sentAlready = !!current.sent_at || delivered > 0;
+    const fields = pick(data);
+    // Depois de enviada, o público e o idioma já não mudam (já foi entregue a essas pessoas); o texto pode corrigir-se
+    if (sentAlready) {
+      delete fields.country;
+      delete fields.id_lang;
+    }
+    const columns = Object.keys(fields);
+    if (columns.length) await query("UPDATE notification SET " + columns.map((c) => `${db.escapeId(c)} = ?`).join(", ") + " WHERE id = ?", [...Object.values(fields), id]);
+
+    const result = sentAlready ? {} : await applyMode(id, data.mode, data.scheduled_at);
+    if (result.error) return res.status(result.error[0]).send({ message: result.error[1] });
+    res.send({ updated: true, ...result });
   } catch (err) {
     throw err;
   }
@@ -87,43 +147,27 @@ router.post("/markAsRead", async (req, res, next) => {
   }
 });
 
+// Enviar já (a partir da lista): entrega a quem ainda não a tem; uma notificação já enviada não se repete
 router.post("/send", requirePermission("notification", "update"), async (req, res, next) => {
-  db.getConnection(async (error, conn) => {
-    if (error) return res.status(500).send({ message: "Some error on server.", error });
-    const query = util.promisify(conn.query).bind(conn);
-    const transaction = util.promisify(conn.beginTransaction).bind(conn);
-    const commit = util.promisify(conn.commit).bind(conn);
-    const rollback = util.promisify(conn.rollback).bind(conn);
-    try {
-      await transaction();
-      let data = req.body.data;
-
-      data.country = data.country ? (typeof data.country === "string" ? JSON.parse(data.country) : data.country) : null;
-      let insertData = [];
-      const rows = await query("SELECT * FROM user WHERE status = 'approved' AND id_lang = ?", data.id_lang);
-
-      for (let i = 0; i < rows.length; i++) {
-        insertData.push([data.id, rows[i].id]);
-      }
-
-      await query("INSERT INTO notification_user (id_notification, id_user) VALUES ?", [insertData]);
-
-      await commit();
-      conn.release();
-      res.send({ send: true });
-    } catch (err) {
-      await rollback();
-      conn.release();
-      throw err;
-    }
-  });
+  try {
+    const result = await deliver(Number(req.body.data?.id));
+    if (!result) return res.status(404).send({ message: "Notification not found" });
+    if (result.already) return res.status(409).send({ message: "This notification was already sent" });
+    res.send({ send: true, delivered: result.delivered });
+  } catch (err) {
+    throw err;
+  }
 });
 
+// Apaga a notificação e as entregas aos utilizadores (deixa de aparecer na área de cada pessoa)
 router.post("/delete", requirePermission("notification", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE language SET is_deleted = 1 WHERE id = " + req.body.data.id);
-    res.send(deletedRow);
+    const id = Number(req.body.data?.id);
+    if (!id) return res.status(400).send({ message: "Invalid notification" });
+    await query("DELETE FROM notification_user WHERE id_notification = ?", [id]);
+    const deleted = await query("DELETE FROM notification WHERE id = ?", [id]);
+    res.send(deleted);
   } catch (err) {
     throw err;
   }
