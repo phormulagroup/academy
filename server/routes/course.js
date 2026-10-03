@@ -7,6 +7,19 @@ var slugify = require("slugify");
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const { read } = require("fs");
+const { notifyUser } = require("../utils/notify");
+
+// "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
+async function notifyCourseCompleted(id_user, id_course) {
+	try {
+		const notifyQuery = util.promisify(db.query).bind(db);
+		const [person] = await notifyQuery("SELECT id, name, email, id_lang FROM user WHERE id = ? AND is_deleted = 0 AND status = 'approved'", [id_user]);
+		const [course] = await notifyQuery("SELECT name FROM course WHERE id = ?", [id_course]);
+		if (person && course) notifyUser("course_completed", person, { course: course.name });
+	} catch (err) {
+		console.error(err.message);
+	}
+}
 
 // Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
 const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
@@ -499,6 +512,15 @@ router.post("/updateProgress", async (req, res, next) => {
 
 		const columns = Object.keys(data[0]);
 
+		// Quem está a concluir o curso agora (e ainda não o tinha concluído antes): recebe o e-mail de parabéns depois de gravar
+		const completing = [];
+		for (const row of data) {
+			if (row.activity_type !== "course" || !Number(row.is_completed) || !row.id_user || !row.id_course) continue;
+			if (completing.some((c) => c.id_user === row.id_user && c.id_course === row.id_course)) continue;
+			const [{ n }] = await query("SELECT COUNT(*) AS n FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course' AND is_completed = 1", [row.id_user, row.id_course]);
+			if (n === 0) completing.push({ id_user: row.id_user, id_course: row.id_course });
+		}
+
 		// Converter objetos → array de arrays
 		const rows = data.map(
 			(obj) => columns.map((col) => obj[col]), // garante ordem correta
@@ -511,6 +533,7 @@ router.post("/updateProgress", async (req, res, next) => {
 		);
 
 		res.send(insertedRow);
+		completing.forEach((c) => notifyCourseCompleted(c.id_user, c.id_course));
 	} catch (err) {
 		throw err;
 	}
@@ -576,6 +599,8 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 			await util.promisify(conn.commit).bind(conn)();
 			conn.release();
 			res.send({ inserted: rows.length });
+			// O Admin concluiu o curso todo em nome do aluno: também recebe o e-mail de parabéns (rows[i][2] é o activity_type)
+			if (rows.some((r) => r[2] === "course")) notifyCourseCompleted(id_user, id_course);
 		} catch (err) {
 			await util.promisify(conn.rollback).bind(conn)().catch(() => {});
 			conn.release();

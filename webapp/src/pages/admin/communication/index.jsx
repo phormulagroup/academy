@@ -1,5 +1,6 @@
 import axios from "axios";
 import dayjs from "dayjs";
+import { useConfirm } from "../../../components/admin/confirmModal";
 import { useContext, useEffect, useState } from "react";
 import { Button, Form, Input, Modal, Progress, Table } from "antd";
 import { AiOutlinePlus } from "react-icons/ai";
@@ -30,6 +31,7 @@ const parseAudience = (raw) => {
 export default function Communication() {
   const { toastApi } = useContext(Context);
   const { t } = useTranslation();
+  const [confirm, confirmHolder] = useConfirm();
   const perm = usePermission("communication");
   const navigate = useNavigate();
 
@@ -85,12 +87,11 @@ export default function Communication() {
   }
 
   function remove(row) {
-    Modal.confirm({
+    confirm({
       title: t("Delete this communication?"),
-      content: t("The communication and its list of recipients will be permanently deleted. The e-mails already sent are not recalled"),
+      description: t("The communication and its list of recipients will be permanently deleted. The e-mails already sent are not recalled"),
+      tone: "danger",
       okText: t("Delete"),
-      okButtonProps: { danger: true },
-      cancelText: t("Cancel"),
       onOk: () =>
         axios
           .post(endpoints.communication.delete, { data: { id: row.id } })
@@ -117,6 +118,7 @@ export default function Communication() {
 
   return (
     <div className="p-2">
+      {confirmHolder}
       <Modal open={isOpenCreate} title={t("New communication")} onCancel={() => setIsOpenCreate(false)} maskClosable={false} okText={t("Create")} cancelText={t("Cancel")} confirmLoading={isCreating} onOk={form.submit}>
         <Form form={form} layout="vertical" onFinish={create} className="mt-4!">
           <Form.Item name="name" label={t("Name")} rules={[requiredRule]} extra={t("Only identifies the communication in the dashboard")}>

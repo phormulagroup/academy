@@ -6,6 +6,7 @@ var bcrypt = require("bcryptjs");
 var crypto = require("crypto");
 var db = require("../utils/database");
 var email = require("../utils/email");
+const { appUrl } = require("../utils/notify");
 const { requirePermission } = require("../utils/permissions");
 
 dayjs.extend(customParseFormat);
@@ -157,8 +158,10 @@ router.post("/user", requirePermission("user", "create"), (req, res) => {
           try {
             const code = crypto.randomBytes(4).toString("hex").slice(0, 6);
             await poolQuery("UPDATE user SET recover_code = ? WHERE id = ?", [await bcrypt.hash(code, saltRounds), user.id]);
-            await email.recover({ ...user, code });
-            emailResult.sent++;
+            // "Acesso à conta": o código para definir a password (antes reutilizava o e-mail de recuperação de password)
+            const info = await email.notify({ type: "account_access", to: user.email, id_lang: user.id_lang, vars: { name: user.name, email: user.email, code, url: `${appUrl()}/recover` } });
+            if (info === null) emailResult.failed++;
+            else emailResult.sent++;
           } catch (err) {
             emailResult.failed++;
           }

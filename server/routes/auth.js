@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 var db = require("../utils/database");
 const { verifyToken, createToken } = require("../utils/token");
 const email = require("../utils/email");
+const { notifyUser } = require("../utils/notify");
 const { mergeName } = require("../utils/userName");
 
 const saltRounds = 10;
@@ -122,7 +123,8 @@ router.post("/register", async (req, res, next) => {
         data.is_deleted = 1;
         data.password = await bcrypt.hash(data.password, saltRounds);
         const insertedRow = await query("INSERT INTO user SET ?", data);
-        const emailResult = await email.register(data);
+        // "Registo recebido": à parte, um e-mail que falhe nunca desfaz o registo
+        notifyUser("registration_received", data);
         await commit();
         conn.release();
         res.send(insertedRow);
@@ -221,6 +223,7 @@ router.post("/password", async (req, res, next) => {
     if (user.length > 0) {
       data.password = await bcrypt.hash(data.password, saltRounds);
       await query(`UPDATE user SET recover_code = NULL, password = ? WHERE email = ?`, [data.password, data.email]);
+      notifyUser("password_changed", user[0]);
       res.send({ status: true, message: "Congrats! You have a new password, now you can login!" });
     } else {
       res.send({ status: false, message: "This user does not exist on our database!" });

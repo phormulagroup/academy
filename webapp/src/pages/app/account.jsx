@@ -74,6 +74,7 @@ export default function Account() {
         if (res.data.user && res.data.token) {
           setUser(res.data.user);
           localStorage.setItem("token", res.data.token);
+          form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
           toastApi.open({
             type: "success",
             content: t("Account updated successfully!"),
@@ -87,6 +88,10 @@ export default function Account() {
       })
       .catch((err) => {
         console.log(err);
+        if (err.response?.data?.code === "invalid_current_password") {
+          form.setFields([{ name: "current_password", errors: [t("The current password is incorrect")] }]);
+          return;
+        }
         toastApi.open({
           type: "error",
           content: t("Something wrong happened, try again please."),
@@ -151,6 +156,9 @@ export default function Account() {
             </p>
             <p className="mb-4! text-[13px] text-[#8A8D98]">{t("Leave empty to keep the current password")}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
+              <Form.Item label={t("Current password")} name="current_password" dependencies={["password"]} rules={[({ getFieldValue }) => ({ required: !!getFieldValue("password"), message: t("Enter your current password to change it") })]} className="mb-0!">
+                <Input.Password size="large" autoComplete="current-password" placeholder={t("Enter your current password")} />
+              </Form.Item>
               <Form.Item label={t("New password")} name="password" className="mb-0!">
                 <Input.Password size="large" placeholder={t("Enter your new password")} />
               </Form.Item>

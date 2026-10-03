@@ -1,5 +1,6 @@
 import axios from "axios";
 import dayjs from "dayjs";
+import { useConfirm } from "../../../components/admin/confirmModal";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Alert, Breadcrumb, Button, DatePicker, Form, Input, Modal, Progress, Select, Spin, Switch, Table, Tag } from "antd";
 import { IoReturnDownBackOutline } from "react-icons/io5";
@@ -25,6 +26,7 @@ const EDITOR_VARIABLES = ["name", "email"];
 export default function CommunicationDetails() {
   const { user, toastApi } = useContext(Context);
   const { t } = useTranslation();
+  const [confirm, confirmHolder] = useConfirm();
   const perm = usePermission("communication");
   const navigate = useNavigate();
   const { id } = useParams();
@@ -205,11 +207,12 @@ export default function CommunicationDetails() {
   }
 
   function confirmSend() {
-    Modal.confirm({
+    confirm({
       title: t("Send this communication now?"),
-      content: t("It will be sent to {{count}} recipients. This cannot be undone", { count: audienceTotal }),
+      description: t("It will be sent to {{count}} recipients. This cannot be undone", { count: audienceTotal }),
+      tone: "warning",
+      icon: <LuSend />,
       okText: t("Send now"),
-      cancelText: t("Cancel"),
       onOk: () => send(null),
     });
   }
@@ -229,9 +232,10 @@ export default function CommunicationDetails() {
 
   function confirmCancel() {
     const sending = data.status === "sending";
-    Modal.confirm({
+    confirm({
       title: sending ? t("Cancel the sending?") : t("Cancel the scheduling?"),
-      content: sending ? t("The e-mails already sent are not recalled; the remaining ones will not be sent") : t("The communication goes back to draft"),
+      description: sending ? t("The e-mails already sent are not recalled; the remaining ones will not be sent") : t("The communication goes back to draft"),
+      tone: "warning",
       okText: t("Yes, cancel"),
       cancelText: t("No"),
       onOk: () => action(endpoints.communication.cancel, t("Cancelled")),
@@ -262,6 +266,7 @@ export default function CommunicationDetails() {
 
   return (
     <div>
+      {confirmHolder}
       <div className="flex justify-between items-center mb-4!">
         <Breadcrumb items={[{ title: <Link to="/admin/communications">{t("Communications")}</Link> }, { title: data?.name }]} />
         <Button type="text" className="text-sm cursor-pointer" icon={<IoReturnDownBackOutline />} onClick={() => navigate("/admin/communications")}>

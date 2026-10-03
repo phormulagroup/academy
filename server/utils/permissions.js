@@ -28,6 +28,8 @@ const RESOURCES = [
 ];
 
 const ADMIN_ROLE_ID = 1;
+// A função "Utilizador" é a que o registo atribui: não se apaga nem se renomeia, só se editam as suas permissões
+const USER_ROLE_ID = 2;
 
 // O Admin tem sempre acesso total (nunca consulta a tabela). Sem a tabela (migração por correr) ou sem linha: sem acesso.
 async function hasPermission(user, resource, action) {
@@ -79,4 +81,4 @@ function requireAdmin(req, res, next) {
   return req.user?.id_role === ADMIN_ROLE_ID ? next() : denied(res);
 }
 
-module.exports = { RESOURCES, ADMIN_ROLE_ID, hasPermission, isStaff, requirePermission, requireStaff, requireAdmin, denied };
+module.exports = { RESOURCES, ADMIN_ROLE_ID, USER_ROLE_ID, hasPermission, isStaff, requirePermission, requireStaff, requireAdmin, denied };

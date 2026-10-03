@@ -1,6 +1,6 @@
 import { Button, Empty, Image, Input, Pagination, Segmented, Select, Skeleton, Tooltip } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LuCheck, LuEye, LuFile, LuFileText, LuPresentation, LuSearch, LuUpload } from "react-icons/lu";
+import { LuCheck, LuEye, LuFile, LuSearch, LuUpload } from "react-icons/lu";
 import axios from "axios";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
@@ -9,27 +9,19 @@ import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
 import { toastRef } from "../../../utils/notify";
 import { usePermission } from "../../../utils/usePermission";
+import { CHECKER, FileBadge, fileKind } from "../../../utils/fileKind";
 import { uploadMediaFiles } from "./upload";
 
 const PAGE_SIZE = 18;
-const IMAGE = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
-const PDF = /\.pdf$/i;
-const SLIDES = /\.(pptx?|key)$/i;
-const kindOf = (name = "") => (IMAGE.test(name) ? "image" : PDF.test(name) ? "pdf" : SLIDES.test(name) ? "slides" : "other");
+const kindOf = (name = "") => fileKind(name).type;
 const urlOf = (name) => `${config.server_ip}/media/${encodeURIComponent(name)}`;
 
-// Fundo xadrez: mostra bem as imagens com transparência (PNG/SVG)
-const CHECKER = { backgroundImage: "linear-gradient(45deg,#eef0f4 25%,transparent 25%),linear-gradient(-45deg,#eef0f4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#eef0f4 75%),linear-gradient(-45deg,transparent 75%,#eef0f4 75%)", backgroundSize: "16px 16px", backgroundPosition: "0 0,0 8px,8px -8px,-8px 0", backgroundColor: "#fff" };
-
 function FileIcon({ name }) {
-  const kind = kindOf(name);
-  const ext = (name.split(".").pop() || "").toUpperCase();
-  const Icon = kind === "pdf" ? LuFileText : kind === "slides" ? LuPresentation : LuFile;
-  const color = kind === "pdf" ? "#E5484D" : kind === "slides" ? "#F76B15" : "#8A8D98";
+  const { color, ext } = fileKind(name);
   return (
-    <div className="flex flex-col items-center gap-1">
-      <Icon style={{ color }} className="text-[38px]" />
-      <span className="text-[11px] font-semibold" style={{ color }}>
+    <div className="flex flex-col items-center gap-1.5">
+      <FileBadge name={name} size={44} />
+      <span className="text-[11px] font-semibold uppercase" style={{ color }}>
         {ext}
       </span>
     </div>

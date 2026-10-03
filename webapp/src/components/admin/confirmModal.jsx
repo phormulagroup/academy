@@ -12,8 +12,9 @@ const TONES = {
 };
 
 // Janela de confirmação de uma ação: ícone de cor, título, descrição, conteúdo extra (children) e botões.
-// `tone` define a cor e o ícone (pode ser substituído por `icon`); em "danger" o botão de confirmar é vermelho.
-export default function ConfirmModal({ open, onCancel, onConfirm, title, description, tone = "info", icon, okText, cancelText, loading = false, children, width = 440 }) {
+// `tone` define a cor e o ícone (pode ser substituído por `icon`); em "danger" o botão de confirmar é vermelho (ou força com `danger`).
+// `hideCancel` mostra só um botão (avisos).
+export default function ConfirmModal({ open, onCancel, onConfirm, title, description, tone = "info", icon, okText, cancelText, hideCancel = false, danger, loading = false, children, width = 440 }) {
   const { t } = useTranslation();
   const style = TONES[tone] ?? TONES.info;
 
@@ -28,10 +29,12 @@ export default function ConfirmModal({ open, onCancel, onConfirm, title, descrip
       closable={!loading}
       footer={
         <div className="flex justify-end gap-2">
-          <Button disabled={loading} onClick={onCancel}>
-            {cancelText ?? t("Cancel")}
-          </Button>
-          <Button type="primary" danger={tone === "danger"} loading={loading} onClick={onConfirm}>
+          {!hideCancel && (
+            <Button disabled={loading} onClick={onCancel}>
+              {cancelText ?? t("Cancel")}
+            </Button>
+          )}
+          <Button type="primary" danger={danger ?? tone === "danger"} loading={loading} onClick={onConfirm}>
             {okText ?? t("Confirm")}
           </Button>
         </div>

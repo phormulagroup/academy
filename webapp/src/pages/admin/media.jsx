@@ -1,21 +1,11 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "../../components/admin/confirmModal";
 import { usePermission } from "../../utils/usePermission";
-import {
-  CheckOutlined,
-  CopyOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  FileOutlined,
-  FilePdfOutlined,
-  FilePptOutlined,
-  InboxOutlined,
-  SearchOutlined,
-  VideoCameraOutlined,
-} from "@ant-design/icons";
+import { CopyOutlined, DeleteOutlined, InboxOutlined, SearchOutlined } from "@ant-design/icons";
+import { LuCheck, LuCopy, LuEye, LuTrash2, LuX } from "react-icons/lu";
+import dayjs from "dayjs";
 import {
   Button,
-  Card,
   Input,
   Modal,
   Pagination,
@@ -26,7 +16,6 @@ import {
   Upload,
 } from "antd";
 import axios from "axios";
-import { RxCross2 } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
 
 import config from "../../utils/config";
@@ -34,26 +23,16 @@ import endpoints from "../../utils/endpoints";
 
 import Delete from "../../components/admin/delete";
 import upload from "../../utils/upload";
+import { CHECKER, FileBadge, fileKind } from "../../utils/fileKind";
 import { Context } from "../../utils/context";
 
 const { Dragger } = Upload;
-const { Meta } = Card;
 
 // Tempo mínimo que cada ficheiro fica visível como "a carregar": sem isto, um upload rápido troca para a
 // pré-visualização tão depressa que o utilizador nem chega a perceber que aconteceu alguma coisa
 const MIN_VISIBLE_MS = 600;
 
-const EXTENSIONS = {
-  image: ["jpg", "jpeg", "png", "gif", "webp", "svg", "avif", "bmp"],
-  pdf: ["pdf"],
-  presentation: ["ppt", "pptx"],
-  video: ["mp4", "mov", "webm", "avi", "mkv"],
-};
-
-function getFileType(name = "") {
-  const ext = name.split(".").pop().toLowerCase();
-  return Object.keys(EXTENSIONS).find((k) => EXTENSIONS[k].includes(ext)) || "other";
-}
+const getFileType = (name = "") => fileKind(name).type;
 
 const mediaUrl = (name) => `${config.server_ip}/media/${encodeURIComponent(name)}`;
 
@@ -68,12 +47,24 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Ícone grande de um tipo de ficheiro sem pré-visualização como imagem
-function KindIcon({ type, className }) {
-  if (type === "pdf") return <FilePdfOutlined className={className} />;
-  if (type === "presentation") return <FilePptOutlined className={className} />;
-  if (type === "video") return <VideoCameraOutlined className={className} />;
-  return <FileOutlined className={className} />;
+// Botão redondo das ações de um cartão (aparecem ao passar o rato)
+function CardAction({ title, icon, onClick, danger = false }) {
+  return (
+    <Tooltip title={title}>
+      <Button
+        size="small"
+        shape="circle"
+        danger={danger}
+        icon={icon}
+        aria-label={title}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="shadow!"
+      />
+    </Tooltip>
+  );
 }
 
 function Media() {
@@ -343,7 +334,7 @@ function Media() {
         ]}>
         {detailsItem && (
           <div className="flex flex-col gap-4 mt-2">
-            <div className="flex justify-center items-center h-40 bg-[#F6F7F9] rounded-[12px] overflow-hidden">
+            <div className="flex justify-center items-center h-40 rounded-[12px] overflow-hidden" style={detailsType === "image" ? CHECKER : { background: "#F6F7F9" }}>
               {detailsType === "image" ? (
                 <img
                   src={mediaUrl(detailsItem.name)}
@@ -365,7 +356,7 @@ function Media() {
                   className="max-h-full max-w-full"
                 />
               ) : (
-                <KindIcon type={detailsType} className="text-[50px]" />
+                <FileBadge name={detailsItem.name} size={72} />
               )}
             </div>
             <div className="flex items-center justify-between gap-2">
@@ -473,7 +464,7 @@ function Media() {
         )}
       </div>
       {perm.canCreate && (
-      <Dragger {...props}>
+      <Dragger {...props} style={{ borderRadius: 12, background: "#FAFAFB", borderWidth: 2 }}>
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
@@ -483,84 +474,76 @@ function Media() {
         </p>
       </Dragger>
       )}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4 mt-6">
+        {/* Ficheiros a carregar: o mesmo cartão, com a barra de progresso */}
         {uploadingItems.map((item) => (
-          <div key={item.uid}>
-            <Card
-              className="media-card"
-              cover={
-                <div className="relative flex! justify-center items-center h-25 w-full">
-                  {item.status === "uploading" ? (
-                    <>
-                      <Skeleton.Image active style={{ width: "100%", height: "100%" }} />
-                      <Progress
-                        percent={item.progress}
-                        showInfo={false}
-                        className="absolute! bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-16px)]!"
-                      />
-                    </>
-                  ) : item.status === "error" ? (
-                    <Tooltip title={item.name}>
-                      <div className="flex flex-col justify-center items-center h-full w-full text-red-500">
-                        <RxCross2 className="text-[24px]" />
-                        <p className="text-[11px] text-center mt-1">{t("Failed")}</p>
-                      </div>
-                    </Tooltip>
-                  ) : getFileType(item.fileName) === "image" ? (
-                    <Tooltip title={item.name}>
-                      <img src={mediaUrl(item.fileName)} className="w-full h-full object-contain" />
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title={item.name}>
-                      <KindIcon type={getFileType(item.fileName)} className="text-[40px]" />
-                    </Tooltip>
-                  )}
+          <div key={item.uid} className="rounded-xl border border-solid border-[#E5E7EB] bg-white overflow-hidden">
+            <div className="relative aspect-[4/3] grid place-items-center bg-[#F6F7FB]">
+              {item.status === "uploading" ? (
+                <>
+                  <Skeleton.Image active style={{ width: "100%", height: "100%" }} />
+                  <Progress percent={item.progress} showInfo={false} className="absolute! bottom-2 left-1/2 -translate-x-1/2 w-[calc(100%-24px)]!" />
+                </>
+              ) : item.status === "error" ? (
+                <div className="flex flex-col items-center gap-1 text-red-500">
+                  <LuX className="text-[26px]" />
+                  <p className="text-[12px] mb-0!">{t("Failed")}</p>
                 </div>
-              }
-              actions={[
-                <EyeOutlined key="details" className="opacity-30!" />,
-                <CopyOutlined key="copy" className="opacity-30!" />,
-                <DeleteOutlined key="delete" className="opacity-30!" />,
-              ].filter(Boolean)}>
-              <Meta title={<p className="font-normal! text-[12px] line-clamp-1">{item.name}</p>} />
-            </Card>
+              ) : getFileType(item.fileName) === "image" ? (
+                <img src={mediaUrl(item.fileName)} alt="" className="max-h-full max-w-full object-contain" />
+              ) : (
+                <FileBadge name={item.fileName} size={48} />
+              )}
+            </div>
+            <div className="px-3 py-2 border-0 border-t border-solid border-[#F0F0F0]">
+              <p className="text-[12px] font-medium mb-0! truncate" title={item.name}>
+                {item.name}
+              </p>
+              <p className="text-[11px] text-[#8A8D98] mb-0!">{item.status === "uploading" ? t("Uploading") : item.status === "error" ? t("The file could not be uploaded.") : t("Uploaded")}</p>
+            </div>
           </div>
         ))}
         {filteredMedia.slice(minValue, minValue + itemsPerPage).map((item) => {
-          const type = getFileType(item.name);
+          const { type, color, ext } = fileKind(item.name);
           const isSelected = selectedIds.includes(item.id);
           return (
-            <div key={item.id}>
-              <Card
-                className={`media-card${isSelected ? " media-card-selected" : ""}`}
-                cover={
-                  <div
-                    className="relative flex! justify-center items-center h-25 w-full cursor-pointer"
-                    onClick={isSelectMode ? () => toggleSelect(item.id) : () => handleOpenDetails(item)}>
-                    {isSelectMode && (
-                      <div
-                        className={`absolute! top-2 right-2 z-10 w-6 h-6 rounded-[4px] border-2 border-white flex justify-center items-center ${isSelected ? "bg-[#163986]" : "bg-black/20"}`}>
-                        {isSelected && <CheckOutlined className="text-white text-[12px]" />}
-                      </div>
-                    )}
-                    {type === "image" ? (
-                      <div
-                        className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                        style={{ backgroundImage: `url(${mediaUrl(item.name)})` }}></div>
-                    ) : (
-                      <KindIcon type={type} className="text-[50px]" />
-                    )}
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              title={item.name}
+              onClick={isSelectMode ? () => toggleSelect(item.id) : () => handleOpenDetails(item)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (isSelectMode ? toggleSelect(item.id) : handleOpenDetails(item));
+              }}
+              className={`group relative cursor-pointer rounded-xl border border-solid bg-white overflow-hidden transition ${isSelected ? "border-[#163986] ring-2 ring-[#163986]" : "border-[#E5E7EB] hover:border-[#163986]/50 hover:shadow-sm"}`}>
+              <div className="relative aspect-[4/3] grid place-items-center" style={type === "image" ? CHECKER : { background: "#F6F7FB" }}>
+                {type === "image" ? (
+                  <img src={mediaUrl(item.name)} alt="" loading="lazy" className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <FileBadge name={item.name} size={48} />
+                    <span className="text-[11px] font-semibold uppercase" style={{ color }}>
+                      {ext}
+                    </span>
                   </div>
-                }
-                actions={[
-                  <Tooltip key="details" title={t("Details")}>
-                    <EyeOutlined onClick={() => handleOpenDetails(item)} />
-                  </Tooltip>,
-                  <CopyOutlined key="copy" onClick={() => handleCopyClipboard(item.name)} />,
-                  perm.canDelete && <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />,
-                ].filter(Boolean)}>
-                <Meta title={<p className="font-normal! text-[12px] line-clamp-1">{item.name}</p>} />
-              </Card>
+                )}
+                {isSelectMode && (
+                  <span className={`absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-full border-2 border-white shadow ${isSelected ? "bg-[#163986] text-white" : "bg-black/25"}`}>{isSelected && <LuCheck />}</span>
+                )}
+                {/* Ações ao passar o rato (em ecrãs táteis ficam sempre à vista); não aparecem na seleção em massa */}
+                {!isSelectMode && (
+                  <div className="absolute top-2 left-2 right-2 flex flex-wrap justify-end gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                    <CardAction title={t("Details")} icon={<LuEye />} onClick={() => handleOpenDetails(item)} />
+                    <CardAction title={t("Copy link")} icon={<LuCopy />} onClick={() => handleCopyClipboard(item.name)} />
+                    {perm.canDelete && <CardAction title={t("Delete")} danger icon={<LuTrash2 />} onClick={() => handleOpenDelete(item)} />}
+                  </div>
+                )}
+              </div>
+              <div className="px-3 py-2 border-0 border-t border-solid border-[#F0F0F0]">
+                <p className="text-[12px] font-medium mb-0! truncate">{item.name}</p>
+                <p className="text-[11px] text-[#8A8D98] mb-0!">{item.created_at ? dayjs(item.created_at).format("DD/MM/YYYY") : ""}</p>
+              </div>
             </div>
           );
         })}

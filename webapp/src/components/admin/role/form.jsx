@@ -38,6 +38,7 @@ import endpoints from "../../../utils/endpoints";
 import { RESOURCES } from "../../../utils/permissions";
 
 const ADMIN_ROLE_ID = 1;
+const USER_ROLE_ID = 2;
 
 // "Ver" primeiro: é a base das outras três (ver toggle)
 const ACTIONS = [
@@ -239,8 +240,9 @@ export default function RoleForm({ data, open, close }) {
         validateTrigger="onSubmit"
         validateMessages={{ required: t("This field is required!") }}
       >
-        <Form.Item name="name" label={t("Role name")} rules={[{ required: true }]} className="mb-0!">
-          <Input placeholder={t("E.g.: Content manager")} disabled={isAdminRole} />
+        {/* Admin e Utilizador têm o nome fixo; do Utilizador (a função do registo) só se editam as permissões */}
+        <Form.Item name="name" label={t("Role name")} rules={[{ required: true }]} className="mb-0!" extra={isUpdate && localRole?.id === USER_ROLE_ID ? t("This is the role given at registration: its name is fixed, only its permissions can be changed") : undefined}>
+          <Input placeholder={t("E.g.: Content manager")} disabled={isAdminRole || (isUpdate && localRole?.id === USER_ROLE_ID)} />
         </Form.Item>
       </Form>
 

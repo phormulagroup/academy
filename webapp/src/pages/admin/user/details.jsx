@@ -189,7 +189,7 @@ export default function UserDetails() {
       .then((res) => {
         if (res.data.user) {
           toastApi.success(t("Account updated successfully!"));
-          form.setFieldsValue({ password: undefined, confirm_password: undefined });
+          form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
           getData();
         } else {
           toastApi.error(t("Something wrong happened, try again please."));
@@ -197,6 +197,7 @@ export default function UserDetails() {
       })
       .catch((err) => {
         console.log(err);
+        if (err.response?.data?.code === "invalid_current_password") return form.setFields([{ name: "current_password", errors: [t("The current password is incorrect")] }]);
         toastApi.error(err.response?.data?.message || t("Something wrong happened, try again please."));
       })
       .finally(() => setIsSaving(false));
@@ -351,6 +352,9 @@ export default function UserDetails() {
               <SectionTitle icon={<LuLock />}>{t("Password")}</SectionTitle>
               <p className="mb-4! text-[13px] text-[#8A8D98]">{t("Leave empty to keep the current password")}</p>
               <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-3">
+                <Form.Item label={t("Current password")} name="current_password" dependencies={["password"]} rules={[({ getFieldValue }) => ({ required: !!getFieldValue("password"), message: t("Enter your current password to change it") })]} className="mb-0!">
+                    <Input.Password autoComplete="current-password" placeholder={t("Enter your current password")} />
+                  </Form.Item>
                 <Form.Item label={t("New password")} name="password" className="mb-0!">
                   <Input.Password placeholder={t("Enter a new password")} />
                 </Form.Item>

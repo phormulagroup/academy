@@ -15,6 +15,7 @@ import useMediaPicker from "../../../utils/useMediaPicker";
 import useFormErrors from "../../../utils/useFormErrors";
 import FieldLabel from "../../../utils/fieldLabel";
 import MediaField from "../../../utils/mediaField";
+import AddTile from "../../../utils/addTile";
 
 // Tipo de ficheiro aceite por cada campo da Multimédia
 const FIELD_TYPES = { images: "image" };
@@ -118,10 +119,10 @@ export default function Update({ data, open, close, nameRule }) {
         <Form.List name="images" rules={[requiredListRule]}>
           {(fields, { add, remove }) => (
             <div
-              className={`flex flex-col border border-dashed ${imagesError ? "border-red-500" : "border-gray-300"} p-6`}>
+              className={`flex flex-col gap-4 ${imagesError ? "rounded-xl border border-solid border-red-500 p-3" : ""}`}>
               {fields.map((field) => (
                 <div
-                  className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`}
+                  className="rounded-xl border border-solid border-[#E5E7EB] bg-[#FAFAFB] p-4 flex flex-col justify-center"
                   key={field.key}>
                   <Form.Item
                     noStyle
@@ -170,9 +171,7 @@ export default function Update({ data, open, close, nameRule }) {
                   </Form.Item>
                 </div>
               ))}
-              <Button size="large" onClick={() => add()}>
-                {t("Add image")}
-              </Button>
+              <AddTile compact label={t("Add image")} onClick={() => add()} />
             </div>
           )}
         </Form.List>

@@ -32,6 +32,8 @@ import { RxTrash } from "react-icons/rx";
 
 import RichTextFormField from "../../../components/admin/richText/richTextFormField";
 import dayjs from "dayjs";
+import AddTile from "../../../utils/addTile";
+import ObjectionBooks from "../../../components/admin/course/objectionBooks";
 
 // Secções do separador, pela ordem em que aparecem: alimenta o índice lateral
 const SECTIONS = [
@@ -49,7 +51,6 @@ export default function Settings({ course, isActive = true, onSaved }) {
     useContext(Context);
   const [products, setProducts] = useState([]);
   const [certificates, setCertificates] = useState([]);
-  const [activeKey, setActiveKey] = useState("0");
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   // Utilizadores e grupos com acesso (tabelas à parte, não fazem parte do curso): guardam-se depois de o curso
@@ -464,7 +465,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
             {(fields, { add, remove }) => (
               <div className="grid grid-cols-4 gap-8 mt-4">
                 {fields.map((field) => (
-                  <div key={field.key}>
+                  <div key={field.key} className="rounded-xl border border-solid border-[#E5E7EB] bg-[#FAFAFB] p-3">
                     <Form.Item
                       noStyle
                       shouldUpdate={(prevValues, currentValues) =>
@@ -514,16 +515,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
                   </div>
                 ))}
 
-                <div
-                  className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-37.5 w-full overflow-hidden"
-                  onClick={() => add()}>
-                  <div className="flex justify-center items-center flex-col p-10">
-                    <AiOutlinePlus className="text-[30px]" />{" "}
-                    <p className="text-[11px] text-center mt-2">
-                      {t("Add material")}
-                    </p>
-                  </div>
-                </div>
+                <AddTile label={t("Add material")} onClick={() => add()} />
               </div>
             )}
           </Form.List>
@@ -588,100 +580,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
             <RichTextFormField placeholder={t("Write the content...")} richMedia />
           </Form.Item>
           <div className="mt-4">
-            <Form.List name={["objection", "tabs"]}>
-              {(fields, { add, remove }) => {
-                const items = fields.map((field) => ({
-                  key: field.name.toString(),
-                  label: (
-                    <div className="flex justify-center items-center">
-                      {t("Objection no.")} {(field.name + 1).toString()}{" "}
-                      <RxTrash
-                        className="ml-2"
-                        onClick={() => {
-                          remove(field.name);
-                          fields.splice(field.name, 1);
-                          console.log(fields);
-                        }}
-                      />
-                    </div>
-                  ),
-                  forceRender: true,
-                  children: (
-                    <Card>
-                      {/* Form List interno */}
-                      <Form.Item name={[field.name, "label"]} label={t("Label")}>
-                        <Input size="large" />
-                      </Form.Item>
-                      <Form.List name={[field.name, "items"]}>
-                        {(subFields, subOps) => (
-                          <>
-                            {subFields.map((sub) => (
-                              <div className="p-6 h-full border border-dashed border-gray-300 mb-6 cursor-pointer flex flex-col justify-center items-center w-full overflow-hidden">
-                                <Form.Item
-                                  name={[sub.name, "title"]}
-                                  className="w-full!"
-                                  label={t("Title")}>
-                                  <Input size="large" />
-                                </Form.Item>
-                                <Form.Item
-                                  name={[sub.name, "text"]}
-                                  className="w-full!"
-                                  label={t("Text")}>
-                                  <RichTextFormField placeholder={t("Write the content...")} richMedia />
-                                </Form.Item>
-                                <div className="absolute -top-1.25 right-0 w-5 h-5 z-999">
-                                  <Button
-                                    onClick={() => subOps.remove(field.name)}
-                                    icon={<RxTrash />}></Button>
-                                </div>
-                              </div>
-                            ))}
-
-                            <div
-                              className="border border-dashed border-gray-300 mb-6 cursor-pointer flex justify-center items-center h-full w-full overflow-hidden"
-                              onClick={() => subOps.add()}>
-                              <div className="flex justify-center items-center flex-col p-10">
-                                <AiOutlinePlus className="text-[30px]" />{" "}
-                                <p className="text-[11px] text-center mt-2">
-                                  {t("Add objection")}
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </Form.List>
-                    </Card>
-                  ),
-                }));
-
-                return (
-                  <Tabs
-                    type="editable-card"
-                    activeKey={activeKey}
-                    items={items}
-                    onChange={(key) => setActiveKey(key)}
-                    onEdit={(target, action) => {
-                      console.log(target);
-                      console.log(action);
-                      if (action === "add") {
-                        const newIndex = fields.length;
-                        add({ label: `Tab ${newIndex + 1}`, items: [] });
-                        setActiveKey(String(newIndex));
-                      } else if (action === "remove") {
-                        remove(parseInt(target));
-                        items.splice(parseInt(target), 1);
-                      }
-                    }}
-                    addIcon={
-                      <div className="p-4 flex gap-2 justify-center items-center">
-                        <AiOutlinePlus />
-                        {t("Add objection book")}
-                      </div>
-                    }
-                  />
-                );
-              }}
-            </Form.List>
+            <ObjectionBooks form={form} />
           </div>
           </SettingsSection>
         </Form>

@@ -12,6 +12,7 @@ import useMediaPicker from "../../../utils/useMediaPicker";
 import useFormErrors from "../../../utils/useFormErrors";
 import FieldLabel from "../../../utils/fieldLabel";
 import MediaField from "../../../utils/mediaField";
+import AddTile from "../../../utils/addTile";
 
 // Tipo de ficheiro aceite por cada campo da Multimédia (os ficheiros do download aceitam qualquer formato)
 const FIELD_TYPES = { thumbnail: "image", banner: "image" };
@@ -140,9 +141,9 @@ export default function Update({ data, open, close, nameRule }) {
 				</p>
 				<Form.List name="items" rules={[requiredListRule]}>
 					{(fields, { add, remove }) => (
-						<div className={`flex flex-col border border-dashed ${filesError ? "border-red-500" : "border-gray-300"} p-6`}>
+						<div className={`flex flex-col gap-4 ${filesError ? "rounded-xl border border-solid border-red-500 p-3" : ""}`}>
 							{fields.map((field) => (
-								<div className={`py-4 border-bottom border-gray-300 flex flex-col justify-center`} key={field.key}>
+								<div className="rounded-xl border border-solid border-[#E5E7EB] bg-[#FAFAFB] p-4 flex flex-col justify-center" key={field.key}>
 									<Form.Item
 										name={[field.name, "name"]}
 										className="w-full"
@@ -192,9 +193,7 @@ export default function Update({ data, open, close, nameRule }) {
 									</Form.Item>
 								</div>
 							))}
-							<Button size="large" onClick={() => add()}>
-								{t("Add file")}
-							</Button>
+							<AddTile compact label={t("Add file")} onClick={() => add()} />
 						</div>
 					)}
 				</Form.List>

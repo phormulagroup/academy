@@ -1,16 +1,18 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePermission } from "../../utils/usePermission";
-import { DeleteOutlined, FilePdfOutlined, VideoCameraOutlined, FileImageOutlined, InboxOutlined, QrcodeOutlined, LinkOutlined, SwapRightOutlined, EyeOutlined, ExclamationCircleFilled } from "@ant-design/icons";
-import { Upload, Card, Pagination, Input, Modal, Button, QRCode, Tag, ConfigProvider } from "antd";
+import { InboxOutlined, LinkOutlined, SwapRightOutlined, EyeOutlined, ExclamationCircleFilled, SearchOutlined } from "@ant-design/icons";
+import { LuCopy, LuExternalLink, LuQrCode, LuTrash2, LuTriangleAlert } from "react-icons/lu";
+import { useConfirm } from "../../components/admin/confirmModal";
+import { Upload, Pagination, Input, Modal, Button, QRCode, Tag, ConfigProvider, Tooltip } from "antd";
 import dayjs from "dayjs";
 import axios from "axios";
 
 import endpoints from "../../utils/endpoints";
 import Delete from "../../components/admin/delete";
 import { Context } from "../../utils/context";
+import { CHECKER, FileBadge } from "../../utils/fileKind";
 
 const { Dragger } = Upload;
-const { Meta } = Card;
 
 // Endereço permanente do PDF (vem do servidor): é o que o QRCode impresso aponta e nunca muda
 const fileUrl = (item) => item.url;
@@ -21,7 +23,6 @@ const kindOf = (name) => (extOf(name) === "mp4" ? "video" : extOf(name) === "pdf
 
 const formatSize = (bytes) => (bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
-const ICONS = { video: VideoCameraOutlined, image: FileImageOutlined, pdf: FilePdfOutlined };
 
 // Pré-visualização em grande (PDF, imagem ou vídeo), por cima do modal de aviso
 function PreviewModal({ preview, onClose }) {
@@ -42,15 +43,16 @@ function PreviewModal({ preview, onClose }) {
   );
 }
 
-// Cartão do ficheiro (atual ou novo): ícone, nome e botão de pré-visualização
+// Cartão do ficheiro (atual ou novo): tipo, nome e botão de pré-visualização
 function FileCard({ label, tone, name, meta, onPreview, t }) {
-  const Icon = ICONS[kindOf(name)];
   return (
-    <div className="flex-1 min-w-0 border border-gray-200 rounded-lg p-4 flex flex-col items-center text-center gap-2">
+    <div className="flex-1 min-w-0 rounded-xl border border-solid border-[#E5E7EB] bg-[#FAFAFB] p-4 flex flex-col items-center text-center gap-2">
       <Tag color={tone} className="m-0!">
         {label}
       </Tag>
-      <Icon className="text-[56px] my-2" />
+      <div className="my-2">
+        <FileBadge name={name} size={64} />
+      </div>
       <p className="text-[13px] font-semibold break-all m-0">{name}</p>
       <p className="text-[12px] text-gray-500 m-0 min-h-4">{meta}</p>
       <Button icon={<EyeOutlined />} onClick={onPreview}>
@@ -112,6 +114,7 @@ function ReplaceModal({ dialog, onClose, t }) {
 
 function Iec() {
   const { t, toastApi } = useContext(Context);
+  const [confirm, confirmHolder] = useConfirm();
   const perm = usePermission("iec");
   const [iecs, setIecs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -200,9 +203,14 @@ function Iec() {
       content: `${b.ok}/${counted} ${t("files uploaded successfully")}${extra ? ` (${extra})` : ""}`,
     });
     if (b.errors.length) {
-      Modal.error({
+      confirm({
         title: t("Some files could not be uploaded"),
-        content: (
+        tone: "danger",
+        icon: <LuTriangleAlert />,
+        hideCancel: true,
+        danger: false,
+        okText: t("Close"),
+        children: (
           <ul className="list-disc pl-5 mt-2">
             {b.errors.map((e) => (
               <li key={e.name}>
@@ -299,7 +307,8 @@ function Iec() {
   }
 
   return (
-    <div className="p-2">
+    <div className="p-4 md:p-6 bg-white shadow rounded-[16px]">
+      {confirmHolder}
       <Delete table="iec" open={isOpenDelete} close={handleCloseDelete} data={selected || {}} onDeleteSuccess={handleDeleteSuccess} />
       <ReplaceModal dialog={replaceDialog} onClose={closeReplace} t={t} />
       <Modal
@@ -323,25 +332,15 @@ function Iec() {
         )}
       </Modal>
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
           <p className="text-xl font-bold font-ryker">{t("IECs")}</p>
-          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} files", { total: iecs.length })}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{filtered.length === 1 ? t("1 file") : t("{{total}} files", { total: filtered.length })}{search.trim() ? ` ${t("found")}` : ""}</p>
         </div>
-      </div>
-      {perm.canCreate && (
-      <Dragger {...props}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">{t("Click or drag PDF, MP4, PNG or JPG files to this area to upload")}</p>
-        <p className="ant-upload-hint">{t("Uploading a file with an existing name replaces it. The QR code of each IEC never changes.")}</p>
-      </Dragger>
-      )}
-      <div className="flex justify-end mt-6">
-        <Input.Search
+        <Input
           allowClear
-          className="max-w-xs"
+          className="w-full sm:w-64!"
+          prefix={<SearchOutlined />}
           placeholder={t("Search by file name")}
           value={search}
           onChange={(e) => {
@@ -350,35 +349,62 @@ function Iec() {
           }}
         />
       </div>
-      <div className="grid grid-cols-8 gap-4 mt-4">
-        {filtered.slice(minValue, minValue + itemsPerPage).map((item) => (
-          <div key={item.id}>
-            <Card
-              className="media-card"
-              cover={
-                <div className="flex! justify-center items-center min-h-25">
-                  {kindOf(item.name) === "video" ? <VideoCameraOutlined className="text-[50px]" /> : kindOf(item.name) === "image" ? <FileImageOutlined className="text-[50px]" /> : <FilePdfOutlined className="text-[50px]" />}
-                </div>
-              }
-              actions={[
-                <QrcodeOutlined key="qr" onClick={() => setQrItem(item)} />,
-                <LinkOutlined key="open" onClick={() => window.open(fileUrl(item), "_blank")} />,
-                perm.canDelete && <DeleteOutlined key="delete" onClick={() => handleOpenDelete(item)} />,
-              ].filter(Boolean)}>
-              <Meta
-                title={
-                  <div>
-                    <p className="font-normal! text-[12px]">{item.name}</p>
-                    {item.missing && <Tag color="red">{t("File missing")}</Tag>}
+      {perm.canCreate && (
+        <Dragger {...props} style={{ borderRadius: 12, background: "#FAFAFB", borderWidth: 2 }}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">{t("Click or drag PDF, MP4, PNG or JPG files to this area to upload")}</p>
+          <p className="ant-upload-hint">{t("Uploading a file with an existing name replaces it. The QR code of each IEC never changes.")}</p>
+        </Dragger>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4 mt-6">
+        {filtered.slice(minValue, minValue + itemsPerPage).map((item) => {
+          const kind = kindOf(item.name);
+          return (
+            <div key={item.id} className="group relative rounded-xl border border-solid border-[#E5E7EB] bg-white overflow-hidden transition hover:border-[#163986]/50 hover:shadow-sm" title={item.name}>
+              {/* Imagens com miniatura; PDF e vídeo com o ícone do tipo (o mesmo da Multimédia) */}
+              <div className="relative aspect-[4/3] grid place-items-center" style={kind === "image" && !item.missing ? CHECKER : { background: "#F6F7FB" }}>
+                {kind === "image" && !item.missing ? (
+                  <img src={fileUrl(item)} alt="" loading="lazy" className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <FileBadge name={item.name} size={48} />
+                    <span className="text-[11px] font-semibold uppercase text-[#8A8D98]">{extOf(item.name)}</span>
                   </div>
-                }
-              />
-            </Card>
-          </div>
-        ))}
-        {!isLoading && iecs.length > 0 && filtered.length === 0 && <p className="col-span-8 text-center text-gray-500 py-8">{t("No files found")}</p>}
+                )}
+                {item.missing && (
+                  <Tag color="red" className="absolute! top-2 left-2 m-0!">
+                    {t("File missing")}
+                  </Tag>
+                )}
+                <div className="absolute top-2 left-2 right-2 flex flex-wrap justify-end gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                  <Tooltip title={t("QR code")}>
+                    <Button size="small" shape="circle" icon={<LuQrCode />} aria-label={t("QR code")} onClick={() => setQrItem(item)} className="shadow!" />
+                  </Tooltip>
+                  <Tooltip title={t("Copy link")}>
+                    <Button size="small" shape="circle" icon={<LuCopy />} aria-label={t("Copy link")} onClick={() => handleCopyLink(item)} className="shadow!" />
+                  </Tooltip>
+                  <Tooltip title={t("Open")}>
+                    <Button size="small" shape="circle" icon={<LuExternalLink />} aria-label={t("Open")} onClick={() => window.open(fileUrl(item), "_blank")} className="shadow!" />
+                  </Tooltip>
+                  {perm.canDelete && (
+                    <Tooltip title={t("Delete")}>
+                      <Button size="small" shape="circle" danger icon={<LuTrash2 />} aria-label={t("Delete")} onClick={() => handleOpenDelete(item)} className="shadow!" />
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+              <div className="px-3 py-2 border-0 border-t border-solid border-[#F0F0F0]">
+                <p className="text-[12px] font-medium mb-0! truncate">{item.name}</p>
+                <p className="text-[11px] text-[#8A8D98] mb-0!">{[item.size ? formatSize(item.size) : null, item.updated_at ? dayjs(item.updated_at).format("DD/MM/YYYY") : null].filter(Boolean).join(" · ")}</p>
+              </div>
+            </div>
+          );
+        })}
+        {!isLoading && iecs.length > 0 && filtered.length === 0 && <p className="col-span-full text-center text-gray-500 py-8">{t("No files found")}</p>}
         {filtered.length > 0 && (
-          <div className="col-span-8 mt-4">
+          <div className="col-span-full mt-4">
             <Pagination align="center" showSizeChanger={false} onChange={setCurrentPage} pageSize={itemsPerPage} current={currentPage} total={filtered.length} />
           </div>
         )}

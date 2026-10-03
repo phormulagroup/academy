@@ -15,6 +15,8 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 const ADMIN_ROLE_ID = 1;
+// A função Utilizador é a que o registo atribui: edita-se (permissões) mas não se apaga
+const USER_ROLE_ID = 2;
 
 // Funções (papéis) e as permissões de cada uma por secção do backoffice. Só o Admin gere esta página.
 export default function Role() {
@@ -123,6 +125,7 @@ export default function Role() {
               <span className="flex items-center gap-2">
                 {name}
                 {record.id === ADMIN_ROLE_ID && <Tag color="blue">{t("Full access")}</Tag>}
+                {record.id === USER_ROLE_ID && <Tag>{t("Default role")}</Tag>}
               </span>
             ),
           },
@@ -134,9 +137,9 @@ export default function Role() {
             render: (_, record) => (
               <RowActions
                 items={[
-                  // O Admin tem sempre acesso total: abre-se só para ver (sem matriz)
-                  { label: record.id === ADMIN_ROLE_ID ? t("View") : t("Update"), key: `${record.id}-update`, icon: <FaRegEdit />, onClick: () => openUpdate(record) },
-                  record.id !== ADMIN_ROLE_ID && {
+                  // O Admin tem sempre acesso total: não tem ações (não se edita nem se apaga)
+                  record.id !== ADMIN_ROLE_ID && { label: t("Update"), key: `${record.id}-update`, icon: <FaRegEdit />, onClick: () => openUpdate(record) },
+                  record.id !== ADMIN_ROLE_ID && record.id !== USER_ROLE_ID && {
                     label: record.used_count > 0 ? t("This role has users, so it cannot be deleted.") : t("Delete"),
                     key: `${record.id}-delete`,
                     icon: <FaRegTrashAlt />,

@@ -5,8 +5,9 @@ import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Button } from "antd";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
+import { Button, Table as AntTable, Tag } from "antd";
+import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
+import { LuDownload, LuEye, LuFile } from "react-icons/lu";
 
 import Table from "../../components/admin/table";
 import useListFilters, { includesText } from "../../components/admin/listFilters";
@@ -22,7 +23,6 @@ import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import config from "../../utils/config";
-import { Link } from "react-router-dom";
 
 export default function Download() {
 	const { user, selectedLanguage } = useContext(Context);
@@ -87,35 +87,17 @@ export default function Download() {
 				...array[i],
 				key: i + 1,
 				thumbnail: (
-					<div className="flex justify-start items-center">
-						<img
-							src={`${config.server_ip}/media/${array[i].thumbnail}`}
-							className="max-w-25 h-auto"
-						/>
-					</div>
+					<img
+						src={`${config.server_ip}/media/${array[i].thumbnail}`}
+						alt=""
+						className="h-12 w-20 rounded-md object-cover bg-[#F4F5F7]"
+					/>
 				),
-				files:
-					downloadItems.length > 0
-						? downloadItems.map((f, i) => (
-								<div className="flex flex-col justify-center items-start gap-2">
-									<Link
-										to={`${config.server_ip}/media/${f.file}`}
-										target="_blank"
-										className="underline!"
-									>
-										<p>{f.name}</p>
-									</Link>
-									<div className="mb-4">
-										<p className="text-[12px]">
-											{t("Views")}: {f.view}
-										</p>
-										<p className="text-[12px]">
-											{t("Downloads")}: {f.download}
-										</p>
-									</div>
-								</div>
-							))
-						: 0,
+				// Resumo dos ficheiros: o detalhe (nome, visualizações e transferências de cada um) vê-se ao expandir a linha
+				items: downloadItems,
+				files_count: downloadItems.length,
+				views_total: downloadItems.reduce((sum, f) => sum + (Number(f.view) || 0), 0),
+				downloads_total: downloadItems.reduce((sum, f) => sum + (Number(f.download) || 0), 0),
 				is_deleted: <StatusTag isDeleted={array[i].is_deleted} />,
 				full_data: array[i],
 				actions: (
@@ -204,12 +186,57 @@ export default function Download() {
 			<Table
 				dataSource={filterRows(tableData)}
 				loading={isLoading}
+				tableLayout="fixed"
+				scroll={{ x: 880 }}
+				// Linha expandida: os ficheiros do download com as suas visualizações e transferências
+				expandable={{
+					rowExpandable: (record) => record.files_count > 0,
+					expandedRowRender: (record) => (
+						// Espaço à volta e um cartão branco: a lista de ficheiros destaca-se do fundo da linha expandida
+						<div className="px-6 py-5">
+							<div className="rounded-xl border border-solid border-[#E5E7EB] bg-white overflow-hidden">
+								<div className="px-4 py-3 border-0 border-b border-solid border-[#F0F0F0] bg-[#FAFAFB] flex items-center justify-between gap-3">
+									<span className="font-semibold text-[13px]">
+										{t("Files")} ({record.items.length})
+									</span>
+									<span className="text-[12px] text-[#8A8D98]">
+										{record.views_total} {t("Views").toLowerCase()} · {record.downloads_total} {t("Downloads").toLowerCase()}
+									</span>
+								</div>
+								<AntTable
+									size="middle"
+									pagination={false}
+									rowKey="id"
+									dataSource={record.items}
+									columns={[
+										{
+											title: t("File"),
+											dataIndex: "name",
+											key: "name",
+											ellipsis: true,
+											render: (name, f) => (
+												<a href={`${config.server_ip}/media/${f.file}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2.5 max-w-full">
+													<span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#F6F7FB] text-[#163986]">
+														<LuFile />
+													</span>
+													<span className="truncate">{name}</span>
+												</a>
+											),
+										},
+										{ title: t("Views"), dataIndex: "view", key: "view", width: 120, render: (v) => v ?? 0 },
+										{ title: t("Downloads"), dataIndex: "download", key: "download", width: 140, render: (v) => v ?? 0 },
+									]}
+								/>
+							</div>
+						</div>
+					),
+				}}
 				columns={[
 					{
 						title: "",
 						dataIndex: "thumbnail",
 						key: "thumbnail",
-						width: "100px",
+						width: 110,
 					},
 					{
 						title: t("Name"),
@@ -217,25 +244,52 @@ export default function Download() {
 						key: "name",
 						sort: true,
 						sortType: "text",
-						width: "35%",
+						ellipsis: true,
 					},
 					{
-						title: t("File"),
-						dataIndex: "files",
-						key: "files",
-						width: "45%",
+						title: t("Files"),
+						dataIndex: "files_count",
+						key: "files_count",
+						width: 110,
+						render: (count) => (
+							<Tag variant="outlined" color={count > 0 ? "blue" : "default"} className="m-0!">
+								{count} {count === 1 ? t("file") : t("files")}
+							</Tag>
+						),
+					},
+					{
+						title: t("Views"),
+						dataIndex: "views_total",
+						key: "views_total",
+						width: 140,
+						render: (v) => (
+							<span className="inline-flex items-center gap-1.5 text-[#666]">
+								<LuEye /> {v}
+							</span>
+						),
+					},
+					{
+						title: t("Downloads"),
+						dataIndex: "downloads_total",
+						key: "downloads_total",
+						width: 140,
+						render: (v) => (
+							<span className="inline-flex items-center gap-1.5 text-[#666]">
+								<LuDownload /> {v}
+							</span>
+						),
 					},
 					{
 						title: t("Status"),
 						dataIndex: "is_deleted",
 						key: "is_deleted",
-						width: "150px",
+						width: 110,
 					},
 					{
 						title: "",
 						dataIndex: "actions",
 						key: "actions",
-						width: "80px",
+						width: 70,
 					},
 				]}
 			/>
