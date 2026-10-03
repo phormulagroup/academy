@@ -93,7 +93,7 @@ export default function Create({ open, close, nameRule }) {
 				</Button>,
 			]}
 		>
-			<Media mediaKey={media.mediaKey} open={media.isOpenMedia} close={media.closeMedia} />
+			<Media mediaKey={media.mediaKey} fileType={media.fileType} open={media.isOpenMedia} close={media.closeMedia} />
 			<Form form={form} onFinish={handleSubmit} onFieldsChange={errors.onFieldsChange} layout="vertical">
 				<Form.Item name="name" {...errors.labelErrorProps("name", name, t("Name"))} rules={[requiredRule, nameRule()]}>
 					<Input size="large" placeholder={t("Download name")} />

@@ -1,83 +1,30 @@
-import { Row, Col } from "antd";
-import { toastRef } from "../../../utils/notify";
-import { useContext } from "react";
 import axios from "axios";
-import { InboxOutlined } from "@ant-design/icons";
-import Dragger from "antd/es/upload/Dragger";
 
 import endpoints from "../../../utils/endpoints";
 import upload from "../../../utils/upload";
-import { Context } from "../../../utils/context";
-import { useTranslation } from "react-i18next";
 
-function Upload() {
-  const { selectedEventAdmin } = useContext(Context);
-  const { t } = useTranslation();
-  const props = {
-    name: "file",
-    multiple: true,
-    showUploadList: false,
-    customRequest: handleUpload,
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        toastRef.current.success(`${info.file.name} ${t("file uploaded successfully.")}`);
-      } else if (status === "error") {
-        toastRef.current.error(`${info.file.name} ${t("file upload failed.")}`);
-      }
-    },
-    beforeUpload: (file) => {
-      console.log(file);
-      return new Promise(async (resolve, reject) => {
-        try {
-          let compressedFile = await upload.compress(file);
-          console.log(compressedFile);
-          resolve(compressedFile);
-        } catch (err) {
-          console.log(err);
-          reject(false);
-        }
-      });
-    },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
-  };
-
-  function handleUpload({ file, onSuccess }) {
+// Carrega ficheiros para a biblioteca de Multimédia, um a um (as imagens são comprimidas antes, como sempre).
+// onProgress(feitos, total) vai avisando; devolve { uploaded: [nomes guardados], failed: [nomes originais] }.
+export async function uploadMediaFiles(files, onProgress) {
+  const uploaded = [];
+  const failed = [];
+  const list = Array.from(files);
+  for (let i = 0; i < list.length; i++) {
+    const original = list[i];
+    onProgress?.(i, list.length);
     try {
+      const file = await upload.compress(original);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", file, original.name);
       formData.append("data", JSON.stringify({ type: "multimedia" }));
-      axios
-        .post(endpoints.media.singleUpload, formData)
-        .then((res) => {
-          onSuccess(res);
-        })
-        .catch((err) => {
-          console.log(err);
-          onSuccess(err);
-        });
+      const res = await axios.post(endpoints.media.singleUpload, formData);
+      // O servidor responde com o nome com que guardou (muda se já existia um ficheiro igual)
+      uploaded.push(typeof res.data === "string" ? res.data : original.name);
     } catch (err) {
-      console.log(err);
-      onSuccess(err);
+      console.error(err);
+      failed.push(original.name);
     }
   }
-
-  return (
-    <div className="mt-4">
-      <Dragger {...props}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">{t("Click or drag file to this area to upload")}</p>
-        <p className="ant-upload-hint">{t("Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.")}</p>
-      </Dragger>
-    </div>
-  );
+  onProgress?.(list.length, list.length);
+  return { uploaded, failed };
 }
-
-export default Upload;

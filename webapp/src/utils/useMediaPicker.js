@@ -39,6 +39,8 @@ export default function useMediaPicker(form, fieldTypes, t) {
 
   return {
     mediaKey: target?.key ?? null,
+    // Tipo de ficheiro que o campo aceita ("image" | "pdf" | undefined): a Multimédia só mostra esses ficheiros
+    fileType: target ? fieldTypes[target.key] : undefined,
     isOpenMedia: target !== null,
     openMedia,
     closeMedia,

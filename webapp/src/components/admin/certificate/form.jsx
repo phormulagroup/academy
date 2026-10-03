@@ -87,7 +87,7 @@ export default function CertificateForm({ form, submit, preview, errors, alignSu
 
   return (
     <div className="flex flex-col">
-      <Media mediaKey={media.mediaKey} open={media.isOpenMedia} close={closeMedia} />
+      <Media mediaKey={media.mediaKey} fileType={media.fileType} open={media.isOpenMedia} close={closeMedia} />
       <Form form={form} onFinish={submit} onFieldsChange={errors.onFieldsChange} layout="vertical" onValuesChange={preview}>
         <Form.Item name="id" hidden>
           <Input size="large" />

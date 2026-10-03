@@ -72,7 +72,7 @@ export default function Update({ data, open, close, nameRule }) {
         </Button>,
       ]}>
       <Media
-        mediaKey={media.mediaKey}
+        mediaKey={media.mediaKey} fileType={media.fileType}
         open={media.isOpenMedia}
         close={media.closeMedia}
       />

@@ -273,7 +273,7 @@ export default function RichTextEditor({
       )}
       {richMedia && (
         <>
-          <Media mediaKey={MEDIA_KEY} open={isOpenMedia} close={closeMedia} />
+          <Media mediaKey={MEDIA_KEY} fileType="image" open={isOpenMedia} close={closeMedia} />
           {tableEdit && (
             <TableHtmlModal initialHtml={tableEdit.html} onSave={saveTable} onCancel={() => setTableEdit(null)} />
           )}

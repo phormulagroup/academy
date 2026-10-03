@@ -1,147 +1,273 @@
-import { Form, Row, Col, Radio, Empty, Button, Pagination, Tooltip, Input, Spin } from "antd";
-import { useContext, useEffect, useState } from "react";
-import { LoadingOutlined, SearchOutlined } from "@ant-design/icons";
-import { FaFilePdf, FaFilePowerpoint } from "react-icons/fa";
+import { Button, Empty, Image, Input, Pagination, Segmented, Select, Skeleton, Tooltip } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LuCheck, LuEye, LuFile, LuFileText, LuPresentation, LuSearch, LuUpload } from "react-icons/lu";
 import axios from "axios";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import { useTranslation } from "react-i18next";
 
 import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
-import { Context } from "../../../utils/context";
+import { toastRef } from "../../../utils/notify";
+import { usePermission } from "../../../utils/usePermission";
+import { uploadMediaFiles } from "./upload";
 
-dayjs.extend(customParseFormat);
+const PAGE_SIZE = 18;
+const IMAGE = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
+const PDF = /\.pdf$/i;
+const SLIDES = /\.(pptx?|key)$/i;
+const kindOf = (name = "") => (IMAGE.test(name) ? "image" : PDF.test(name) ? "pdf" : SLIDES.test(name) ? "slides" : "other");
+const urlOf = (name) => `${config.server_ip}/media/${encodeURIComponent(name)}`;
 
-function Library({ mediaKey, option, close }) {
-  const { t } = useContext(Context);
+// Fundo xadrez: mostra bem as imagens com transparência (PNG/SVG)
+const CHECKER = { backgroundImage: "linear-gradient(45deg,#eef0f4 25%,transparent 25%),linear-gradient(-45deg,#eef0f4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#eef0f4 75%),linear-gradient(-45deg,transparent 75%,#eef0f4 75%)", backgroundSize: "16px 16px", backgroundPosition: "0 0,0 8px,8px -8px,-8px 0", backgroundColor: "#fff" };
+
+function FileIcon({ name }) {
+  const kind = kindOf(name);
+  const ext = (name.split(".").pop() || "").toUpperCase();
+  const Icon = kind === "pdf" ? LuFileText : kind === "slides" ? LuPresentation : LuFile;
+  const color = kind === "pdf" ? "#E5484D" : kind === "slides" ? "#F76B15" : "#8A8D98";
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <Icon style={{ color }} className="text-[38px]" />
+      <span className="text-[11px] font-semibold" style={{ color }}>
+        {ext}
+      </span>
+    </div>
+  );
+}
+
+function Library({ mediaKey, fileType, close }) {
+  const { t } = useTranslation();
+  const perm = usePermission("media");
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(24);
-  const [minValue, setMinValue] = useState(0);
-  const [maxValue, setMaxValue] = useState(24);
-
-  const [form] = Form.useForm();
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [kind, setKind] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [previewSrc, setPreviewSrc] = useState(null);
+  const [uploading, setUploading] = useState(null); // { done, total }
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInput = useRef(null);
 
   useEffect(() => {
-    if (option === "library") getData();
-  }, [option, mediaKey]);
+    getData();
+  }, []);
 
-  function getData() {
+  function getData(selectName) {
     setIsLoading(true);
     axios
       .get(endpoints.media.read)
       .then((res) => {
         setData(res.data);
-        setFilteredData(res.data);
-        setIsLoading(false);
+        if (selectName) setSelected(selectName);
       })
-      .catch((err) => {
-        console.log(err);
-        setIsLoading(false);
-      });
+      .catch((err) => console.log(err))
+      .finally(() => setIsLoading(false));
   }
 
-  
-  function handleSubmit(values) {
-    form.resetFields();
-    close(values);
-  }
+  // O campo pode aceitar só um tipo (imagem ou PDF): a lista mostra só esses ficheiros
+  const allowed = useMemo(() => data.filter((item) => (fileType === "image" ? kindOf(item.name) === "image" : fileType === "pdf" ? kindOf(item.name) === "pdf" : true)), [data, fileType]);
 
-  function handleChangePage(e, p) {
-    setItemsPerPage(p);
-    setCurrentPage(e);
-    if (e <= 1) {
-      setMinValue(0);
-      setMaxValue(p);
-    } else {
-      let newMinValue = p * (e - 1);
-      let newMaxValue = newMinValue + p;
-      setMinValue(newMinValue);
-      setMaxValue(newMaxValue);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = allowed.filter((item) => (kind === "all" || (kind === "image" ? kindOf(item.name) === "image" : kindOf(item.name) !== "image")) && (!q || item.name.toLowerCase().includes(q)));
+    list.sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : sort === "oldest" ? dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf() : dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()));
+    return list;
+  }, [allowed, search, kind, sort]);
+
+  useEffect(() => setPage(1), [search, kind, sort]);
+
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const selectedItem = data.find((item) => item.name === selected);
+  const choose = (name = selected) => name && close({ [mediaKey]: name });
+
+  async function handleFiles(files) {
+    if (!files?.length) return;
+    setUploading({ done: 0, total: files.length });
+    const { uploaded, failed } = await uploadMediaFiles(files, (done, total) => setUploading({ done, total }));
+    setUploading(null);
+    if (uploaded.length) {
+      toastRef.current?.success(uploaded.length === 1 ? t("File uploaded successfully.") : t("{{count}} files uploaded successfully.", { count: uploaded.length }));
+      setKind("all");
+      setSearch("");
+      setSort("newest");
+      getData(uploaded[0]);
     }
+    if (failed.length) toastRef.current?.error(`${t("The upload failed")}: ${failed.join(", ")}`);
   }
 
-  function handleSearch(e, all) {
-    // Reinicia a paginação ao realizar uma busca
-    setCurrentPage(1);
-    setMinValue(0);
-    setMaxValue(itemsPerPage);
-    
-    if (e.search) {
-      const auxNewData = JSON.parse(JSON.stringify(data));
-      let searchedData = auxNewData.filter((item) => item.name.toLowerCase().includes(e.search.toLowerCase()));
-      setFilteredData(searchedData);
-    } else {
-      setFilteredData(data);
-    }
-  }
+  const counts = { all: allowed.length, image: allowed.filter((i) => kindOf(i.name) === "image").length };
 
   return (
-    <Spin spinning={isLoading} indicator={<LoadingOutlined spin />}>
-      <div>
-        {data.length > 0 ? (
-          <Form form={form} onFinish={handleSubmit} onValuesChange={handleSearch}>
-            <Form.Item name="search" className="mt-4!">
-              <Input size="large" placeholder={t("Search here by image or document name...")} prefix={<SearchOutlined />} allowClear />
-            </Form.Item>
-            <Form.Item name={mediaKey}>
-              {filteredData.length > 0 ? (
-                <Radio.Group buttonStyle="solid" className="grid! grid-cols-4 gap-4">
-                  {filteredData.slice(minValue, maxValue).map((item) => {
-                    return (
-                      <Radio.Button value={item.name} className="radio-image">
-                        <div className="flex flex-col justify-center items-center h-full w-full p-2 rounded-none!">
-                          {item.name.split(".")[1] === "pdf" ? (
-                            <Tooltip placement="bottom" title={item.name}>
-                              <FaFilePdf className="text-[40px]" />
-                            </Tooltip>
-                          ) : item.name.split(".")[1] === "pptx" ? (
-                            <Tooltip placement="bottom" title={item.name}>
-                              <FaFilePowerpoint className="text-[40px]" />
-                            </Tooltip>
-                          ) : (
-                            <Tooltip placement="bottom" title={item.name}>
-                              <img src={`${config.server_ip}/media/${item.name}`} className="w-full" />
-                            </Tooltip>
-                          )}
-                        </div>
-                      </Radio.Button>
-                    );
-                  })}
-                </Radio.Group>
-              ) : (
-                <Empty />
-              )}
-            </Form.Item>
-            {filteredData.length > 0 && (
-              <div className="flex justify-center items-center mt-4 w-full">
-                <Pagination align="center" onChange={handleChangePage} pageSize={itemsPerPage} defaultCurrent={1} current={currentPage} total={filteredData.length} />
-              </div>
-            )}
-            <div className="flex justify-center items-center mt-6">
-              <Button className="mr-2" onClick={() => close()}>
-                {t("Cancel")}
-              </Button>
+    <div
+      className="relative"
+      onDragOver={(e) => {
+        if (!perm.canCreate || !e.dataTransfer?.types?.includes("Files")) return;
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!perm.canCreate) return;
+        e.preventDefault();
+        setIsDragging(false);
+        handleFiles(e.dataTransfer.files);
+      }}>
+      {isDragging && (
+        <div className="absolute inset-0 z-10 grid place-items-center rounded-lg border-2 border-dashed border-[#163986] bg-[#163986]/10 text-[#163986] font-semibold pointer-events-none">
+          <div className="flex flex-col items-center gap-2">
+            <LuUpload className="text-[34px]" />
+            {t("Drop the files to upload them")}
+          </div>
+        </div>
+      )}
 
-              <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[mediaKey] !== currentValues[mediaKey]}>
-                {({ getFieldValue }) =>
-                  getFieldValue(mediaKey) && (
-                    <Button type="primary" onClick={form.submit}>
-                      {t("Choose")}
-                    </Button>
-                  )
-                }
-              </Form.Item>
-            </div>
-          </Form>
+      {/* Barra de ferramentas */}
+      <div className="flex flex-wrap items-center gap-3 mt-2 mb-4">
+        <Input allowClear className="max-w-xs" size="large" prefix={<LuSearch className="text-[#8A8D98]" />} placeholder={t("Search by file name...")} value={search} onChange={(e) => setSearch(e.target.value)} />
+        {!fileType && (
+          <Segmented
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: "all", label: `${t("All")} (${counts.all})` },
+              { value: "image", label: `${t("Images")} (${counts.image})` },
+              { value: "doc", label: `${t("Documents")} (${counts.all - counts.image})` },
+            ]}
+          />
+        )}
+        <Select
+          value={sort}
+          onChange={setSort}
+          className="w-40"
+          options={[
+            { value: "newest", label: t("Newest first") },
+            { value: "oldest", label: t("Oldest first") },
+            { value: "name", label: t("Name (A-Z)") },
+          ]}
+        />
+        <div className="ml-auto flex items-center gap-2">
+          {uploading && (
+            <span className="text-[13px] text-[#8A8D98]">
+              {t("Uploading")} {Math.min(uploading.done + 1, uploading.total)}/{uploading.total}...
+            </span>
+          )}
+          {perm.canCreate && (
+            <>
+              <input ref={fileInput} type="file" multiple hidden accept={fileType === "image" ? "image/*" : fileType === "pdf" ? "application/pdf" : undefined} onChange={(e) => handleFiles(e.target.files).then(() => (e.target.value = ""))} />
+              <Button icon={<LuUpload />} loading={!!uploading} onClick={() => fileInput.current?.click()}>
+                {t("Upload")}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Grelha */}
+      <div className="min-h-[330px]">
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton.Node key={i} active style={{ width: "100%", height: 130 }}>
+                <span />
+              </Skeleton.Node>
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
+          <Empty className="py-12" description={allowed.length === 0 ? t("The library has no files yet") : t("No files match your search")}>
+            {allowed.length === 0 && perm.canCreate && (
+              <Button type="primary" icon={<LuUpload />} onClick={() => fileInput.current?.click()}>
+                {t("Upload files")}
+              </Button>
+            )}
+          </Empty>
         ) : (
-          <Empty className="mt-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            {visible.map((item) => {
+              const isImage = kindOf(item.name) === "image";
+              const isSelected = item.name === selected;
+              return (
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  title={item.name}
+                  onClick={() => setSelected(item.name)}
+                  onDoubleClick={() => choose(item.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") choose(item.name);
+                    if (e.key === " ") {
+                      e.preventDefault();
+                      setSelected(item.name);
+                    }
+                  }}
+                  className={`group relative cursor-pointer rounded-xl border bg-white overflow-hidden transition ${isSelected ? "border-[#163986] ring-2 ring-[#163986]" : "border-[#E5E7EB] hover:border-[#163986]/50 hover:shadow-sm"}`}>
+                  <div className="aspect-[4/3] grid place-items-center" style={isImage ? CHECKER : { background: "#F6F7FB" }}>
+                    {isImage ? <img src={urlOf(item.name)} alt="" loading="lazy" className="max-h-full max-w-full object-contain" /> : <FileIcon name={item.name} />}
+                  </div>
+                  <div className="px-2.5 py-2 border-0 border-t border-solid border-[#F0F0F0]">
+                    <p className="text-[12px] font-medium mb-0! truncate">{item.name}</p>
+                    <p className="text-[11px] text-[#8A8D98] mb-0!">{item.created_at ? dayjs(item.created_at).format("DD/MM/YYYY") : ""}</p>
+                  </div>
+                  {isSelected && (
+                    <span className="absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-full bg-[#163986] text-white">
+                      <LuCheck />
+                    </span>
+                  )}
+                  {isImage && (
+                    <Tooltip title={t("Preview")}>
+                      <button
+                        type="button"
+                        aria-label={t("Preview")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewSrc(urlOf(item.name));
+                        }}
+                        className="absolute top-2 right-2 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-[#163986] shadow opacity-0 group-hover:opacity-100 focus:opacity-100 transition cursor-pointer border-0">
+                        <LuEye />
+                      </button>
+                    </Tooltip>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
-    </Spin>
+
+      <Image style={{ display: "none" }} preview={{ src: previewSrc, open: !!previewSrc, onOpenChange: (open) => !open && setPreviewSrc(null) }} />
+
+      {filtered.length > PAGE_SIZE && <Pagination className="mt-4" align="center" size="small" current={page} pageSize={PAGE_SIZE} total={filtered.length} showSizeChanger={false} onChange={setPage} />}
+
+      {/* Rodapé: o que está escolhido */}
+      <div className="mt-5 pt-4 border-0 border-t border-solid border-[#F0F0F0] flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          {selectedItem ? (
+            <>
+              <div className="h-11 w-11 shrink-0 rounded-lg overflow-hidden grid place-items-center border border-solid border-[#E5E7EB]" style={kindOf(selectedItem.name) === "image" ? CHECKER : { background: "#F6F7FB" }}>
+                {kindOf(selectedItem.name) === "image" ? <img src={urlOf(selectedItem.name)} alt="" className="max-h-full max-w-full object-contain" /> : <LuFile className="text-[#8A8D98]" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold mb-0! truncate">{selectedItem.name}</p>
+                <p className="text-[12px] text-[#8A8D98] mb-0!">{selectedItem.created_at ? dayjs(selectedItem.created_at).format("DD/MM/YYYY HH:mm") : ""}</p>
+              </div>
+            </>
+          ) : (
+            <span className="text-[13px] text-[#8A8D98]">{t("Select a file. Double click to choose it right away")}</span>
+          )}
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button onClick={() => close()}>{t("Cancel")}</Button>
+          <Button type="primary" disabled={!selected} onClick={() => choose()}>
+            {t("Choose")}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -55,7 +55,7 @@ function ImagePickerField({ field, name, value, onChange }) {
         </div>
 
         {/* O teu modal (ex.: controla open/close e chama handleSelect) */}
-        {isOpen && <Media mediaKey={"img"} open={isOpen} close={handleSelect} />}
+        {isOpen && <Media mediaKey={"img"} fileType="image" open={isOpen} close={handleSelect} />}
       </div>
     </FieldLabel>
   );

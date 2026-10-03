@@ -241,7 +241,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
   return (
     <div>
       <Media
-        mediaKey={media.mediaKey}
+        mediaKey={media.mediaKey} fileType={media.fileType}
         open={media.isOpenMedia}
         close={media.closeMedia}
       />
