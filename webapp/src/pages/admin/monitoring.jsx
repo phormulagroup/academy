@@ -2,7 +2,7 @@ import axios from "axios";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Button, Input, Select, Table, Tabs, Tag, Tooltip } from "antd";
 import dayjs from "dayjs";
-import { LuActivity, LuCircleCheck, LuCircleX, LuClock, LuMail, LuServerCrash, LuTriangleAlert } from "react-icons/lu";
+import { LuActivity, LuCircleCheck, LuCircleX, LuClock, LuLockKeyhole, LuMail, LuServerCrash, LuTriangleAlert } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 import RefreshButton from "../../components/admin/refreshButton";
@@ -341,6 +341,103 @@ function EmailsTab() {
   );
 }
 
+const SCOPES = { login: "Login", code: "Recovery code", recover: "Recovery requests" };
+
+// Bloqueios por tentativas excessivas (login e recuperação de password): quem está bloqueado e as tentativas recentes, com o IP.
+// Um utilizador real que errou a password várias vezes pode ser desbloqueado aqui.
+function BlocksTab() {
+  const { t } = useTranslation();
+  const { toastApi } = useContext(Context);
+  const perm = usePermission("monitoring");
+  const [confirm, confirmHolder] = useConfirm();
+  const [data, setData] = useState({ available: true, rows: [], blocked: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setIsLoading(true);
+    axios
+      .get(endpoints.monitor.blocks)
+      .then((res) => setData(res.data))
+      .catch(() => toastApi.error(t("Something went wrong, please try again")))
+      .finally(() => setIsLoading(false));
+  }, []);
+  useEffect(load, [load]);
+
+  const unblock = (row) =>
+    axios
+      .post(endpoints.monitor.unblock, { data: { id: row?.id } })
+      .then(() => {
+        toastApi.success(row ? t("Unblocked") : t("All unblocked"));
+        load();
+      })
+      .catch((err) => toastApi.error(err.response?.data?.message || t("Something went wrong, please try again")));
+
+  const unblockAll = () =>
+    confirm({
+      title: t("Unblock everyone?"),
+      description: t("All blocks and failed-attempt counters are cleared"),
+      tone: "warning",
+      okText: t("Unblock all"),
+      onOk: () => unblock(null),
+    });
+
+  return (
+    <div>
+      {confirmHolder}
+      {!data.available && <p className="mb-4! rounded-xl bg-[#FFF4E5] px-4 py-3 text-[13px] text-[#E67E00]">{t("Blocks are not available yet: the database migration is pending. Until then the limits work in memory and cannot be listed")}</p>}
+      <div className="mb-4 grid grid-cols-2 gap-3 md:max-w-md">
+        <Stat icon={<LuLockKeyhole />} tone="#DB0709" label={t("Blocked now")} value={data.blocked} />
+        <Stat icon={<LuTriangleAlert />} tone="#E67E00" label={t("With failed attempts")} value={data.rows.length - data.blocked} />
+      </div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="mb-0! text-[13px] text-[#8A8D98]">{t("After too many failed attempts an e-mail or an IP is blocked for a few minutes. Unblock real users here")}</p>
+        <div className="flex items-center gap-2">
+          {perm.canUpdate && data.rows.length > 0 && <Button onClick={unblockAll}>{t("Unblock all")}</Button>}
+          <RefreshButton onClick={load} />
+        </div>
+      </div>
+      <Table
+        rowKey="id"
+        size="middle"
+        loading={isLoading}
+        dataSource={data.rows}
+        scroll={{ x: "max-content" }}
+        pagination={{ pageSize: 15, hideOnSinglePage: true }}
+        locale={{ emptyText: t("No blocks or failed attempts") }}
+        columns={[
+          {
+            title: t("Status"),
+            dataIndex: "is_blocked",
+            width: 190,
+            render: (v, r) => (v ? <Tag color="red">{t("Blocked until {{time}}", { time: dayjs(r.blocked_until).format("HH:mm") })}</Tag> : <Tag color="orange">{t("Failed attempts")}</Tag>),
+          },
+          { title: t("Type"), dataIndex: "scope", width: 170, render: (v) => <Tag>{t(SCOPES[v] ?? v)}</Tag> },
+          {
+            title: t("E-mail / IP"),
+            dataIndex: "identifier",
+            width: 280,
+            render: (v, r) => (
+              <div>
+                <span className="font-semibold">{v}</span> {r.kind === "ip" && <Tag className="m-0! ml-1">IP</Tag>}
+                {r.user_name && <p className="mb-0! text-[12px] text-[#2F8351]">{t("Registered user")}: {r.user_name}</p>}
+              </div>
+            ),
+          },
+          { title: "IP", dataIndex: "ip", width: 150, render: (v) => v ?? "—" },
+          { title: t("Attempts"), dataIndex: "attempts", width: 100 },
+          { title: t("Last attempt"), dataIndex: "last_attempt_at", width: 170, render: fmt },
+          {
+            title: "",
+            key: "actions",
+            width: 130,
+            render: (_, r) => perm.canUpdate && <Button size="small" onClick={() => unblock(r)}>{r.is_blocked ? t("Unblock") : t("Clear")}</Button>,
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 // Monitorização do sistema: disponibilidade (tempo em baixo), erros do servidor e e-mails enviados
 export default function Monitoring() {
   const { t } = useTranslation();
@@ -355,6 +452,7 @@ export default function Monitoring() {
           { key: "availability", label: <span className="flex items-center gap-2"><LuActivity />{t("Availability")}</span>, children: <Availability /> },
           { key: "errors", label: <span className="flex items-center gap-2"><LuServerCrash />{t("Server errors")}</span>, children: <ErrorsTab /> },
           { key: "emails", label: <span className="flex items-center gap-2"><LuMail />{t("E-mails")}</span>, children: <EmailsTab /> },
+          { key: "blocks", label: <span className="flex items-center gap-2"><LuLockKeyhole />{t("Blocks")}</span>, children: <BlocksTab /> },
         ]}
       />
     </div>

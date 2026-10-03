@@ -28,6 +28,8 @@ const endpoints = {
 		resolveErrors: "/monitor/errors/resolve",
 		deleteErrors: "/monitor/errors/delete",
 		emails: "/monitor/emails",
+		blocks: "/monitor/blocks",
+		unblock: "/monitor/blocks/unblock",
 	},
 	ticket: {
 		read: "/ticket/read",

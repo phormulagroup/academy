@@ -5,6 +5,7 @@ var router = express.Router();
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const { getStatus, RETENTION_DAYS } = require("../utils/monitor");
+const { tableReady } = require("../utils/throttle");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -87,6 +88,29 @@ router.get("/emails", requirePermission("monitoring", "read"), async (req, res) 
   const rows = await query(`SELECT * FROM email_log WHERE ${clause} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
   const [totals] = await query("SELECT SUM(status = 'sent') AS sent, SUM(status = 'error') AS errors FROM email_log");
   res.send({ rows, total, page, limit, sent: Number(totals.sent || 0), errors: Number(totals.errors || 0) });
+});
+
+// Bloqueios por tentativas excessivas (login, código de recuperação): os ativos e as tentativas recentes, com o IP, para o Admin poder desbloquear
+// quem for um utilizador real. Sem a tabela (migração 2026-10-10) devolve available: false.
+router.get("/blocks", requirePermission("monitoring", "read"), async (req, res) => {
+  if (!(await tableReady())) return res.send({ available: false, rows: [], blocked: 0 });
+  const rows = await query(
+    `SELECT b.id, b.scope, b.kind, b.identifier, b.ip, b.attempts, b.blocked_until, b.last_attempt_at, b.window_ends,
+            (b.blocked_until IS NOT NULL AND b.blocked_until > NOW()) AS is_blocked,
+            u.id AS id_user, u.name AS user_name
+     FROM security_block b LEFT JOIN user u ON b.kind = 'email' AND u.email = b.identifier AND u.is_deleted = 0
+     WHERE b.window_ends > NOW() OR b.blocked_until > NOW()
+     ORDER BY is_blocked DESC, b.last_attempt_at DESC LIMIT 500`,
+  );
+  res.send({ available: true, rows, blocked: rows.filter((r) => r.is_blocked).length });
+});
+
+// Desbloqueia um (id) ou todos (sem id): apaga o registo, por isso o contador recomeça do zero
+router.post("/blocks/unblock", requirePermission("monitoring", "update"), async (req, res) => {
+  if (!(await tableReady())) return res.status(409).send({ message: "Blocks are not available yet (database migration pending)" });
+  const id = Number(req.body.data?.id);
+  const result = id ? await query("DELETE FROM security_block WHERE id = ?", [id]) : await query("DELETE FROM security_block");
+  res.send({ unblocked: result.affectedRows });
 });
 
 module.exports = router;
