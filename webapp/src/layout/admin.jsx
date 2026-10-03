@@ -230,12 +230,9 @@ const Main = () => {
   const isProfileActive = location.pathname.replace(/\/$/, "") === "/admin/perfil";
 
   useEffect(() => {
-    let pathname = location.pathname.split("/");
-    if (pathname.length > 2) {
-      setCurrent(`/${pathname[1]}/${pathname[2]}`);
-    } else {
-      setCurrent(`/${pathname[pathname.length - 1]}`);
-    }
+    const pathname = location.pathname.split("/");
+    // "/admin" e "/admin/" são o mesmo sítio (Painel): o item do menu é "/admin/"
+    setCurrent(pathname[2] ? `/${pathname[1]}/${pathname[2]}` : "/admin/");
   }, [location]);
 
   function handleClickMenu(e) {
@@ -264,7 +261,7 @@ const Main = () => {
             <div className="flex h-full flex-col">
               {/* Topo: logótipo completo ou, recolhido, o favicon: os dois sobrepostos, com uma transição suave entre eles */}
               <Link
-                to={`/${i18n.language}`}
+                to="/admin/"
                 aria-label="Bial Academy"
                 className="relative mx-auto mt-4 mb-2 block h-[64px] w-full shrink-0">
                 <img
@@ -369,9 +366,9 @@ const Main = () => {
               onClick={() => setIsOpenDrawerMenu(false)}>
               <CloseOutlined className="text-[#163986]" />
             </Button>
-            {/* Logo: regressa à home, como no menu lateral em desktop */}
+            {/* Logo: vai para o Painel, como no menu lateral em desktop */}
             <Link
-              to={`/${i18n.language}`}
+              to="/admin/"
               className="block px-5 pt-5"
               onClick={() => setIsOpenDrawerMenu(false)}>
               <img
