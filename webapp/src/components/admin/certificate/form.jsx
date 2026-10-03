@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button, Form, Input, Radio, Switch, Tooltip } from "antd";
 import { AiOutlineFile } from "react-icons/ai";
 import { LuAlignCenter, LuAlignLeft, LuAlignRight, LuFileText, LuImage, LuSettings } from "react-icons/lu";
@@ -14,6 +15,38 @@ import useMediaPicker from "../../../utils/useMediaPicker";
 
 // Tipo de ficheiro aceite por cada campo da Multimédia
 const FIELD_TYPES = { background: "image" };
+
+// Fundo ideal: A4 horizontal (297 x 210 mm), proporção 842:595. 300 dpi dá 3508 x 2480 px; abaixo de 2000 px de largura nota-se a falta de nitidez
+const PAGE_RATIO = 842 / 595;
+const RECOMMENDED = "3508 × 2480 px";
+const MIN_WIDTH = 2000;
+
+// Lê as dimensões da imagem escolhida e avisa quando não é A4 horizontal (o PDF mantém a proporção e corta o que sobra, centrado)
+function BackgroundHint({ background, t }) {
+  const [size, setSize] = useState(null);
+  useEffect(() => {
+    setSize(null);
+    if (!background) return;
+    const img = new Image();
+    img.onload = () => setSize({ width: img.naturalWidth, height: img.naturalHeight });
+    img.src = `${config.server_ip}/media/${encodeURIComponent(background)}`;
+  }, [background]);
+
+  const ratioOff = size && Math.abs(size.width / size.height - PAGE_RATIO) / PAGE_RATIO > 0.02;
+  const small = size && size.width < MIN_WIDTH;
+  return (
+    <div className="mt-2 text-[12px] text-[#8A8D98] flex flex-col gap-1">
+      <p className="mb-0!">{t("Recommended: A4 landscape (297 × 210 mm), {{size}} (300 dpi), PNG or JPG", { size: RECOMMENDED })}</p>
+      {size && (
+        <p className="mb-0!">
+          {t("Chosen image: {{width}} × {{height}} px", { width: size.width, height: size.height })}
+        </p>
+      )}
+      {ratioOff && <p className="mb-0! text-[#D4880F]">{t("This image is not A4 landscape: it keeps its proportions and is cropped from the centre to fill the page, so the edges may be cut off")}</p>}
+      {small && <p className="mb-0! text-[#D4880F]">{t("This image is small for a printed certificate and may look blurry. Use at least {{width}} px wide", { width: MIN_WIDTH })}</p>}
+    </div>
+  );
+}
 
 // Variáveis que o texto aceita, substituídas pelos dados de cada aluno ao gerar o certificado
 const VARIABLES = [
@@ -78,7 +111,7 @@ export default function CertificateForm({ form, submit, preview, errors, alignSu
               return (
                 <>
                   <div
-                    className={`border border-dashed ${error ? "border-red-500" : "border-gray-300"} rounded-lg cursor-pointer flex justify-center items-center h-40 w-full overflow-hidden bg-contain bg-center bg-no-repeat`}
+                    className={`border border-dashed ${error ? "border-red-500" : "border-gray-300"} rounded-lg cursor-pointer flex justify-center items-center w-full aspect-[842/595] overflow-hidden bg-cover bg-center bg-no-repeat`}
                     onClick={() => media.openMedia("background")}
                     style={background ? { backgroundImage: `url(${config.server_ip}/media/${encodeURIComponent(background)})` } : undefined}>
                     {!background && (
@@ -107,6 +140,7 @@ export default function CertificateForm({ form, submit, preview, errors, alignSu
                       )}
                     </div>
                   </div>
+                  <BackgroundHint background={background} t={t} />
                   {error && <p className="text-[12px] text-red-500 mt-1! mb-0!">{error}</p>}
                   <Form.Item name="background" hidden rules={[requiredRule, fileTypeRule("image", t)]}>
                     <Input />

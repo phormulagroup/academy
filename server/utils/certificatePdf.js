@@ -192,9 +192,9 @@ function generateCertificatePdf({ backgroundBuffer, text, name, course, date, al
   doc.registerFont(REGULAR, FONT_REGULAR);
   doc.registerFont(BOLD, FONT_BOLD);
 
-  // A imagem de fundo ocupa a página inteira (estica), como já acontecia nos certificados desta aplicação: um corte
-  // "cover" cortaria o logótipo do fundo atual da Bial (16:9) na página A4. O ideal é um fundo já com o rácio A4.
-  doc.image(backgroundBuffer, 0, 0, { width: PAGE_WIDTH, height: PAGE_HEIGHT });
+  // A imagem de fundo cobre a página inteira sem se deformar: mantém a proporção e corta, centrado, o que sobrar. Com um
+  // fundo já em A4 horizontal (proporção 842:595) não se corta nada.
+  doc.image(backgroundBuffer, 0, 0, { cover: [PAGE_WIDTH, PAGE_HEIGHT], align: "center", valign: "center" });
 
   const SIDE_MARGIN = 60;
   const textWidth = PAGE_WIDTH * 0.5;
