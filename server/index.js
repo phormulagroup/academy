@@ -46,7 +46,8 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-app.use(express.json());
+// 5 MB: os projetos do editor de e-mails (e o HTML que compilam) passam facilmente os 100 KB por omissão
+app.use(express.json({ limit: "5mb" }));
 app.use(cors());
 app.use(requestMonitor);
 
@@ -124,6 +125,7 @@ app.use(`${prefix}/usergroup`, middleware, require("./routes/userGroup"));
 app.use(`${prefix}/language`, require("./routes/language"));
 app.use(`${prefix}/role`, middleware, require("./routes/role"));
 app.use(`${prefix}/communication`, middleware, require("./routes/communication"));
+app.use(`${prefix}/emaillibrary`, middleware, require("./routes/emailLibrary"));
 app.use(`${prefix}/permission`, middleware, require("./routes/permission"));
 app.use(`${prefix}/media`, require("./routes/media"));
 app.use(`${prefix}/import`, middleware, require("./routes/import"));

@@ -32,6 +32,7 @@ import Report from "../pages/admin/report";
 import Download from "../pages/admin/download";
 import Faqs from "../pages/admin/faqs";
 import FormSubmission from "../pages/admin/formSubmission";
+import FormSubmissionDetails from "../pages/admin/formSubmissionDetails";
 import Personalization from "../pages/admin/personalization";
 import Product from "../pages/admin/product";
 
@@ -70,6 +71,7 @@ export const adminRoutes = [
 			{ path: "inbox", element: <Navigate to="/admin/tickets" replace /> },
 			{ path: "faqs", element: <Faqs /> },
 			{ path: "answers", element: <FormSubmission /> },
+			{ path: "answers/:id", element: <FormSubmissionDetails /> },
 			{ path: "personalization", element: <Personalization /> },
 			{ path: "products", element: <Product /> },
 			{ path: "*", element: <Navigate to="/admin/" replace /> },

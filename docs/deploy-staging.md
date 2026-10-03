@@ -44,6 +44,8 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `IEC_DIR` | `/home/<utilizador-cpanel>/public_html/regional/wp-content/uploads/iec` |
    | `IEC_PUBLIC_URL` | `https://academy.phormuladev.com/regional/wp-content/uploads/iec` |
    | `MEDIA_FALLBACK_URL` | vazio (usa `https://academy.phormuladev.com/api/media/`) |
+   | `API_PUBLIC_URL` | `https://academy.phormuladev.com/api` (endereço público da API: links de rastreio das comunicações) |
+   | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
 3. **Base de dados** (uma vez por ambiente, antes de arrancar): correr, por esta ordem, os ficheiros de `server/database/migrations/`
    (todos são aditivos e podem repetir-se sem estragar nada):
    - `2026-10-02-certificate-text-layout.sql`: acrescenta `text_align`, `text_x` e `text_y` a `course_certificate`. Sem isto o
@@ -65,6 +67,10 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
      continuam a enviar-se normalmente, só sem cliques. Os links de rastreio apontam para `API_PUBLIC_URL` (o endereço público da API
      com o prefixo, ex.: `https://academy.phormuladev.com/api`); sem esta variável usa o endereço por onde chegou o pedido de envio. O endereço `/t/c/` é
      público (sem login), por isso tem de estar acessível a partir da internet.
+   - `2026-10-06-email-library.sql`: cria `email_library` (blocos e modelos de e-mail guardados, partilhados pela equipa no editor das Comunicações e dos Templates).
+     Sem esta tabela o editor funciona na mesma, só que a biblioteca da equipa fica vazia e não deixa guardar.
+   - `2026-10-09-notification-schedule.sql`: acrescenta `scheduled_at` e `sent_at` à tabela `notification` (agendar notificações) e marca como enviadas as que já tinham destinatários.
+     Sem ela as notificações funcionam como antes, só não é possível agendar. O envio das agendadas corre no mesmo serviço em segundo plano das comunicações.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
@@ -75,6 +81,32 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    - Variável de ambiente **`NODE_ENV=staging`** (sem ela carrega `.env.development`)
    - *Run NPM Install* (os avisos `npm warn deprecated … glob` são inofensivos) e *Restart*.
 5. Se o Passenger **tirar** o `/api` antes de chegar ao Node, pôr `API_PREFIX=` (vazio) e reiniciar.
+
+## E-mails automáticos da plataforma
+A plataforma envia sozinha estes e-mails (templates em *E-mail → Templates*, um por língua: pt, es, en, fr): registo recebido, conta aprovada, conta não aprovada,
+acesso à conta (contas criadas ou importadas por um administrador, com o código para definir a password), recuperação de password, password alterada, pedido
+(ticket) recebido, resposta ao pedido, mensagem de contacto recebida e nova (para a equipa), resposta ao formulário de contacto e curso concluído.
+- `2026-10-08-form-submission-reply.sql`: cria `form_submission_reply` (respostas às submissões do formulário de contacto, enviadas pela plataforma: quem, quando, o texto
+  e se o e-mail saiu, com a razão se falhou). Sem a tabela as Submissões funcionam como antes, com o botão que abre o programa de e-mail.
+- `2026-10-07-email-templates.sql`: cria estes templates na BD (só os que faltam, pode repetir-se). Sem a migração os e-mails saem na mesma, com os modelos de origem
+  que o servidor traz (`server/utils/defaultEmailTemplates.json`); com a migração passam a poder editar-se no backoffice (e desativar: um template desativado não envia).
+  Gerados por `webapp/scripts/generate-email-templates.mjs` (`node scripts/generate-email-templates.mjs` na pasta `webapp`).
+- `APP_PUBLIC_URL` (no `.env.<ambiente>`): endereço da aplicação para os botões dos e-mails (ex.: `https://academy.phormuladev.com`). Sem isto usa `API_PUBLIC_URL` sem o `/api`.
+- Se o envio falhar (SMTP por configurar, servidor em baixo) o pedido da pessoa segue normalmente (o registo, o ticket, o formulário...) e a razão fica em *Monitorização → E-mails*.
+- A confirmação do formulário de contacto não se repete para o mesmo e-mail em 10 minutos. A equipa que recebe o aviso são os Admin e as funções com permissão de ver as Submissões.
+
+## Comunicações no cPanel
+As comunicações enviam-se **dentro da própria aplicação Node** (um temporizador que envia em lotes), por SMTP, com o HTML que ficou guardado no editor e o SMTP das
+definições. Não há serviço externo. No cPanel (Passenger) há quatro pontos a ter em conta:
+1. **A aplicação tem de estar acordada.** O Passenger pode parar uma app sem pedidos durante algum tempo, e parada não envia nada (um envio agendado só sai quando a app
+   voltar a arrancar, e as comunicações pendentes continuam de onde ficaram). Solução: em *cPanel → Cron Jobs* um pedido por minuto ao `/health`:
+   `* * * * * curl -fsS https://academy.phormuladev.com/api/health > /dev/null`. Isto também mantém a Monitorização (tempo em baixo) certa.
+2. **Limite de envio do cPanel.** O Exim limita os e-mails por hora (muitas vezes 100 a 500 por domínio, ver *cPanel → Email Deliverability* ou perguntar ao alojamento). O ritmo
+   por omissão (120 por minuto) passa esse limite e as mensagens seguintes falham. Calcular `COMMUNICATION_BATCH_SIZE` e `COMMUNICATION_TICK_SECONDS` abaixo do limite: por
+   exemplo, para 200 por hora usar `COMMUNICATION_BATCH_SIZE=1` e `COMMUNICATION_TICK_SECONDS=20` (180 por hora). Os que falharem ficam com a razão e podem repetir-se.
+3. **Mais do que um processo.** Se a app correr em várias instâncias, só uma envia de cada vez (bloqueio na BD), por isso nenhum destinatário recebe duas vezes.
+4. **Endereços públicos.** O e-mail leva links absolutos: as imagens (`/api/media/...`), as fontes (`/api/fonts/...`) e os links de rastreio (`/api/t/c/...`, de `API_PUBLIC_URL`)
+   têm de abrir sem login e sem passar por uma cache da Cloudflare que os bloqueie. Se o domínio da API mudar, os e-mails já enviados deixam de mostrar essas imagens.
 
 ## 4. Pasta `media`
 A webapp vai buscar as imagens/documentos a `https://academy.phormuladev.com/api/media/<ficheiro>`.

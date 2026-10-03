@@ -104,6 +104,13 @@ const endpoints = {
 		sendTest: "/email/sendTest",
 		upload: "/email/upload",
 	},
+	emailLibrary: {
+		read: "/emaillibrary/read",
+		readById: "/emaillibrary/readById",
+		create: "/emaillibrary/create",
+		update: "/emaillibrary/update",
+		delete: "/emaillibrary/delete",
+	},
 	communication: {
 		read: "/communication/read",
 		readById: "/communication/readById",
@@ -173,6 +180,7 @@ const endpoints = {
 		markAsRead: "/notification/markAsRead",
 		create: "/notification/create",
 		send: "/notification/send",
+		audience: "/notification/audience",
 		delete: "/notification/delete",
 	},
 	document: {
@@ -206,6 +214,9 @@ const endpoints = {
 	form: {
 		read: "/form/read",
 		readByLang: "/form/readByLang",
+		readById: "/form/readById",
+		reply: "/form/reply",
+		retryReply: "/form/retryReply",
 		update: "/form/update",
 		create: "/form/create",
 		delete: "/form/delete",

@@ -1783,6 +1783,32 @@ iframe {
   }
 }
 
+/* Backoffice: o hover dos itens dos dropdowns é o do menu do utilizador no frontoffice (.dropdown-user-menu-item): o texto e o ícone
+   ficam turquesa. Os itens "danger" (eliminar) e os desativados mantêm as suas cores. */
+body:has(.admin-layout)
+  .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+    .ant-dropdown-menu-item-disabled
+  ):hover,
+body:has(.admin-layout)
+  .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+    .ant-dropdown-menu-item-disabled
+  ):hover
+  .ant-dropdown-menu-title-content,
+body:has(.admin-layout)
+  .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+    .ant-dropdown-menu-item-disabled
+  ):hover
+  .ant-dropdown-menu-item-icon,
+body:has(.admin-layout)
+  .ant-dropdown-menu-item:not(.ant-dropdown-menu-item-danger):not(
+    .ant-dropdown-menu-item-disabled
+  ):hover
+  svg,
+body:has(.admin-layout)
+  .ant-dropdown-menu-submenu-title:not(.ant-dropdown-menu-submenu-title-disabled):hover {
+  color: #00b9d6 !important;
+}
+
 body:has(.admin-layout) .ant-table-filter-trigger:not(.active),
 body:has(.admin-layout) .ant-table-column-sorter-up:not(.active),
 body:has(.admin-layout) .ant-table-column-sorter-down:not(.active),

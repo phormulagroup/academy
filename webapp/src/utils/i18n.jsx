@@ -9,6 +9,8 @@ i18n
   .init({
     fallbackLng: "en",
     debug: false,
+    // O React já escapa o que mostra: sem isto os valores das traduções saem escapados (por exemplo 03/10/2026 → 03&#x2F;10&#x2F;2026)
+    interpolation: { escapeValue: false },
     ns: ["translation"],
     resources: {},
   });
