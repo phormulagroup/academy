@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 
 router.get("/read", async (req, res) => {
@@ -98,11 +99,8 @@ router.post("/update", requirePermission("download", "update"), async (req, res,
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE download SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE download SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		// Ficheiros: os que saíram da lista ficam inativos, os existentes são atualizados e os novos são inseridos
@@ -131,7 +129,8 @@ router.post("/preview", async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const previewRow = await query(
-			"UPDATE download_item SET view = view + 1 WHERE id = " + req.body.data.id,
+			"UPDATE download_item SET view = view + 1 WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(previewRow);
 	} catch (err) {
@@ -143,8 +142,8 @@ router.post("/download", async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const downloadRow = await query(
-			"UPDATE download_item SET download = download + 1 WHERE id = " +
-				req.body.data.id,
+			"UPDATE download_item SET download = download + 1 WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(downloadRow);
 	} catch (err) {
@@ -156,7 +155,8 @@ router.post("/delete", requirePermission("download", "delete"), async (req, res,
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
-			"UPDATE download SET is_deleted = 1 WHERE id = " + req.body.data.id,
+			"UPDATE download SET is_deleted = 1 WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(deletedRow);
 	} catch (err) {

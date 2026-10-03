@@ -6,6 +6,7 @@ var path = require("path");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const { generateCertificatePdf } = require("../utils/certificatePdf");
 
@@ -131,7 +132,7 @@ router.post("/update", requirePermission("certificate", "update"), async (req, r
     const values = Object.values(data);
 
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE course_certificate SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const updatedRow = await query("UPDATE course_certificate SET " + setClause(columns) + " WHERE id = ?", [...values, toId(whereId)]);
 
     res.send(updatedRow);
   } catch (err) {
@@ -142,7 +143,7 @@ router.post("/update", requirePermission("certificate", "update"), async (req, r
 router.post("/delete", requirePermission("certificate", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE course_certificate SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    const deletedRow = await query("UPDATE course_certificate SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
     res.send(deletedRow);
   } catch (err) {
     throw err;

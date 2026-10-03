@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const { scheduleReady, countAudience, deliver } = require("../utils/notifications");
 
@@ -23,7 +24,7 @@ router.get("/readByUser", async (req, res) => {
     const rows = await query(
       "SELECT notification.title, notification.description, notification_user.* FROM notification_user " +
         "LEFT JOIN notification ON notification.id = notification_user.id_notification WHERE id_user = ? ORDER BY created_at DESC",
-      [req.query.id_user],
+      [req.user.id], // sempre as notificações de quem faz o pedido
     );
     res.send(rows);
   } catch (e) {
@@ -131,15 +132,9 @@ router.post("/update", requirePermission("notification", "update"), async (req, 
 
 router.post("/markAsRead", async (req, res, next) => {
   try {
-    let data = req.body.data;
-    let whereId = data.id;
-    delete data.id;
-
-    const columns = Object.keys(data);
-    const values = Object.values(data);
-
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE notification_user SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    // Cada pessoa só marca como lidas as suas notificações, e só o campo is_read
+    const updatedRow = await query("UPDATE notification_user SET is_read = ? WHERE id = ? AND id_user = ?", [req.body.data?.is_read ? 1 : 0, toId(req.body.data?.id), req.user.id]);
 
     res.send(updatedRow);
   } catch (err) {

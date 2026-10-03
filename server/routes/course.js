@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser } = require("../utils/notify");
@@ -444,11 +445,8 @@ router.post("/update", requirePermission("course", "update"), async (req, res, n
 		const values = Object.values(data);
 
 		const updatedRow = await query(
-			"UPDATE course SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE course SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		res.send(updatedRow);
@@ -468,11 +466,8 @@ router.post("/updateTopic", requirePermission("course", "update"), async (req, r
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE course_topic SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE course_topic SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		res.send(updatedRow);
@@ -492,11 +487,8 @@ router.post("/updateTest", requirePermission("course", "update"), async (req, re
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE course_test SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE course_test SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		res.send(updatedRow);
@@ -528,7 +520,7 @@ router.post("/updateProgress", async (req, res, next) => {
 
 		// Query
 		const insertedRow = await query(
-			"INSERT INTO course_user_activity (" + columns.join(", ") + ") VALUES ?",
+			"INSERT INTO course_user_activity (" + columnList(columns) + ") VALUES ?",
 			[rows], // 👈 precisa ser array de arrays
 		);
 
@@ -925,7 +917,8 @@ router.post("/delete", requirePermission("course", "delete"), async (req, res, n
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
-			"UPDATE course SET is_deleted = 1 WHERE id = " + req.body.data.id,
+			"UPDATE course SET is_deleted = 1 WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(deletedRow);
 	} catch (err) {
@@ -937,7 +930,8 @@ router.post("/deleteTry", requirePermission("course", "update"), async (req, res
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
-			"DELETE FROM course_user_activity WHERE id = " + req.body.data.id,
+			"DELETE FROM course_user_activity WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(deletedRow);
 	} catch (err) {

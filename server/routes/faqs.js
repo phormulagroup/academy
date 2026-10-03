@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
@@ -61,7 +62,7 @@ router.post("/update", middleware, requirePermission("faqs", "update"), async (r
     const values = Object.values(data);
 
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE faqs SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const updatedRow = await query("UPDATE faqs SET " + setClause(columns) + " WHERE id = ?", [...values, toId(whereId)]);
 
     res.send(updatedRow);
   } catch (err) {
@@ -100,7 +101,7 @@ router.post("/reorder", middleware, requirePermission("faqs", "update"), async (
 router.post("/delete", middleware, requirePermission("faqs", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE faqs SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    const deletedRow = await query("UPDATE faqs SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
     res.send(deletedRow);
   } catch (err) {
     throw err;

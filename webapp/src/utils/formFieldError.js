@@ -36,6 +36,15 @@ export const requiredRule = {
   },
 };
 
+// Password nova: pelo menos 8 caracteres (a API aplica a mesma regra)
+export const MIN_PASSWORD = 8;
+export const passwordRule = {
+  min: MIN_PASSWORD,
+  get message() {
+    return i18n.t("The password must have at least {{count}} characters", { count: MIN_PASSWORD });
+  },
+};
+
 /**
  * @function requireSelection
  * @description Validation function for required selections (single or multiple). Throws an error if the value is empty.

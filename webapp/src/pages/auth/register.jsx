@@ -20,6 +20,7 @@ import {
   requiredRule,
   requiredSelectRule,
   setFieldError,
+  passwordRule,
 } from "../../utils/formFieldError";
 import {
   academicBackgroundOptions,
@@ -231,7 +232,7 @@ export default function Register() {
             <Form.Item
               label={t("Password")}
               name="password"
-              rules={[requiredRule]}
+              rules={[requiredRule, passwordRule]}
               className="mb-0!">
               <Input.Password size="large" placeholder={t("Enter your password")} />
             </Form.Item>

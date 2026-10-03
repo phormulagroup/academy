@@ -4,6 +4,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const middleware = require("../utils/middleware");
 const { requirePermission } = require("../utils/permissions");
 
@@ -47,11 +48,8 @@ router.post("/update", middleware, requirePermission("language", "update"), asyn
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE language SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE language SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		res.send(updatedRow);

@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission, hasPermission, denied } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
@@ -145,16 +146,18 @@ router.post("/update", async (req, res, next) => {
 			delete data.new_password;
 			delete data.confirm_new_password;
 			delete data.current_password;
-			delete data.password;
-			delete data.recover_code;
-			delete data.generate_password;
 		}
+		// A password só muda por new_password (com a atual verificada); o hash e o código de recuperação nunca se gravam pelo cliente
+		delete data.password;
+		delete data.recover_code;
+		delete data.generate_password;
 		if (!canManage) {
 			delete data.id_role;
 			delete data.status;
 			delete data.is_deleted;
 		}
 
+		if (data.new_password && (typeof data.new_password !== "string" || data.new_password.length < 8)) return res.status(400).send({ message: "The password must have at least 8 characters" });
 		const passwordChanged = !!data.new_password;
 		const currentPassword = data.current_password;
 		delete data.current_password;
@@ -198,8 +201,8 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 		const query = util.promisify(db.query).bind(db);
 		// Atividade acompanha o estado: aprovado → ativo (is_deleted = 0); pendente/não aprovado → inativo (is_deleted = 1)
 		const updatedRow = await query(
-			"UPDATE user SET status = ?, is_deleted = ? WHERE id = " + whereId,
-			[data.status, data.status === "approved" ? 0 : 1],
+			"UPDATE user SET status = ?, is_deleted = ? WHERE id = ?",
+			[data.status, data.status === "approved" ? 0 : 1, toId(whereId)],
 		);
 		res.send(updatedRow);
 

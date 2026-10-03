@@ -7,6 +7,7 @@ var fs = require("fs");
 var path = require("path");
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 
 router.get("/read", async (req, res) => {
@@ -85,7 +86,7 @@ router.post("/update", requirePermission("document", "update"), async (req, res,
 		const values = Object.values(data);
 
 		const query = util.promisify(db.query).bind(db);
-		const updatedRow = await query("UPDATE document SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+		const updatedRow = await query("UPDATE document SET " + setClause(columns) + " WHERE id = ?", [...values, toId(whereId)]);
 
 		res.send(updatedRow);
 	} catch (err) {
@@ -96,7 +97,7 @@ router.post("/update", requirePermission("document", "update"), async (req, res,
 router.post("/delete", requirePermission("document", "delete"), async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
-		const deletedRow = await query("UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id);
+		const deletedRow = await query("UPDATE document SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
 		res.send(deletedRow);
 	} catch (err) {
 		throw err;

@@ -22,6 +22,7 @@ import {
   requiredRule,
   requiredSelectRule,
   uniqueRule,
+  passwordRule,
 } from "../../../utils/formFieldError";
 import { academicBackgroundOptions, genderOptions, namePlaceholders, splitName } from "../../../utils/userFields";
 
@@ -355,7 +356,7 @@ export default function UserDetails() {
                 <Form.Item label={t("Current password")} name="current_password" dependencies={["password"]} rules={[({ getFieldValue }) => ({ required: !!getFieldValue("password"), message: t("Enter your current password to change it") })]} className="mb-0!">
                     <Input.Password autoComplete="current-password" placeholder={t("Enter your current password")} />
                   </Form.Item>
-                <Form.Item label={t("New password")} name="password" className="mb-0!">
+                <Form.Item label={t("New password")} name="password" rules={[passwordRule]} className="mb-0!">
                   <Input.Password placeholder={t("Enter a new password")} />
                 </Form.Item>
                 <Form.Item label={t("Confirm password")} name="confirm_password" dependencies={["password"]} rules={[matchFieldRule("password", t("The passwords does not match!"))]} className="mb-0!">

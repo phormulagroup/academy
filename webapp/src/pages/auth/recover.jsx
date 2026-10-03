@@ -15,6 +15,7 @@ import {
   emailRule,
   matchFieldRule,
   requiredRule,
+  passwordRule,
   setFieldError,
 } from "../../utils/formFieldError";
 
@@ -48,7 +49,7 @@ export default function Recover() {
             type: "success",
             content: t("The code is correct, now choose your new password"),
           });
-          formPassword.setFieldValue("email", values.email);
+          formPassword.setFieldsValue({ email: values.email, code: values.code });
           setCurrentStep(currentStep + 1);
         } else if (res.data.message) {
           toastApi.open({ type: "error", content: t(res.data.message) });
@@ -221,10 +222,13 @@ export default function Recover() {
             <Form.Item name="email" hidden>
               <Input />
             </Form.Item>
+            <Form.Item name="code" hidden>
+              <Input />
+            </Form.Item>
             <Form.Item
               label={t("Password")}
               name="password"
-              rules={[requiredRule]}
+              rules={[requiredRule, passwordRule]}
               className="mb-4!">
               <Input.Password
                 size="large"

@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 const { notifyUser, notifyTeam, excerpt } = require("../utils/notify");
@@ -90,7 +91,15 @@ router.get("/readById", middleware, requirePermission("form_submission", "read")
 router.post("/create", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const data = req.body.data;
+    // Só os campos do formulário de contacto (nunca id, is_deleted ou outros escolhidos pelo cliente)
+    const data = {};
+    for (const field of ["subject", "name", "email", "message", "acceptance", "id_lang"]) if ((req.body.data || {})[field] !== undefined) data[field] = req.body.data[field];
+    if (typeof data.email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) || typeof data.message !== "string" || !data.message.trim()) {
+      return res.status(400).send({ message: "Invalid form data" });
+    }
+    // No máximo 5 mensagens por hora do mesmo e-mail: o formulário público não serve para inundar a equipa
+    const [{ recent }] = await query("SELECT COUNT(*) AS recent FROM form_submission WHERE email = ? AND created_at > (NOW() - INTERVAL 1 HOUR)", [data.email]);
+    if (recent >= 5) return res.status(429).send({ message: "Too many messages, try again later" });
     const insertedRow = await query("INSERT INTO form_submission SET ?", data);
     res.send(insertedRow);
 
@@ -181,7 +190,7 @@ router.post("/retryReply", middleware, requirePermission("form_submission", "upd
 router.post("/delete", middleware, requirePermission("form_submission", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE form_submission SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    const deletedRow = await query("UPDATE form_submission SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
     res.send(deletedRow);
   } catch (err) {
     throw err;

@@ -4,10 +4,12 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
-router.get("/read", async (req, res) => {
+// Tem as credenciais do SMTP: só quem tem permissão em Definições as lê
+router.get("/read", middleware, requirePermission("settings", "read"), async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM settings");
@@ -39,7 +41,7 @@ router.post("/update", middleware, requirePermission("settings", "update"), asyn
     const values = Object.values(data);
 
     const query = util.promisify(db.query).bind(db);
-    const updatedRow = await query("UPDATE settings SET " + columns.join(" = ?, ") + " = ? WHERE id = " + whereId, values);
+    const updatedRow = await query("UPDATE settings SET " + setClause(columns) + " WHERE id = ?", [...values, toId(whereId)]);
 
     res.send(updatedRow);
   } catch (err) {
@@ -50,7 +52,7 @@ router.post("/update", middleware, requirePermission("settings", "update"), asyn
 router.post("/delete", middleware, requirePermission("settings", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE settings SET is_deleted = 1 WHERE id = " + req.body.data.id);
+    const deletedRow = await query("UPDATE settings SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
     res.send(deletedRow);
   } catch (err) {
     throw err;

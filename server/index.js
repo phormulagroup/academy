@@ -30,6 +30,9 @@ const prefix = (process.env.API_PREFIX || "").replace(/\/$/, "");
 /* Criar servidor HTTP */
 const server = http.createServer(app); // <--- MUDANÇA IMPORTANTE
 
+// Atrás de proxy (Cloudflare/Apache): TRUST_PROXY = nº de proxies, para o limite de pedidos usar o IP real de cada pessoa
+if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+
 app.use(
 	helmet({
 		crossOriginResourcePolicy: false,
@@ -48,8 +51,25 @@ app.use(limiter);
 
 // 5 MB: os projetos do editor de e-mails (e o HTML que compilam) passam facilmente os 100 KB por omissão
 app.use(express.json({ limit: "5mb" }));
-app.use(cors());
+// CORS: só os endereços da webapp (CORS_ORIGINS, separados por vírgulas; por omissão APP_PUBLIC_URL). Em desenvolvimento aceita também localhost.
+// Pedidos sem Origin (mesmo domínio, ferramentas, servidor a servidor) passam sempre. Sem nada configurado mantém o comportamento aberto.
+const corsOrigins = (process.env.CORS_ORIGINS || process.env.APP_PUBLIC_URL || "")
+	.split(",")
+	.map((o) => o.trim().replace(/\/$/, ""))
+	.filter(Boolean);
+const isDev = (process.env.NODE_ENV || "development") === "development";
+app.use(
+	cors({
+		origin: (origin, callback) => {
+			if (!origin || corsOrigins.length === 0) return callback(null, true);
+			if (corsOrigins.includes(origin.replace(/\/$/, ""))) return callback(null, true);
+			if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+			return callback(null, false);
+		},
+	}),
+);
 app.use(requestMonitor);
+app.use(require("./utils/stripSecrets")); // nunca devolve hashes de password
 
 /* MUDAR DE app.listen para server.listen */
 server.listen(port);

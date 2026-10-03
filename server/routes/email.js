@@ -8,6 +8,7 @@ const fileUpload = require("express-fileupload");
 
 const email = require("../utils/email");
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 
 const { uploadFile } = require("../utils/upload");
@@ -203,7 +204,8 @@ router.post("/delete", requirePermission("email_template", "delete"), (req, res,
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const deletedRow = await query(
-				"DELETE FROM email_template WHERE id = " + data.id,
+				"DELETE FROM email_template WHERE id = ?",
+				[toId(data.id)],
 			);
 			res.send(deletedRow);
 			conn.release();

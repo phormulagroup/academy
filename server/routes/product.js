@@ -4,10 +4,11 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
+const { toId, setClause, columnList } = require("../utils/sql");
 const middleware = require("../utils/middleware");
 const { requirePermission } = require("../utils/permissions");
 
-router.get("/read", async (req, res) => {
+router.get("/read", middleware, async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM product");
@@ -39,11 +40,8 @@ router.post("/update", middleware, requirePermission("product", "update"), async
 
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
-			"UPDATE product SET " +
-				columns.join(" = ?, ") +
-				" = ? WHERE id = " +
-				whereId,
-			values,
+			"UPDATE product SET " + setClause(columns) + " WHERE id = ?",
+			[...values, toId(whereId)],
 		);
 
 		res.send(updatedRow);
@@ -56,7 +54,8 @@ router.post("/delete", middleware, requirePermission("product", "delete"), async
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
-			"UPDATE product SET is_deleted = 1 WHERE id = " + req.body.data.id,
+			"UPDATE product SET is_deleted = 1 WHERE id = ?",
+			[toId(req.body.data.id)],
 		);
 		res.send(deletedRow);
 	} catch (err) {
