@@ -57,6 +57,16 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    - `2026-10-03-faqs-position.sql`: acrescenta `position` a `faqs` (ordem das FAQs por drag and drop) e preenche-a com a ordem atual.
    - `2026-10-03-monitoring.sql`: cria `server_log`, `email_log`, `server_heartbeat` e `downtime` (monitorização: erros do servidor, registo de e-mails e
      tempo em baixo) e acrescenta a função "Gestor". O Gestor não tem acesso por omissão: dar a permissão "Monitorização do sistema" em Permissões.
+   - `2026-10-04-communications.sql`: cria `communication` e `communication_recipient` (Comunicações: e-mails enviados a um público escolhido). O envio é feito em
+     lotes pelo próprio servidor (por omissão 10 e-mails de 5 em 5 segundos; ajustável com `COMMUNICATION_BATCH_SIZE` e `COMMUNICATION_TICK_SECONDS`), com o SMTP
+     das definições, por isso respeita os limites do servidor de e-mail. Dar a permissão "Comunicações" em Permissões a quem a deva ver.
+   - `2026-10-05-communication-tracking.sql`: acrescenta as colunas de rastreio a `communication` e `communication_recipient` e cria `communication_click`
+     (estatísticas de cliques das comunicações; as aberturas não se medem). Correr **uma única vez** (um `ADD COLUMN` não se repete). Sem esta migração as comunicações
+     continuam a enviar-se normalmente, só sem cliques. Os links de rastreio apontam para `API_PUBLIC_URL` (o endereço público da API
+     com o prefixo, ex.: `https://academy.phormuladev.com/api`); sem esta variável usa o endereço por onde chegou o pedido de envio. O endereço `/t/c/` é
+     público (sem login), por isso tem de estar acessível a partir da internet.
+   As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
+   Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
    Esta pasta tem de sobreviver aos deploys: não a apagar ao extrair um novo `server-staging.zip`.
    Depois, importar as traduções novas (`docs/translations/admin-redesign-translations.xlsx`) para a tabela `language`.
