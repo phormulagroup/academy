@@ -15,8 +15,11 @@ const http = require("http"); // <--- ADICIONADO
 const middleware = require("./utils/middleware");
 const db = require("./utils/database");
 
-// Várias rotas fazem `throw` dentro de handlers async: sem isto, um pedido inválido deitava o processo abaixo
-process.on("unhandledRejection", (err) => console.log("Unhandled rejection:", err));
+// Erros de handlers async, respostas 5xx e erros do processo ficam registados em server_log (ver utils/asyncErrors.js)
+const { patchAsyncHandlers, requestMonitor, errorHandler, installProcessHandlers } = require("./utils/asyncErrors");
+const { startMonitoring, logError } = require("./utils/monitor");
+patchAsyncHandlers();
+installProcessHandlers();
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -44,25 +47,17 @@ app.use(limiter);
 
 app.use(express.json());
 app.use(cors());
+app.use(requestMonitor);
 
 /* MUDAR DE app.listen para server.listen */
-server.listen(port, () => {
-	console.log(`---------- STARTING SERVER ----------`);
-	console.log(`${dayjs().format("YYYY-MM-DD HH:mm:ss")}`);
-	console.log(`Server running at ${port}`);
-	console.log(`--------------------`);
-});
+server.listen(port);
 
 /* Conexão BD */
 db.getConnection((error, conn) => {
-	console.log(`---------- CONNECTING TO DB ----------`);
-	if (error) {
-		throw error;
-	} else {
-		console.log("MySQL database is connected successfully");
-		console.log(`--------------------`);
-		conn.release();
-	}
+	// Sem BD no arranque o servidor não cai: o /health devolve 503 e o heartbeat recupera quando a BD voltar
+	if (error) logError({ source: "database", message: `Database connection failed: ${error.message}`, stack: error.stack });
+	else conn.release();
+	startMonitoring(); // sinal de vida, tempo em baixo e limpeza de logs antigos (recupera sozinho quando a BD voltar)
 });
 
 app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media")));
@@ -130,6 +125,7 @@ app.use(`${prefix}/email`, middleware, require("./routes/email"));
 app.use(`${prefix}/certificate`, middleware, require("./routes/certificate"));
 app.use(`${prefix}/notification`, middleware, require("./routes/notification"));
 app.use(`${prefix}/ticket`, middleware, require("./routes/ticket"));
+app.use(`${prefix}/monitor`, middleware, require("./routes/monitor"));
 app.use(`${prefix}/document`, middleware, require("./routes/document"));
 app.use(`${prefix}/download`, middleware, require("./routes/download"));
 const iecRouter = require("./routes/iec");
@@ -139,5 +135,8 @@ app.use(`${prefix}/faqs`, require("./routes/faqs"));
 app.use(`${prefix}/form`, require("./routes/form"));
 app.use(`${prefix}/personalization`, require("./routes/personalization"));
 app.use(`${prefix}/product`, require("./routes/product"));
+
+// Tratamento final de erros (tem de ser o último)
+app.use(errorHandler);
 
 module.exports = app;

@@ -3,6 +3,7 @@ var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
 const nodemailer = require("nodemailer");
+const { logEmail } = require("../utils/monitor");
 const fileUpload = require("express-fileupload");
 
 const email = require("../utils/email");
@@ -13,18 +14,10 @@ const { uploadFile } = require("../utils/upload");
 
 router.use(fileUpload());
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", requirePermission("email_template", "read"), (req, res, next) => {
-	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query("SELECT * FROM email_template");
@@ -37,10 +30,9 @@ router.get("/read", requirePermission("email_template", "read"), (req, res, next
 });
 
 router.get("/readByLang", requirePermission("email_template", "read"), (req, res, next) => {
-	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query(
@@ -56,10 +48,9 @@ router.get("/readByLang", requirePermission("email_template", "read"), (req, res
 });
 
 router.get("/readById", requirePermission("email_template", "read"), (req, res, next) => {
-	console.log("---- READ EMAIL TEMPLATE ----");
 
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query(
@@ -74,14 +65,28 @@ router.get("/readById", requirePermission("email_template", "read"), (req, res, 
 	});
 });
 
+// Imagens do editor de templates: ficam na pasta media com o tipo "email" (não aparecem na Multimédia)
 router.post("/upload", requirePermission("email_template", "update"), async (req, res) => {
-	let file = req.files.file;
-	const uploadedFile = await handleUploadFile(file, req.body.data.id_event);
+	if (!req.files?.file) return res.status(400).send({ message: "No file received" });
+	const uploadedFile = await uploadFile(req.files.file, "email");
 	res.send({ data: { url: uploadedFile } });
 });
 
+// Envia o template (como está no editor) para um endereço, com dados de exemplo. O resultado fica no registo de e-mails.
+router.post("/sendTest", requirePermission("email_template", "update"), async (req, res) => {
+	const { email: to, subject, html, sample } = req.body.data || {};
+	if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).send({ sent: false, message: "Invalid e-mail address" });
+	if (!html) return res.status(400).send({ sent: false, message: "The template has no content" });
+	try {
+		const info = await email.sendTest({ email: to, subject, html, sample });
+		res.send({ sent: true, messageId: info.messageId });
+	} catch (err) {
+		// A razão da falha fica também em Monitorização > E-mails
+		res.send({ sent: false, message: err.message });
+	}
+});
+
 router.post("/test", requirePermission("settings", "update"), (req, res, next) => {
-	console.log("---- TEST E-MAIL SMTP ----");
 
 	try {
 		const smtpSettings = req.body.data;
@@ -105,6 +110,7 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 
 		// Um throw dentro do callback não chegava ao cliente (pedido ficava pendurado): devolve o resultado do envio
 		transporter.sendMail(mailOptions, (err, info) => {
+			logEmail({ to: mailOptions.to, subject: mailOptions.subject, template: "smtp_test", status: err ? "error" : "sent", error: err, info });
 			if (err) res.send({ sent: false, message: err.message });
 			else res.send({ sent: true, messageId: info.messageId });
 		});
@@ -114,9 +120,8 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 });
 
 router.post("/create", requirePermission("email_template", "create"), (req, res, next) => {
-	console.log("---- CREATE EMAIL TEMPLATE ----");
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 
 		try {
 			let data = req.body.data;
@@ -139,9 +144,8 @@ router.post("/create", requirePermission("email_template", "create"), (req, res,
 });
 
 router.post("/update", requirePermission("email_template", "update"), (req, res, next) => {
-	console.log("---- UPDATE EMAIL TEMPLATE ----");
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 
 		try {
 			let data = req.body.data;
@@ -171,11 +175,10 @@ router.post("/update", requirePermission("email_template", "update"), (req, res,
 });
 
 router.post("/delete", requirePermission("email_template", "delete"), (req, res, next) => {
-	console.log("---- DELETE EMAIL TEMPLATE ----");
 	let data = req.body.data;
 
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const deletedRow = await query(

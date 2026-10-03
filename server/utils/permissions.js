@@ -21,6 +21,7 @@ const RESOURCES = [
   "user_group",
   "form_submission",
   "ticket",
+  "monitoring",
   "email_template",
   "settings",
 ];
@@ -35,7 +36,7 @@ async function hasPermission(user, resource, action) {
     const rows = await query("SELECT * FROM permission WHERE id_role = ? AND resource = ?", [user.id_role, resource]);
     return rows.length > 0 && !!rows[0][`can_${action}`];
   } catch (err) {
-    if (err.code !== "ER_NO_SUCH_TABLE") console.log(err);
+    if (err.code !== "ER_NO_SUCH_TABLE") console.error(err);
     return false;
   }
 }
@@ -63,7 +64,7 @@ function requirePermission(resource, action) {
       if (!(await hasPermission(req.user, resource, action))) return denied(res);
       next();
     } catch (err) {
-      console.log(err);
+      console.error(err);
       res.status(500).send({ message: "Error" });
     }
   };
