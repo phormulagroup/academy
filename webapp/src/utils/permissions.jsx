@@ -17,6 +17,7 @@ export const RESOURCES = [
 	{ key: "user_group", label: "User groups" },
 	{ key: "form_submission", label: "Answers" },
 	{ key: "ticket", label: "Tickets" },
+	{ key: "monitoring", label: "System monitoring" },
 	{ key: "email_template", label: "Templates" },
 	{ key: "settings", label: "Settings (SMTP)" },
 ];
@@ -41,6 +42,7 @@ export const ADMIN_PATH_RESOURCES = {
 	"user-groups": "user_group",
 	answers: "form_submission",
 	tickets: "ticket",
+	monitoring: "monitoring",
 	templates: "email_template",
 	smtp: "settings",
 };

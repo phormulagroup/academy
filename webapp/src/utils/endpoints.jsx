@@ -22,6 +22,13 @@ const endpoints = {
 		readByParams: "/logs/readByParams",
 		create: "/logs/create",
 	},
+	monitor: {
+		status: "/monitor/status",
+		errors: "/monitor/errors",
+		resolveErrors: "/monitor/errors/resolve",
+		deleteErrors: "/monitor/errors/delete",
+		emails: "/monitor/emails",
+	},
 	ticket: {
 		read: "/ticket/read",
 		readByUserId: "/ticket/readByUserId",
@@ -94,6 +101,8 @@ const endpoints = {
 		create: "/email/create",
 		delete: "/email/delete",
 		test: "/email/test",
+		sendTest: "/email/sendTest",
+		upload: "/email/upload",
 	},
 	course_certificate: {
 		read: "/certificate/read",

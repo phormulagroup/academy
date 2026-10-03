@@ -4,6 +4,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
+  LuActivity,
   LuAward,
   LuBell,
   LuChartColumn,
@@ -51,6 +52,7 @@ const GROUPS = [
   { key: "learning", label: "e-Learning", resources: ["course", "certificate", "report", "document", "download", "product"] },
   { key: "manage", label: "Management", resources: ["user", "user_group", "form_submission", "ticket"] },
   { key: "email", label: "E-mail", resources: ["email_template", "settings"] },
+  { key: "system", label: "System", resources: ["monitoring"] },
 ];
 
 const RESOURCE_ICONS = {
@@ -70,6 +72,7 @@ const RESOURCE_ICONS = {
   user_group: <LuUsersRound />,
   form_submission: <LuMessageSquareText />,
   ticket: <LuTicket />,
+  monitoring: <LuActivity />,
   email_template: <LuLayoutTemplate />,
   settings: <LuServer />,
 };

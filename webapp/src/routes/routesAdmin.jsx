@@ -23,6 +23,7 @@ import UserDetails from "../pages/admin/user/details";
 import Notification from "../pages/admin/notification";
 import Document from "../pages/admin/document";
 import Ticket from "../pages/admin/ticket";
+import Monitoring from "../pages/admin/monitoring";
 import Report from "../pages/admin/report";
 import Download from "../pages/admin/download";
 import Faqs from "../pages/admin/faqs";
@@ -57,6 +58,7 @@ export const adminRoutes = [
 			{ path: "certificate/:id", element: <CertificateDetails /> },
 			{ path: "notification", element: <Notification /> },
 			{ path: "tickets", element: <Ticket /> },
+			{ path: "monitoring", element: <Monitoring /> },
 			{ path: "inbox", element: <Navigate to="/admin/tickets" replace /> },
 			{ path: "faqs", element: <Faqs /> },
 			{ path: "answers", element: <FormSubmission /> },
