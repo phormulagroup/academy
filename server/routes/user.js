@@ -15,15 +15,7 @@ const email = require("../utils/email");
 const saltRounds = 10;
 router.use(fileUpload());
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", requirePermission("user", "read"), async (req, res) => {
-	console.log("//// READ USER ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -36,7 +28,6 @@ router.get("/read", requirePermission("user", "read"), async (req, res) => {
 });
 
 router.get("/readById", async (req, res) => {
-	console.log("//// READ USER BY ID ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		// Cada um lê os seus dados; ver os de outros exige permissão na secção Utilizadores
@@ -92,7 +83,6 @@ router.get("/readById", async (req, res) => {
 });
 
 router.get("/readByEmail", async (req, res) => {
-	console.log("//// READ USER BY E-MAIL ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const rows = await query(
@@ -102,13 +92,12 @@ router.get("/readByEmail", async (req, res) => {
 		);
 		res.send(rows);
 	} catch (e) {
-		console.log(e);
+		console.error(e);
 		res.status(500).send({ message: "Some error on server.", error: e });
 	}
 });
 
 router.post("/createPassword", async (req, res, next) => {
-	console.log("//// CREATE PASSWORD ////");
 	try {
 		let data = req.body.data;
 		// A palavra-passe só se define na própria conta, nunca na de outro utilizador (nem por um admin)
@@ -126,7 +115,6 @@ router.post("/createPassword", async (req, res, next) => {
 });
 
 router.post("/create", requirePermission("user", "create"), async (req, res, next) => {
-	console.log("//// CREATE USER ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
@@ -143,7 +131,6 @@ router.post("/create", requirePermission("user", "create"), async (req, res, nex
 });
 
 router.post("/update", async (req, res, next) => {
-	console.log("//// UPDATE USER ////");
 	try {
 		// Nome + Apelido do formulário → coluna name
 		let data = mergeName(req.body.data);
@@ -186,13 +173,12 @@ router.post("/update", async (req, res, next) => {
 		let newToken = await createToken(user[0]);
 		res.send({ user: user[0], token: newToken });
 	} catch (err) {
-		console.log(err);
+		console.error(err);
 		res.status(500).send({ message: "Error updating user" });
 	}
 });
 
 router.post("/changeStatus", requirePermission("user", "update"), async (req, res, next) => {
-	console.log("//// CHANGE USER STATUS ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -205,7 +191,6 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 			[data.status, data.status === "approved" ? 0 : 1],
 		);
 		const emailResult = await email.change_status(data);
-		console.log("E-mail sent: ", emailResult.messageId);
 		res.send(updatedRow);
 	} catch (err) {
 		throw err;
@@ -213,7 +198,6 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 });
 
 router.post("/delete", requirePermission("user", "delete"), async (req, res, next) => {
-	console.log("//// DELETE USER ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		let id_user = req.body.data.id;

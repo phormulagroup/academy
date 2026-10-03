@@ -14,13 +14,6 @@ var router = express.Router();
 const saltRounds = 10;
 const poolQuery = util.promisify(db.query).bind(db);
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 // Campos que o ficheiro pode trazer para um utilizador: o assistente só deixa associar colunas a estes (nunca às colunas cruas
 // da tabela, para uma coluna "id_role" ou "is_deleted" do ficheiro não chegar à base de dados). `label` é a chave de tradução.
 const USER_FIELDS = [
@@ -167,14 +160,13 @@ router.post("/user", requirePermission("user", "create"), (req, res) => {
             await email.recover({ ...user, code });
             emailResult.sent++;
           } catch (err) {
-            console.log(`Failed to send access e-mail to ${user.email}`, err.message);
             emailResult.failed++;
           }
         }
       }
       res.send({ inserted, skipped, emails: sendEmails ? emailResult : null });
     } catch (err) {
-      console.log(err);
+      console.error(err);
       await util.promisify(conn.rollback).bind(conn)().catch(() => {});
       conn.release();
       res.status(500).send({ message: "Error importing the users" });

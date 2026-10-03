@@ -8,15 +8,7 @@ var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", async (req, res) => {
-  console.log("//// READ FAQ ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM faqs ORDER BY position ASC, id ASC");
@@ -27,7 +19,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-  console.log("//// READ FAQ ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM faqs WHERE id_lang = ? ORDER BY position ASC, id ASC", [req.query.id_lang]);
@@ -38,7 +29,6 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.get("/readBySlug", async (req, res) => {
-  console.log("//// READ FAQ ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM faqs WHERE slug = ? AND id_lang = ?", [req.query.slug, req.query.id_lang]);
@@ -49,7 +39,6 @@ router.get("/readBySlug", async (req, res) => {
 });
 
 router.post("/create", middleware, requirePermission("faqs", "create"), async (req, res, next) => {
-  console.log("//// CREATE FAQ ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
@@ -63,7 +52,6 @@ router.post("/create", middleware, requirePermission("faqs", "create"), async (r
 });
 
 router.post("/update", middleware, requirePermission("faqs", "update"), async (req, res, next) => {
-  console.log("//// UPDATE FAQ ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
@@ -83,7 +71,6 @@ router.post("/update", middleware, requirePermission("faqs", "update"), async (r
 
 // Guarda a ordem: `ids` são os ids de um idioma pela nova ordem. Só reordena FAQs do mesmo idioma.
 router.post("/reorder", middleware, requirePermission("faqs", "update"), async (req, res) => {
-  console.log("//// REORDER FAQ ////");
   const ids = Array.isArray(req.body.data?.ids) ? req.body.data.ids.map(Number).filter(Number.isInteger) : [];
   if (ids.length === 0 || new Set(ids).size !== ids.length) return res.status(400).send({ message: "Invalid order" });
   db.getConnection(async (error, conn) => {
@@ -102,7 +89,7 @@ router.post("/reorder", middleware, requirePermission("faqs", "update"), async (
       conn.release();
       res.send({ success: true });
     } catch (err) {
-      console.log(err);
+      console.error(err);
       await util.promisify(conn.rollback).bind(conn)().catch(() => {});
       conn.release();
       res.status(500).send({ message: "Error" });
@@ -111,7 +98,6 @@ router.post("/reorder", middleware, requirePermission("faqs", "update"), async (
 });
 
 router.post("/delete", middleware, requirePermission("faqs", "delete"), async (req, res, next) => {
-  console.log("//// DELETE FAQ ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE faqs SET is_deleted = 1 WHERE id = " + req.body.data.id);

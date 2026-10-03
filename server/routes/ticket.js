@@ -14,7 +14,7 @@ router.use(fileUpload({ limits: { fileSize: 2 * 1024 * 1024 }, abortOnLimit: fal
 
 // Nunca expor detalhes internos do erro (SQL, stack) ao cliente: ficam só no log do servidor
 function handleError(res, err, fallbackMessage = "An error occurred on the server.") {
-  console.log(err);
+  console.error(err);
   res.status(500).send({ message: fallbackMessage });
 }
 

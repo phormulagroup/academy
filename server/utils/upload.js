@@ -42,11 +42,11 @@ module.exports = {
 
           uploadPath = path.join(MEDIA_DIR, file_name);
           sampleFile.mv(uploadPath, async (err) => {
-            if (err) throw err;
+            if (err) return reject(err);
             resolve(file_name);
           });
         } catch (e) {
-          throw e;
+          reject(e);
         }
       } else {
         resolve(null);

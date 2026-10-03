@@ -7,15 +7,7 @@ var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", async (req, res) => {
-  console.log("//// READ PERSONALIZATION ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM personalization");
@@ -26,7 +18,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-  console.log("//// READ PERSONALIZATION BY LANG ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM personalization WHERE id_lang = ?", [req.query.id_lang]);
@@ -37,7 +28,6 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.post("/create", middleware, requirePermission("personalization", "update"), async (req, res, next) => {
-  console.log("//// CREATE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
@@ -50,7 +40,6 @@ router.post("/create", middleware, requirePermission("personalization", "update"
 });
 
 router.post("/update", middleware, requirePermission("personalization", "update"), async (req, res, next) => {
-  console.log("//// UPDATE PERSONALIZATION ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
@@ -70,7 +59,6 @@ router.post("/update", middleware, requirePermission("personalization", "update"
 });
 
 router.post("/delete", middleware, requirePermission("personalization", "delete"), async (req, res, next) => {
-  console.log("//// DELETE PERSONALIZATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE personalization SET is_deleted = 1 WHERE id = " + req.body.data.id);

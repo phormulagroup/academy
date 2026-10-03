@@ -7,15 +7,7 @@ var db = require("../utils/database");
 const middleware = require("../utils/middleware");
 const { requirePermission } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", async (req, res) => {
-	console.log("//// READ PRODUCT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM product");
@@ -26,7 +18,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.post("/create", middleware, requirePermission("product", "create"), async (req, res, next) => {
-	console.log("//// CREATE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
@@ -38,7 +29,6 @@ router.post("/create", middleware, requirePermission("product", "create"), async
 });
 
 router.post("/update", middleware, requirePermission("product", "update"), async (req, res, next) => {
-	console.log("//// UPDATE PRODUCT ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -63,7 +53,6 @@ router.post("/update", middleware, requirePermission("product", "update"), async
 });
 
 router.post("/delete", middleware, requirePermission("product", "delete"), async (req, res, next) => {
-	console.log("//// DELETE PRODUCT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(

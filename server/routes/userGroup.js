@@ -7,13 +7,6 @@ var db = require("../utils/database");
 const middleware = require("../utils/middleware");
 const { requirePermission, requireStaff } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 const query = util.promisify(db.query).bind(db);
 
 // Grupos de utilizadores: lista global, reutilizável em vários cursos (acesso restrito a utilizadores e grupos)
@@ -21,7 +14,7 @@ router.get("/read", middleware, requireStaff(), async (req, res) => {
   try {
     res.send(await query("SELECT * FROM user_group WHERE is_deleted = 0 ORDER BY name ASC"));
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -32,7 +25,7 @@ router.post("/create", middleware, requirePermission("user_group", "create"), as
     if (!name) return res.status(400).send({ message: "The name is required" });
     res.send(await query("INSERT INTO user_group SET ?", { name }));
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -44,7 +37,7 @@ router.post("/update", middleware, requirePermission("user_group", "update"), as
     if (!id || !name) return res.status(400).send({ message: "The name is required" });
     res.send(await query("UPDATE user_group SET name = ? WHERE id = ?", [name, id]));
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -54,7 +47,7 @@ router.post("/delete", middleware, requirePermission("user_group", "delete"), as
   try {
     res.send(await query("UPDATE user_group SET is_deleted = 1 WHERE id = ?", [req.body.data?.id]));
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -71,7 +64,7 @@ router.get("/members", middleware, requireStaff(), async (req, res) => {
       ),
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -92,7 +85,7 @@ router.post("/setMembers", middleware, requirePermission("user_group", "update")
       conn.release();
       res.send({ id_group, id_users: id_users || [] });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       await util.promisify(conn.rollback).bind(conn)();
       conn.release();
       res.status(500).send({ message: "Error" });

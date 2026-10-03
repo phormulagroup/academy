@@ -11,15 +11,7 @@ const { generateCertificatePdf } = require("../utils/certificatePdf");
 
 const MEDIA_DIR = path.join(__dirname, "..", "media");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", async (req, res) => {
-  console.log("//// READ CERTIFICATE ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM course_certificate");
@@ -30,7 +22,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readById", async (req, res) => {
-  console.log("//// READ CERTIFICATE BY ID ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM course_certificate WHERE id = ?", [req.query.id]);
@@ -69,7 +60,7 @@ function buildCertificate(res, template, variables) {
       ...variables,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     // O PDF só aceita PNG e JPG como fundo
     res.status(422).send({ message: "The background must be a PNG or JPG image" });
     return null;
@@ -98,7 +89,7 @@ router.post("/preview", requirePermission("certificate", "read"), (req, res) => 
     });
     if (doc) sendPdf(res, doc, "certificate-preview.pdf", "inline");
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).send({ message: "Could not generate the preview" });
   }
 });
@@ -114,17 +105,15 @@ router.post("/generate", async (req, res) => {
     const doc = buildCertificate(res, rows[0], { name, course, date });
     if (doc) sendPdf(res, doc, fileName || "certificate.pdf", "attachment");
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).send({ message: "Could not generate the certificate" });
   }
 });
 
 router.post("/create", requirePermission("certificate", "create"), async (req, res, next) => {
-  console.log("//// CREATE CERTIFICATE ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
-    console.log(data);
     const insertedRow = await query("INSERT INTO course_certificate SET ?", data);
     res.send(insertedRow);
   } catch (err) {
@@ -133,7 +122,6 @@ router.post("/create", requirePermission("certificate", "create"), async (req, r
 });
 
 router.post("/update", requirePermission("certificate", "update"), async (req, res, next) => {
-  console.log("//// UPDATE CERTIFICATE ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
@@ -152,7 +140,6 @@ router.post("/update", requirePermission("certificate", "update"), async (req, r
 });
 
 router.post("/delete", requirePermission("certificate", "delete"), async (req, res, next) => {
-  console.log("//// DELETE CERTIFICATE ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE course_certificate SET is_deleted = 1 WHERE id = " + req.body.data.id);

@@ -16,7 +16,7 @@ router.get("/read", async (req, res) => {
     res.send(await query("SELECT * FROM permission WHERE id_role = ?", [requestedRole]));
   } catch (err) {
     if (err.code === "ER_NO_SUCH_TABLE") return res.send([]);
-    console.log(err);
+    console.error(err);
     res.status(500).send({ message: "Error" });
   }
 });
@@ -44,7 +44,7 @@ router.post("/set", requireAdmin, (req, res) => {
       conn.release();
       res.send({ id_role, permissions: toInsert });
     } catch (err) {
-      console.log(err);
+      console.error(err);
       await util.promisify(conn.rollback).bind(conn)();
       conn.release();
       res.status(500).send({ message: "Error" });

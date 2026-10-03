@@ -8,15 +8,7 @@ var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", middleware, requirePermission("form_submission", "read"), async (req, res) => {
-  console.log("//// READ FORM ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM faqs");
@@ -27,7 +19,6 @@ router.get("/read", middleware, requirePermission("form_submission", "read"), as
 });
 
 router.get("/readByLang", middleware, requirePermission("form_submission", "read"), async (req, res) => {
-  console.log("//// READ FORM ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM form_submission WHERE id_lang = ? AND is_deleted = 0", [req.query.id_lang]);
@@ -38,20 +29,18 @@ router.get("/readByLang", middleware, requirePermission("form_submission", "read
 });
 
 router.post("/create", async (req, res, next) => {
-  console.log("//// CREATE FORM ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
     const insertedRow = await query("INSERT INTO form_submission SET ?", data);
     res.send(insertedRow);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(400).send({ message: "Invalid form data" });
   }
 });
 
 router.post("/delete", middleware, requirePermission("form_submission", "delete"), async (req, res, next) => {
-  console.log("//// DELETE FORM ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE form_submission SET is_deleted = 1 WHERE id = " + req.body.data.id);

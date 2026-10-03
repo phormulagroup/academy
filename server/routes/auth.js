@@ -11,27 +11,17 @@ const { mergeName } = require("../utils/userName");
 
 const saltRounds = 10;
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.post("/verifyToken", async (req, res, next) => {
   try {
     let token = req.body.data;
-    console.log(token);
     const result = await verifyToken(token);
     if (result.token_valid) {
       const query = util.promisify(db.query).bind(db);
       const user = await query("SELECT * FROM user WHERE id = ?", result.token_decoded.id);
       if (user.length > 0) {
         if (user[0].email === result.token_decoded.email && user[0].password === result.token_decoded.password && user[0].is_deleted === 0) {
-          console.log("///// TOKEN IS VALID");
           res.send({ token_valid: true, user: user[0] });
         } else {
-          console.log("///// TOKEN IS NOT VALID");
           res.status(401).send("Invalid Token");
         }
       } else {
@@ -47,7 +37,6 @@ router.post("/verifyToken", async (req, res, next) => {
 
 router.post("/verifyTokenGeneratePassword", async (req, res, next) => {
   try {
-    console.log("---- VERIFY TOKEN ----");
     let token = req.body.data;
     const result = await verifyToken(token);
     if (result.token_valid) {
@@ -55,10 +44,8 @@ router.post("/verifyTokenGeneratePassword", async (req, res, next) => {
       const user = await query("SELECT * FROM user WHERE user.email = ?", result.token_decoded.email);
       if (user.length > 0) {
         if (user[0].email === result.token_decoded.email && (user[0].is_deleted === 0 || user[0].status !== "approved") && (!user[0].password || user[0].generate_password)) {
-          console.log("TOKEN IS VALID");
           res.send({ token_valid: true, user: user[0] });
         } else {
-          console.log("TOKEN IS NOT VALID");
           res.send({ token_valid: false });
         }
       } else {
@@ -74,7 +61,6 @@ router.post("/verifyTokenGeneratePassword", async (req, res, next) => {
 
 router.post("/generatePassword", async (req, res, next) => {
   try {
-    console.log("---- GENERATE PASSWORD ----");
     let data = req.body.data;
     const query = util.promisify(db.query).bind(db);
     const password = await bcrypt.hash(data.password, saltRounds);
@@ -86,7 +72,6 @@ router.post("/generatePassword", async (req, res, next) => {
 });
 
 router.post("/login", async (req, res, next) => {
-  console.log("///// LOGIN /////");
   try {
     const query = util.promisify(db.query).bind(db);
     let data = req.body.data;
@@ -96,10 +81,7 @@ router.post("/login", async (req, res, next) => {
       [data.email],
     );
     if (user.length > 0) {
-      console.log(data.password);
-      console.log(user);
       const comparePassword = await bcrypt.compare(data.password, user[0].password);
-      console.log(comparePassword);
       if (comparePassword) {
         // Só contas aprovadas e ativas recebem token (pendentes/não aprovadas só recebem o estado)
         const token = user[0].status === "approved" && user[0].is_deleted === 0 ? await createToken(user[0]) : null;
@@ -111,16 +93,15 @@ router.post("/login", async (req, res, next) => {
       res.send({ user: null, message: "This user does not exist on our database!" });
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 });
 
 router.post("/register", async (req, res, next) => {
-  console.log("///// REGISTER /////");
 
   db.getConnection(async (error, conn) => {
-    if (error) throw error;
+    if (error) return res.status(500).send({ message: "Some error on server.", error });
     const query = util.promisify(conn.query).bind(conn);
     const transaction = util.promisify(conn.beginTransaction).bind(conn);
     const commit = util.promisify(conn.commit).bind(conn);
@@ -142,7 +123,6 @@ router.post("/register", async (req, res, next) => {
         data.password = await bcrypt.hash(data.password, saltRounds);
         const insertedRow = await query("INSERT INTO user SET ?", data);
         const emailResult = await email.register(data);
-        console.log("E-mail sent: ", emailResult.messageId);
         await commit();
         conn.release();
         res.send(insertedRow);
@@ -156,10 +136,9 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.post("/recover", async (req, res, next) => {
-  console.log("///// SEND RECOVER E-MAIL /////");
 
   db.getConnection(async (error, conn) => {
-    if (error) throw error;
+    if (error) return res.status(500).send({ message: "Some error on server.", error });
     const query = util.promisify(conn.query).bind(conn);
     const transaction = util.promisify(conn.beginTransaction).bind(conn);
     const commit = util.promisify(conn.commit).bind(conn);
@@ -193,7 +172,6 @@ router.post("/recover", async (req, res, next) => {
           const codeEncrypt = await bcrypt.hash(code, saltRounds);
           await query("UPDATE user SET recover_code = ? WHERE id = ?", [codeEncrypt, user[0].id]);
           const emailResult = await email.recover({ ...user[0], code: code });
-          console.log("E-mail sent: ", emailResult.messageId);
           await commit();
           conn.release();
           res.send({ status: true });
@@ -212,7 +190,6 @@ router.post("/recover", async (req, res, next) => {
 });
 
 router.post("/verifyRecoverCode", async (req, res, next) => {
-  console.log("///// VERIFY RECOVER CODE /////");
   try {
     let data = req.body.data;
     const query = util.promisify(db.query).bind(db);
@@ -237,10 +214,8 @@ router.post("/verifyRecoverCode", async (req, res, next) => {
 });
 
 router.post("/password", async (req, res, next) => {
-  console.log("///// RECOVER PASSWORD /////");
   try {
     let data = req.body.data;
-    console.log(data);
     const query = util.promisify(db.query).bind(db);
     const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [data.email]);
     if (user.length > 0) {

@@ -28,7 +28,7 @@ query(
     PRIMARY KEY (id),
     UNIQUE KEY uq_iec_name (name)
   )`,
-).catch((e) => console.log("Failed to ensure iec table", e));
+).catch((e) => console.error("Failed to ensure iec table", e));
 
 // Sem IEC_PUBLIC_URL (staging/local), os ficheiros são servidos pelo próprio servidor
 const publicUrl = (req, name) => {
@@ -47,13 +47,6 @@ const TYPES = {
 };
 const extOf = (name) => path.extname(name).slice(1).toLowerCase();
 const isValidName = (name) => name && name === path.basename(name) && !name.startsWith(".") && !!TYPES[extOf(name)];
-
-router.use((req, res, next) => {
-  console.log("----------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("----------------------------");
-  next();
-});
 
 /* Público: serve os ficheiros quando não há IEC_PUBLIC_URL, ou como destino do redirect do .htaccess */
 const serveFiles = express.static(IEC_DIR, { dotfiles: "deny", index: false, setHeaders: (res) => res.setHeader("Cache-Control", "no-cache") });
@@ -78,7 +71,7 @@ router.get("/read", middleware, requirePermission("iec", "read"), async (req, re
     });
     res.send(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send("Error");
   }
 });
@@ -92,7 +85,7 @@ router.post("/check", middleware, requirePermission("iec", "create"), async (req
     names.forEach((n) => fs.existsSync(path.join(IEC_DIR, n)) && existing.add(n));
     res.send({ existing: [...existing] });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send("Error");
   }
 });
@@ -121,7 +114,7 @@ router.post("/upload", middleware, requirePermission("iec", "create"), fileUploa
 
     res.send({ id: name, name, url: publicUrl(req, name), replaced: exists });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Upload failed" });
   }
 });
@@ -136,7 +129,7 @@ router.post("/delete", middleware, requirePermission("iec", "delete"), async (re
     await query("UPDATE iec SET is_deleted = 1 WHERE name = ?", [name]);
     res.send({ deleted: name });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send("Error");
   }
 });

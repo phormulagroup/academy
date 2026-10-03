@@ -11,13 +11,6 @@ const { read } = require("fs");
 // Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
 const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 
 // ---- Acesso restrito a utilizadores e grupos (course.settings.restrict_to_users) ----
 // A verificação é feita aqui, no servidor: o que o utilizador não pode ver nem chega ao browser. Os administradores
@@ -48,7 +41,7 @@ async function accessibleCourseIds(query, userId) {
 		);
 		return new Set(rows.map((r) => r.id_course));
 	} catch (err) {
-		if (err.code !== "ER_NO_SUCH_TABLE") console.log(err);
+		if (err.code !== "ER_NO_SUCH_TABLE") console.error(err);
 		return new Set();
 	}
 }
@@ -69,7 +62,6 @@ async function visibleCourses(query, courses, userId) {
 }
 
 router.get("/read", async (req, res) => {
-	console.log("//// READ COURSE ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -98,7 +90,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readProgress", async (req, res) => {
-	console.log("//// READ PROGRESS BY USER ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -120,7 +111,6 @@ router.get("/readProgress", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-	console.log("//// READ COURSE BY LANG ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -167,7 +157,6 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.get("/readById", async (req, res) => {
-	console.log("//// READ COURSE BY ID ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -190,7 +179,6 @@ router.get("/readById", async (req, res) => {
 });
 
 router.get("/readBySlug", async (req, res) => {
-	console.log("//// READ COURSE BY SLUG ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const isAdmin = parseInt(req.query.id_role) === 1;
@@ -246,7 +234,6 @@ router.get("/readBySlug", async (req, res) => {
 });
 
 router.get("/readByTopicId", async (req, res) => {
-	console.log("//// READ COURSE BY TOPIC ID ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -262,7 +249,6 @@ router.get("/readByTopicId", async (req, res) => {
 });
 
 router.get("/readByTestId", async (req, res) => {
-	console.log("//// READ COURSE BY TEST ID ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -278,7 +264,6 @@ router.get("/readByTestId", async (req, res) => {
 });
 
 router.get("/report", requirePermission("report", "read"), async (req, res) => {
-	console.log("/// REPORTS COURSE ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const idLang = req.query.id_lang;
@@ -345,7 +330,7 @@ router.get("/accessUsers", requirePermission("course", "update"), async (req, re
 			),
 		);
 	} catch (err) {
-		console.log(err);
+		console.error(err);
 		res.status(500).send({ message: "Error" });
 	}
 });
@@ -362,7 +347,7 @@ router.get("/accessGroups", requirePermission("course", "update"), async (req, r
 			),
 		);
 	} catch (err) {
-		console.log(err);
+		console.error(err);
 		res.status(500).send({ message: "Error" });
 	}
 });
@@ -383,7 +368,7 @@ function replaceAccessList(table, column, idsKey) {
 				conn.release();
 				res.send({ id_course, [idsKey]: ids });
 			} catch (err) {
-				console.log(err);
+				console.error(err);
 				await util.promisify(conn.rollback).bind(conn)();
 				conn.release();
 				res.status(500).send({ message: "Error" });
@@ -395,7 +380,6 @@ router.post("/setAccessUsers", requirePermission("course", "update"), replaceAcc
 router.post("/setAccessGroups", requirePermission("course", "update"), replaceAccessList("course_group", "id_group", "id_groups"));
 
 router.post("/create", requirePermission("course", "create"), async (req, res, next) => {
-	console.log("//// CREATE COURSE ////");
 	try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
@@ -421,7 +405,6 @@ router.post("/create", requirePermission("course", "create"), async (req, res, n
 });
 
 router.post("/update", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// UPDATE COURSE ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -462,7 +445,6 @@ router.post("/update", requirePermission("course", "update"), async (req, res, n
 });
 
 router.post("/updateTopic", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// UPDATE COURSE TOPIC ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -487,7 +469,6 @@ router.post("/updateTopic", requirePermission("course", "update"), async (req, r
 });
 
 router.post("/updateTest", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// UPDATE COURSE TOPIC ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -512,7 +493,6 @@ router.post("/updateTest", requirePermission("course", "update"), async (req, re
 });
 
 router.post("/updateProgress", async (req, res, next) => {
-	console.log("//// UPDATE COURSE PROGRESS ////");
 	try {
 		let data = req.body.data;
 		const query = util.promisify(db.query).bind(db);
@@ -539,7 +519,6 @@ router.post("/updateProgress", async (req, res, next) => {
 // O Admin marca como concluído, em nome de um aluno: um item (tópico/teste), um módulo ou o curso todo. Só acrescenta o que ainda
 // não está concluído; depois fecha os módulos e o curso se ficarem completos. Os itens saem sempre do curso na BD, nunca do cliente.
 router.post("/completeProgress", requirePermission("course", "update"), async (req, res) => {
-	console.log("//// COMPLETE COURSE PROGRESS ////");
 	const { id_user, id_course, scope, id_module, item } = req.body.data || {};
 	if (!id_user || !id_course || !["item", "module", "course"].includes(scope)) return res.status(400).send({ message: "Invalid request" });
 
@@ -600,16 +579,15 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 		} catch (err) {
 			await util.promisify(conn.rollback).bind(conn)().catch(() => {});
 			conn.release();
-			console.log(err);
+			console.error(err);
 			res.status(500).send({ message: "Error" });
 		}
 	});
 });
 
 router.post("/resetProgress", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// UPDATE COURSE PROGRESS ////");
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		const query = util.promisify(conn.query).bind(conn);
 		const transaction = util.promisify(conn.beginTransaction).bind(conn);
 		const commit = util.promisify(conn.commit).bind(conn);
@@ -645,13 +623,12 @@ router.post("/resetProgress", requirePermission("course", "update"), async (req,
 				[modulesToDelete, topicsToDelete, testsToDelete],
 			);
 
-			console.log(resp);
 
 			await commit();
 			conn.release();
 			res.send(data);
 		} catch (err) {
-			console.log(err);
+			console.error(err);
 			await rollback();
 			conn.release();
 			throw err;
@@ -660,9 +637,8 @@ router.post("/resetProgress", requirePermission("course", "update"), async (req,
 });
 
 router.post("/module", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// UPDATE COURSE MODULE ////");
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		const query = util.promisify(conn.query).bind(conn);
 		const transaction = util.promisify(conn.beginTransaction).bind(conn);
 		const commit = util.promisify(conn.commit).bind(conn);
@@ -671,14 +647,6 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 			await transaction();
 			let data = req.body.data;
 			
-			// console.log("\n========== DELETE REQUEST ==========");
-			// console.log("FULL deleted object:", JSON.stringify(req.body.deleted, null, 2));
-			// console.log("deleted.items type:", typeof req.body.deleted.items, "is array?", Array.isArray(req.body.deleted.items));
-			// console.log("deleted.items raw:", req.body.deleted.items);
-			// console.log("deleted.items length:", req.body.deleted.items?.length);
-			// console.log("deleted.modules type:", typeof req.body.deleted.modules, "is array?", Array.isArray(req.body.deleted.modules));
-			// console.log("deleted.modules raw:", req.body.deleted.modules);
-			// console.log("====================================\n");
 			
 			let deletedItems = req.body.deleted.items || [];
 			let deletedModules = req.body.deleted.modules || [];
@@ -689,7 +657,6 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 					.map((_i) => parseInt(_i.split("-")[1]))
 					.filter((_id) => !isNaN(_id))
 			);
-			// console.log("Deleted module IDs set:", deletedModuleIds);
 
 			for (let i = 0; i < data.length; i++) {
 				const aux = data[i];
@@ -760,10 +727,8 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 				let itemsValue;
 				if (deletedModuleIds.has(aux.id)) {
 					itemsValue = null;
-					// console.log(`Module ${aux.id} is deleted → setting items to NULL`);
 				} else {
 					itemsValue = newItems.length > 0 ? JSON.stringify(newItems) : JSON.stringify([]);
-					// console.log(`Updating module ${aux.id} items to:`, newItems);
 				}
 				
 				await query("UPDATE course_module SET items = ? WHERE id = ?", [
@@ -773,80 +738,63 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 			}
 
 			if (deletedItems.length > 0) {
-				// console.log("\n PROCESSING DELETED ITEMS");
-				// console.log("Raw deletedItems:", deletedItems);
 				
 				let deletedItemsId = deletedItems
 					.filter((_t) => _t.includes("topic"))
 					.map((_i) => {
 						const id = parseInt(_i.split("-")[1]);
-						// console.log(`  Topic: "${_i}" → ID: ${id}`);
 						return id;
 					})
 					.filter((_id) => !isNaN(_id));
 				
-				// console.log("Parsed topic IDs:", deletedItemsId);
 				
 				if (deletedItemsId.length > 0) {
-					// console.log(`Deleting ${deletedItemsId.length} topics`);
 					const result = await query(
 						"UPDATE course_topic SET is_deleted = 1 WHERE id IN (?)",
 						[deletedItemsId]
 					);
-					// console.log("Topics deleted:", result.affectedRows);
 				}
 
 				let deletedTestsId = deletedItems
 					.filter((_t) => _t.includes("test"))
 					.map((_i) => {
 						const id = parseInt(_i.split("-")[1]);
-						// console.log(`  Test: "${_i}" → ID: ${id}`);
 						return id;
 					})
 					.filter((_id) => !isNaN(_id));
 				
-				// console.log("Parsed test IDs:", deletedTestsId);
 				
 				if (deletedTestsId.length > 0) {
-					// console.log(`Deleting ${deletedTestsId.length} tests`);
 					const result = await query(
 						"UPDATE course_test SET is_deleted = 1 WHERE id IN (?)",
 						[deletedTestsId]
 					);
-					// console.log("Tests deleted:", result.affectedRows);
 				}
 			}
 
 			if (deletedModules.length > 0) {
-				// console.log("\n📋 PROCESSING DELETED MODULES");
-				// console.log("Raw deletedModules:", deletedModules);
 				
 				let deletedModulesId = deletedModules
 					.map((_i) => {
 						const id = parseInt(_i.split("-")[1]);
-						// console.log(`  Module: "${_i}" → ID: ${id}`);
 						return id;
 					})
 					.filter((_id) => !isNaN(_id));
 				
-				// console.log("Parsed module IDs:", deletedModulesId);
 				
 				if (deletedModulesId.length > 0) {
-					// console.log(`Deleting ${deletedModulesId.length} modules`);
 					const result = await query(
 						"UPDATE course_module SET is_deleted = 1 WHERE id IN (?)",
 						[deletedModulesId]
 					);
-					// console.log("Modules deleted:", result.affectedRows);
 				}
 			}
 
 			await commit();
 			conn.release();
-			// console.log("✅ TRANSACTION COMMITTED SUCCESSFULLY");
 			res.send(data);
 		} catch (err) {
-			console.log(err);
+			console.error(err);
 			await rollback();
 			conn.release();
 			throw err;
@@ -855,9 +803,8 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 });
 
 router.post("/duplicate", requirePermission("course", "create"), async (req, res, next) => {
-	console.log("//// DUPLICATE COURSE ////");
 	db.getConnection(async (error, conn) => {
-		if (error) throw error;
+		if (error) return res.status(500).send({ message: "Some error on server.", error });
 		const query = util.promisify(conn.query).bind(conn);
 		const transaction = util.promisify(conn.beginTransaction).bind(conn);
 		const commit = util.promisify(conn.commit).bind(conn);
@@ -865,7 +812,6 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 		try {
 			await transaction();
 			let data = req.body.data;
-			console.log(data);
 			let course = await query("SELECT * FROM course WHERE id = ?", data.id);
 			course = course[0];
 			delete course.id;
@@ -892,7 +838,6 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 				try {
 					moduleItems = module.items ? JSON.parse(module.items) : null;
 				} catch (parseError) {
-					console.log(`Warning: Failed to parse items for module, skipping...`, parseError.message);
 					moduleItems = null;
 				}
 				
@@ -915,7 +860,6 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 									);
 						
 						if (!rowItem || rowItem.length === 0) {
-							console.log(`Warning: ${item.type} with id ${item.id} not found, skipping...`);
 							continue;
 						}
 						
@@ -944,7 +888,7 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 			conn.release();
 			res.send({ insertId: insertedCourse.insertId });
 		} catch (err) {
-			console.log(err);
+			console.error(err);
 			await rollback();
 			conn.release();
 			throw err;
@@ -953,7 +897,6 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 });
 
 router.post("/delete", requirePermission("course", "delete"), async (req, res, next) => {
-	console.log("//// DELETE COURSE ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
@@ -966,9 +909,7 @@ router.post("/delete", requirePermission("course", "delete"), async (req, res, n
 });
 
 router.post("/deleteTry", requirePermission("course", "update"), async (req, res, next) => {
-	console.log("//// DELETE TRY ////");
 	try {
-		console.log();
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
 			"DELETE FROM course_user_activity WHERE id = " + req.body.data.id,

@@ -7,15 +7,7 @@ var slugify = require("slugify");
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", async (req, res) => {
-	console.log("//// READ DOWNLOAD ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM download WHERE is_deleted = 0");
@@ -26,7 +18,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-	console.log("//// READ DOWNLOAD ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		// Para incluir downloads inativos, o backoffice envia include_deleted=1
@@ -44,7 +35,6 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.get("/readBySlug", async (req, res) => {
-	console.log("//// READ DOWNLOAD ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -59,7 +49,6 @@ router.get("/readBySlug", async (req, res) => {
 });
 
 router.post("/create", requirePermission("download", "create"), async (req, res, next) => {
-	console.log("//// CREATE DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		let data = req.body.data;
@@ -93,7 +82,6 @@ router.post("/create", requirePermission("download", "create"), async (req, res,
 });
 
 router.post("/update", requirePermission("download", "update"), async (req, res, next) => {
-	console.log("//// UPDATE DOWNLOAD ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -140,7 +128,6 @@ router.post("/update", requirePermission("download", "update"), async (req, res,
 });
 
 router.post("/preview", async (req, res, next) => {
-	console.log("//// PREVIEW DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const previewRow = await query(
@@ -153,7 +140,6 @@ router.post("/preview", async (req, res, next) => {
 });
 
 router.post("/download", async (req, res, next) => {
-	console.log("//// DOWNLOAD DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const downloadRow = await query(
@@ -167,7 +153,6 @@ router.post("/download", async (req, res, next) => {
 });
 
 router.post("/delete", requirePermission("download", "delete"), async (req, res, next) => {
-	console.log("//// DELETE DOWNLOAD ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(

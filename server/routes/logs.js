@@ -5,27 +5,18 @@ var router = express.Router();
 var db = require("../utils/database");
 const { requireStaff } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", requireStaff(), async (req, res) => {
-  console.log("/// READ LOG ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT logs.*, user.name, user.email FROM logs LEFT JOIN user ON user.id = logs.modified_by");
     res.send(rows);
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Some error on server.", error: e });
   }
 });
 
 router.get("/readByParams", requireStaff(), async (req, res) => {
-  console.log("/// READ LOG ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const params = req.query;
@@ -43,19 +34,18 @@ router.get("/readByParams", requireStaff(), async (req, res) => {
     const rows = await query(`SELECT logs.*, user.name, user.email FROM logs LEFT JOIN user ON user.id = logs.modified_by WHERE ${whereString} ORDER BY created_at DESC`);
     res.send(rows);
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Some error on server.", error: e });
   }
 });
 
 router.post("/create", async (req, res) => {
-  console.log("//// CREATE LOG ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("INSERT INTO logs SET ?", req.body.data);
     res.send(rows);
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Some error on server.", error: e });
   }
 });

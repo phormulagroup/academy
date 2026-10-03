@@ -7,15 +7,7 @@ var db = require("../utils/database");
 const middleware = require("../utils/middleware");
 const { requirePermission } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", async (req, res) => {
-	console.log("//// READ LANGUAGE ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM language");
@@ -26,7 +18,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.post("/create", middleware, requirePermission("language", "create"), async (req, res, next) => {
-	console.log("//// CREATE LANGUAGE ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
@@ -42,7 +33,6 @@ router.post("/create", middleware, requirePermission("language", "create"), asyn
 });
 
 router.post("/update", middleware, requirePermission("language", "update"), async (req, res, next) => {
-	console.log("//// UPDATE LANGUAGE ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -71,7 +61,6 @@ router.post("/update", middleware, requirePermission("language", "update"), asyn
 });
 
 router.post("/delete", middleware, requirePermission("language", "delete"), async (req, res, next) => {
-	console.log("//// DELETE LANGUAGE ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query(
@@ -84,7 +73,6 @@ router.post("/delete", middleware, requirePermission("language", "delete"), asyn
 });
 
 router.post("/default", middleware, requirePermission("language", "update"), async (req, res, next) => {
-	console.log("//// DEFAULT LANGUAGE ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(

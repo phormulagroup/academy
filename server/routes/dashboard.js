@@ -6,15 +6,7 @@ var router = express.Router();
 var db = require("../utils/database");
 const { requireStaff } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", requireStaff(), async (req, res) => {
-  console.log("/// READ DASHBOARD ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
@@ -45,7 +37,7 @@ router.get("/read", requireStaff(), async (req, res) => {
 
     res.send({ users, courses, modules, topics, tests, activity, logs });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).send({ message: "Some error on server.", error: e });
   }
 });

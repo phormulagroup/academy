@@ -6,15 +6,7 @@ var router = express.Router();
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-  console.log("---------------------------");
-  console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-  console.log("---------------------------");
-  next();
-});
-
 router.get("/read", async (req, res) => {
-  console.log("//// READ NOTIFICATION ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM notification");
@@ -25,7 +17,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readByUser", async (req, res) => {
-  console.log("//// READ NOTIFICATION BY USER ////");
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
@@ -40,9 +31,7 @@ router.get("/readByUser", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-  console.log("//// READ NOTIFICATION BY LANG ////");
   const query = util.promisify(db.query).bind(db);
-  console.log(req.query);
   try {
     const rows = await query("SELECT * FROM notification WHERE id_lang = ?", [req.query.id_lang]);
     res.send(rows);
@@ -52,11 +41,9 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.post("/create", requirePermission("notification", "create"), async (req, res, next) => {
-  console.log("//// CREATE NOTIFICATION ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const data = req.body.data;
-    console.log(data);
     const insertedRow = await query("INSERT INTO notification SET ?", data);
     res.send(insertedRow);
   } catch (err) {
@@ -65,7 +52,6 @@ router.post("/create", requirePermission("notification", "create"), async (req, 
 });
 
 router.post("/update", requirePermission("notification", "update"), async (req, res, next) => {
-  console.log("//// UPDATE NOTIFICATION ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
@@ -84,7 +70,6 @@ router.post("/update", requirePermission("notification", "update"), async (req, 
 });
 
 router.post("/markAsRead", async (req, res, next) => {
-  console.log("//// MARK AS READ NOTIFICATION ////");
   try {
     let data = req.body.data;
     let whereId = data.id;
@@ -103,9 +88,8 @@ router.post("/markAsRead", async (req, res, next) => {
 });
 
 router.post("/send", requirePermission("notification", "update"), async (req, res, next) => {
-  console.log("//// SEND NOTIFICATION ////");
   db.getConnection(async (error, conn) => {
-    if (error) throw error;
+    if (error) return res.status(500).send({ message: "Some error on server.", error });
     const query = util.promisify(conn.query).bind(conn);
     const transaction = util.promisify(conn.beginTransaction).bind(conn);
     const commit = util.promisify(conn.commit).bind(conn);
@@ -136,7 +120,6 @@ router.post("/send", requirePermission("notification", "update"), async (req, re
 });
 
 router.post("/delete", requirePermission("notification", "delete"), async (req, res, next) => {
-  console.log("//// DELETE LANGUAGE ////");
   try {
     const query = util.promisify(db.query).bind(db);
     const deletedRow = await query("UPDATE language SET is_deleted = 1 WHERE id = " + req.body.data.id);

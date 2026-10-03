@@ -20,7 +20,7 @@ const middleware = async (req, res, next) => {
     req.user = { id: rows[0].id, id_role: rows[0].id_role, id_lang: rows[0].id_lang, country: rows[0].country };
     return next();
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return res.status(401).send("Invalid Token");
   }
 };

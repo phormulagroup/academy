@@ -9,15 +9,7 @@ var path = require("path");
 var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 
-router.use((req, res, next) => {
-	console.log("---------------------------");
-	console.log(req.url, "@", dayjs().format("YYYY-MM-DD HH:mm:ss"));
-	console.log("---------------------------");
-	next();
-});
-
 router.get("/read", async (req, res) => {
-	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM document WHERE is_deleted = 0");
@@ -28,7 +20,6 @@ router.get("/read", async (req, res) => {
 });
 
 router.get("/readByLang", async (req, res) => {
-	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		// A app só vê documentos ativos; o backoffice pede também os inativos (include_deleted=1) para os mostrar como "Inativo"
@@ -41,7 +32,6 @@ router.get("/readByLang", async (req, res) => {
 });
 
 router.get("/readBySlug", async (req, res) => {
-	console.log("//// READ DOCUMENT ////");
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query("SELECT * FROM document WHERE slug = ? AND id_lang = ? AND is_deleted = 0", [req.query.slug, req.query.id_lang]);
@@ -72,7 +62,6 @@ router.get("/readFile", async (req, res) => {
 });
 
 router.post("/create", requirePermission("document", "create"), async (req, res, next) => {
-	console.log("//// CREATE DOCUMENT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const data = req.body.data;
@@ -86,7 +75,6 @@ router.post("/create", requirePermission("document", "create"), async (req, res,
 });
 
 router.post("/update", requirePermission("document", "update"), async (req, res, next) => {
-	console.log("//// UPDATE DOCUMENT ////");
 	try {
 		let data = req.body.data;
 		let whereId = data.id;
@@ -106,7 +94,6 @@ router.post("/update", requirePermission("document", "update"), async (req, res,
 });
 
 router.post("/delete", requirePermission("document", "delete"), async (req, res, next) => {
-	console.log("//// DELETE DOCUMENT ////");
 	try {
 		const query = util.promisify(db.query).bind(db);
 		const deletedRow = await query("UPDATE document SET is_deleted = 1 WHERE id = " + req.body.data.id);
