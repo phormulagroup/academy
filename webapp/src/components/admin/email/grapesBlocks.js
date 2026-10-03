@@ -1,9 +1,12 @@
 import { BODY_FONT, EMAIL_FONTS, HEADING_FONT } from "../../../utils/emailFonts";
 
 // Blocos do editor de e-mails (MJML), à maneira do Brevo: layout, conteúdo e blocos prontos da marca.
-const BRAND = "#163986";
-const ACCENT = "#00B9D6";
-const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300"><rect width="100%" height="100%" fill="#E9EDF5"/><text x="50%" y="50%" fill="#8A8D98" font-family="Arial" font-size="22" text-anchor="middle" dominant-baseline="middle">600 x 300</text></svg>');
+export const BRAND = "#163986";
+export const ACCENT = "#00B9D6";
+export const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300"><rect width="100%" height="100%" fill="#E9EDF5"/><text x="50%" y="50%" fill="#8A8D98" font-family="Arial" font-size="22" text-anchor="middle" dominant-baseline="middle">600 x 300</text></svg>');
+
+// Imagem de fundo de exemplo dos banners: azul da marca (o texto branco lê-se), a substituir por uma imagem à escolha
+export const HERO_BG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#163986"/><stop offset="1" stop-color="#2a5fc9"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>');
 
 // Pequenos ícones dos blocos (SVG a traço, 24x24)
 const icon = (path) => `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
@@ -101,7 +104,7 @@ const blocks = (t) => [
     label: t("Banner with image"),
     media: ICONS.hero,
     // Imagem de fundo (escolhe-se nos estilos da secção); a cor de fundo aparece onde a imagem não carrega
-    content: `<mj-section background-color="${BRAND}" background-url="${PLACEHOLDER}" background-size="cover" background-repeat="no-repeat" padding="70px 24px"><mj-column><mj-text font-family="${HEADING_FONT}" align="center" color="#ffffff" font-size="30px" font-weight="700" line-height="1.3">${t("Your title")}</mj-text><mj-button background-color="${ACCENT}" color="#ffffff" border-radius="6px" font-weight="600" href="https://">${t("Click here")}</mj-button></mj-column></mj-section>`,
+    content: `<mj-section background-color="${BRAND}" background-url="${HERO_BG}" background-size="cover" background-repeat="no-repeat" padding="70px 24px"><mj-column><mj-text font-family="${HEADING_FONT}" align="center" color="#ffffff" font-size="30px" font-weight="700" line-height="1.3">${t("Your title")}</mj-text><mj-button background-color="${ACCENT}" color="#ffffff" border-radius="6px" font-weight="600" href="https://">${t("Click here")}</mj-button></mj-column></mj-section>`,
   },
   {
     id: "cta",
@@ -161,26 +164,32 @@ export function emailBlocks(editor, t) {
   blocks(t).forEach(({ category, ...block }) => editor.Blocks.add(block.id, { ...block, category: { id: category, label: categories[category], open: category !== "Ready-made" }, select: true }));
 }
 
-// Ponto de partida de um template novo: cabeçalho, título, texto, botão e rodapé
-export function starterMjml(t) {
-  return `<mjml>
-  <mj-head>
+// Peças comuns dos e-mails da marca (usadas no modelo base e nos modelos da galeria)
+export const mjmlHead = () => `<mj-head>
     ${EMAIL_FONTS.map((f) => `<mj-font name="${f.name}" href="${f.href}"></mj-font>`).join("\n    ")}
     <mj-attributes>
       <mj-all font-family="${BODY_FONT}"></mj-all>
       <mj-text font-size="15px" color="#333333" line-height="1.6"></mj-text>
     </mj-attributes>
-  </mj-head>
+  </mj-head>`;
+export const wrapMjml = (body) => `<mjml>
+  ${mjmlHead()}
   <mj-body background-color="#F4F5F7" width="600px">
-    <mj-section background-color="${BRAND}" padding="18px 24px"><mj-column><mj-image src="${PLACEHOLDER}" alt="" width="160px" align="left" padding="0"></mj-image></mj-column></mj-section>
+    ${body}
+  </mj-body>
+</mjml>`;
+export const headerSection = () => `<mj-section background-color="${BRAND}" padding="18px 24px"><mj-column><mj-image src="${PLACEHOLDER}" alt="" width="160px" align="left" padding="0"></mj-image></mj-column></mj-section>`;
+export const footerSection = (t) => `<mj-section background-color="#F4F5F7" padding="20px 24px"><mj-column><mj-text align="center" font-size="12px" color="#8A8D98" line-height="1.6">Bial Regional Academy<br/>${t("This e-mail was sent automatically, please do not reply")}</mj-text></mj-column></mj-section>`;
+
+// Ponto de partida de um template novo: cabeçalho, título, texto, botão e rodapé
+export function starterMjml(t) {
+  return wrapMjml(`${headerSection()}
     <mj-section background-color="#ffffff" padding="24px"><mj-column>
       <mj-text font-family="${HEADING_FONT}" font-size="24px" font-weight="700" color="${BRAND}">${t("Hello")} {{name}},</mj-text>
       <mj-text>${t("Write your text here")}</mj-text>
       <mj-button background-color="${BRAND}" color="#ffffff" border-radius="6px" font-weight="600" href="https://">${t("Click here")}</mj-button>
     </mj-column></mj-section>
-    <mj-section background-color="#F4F5F7" padding="20px 24px"><mj-column><mj-text align="center" font-size="12px" color="#8A8D98" line-height="1.6">Bial Regional Academy<br/>${t("This e-mail was sent automatically, please do not reply")}</mj-text></mj-column></mj-section>
-  </mj-body>
-</mjml>`;
+    ${footerSection(t)}`);
 }
 
 // Garante que o e-mail declara as fontes da marca (mj-font): sem isso um e-mail antigo, ou um que perdeu o cabeçalho, não as carrega

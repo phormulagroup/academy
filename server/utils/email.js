@@ -4,6 +4,7 @@ const util = require("util");
 const db = require("./database");
 const { AsyncLocalStorage } = require("async_hooks");
 const { logEmail } = require("./monitor");
+const defaultTemplates = require("./defaultEmailTemplates.json");
 
 // Cada função de envio corre dentro deste contexto (nome do modelo): o transportador regista aí o resultado do envio e, se a função
 // falhar antes de chegar a enviar (modelo em falta, SMTP por configurar...), o erro também fica registado, com a razão.
@@ -64,94 +65,32 @@ function buildTransporter(smtpSettings) {
   };
 }
 
+const FALLBACK_LANG = 5; // inglês
+
+// O HTML guarda-se na BD como string JSON (ou texto simples nos modelos de origem)
+const readHtml = (raw) => {
+  if (typeof raw !== "string") return raw || "";
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "string" ? parsed : raw;
+  } catch {
+    return raw;
+  }
+};
+
+// 1) o template da BD no idioma da pessoa (se estiver desativado: não se envia); 2) o modelo de origem nesse idioma; 3) o inglês
+async function findTemplate(query, type, idLang) {
+  for (const lang of [Number(idLang) || FALLBACK_LANG, FALLBACK_LANG]) {
+    const key = `${type}_${lang}`;
+    const [row] = await query("SELECT subject, html, is_active FROM email_template WHERE name_key = ?", [key]);
+    if (row) return row.is_active ? { subject: row.subject, html: readHtml(row.html) } : null;
+    if (defaultTemplates[key]) return { subject: defaultTemplates[key].subject, html: defaultTemplates[key].html };
+  }
+  return null;
+}
+
 module.exports = {
-  register: function (data) {
-    return new Promise((resolve, reject) => {
-      db.getConnection(async (error, conn) => {
-        if (error) return reject(error);
-        try {
-          const query = util.promisify(conn.query).bind(conn);
-          const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
-          const smtpSettings = smtpFromRows(rows);
-          const template = await query("SELECT * FROM email_template WHERE name_key = ?", `register_${data.id_lang}`);
-
-          if (!template || template.length === 0) {
-            throw new Error(`Template not found for register_${data.id_lang}`);
-          }
-
-          const fullContext = {
-            name: data.name,
-          };
-
-          const subject = Handlebars.compile(template[0].subject)(fullContext);
-          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
-          const html = Handlebars.compile(htmlString)(fullContext);
-          const { transporter, from } = buildTransporter(smtpSettings);
-
-          const mailOptions = {
-            from: from,
-            to: data.email,
-            subject: subject,
-            html: html, // template HTML content
-          };
-
-          transporter.sendMail(mailOptions, (err, info) => {
-            if (err) reject(err);
-            resolve(info);
-            conn.release();
-          });
-        } catch (err) {
-          reject(err);
-          conn.release();
-        }
-      });
-    });
-  },
-
-  change_status: function (data) {
-    return new Promise((resolve, reject) => {
-      db.getConnection(async (error, conn) => {
-        if (error) return reject(error);
-        try {
-          const query = util.promisify(conn.query).bind(conn);
-          const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
-          const smtpSettings = smtpFromRows(rows);
-          const template = await query("SELECT * FROM email_template WHERE name_key = ?", `change_status_${data.id_lang}`);
-
-          if (!template || template.length === 0) {
-            throw new Error(`Template not found for change_status_${data.id_lang}`);
-          }
-
-          const fullContext = {
-            name: data.name,
-            status: data.status,
-          };
-
-          const subject = Handlebars.compile(template[0].subject)(fullContext);
-          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
-          const html = Handlebars.compile(htmlString)(fullContext);
-          const { transporter, from } = buildTransporter(smtpSettings);
-
-          const mailOptions = {
-            from: from,
-            to: data.email,
-            subject: subject,
-            html: html,
-          };
-
-          transporter.sendMail(mailOptions, (err, info) => {
-            if (err) reject(err);
-            resolve(info);
-            conn.release();
-          });
-        } catch (err) {
-          reject(err);
-          conn.release();
-        }
-      });
-    });
-  },
-
+  // Recuperação de password (código por e-mail). Os restantes e-mails automáticos usam notify (abaixo)
   recover: function (data) {
     return new Promise((resolve, reject) => {
       db.getConnection(async (error, conn) => {
@@ -196,6 +135,42 @@ module.exports = {
     });
   },
 
+  // E-mail automático da plataforma por tipo (registration_received, account_approved...): procura o template na BD (`<tipo>_<id do idioma>`)
+  // e, se a BD ainda não o tiver, usa o modelo de origem (defaultEmailTemplates.json), por isso estes e-mails nunca deixam de sair.
+  // Um template desativado na BD não envia nada. `vars` são as variáveis do template ({{name}}, {{url}}...).
+  notify: function ({ type, to, id_lang, vars = {} }) {
+    return new Promise((resolve, reject) => {
+      db.getConnection(async (error, conn) => {
+        if (error) return reject(error);
+        try {
+          // O nome do tipo é o que fica no registo de e-mails (em vez do nome desta função)
+          const ctx = emailContext.getStore();
+          if (ctx) ctx.name = type;
+          const query = util.promisify(conn.query).bind(conn);
+          const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
+          const smtpSettings = smtpFromRows(rows);
+          const template = await findTemplate(query, type, id_lang);
+          if (!template) {
+            conn.release();
+            return resolve(null); // desativado no backoffice
+          }
+          const context = { platform: "Bial Regional Academy", ...vars };
+          const subject = Handlebars.compile(template.subject || "")(context);
+          const html = Handlebars.compile(template.html)(context);
+          const { transporter, from } = buildTransporter(smtpSettings);
+          transporter.sendMail({ from, to, subject, html }, (err, info) => {
+            conn.release();
+            if (err) reject(err);
+            else resolve(info);
+          });
+        } catch (err) {
+          conn.release();
+          reject(err);
+        }
+      });
+    });
+  },
+
   // Envio de teste do editor de templates: usa o HTML/assunto que está no editor (mesmo por guardar) com dados de exemplo
   sendTest: function (data) {
     return new Promise((resolve, reject) => {
@@ -222,10 +197,6 @@ module.exports = {
     });
   },
 
-  // TODO : IMPLEMENTAR MAIS TARDE 
-  // createUser: function (data) {
-
-  // },
 };
 
 // Envolve todas as funções de envio: contexto para o registo e registo das falhas anteriores ao envio
@@ -237,7 +208,7 @@ for (const [name, fn] of Object.entries(module.exports)) {
         return await fn(data);
       } catch (err) {
         const ctx = emailContext.getStore();
-        if (!ctx.logged) await logEmail({ to: data?.email, template: name, status: "error", error: err });
+        if (!ctx.logged) await logEmail({ to: data?.email || data?.to, template: ctx.name || name, status: "error", error: err });
         throw err;
       }
     });

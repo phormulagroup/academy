@@ -99,19 +99,24 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 				user: smtpSettings.email,
 				pass: smtpSettings.password,
 			},
+			// Um servidor errado ou bloqueado não deve deixar a página à espera minutos
+			connectionTimeout: 10000,
+			greetingTimeout: 10000,
+			socketTimeout: 20000,
 		});
 
 		const mailOptions = {
 			from: `${smtpSettings.name} <${smtpSettings.email}>`,
-			to: req.body.data.email,
+			// O teste vai para o endereço escolhido na página (por omissão, o próprio remetente)
+			to: smtpSettings.to || req.body.data.email,
 			subject: "Send test e-mail",
-			text: "Este e-mail foi enviado foi de teste do SMTP",
+			text: "Este é um e-mail de teste das definições de SMTP da plataforma. Se o recebeu, o envio está a funcionar.",
 		};
 
 		// Um throw dentro do callback não chegava ao cliente (pedido ficava pendurado): devolve o resultado do envio
 		transporter.sendMail(mailOptions, (err, info) => {
 			logEmail({ to: mailOptions.to, subject: mailOptions.subject, template: "smtp_test", status: err ? "error" : "sent", error: err, info });
-			if (err) res.send({ sent: false, message: err.message });
+			if (err) res.send({ sent: false, message: err.message, code: err.code || null });
 			else res.send({ sent: true, messageId: info.messageId });
 		});
 	} catch (err) {

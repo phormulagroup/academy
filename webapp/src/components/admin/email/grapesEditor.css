@@ -1,23 +1,69 @@
-/* GrapesJS com as cores da plataforma */
+/* GrapesJS com o tema claro e as cores da plataforma (azul Bial #163986 e turquesa #00B9D6). As variáveis redefinem o tema escuro
+   por omissão do GrapesJS; o plugin MJML usa useCustomTheme: false para não impor o seu. */
 .gjs-editor-cont,
-.gjs-editor {
-  --gjs-primary-color: #163986;
-  --gjs-secondary-color: #e6ebf7;
-  --gjs-tertiary-color: #00b9d6;
-  --gjs-quaternary-color: #00b9d6;
+.gjs-editor,
+.gjs-mdl-container {
+  --gjs-main-color: #ffffff;
+  --gjs-primary-color: #ffffff; /* fundo dos painéis */
+  --gjs-secondary-color: #3b4258; /* texto dos painéis */
+  --gjs-tertiary-color: #163986; /* botões e destaques ativos */
+  --gjs-quaternary-color: #00b9d6; /* ligações, realces */
+  --gjs-font-color: #3b4258;
+  --gjs-font-color-active: #163986;
+  --gjs-main-dark-color: rgba(22, 57, 134, 0.07);
+  --gjs-secondary-dark-color: rgba(22, 57, 134, 0.05);
+  --gjs-main-light-color: rgba(22, 57, 134, 0.06);
+  --gjs-secondary-light-color: rgba(59, 66, 88, 0.7);
+  --gjs-soft-light-color: rgba(22, 57, 134, 0.03);
+  --gjs-light-border: #e5e7eb;
+  --gjs-arrow-color: #8a8d98;
+  --gjs-dark-text-shadow: transparent;
+  --gjs-color-highlight: #00b9d6;
   --gjs-main-font: Poppins, system-ui, sans-serif;
+  --gjs-font-size: 0.78rem;
 }
 .gjs-editor-cont { font-family: inherit; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+
+/* Painéis: barra de cima e laterais brancas com linhas finas */
+.gjs-pn-panel { box-shadow: none; }
+.gjs-pn-commands { border-bottom: 1px solid #e5e7eb; }
+.gjs-pn-views { border-bottom: 1px solid #e5e7eb; }
+.gjs-pn-views-container { border-left: 1px solid #e5e7eb; box-shadow: none; }
+.gjs-pn-btn { color: #6b7390; border-radius: 8px; margin: 2px; }
+.gjs-pn-btn:hover { color: #163986; background: rgba(22, 57, 134, 0.07); }
+.gjs-pn-btn.gjs-pn-active { color: #163986; background: rgba(22, 57, 134, 0.1); box-shadow: none; }
+.gjs-cv-canvas { background-color: #f4f5f7; }
+.gjs-sm-sector-title, .gjs-block-category .gjs-title, .gjs-layer-title, .gjs-clm-tags .gjs-sm-title { background: #f6f7fb; color: #163986; font-weight: 600; border-bottom: 1px solid #e5e7eb; border-top: 0; letter-spacing: 0; text-transform: none; }
+/* Campos do painel de estilos: só o campo tem moldura; o número, a unidade (px, %...) e as setas ficam lá dentro, sem caixa própria */
+.gjs-field { background: #fff; border: 1px solid #e0e3ea; border-radius: 6px; box-shadow: none; color: #3b4258; }
+.gjs-field:focus-within { border-color: #163986; }
+.gjs-field input, .gjs-field select, .gjs-field textarea { background: transparent; border: 0; box-shadow: none; border-radius: 0; color: #3b4258; }
+.gjs-field-units { border-left: 1px solid #eef0f4; }
+.gjs-field .gjs-input-unit { color: #6b7390; }
+.gjs-field-arrows { color: #8a8d98; }
+.gjs-field-arrow-u { border-bottom-color: #8a8d98; }
+.gjs-field-arrow-d { border-top-color: #8a8d98; }
+.gjs-radio-item input:checked + .gjs-radio-item-label { background: #163986; color: #fff; }
+.gjs-toolbar { background: #163986; border-radius: 8px; }
+.gjs-badge { background: #163986; border-radius: 4px; font-weight: 500; }
+.gjs-mdl-dialog { border-radius: 12px; }
+.gjs-mdl-header { border-bottom: 1px solid #e5e7eb; }
+
 /* Blocos numa grelha de 2 (ou mais) colunas, conforme a largura do painel */
 .gjs-blocks-c { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; padding: 10px; }
-.gjs-block { width: auto; min-width: 0; margin: 0; min-height: 84px; padding: 10px 6px; border-radius: 8px; border: 1px solid #ffffff22; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.gjs-block__media { display: flex; justify-content: center; margin-bottom: 6px; }
+.gjs-block { width: auto; min-width: 0; margin: 0; min-height: 84px; padding: 10px 6px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; color: #3b4258; box-shadow: none; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: border-color 0.15s, box-shadow 0.15s, color 0.15s; }
+.gjs-block:hover { border-color: #163986; color: #163986; box-shadow: 0 2px 8px rgba(22, 57, 134, 0.12); }
+.gjs-block__media { display: flex; justify-content: center; margin-bottom: 6px; color: #163986; }
 .gjs-block-label { font-size: 12px; }
+
 /* Barra do editor de texto: o seletor de variáveis tem largura própria (os botões de formatação são quadrados de 25 px) */
-.gjs-rte-toolbar { display: flex; align-items: stretch; }
+.gjs-rte-toolbar { display: flex; align-items: stretch; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 14px rgba(22, 57, 134, 0.15); overflow: hidden; }
+.gjs-rte-action { color: #3b4258; border-right-color: #eef0f4; }
+.gjs-rte-action:hover { background: rgba(22, 57, 134, 0.07); color: #163986; }
+.gjs-rte-active { background: rgba(22, 57, 134, 0.12); color: #163986; }
 .gjs-rte-action:has(.gjs-variable-select) { width: auto; min-width: 0; padding: 0; border-right: 0; }
-.gjs-variable-select { appearance: none; -webkit-appearance: none; height: 100%; min-height: 25px; padding: 0 22px 0 10px; border: 0; border-left: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0; outline: 0; cursor: pointer; font: inherit; font-size: 12px; line-height: 1; color: inherit; background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round'/></svg>") no-repeat right 7px center; }
-.gjs-variable-select:hover { background-color: rgba(255, 255, 255, 0.1); }
+.gjs-variable-select { appearance: none; -webkit-appearance: none; height: 100%; min-height: 25px; padding: 0 22px 0 10px; border: 0; border-left: 1px solid #eef0f4; border-radius: 0; outline: 0; cursor: pointer; font: inherit; font-size: 12px; line-height: 1; color: #163986; background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23163986' stroke-width='1.4' stroke-linecap='round'/></svg>") no-repeat right 7px center; }
+.gjs-variable-select:hover { background-color: rgba(22, 57, 134, 0.07); }
 .gjs-variable-select option { color: #333; background: #fff; }
 
 /* Painel de blocos/estilos mais largo (por omissão são 15% da largura) */

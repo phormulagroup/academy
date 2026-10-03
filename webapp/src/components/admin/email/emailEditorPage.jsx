@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Suspense, lazy, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Breadcrumb, Button, Modal, Spin } from "antd";
+import { Alert, Breadcrumb, Button, Spin } from "antd";
+import { useConfirm } from "../confirmModal";
 import EmailEditor from "react-email-editor";
 import { IoReturnDownBackOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ const GrapesEditor = lazy(() => import("./grapesEditor"));
 export default function EmailEditorPage({ breadcrumb, backTo, design, legacy = false, variables = [], canEdit = true, canRebuild = false, onSave }) {
   const { toastApi } = useContext(Context);
   const { t } = useTranslation();
+  const [confirm, confirmHolder] = useConfirm();
   const navigate = useNavigate();
 
   const [kind, setKind] = useState(legacy ? "unlayer" : "grapes");
@@ -103,22 +105,23 @@ export default function EmailEditorPage({ breadcrumb, backTo, design, legacy = f
 
   function goBack() {
     if (!isDirty) return navigate(backTo);
-    Modal.confirm({
+    confirm({
       title: t("Leave without saving?"),
-      content: t("The changes made to the content will be lost"),
+      description: t("The changes made to the content will be lost"),
+      tone: "warning",
+      danger: true,
       okText: t("Leave"),
-      okButtonProps: { danger: true },
       cancelText: t("Stay"),
       onOk: () => navigate(backTo),
     });
   }
 
   function rebuild() {
-    Modal.confirm({
+    confirm({
       title: t("Rebuild this template in the new editor?"),
-      content: t("The design starts from a new base. The current content stays saved until you click Save"),
+      description: t("The design starts from a new base. The current content stays saved until you click Save"),
+      tone: "warning",
       okText: t("Rebuild"),
-      cancelText: t("Cancel"),
       onOk: () => {
         setEditorReady(false);
         setCurrentDesign(null);
@@ -131,6 +134,7 @@ export default function EmailEditorPage({ breadcrumb, backTo, design, legacy = f
 
   return (
     <div>
+      {confirmHolder}
       <div className="flex justify-between items-center mb-4!">
         <Breadcrumb items={breadcrumb} />
         <Button type="text" className="text-sm cursor-pointer" icon={<IoReturnDownBackOutline />} onClick={goBack}>
@@ -164,6 +168,8 @@ export default function EmailEditorPage({ breadcrumb, backTo, design, legacy = f
             design={currentDesign}
             variables={variables}
             height="calc(100vh - 215px)"
+            canEdit={canEdit}
+            offerTemplates={!currentDesign?.project && !currentDesign?.mjml}
             onReady={() => setEditorReady(true)}
             onChange={() => setIsDirty(true)}
           />

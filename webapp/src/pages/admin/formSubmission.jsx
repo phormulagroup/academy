@@ -5,27 +5,27 @@ import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
-import { Button, Image, Tag } from "antd";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
+import { Tag } from "antd";
+import SubmissionStatus, { replyState } from "../../utils/submissionStatus";
+import { FaRegTrashAlt } from "react-icons/fa";
+import { CgDetailsMore } from "react-icons/cg";
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 import Table from "../../components/admin/table";
 import useListFilters, { includesText } from "../../components/admin/listFilters";
-import Create from "../../components/admin/faqs/create";
-import Update from "../../components/admin/faqs/update";
 import Delete from "../../components/admin/delete";
 
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
-import config from "../../utils/config";
-import i18n from "../../utils/i18n";
 
 export default function FormSubmission() {
   const { user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("form_submission");
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -61,11 +61,15 @@ export default function FormSubmission() {
       aux.push({
         ...array[i],
         key: i + 1,
-        message: <div className="max-w-[400px] whitespace-pre-wrap">{array[i].message}</div>,
+        message: <div className="line-clamp-2 break-words">{array[i].message}</div>,
+        reply_status: <SubmissionStatus sent={array[i].replies_sent} failed={array[i].replies_failed} t={t} />,
+        acceptance: array[i].acceptance ? <Tag variant="outlined" color="green" className="m-0!">{t("Accepted")}</Tag> : <Tag className="m-0!">{t("Not given")}</Tag>,
         full_data: array[i],
         actions: (
-          <div className="flex justify-end items-center">
+          // stopPropagation: a linha toda abre os detalhes ao clicar (ver onRow)
+          <div className="flex justify-end items-center" onClick={(e) => e.stopPropagation()}>
             <RowActions items={[
+                  { label: t("Details"), key: `${array[i].id}-details`, icon: <CgDetailsMore />, onClick: () => navigate(`/admin/answers/${array[i].id}`) },
                   perm.canDelete && {
                     label: t("Delete"),
                     key: `${array[i].id}-delete`,
@@ -96,6 +100,8 @@ export default function FormSubmission() {
   // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
   const { filterRows, toolbar } = useListFilters([
     { key: "subject", type: "text", primary: true, placeholder: t("Search by subject..."), match: (row, v) => includesText(row.full_data.subject, v) },
+    // Só há estado de resposta depois de correr a migração (as linhas deixam de ter replies_sent)
+    ...(data.some((r) => "replies_sent" in r) ? [{ key: "reply", type: "select", primary: true, label: t("Status"), options: [{ label: t("Waiting for reply"), value: "waiting" }, { label: t("Answered"), value: "answered" }, { label: t("Reply failed"), value: "failed" }], match: (row, v) => replyState(row.full_data.replies_sent, row.full_data.replies_failed) === v }] : []),
     { key: "name", type: "text", label: t("Name"), placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.name, v) },
     { key: "email", type: "text", label: t("E-mail"), placeholder: t("Search by e-mail..."), match: (row, v) => includesText(row.full_data.email, v) },
   ]);
@@ -117,6 +123,10 @@ export default function FormSubmission() {
       <Table
         dataSource={filterRows(tableData)}
         loading={isLoading}
+        tableLayout="fixed"
+        scroll={{ x: 1100 }}
+        // A linha toda abre os detalhes (mensagem completa e dados de quem enviou)
+        onRow={(record) => ({ className: "cursor-pointer", onClick: () => navigate(`/admin/answers/${record.id}`) })}
         columns={[
           {
             title: t("Subject"),
@@ -124,28 +134,45 @@ export default function FormSubmission() {
             key: "subject",
             sort: true,
             sortType: "text",
-            width: "400px",
+            width: "18%",
+            ellipsis: true,
+            render: (subject) => subject || <span className="text-[#B0B3BD]">{t("No subject")}</span>,
           },
           {
             title: t("Name"),
             dataIndex: "name",
             key: "name",
+            width: "13%",
+            ellipsis: true,
           },
           {
             title: t("E-mail"),
             dataIndex: "email",
             key: "email",
+            width: "18%",
+            ellipsis: true,
           },
           {
             title: t("Message"),
             dataIndex: "message",
             key: "message",
+            width: "22%",
+          },
+          ...(data.some((r) => "replies_sent" in r) ? [{ title: t("Status"), dataIndex: "reply_status", key: "reply_status", width: 150 }] : []),
+          {
+            title: t("Received"),
+            dataIndex: "created_at",
+            key: "created_at",
+            width: 150,
+            sorter: (a, b) => dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf(),
+            defaultSortOrder: "descend",
+            render: (date) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-"),
           },
           {
             title: "",
             dataIndex: "actions",
             key: "actions",
-            width: "80px",
+            width: 64,
           },
         ]}
       />

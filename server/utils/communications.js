@@ -172,12 +172,35 @@ let failures = 0;
 let nextTryAt = 0;
 let lastLogged = { message: null, at: 0 };
 
+// Só um processo envia de cada vez: se a aplicação correr em mais do que um processo (ex.: várias instâncias no alojamento), todos
+// tentam este bloqueio da BD e só quem o apanha trata dos envios. Evita enviar o mesmo e-mail duas vezes. O bloqueio é da ligação:
+// se o processo cair a meio, a BD liberta-o sozinha.
+const LOCK_NAME = "academy_communications";
+async function withLock(fn) {
+  const conn = await new Promise((resolve, reject) => db.getConnection((err, c) => (err ? reject(err) : resolve(c))));
+  const lockQuery = util.promisify(conn.query).bind(conn);
+  try {
+    const [row] = await lockQuery("SELECT GET_LOCK(?, 0) AS locked", [LOCK_NAME]);
+    if (Number(row.locked) !== 1) return;
+    try {
+      await fn();
+    } finally {
+      await lockQuery("SELECT RELEASE_LOCK(?)", [LOCK_NAME]).catch(() => {});
+    }
+  } finally {
+    conn.release();
+  }
+}
+
 async function tick() {
   if (running || Date.now() < nextTryAt) return;
   running = true;
   try {
-    await startDue();
-    await sendBatch();
+    await withLock(async () => {
+      await startDue();
+      await sendBatch();
+      await require("./notifications").deliverDue(); // notificações agendadas na plataforma
+    });
     failures = 0;
   } catch (err) {
     failures++;

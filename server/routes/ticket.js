@@ -9,6 +9,11 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { hasPermission, requirePermission } = require("../utils/permissions");
+const { notifyUser, excerpt } = require("../utils/notify");
+
+const poolQuery = util.promisify(db.query).bind(db);
+// A pessoa dona do ticket (para os e-mails): fora da transação, só depois de gravar
+const ticketOwner = async (id) => (await poolQuery("SELECT id, name, email, id_lang FROM user WHERE id = ?", [id]))[0];
 
 router.use(fileUpload({ limits: { fileSize: 2 * 1024 * 1024 }, abortOnLimit: false }));
 
@@ -285,6 +290,8 @@ router.post("/create", (req, res) => {
     const inserted = await query("INSERT INTO ticket (id_user, subject, last_message_at, last_member_read_at) VALUES (?, ?, ?, ?)", [req.user.id, String(subject).trim(), now, now]);
     await query("INSERT INTO ticket_message (id_ticket, id_user, message, attachment) VALUES (?, ?, ?, ?)", [inserted.insertId, req.user.id, message, state.attachment]);
     await commit();
+    // "Pedido recebido": à parte, nunca atrasa nem parte a criação do ticket
+    ticketOwner(req.user.id).then((owner) => owner && notifyUser("ticket_received", owner, { subject: String(subject).trim() })).catch(() => {});
     res.send({ id: inserted.insertId });
   });
 });
@@ -323,6 +330,8 @@ router.post("/reply", (req, res) => {
     }
 
     await commit();
+    // A equipa respondeu: a pessoa recebe um aviso com a resposta (quando é ela a responder não se avisa ninguém)
+    if (!isOwner) ticketOwner(ticket.id_user).then((owner) => owner && notifyUser("ticket_reply", owner, { subject: ticket.subject, message: excerpt(message) })).catch(() => {});
     res.send({ success: true, id_assignee: newAssigneeId });
   });
 });

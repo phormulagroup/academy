@@ -1,0 +1,88 @@
+{
+  "registration_received": {
+    "vars": [
+      "name"
+    ],
+    "link": null
+  },
+  "account_approved": {
+    "vars": [
+      "name",
+      "url"
+    ],
+    "link": "login"
+  },
+  "account_rejected": {
+    "vars": [
+      "name"
+    ],
+    "link": null
+  },
+  "account_access": {
+    "vars": [
+      "name",
+      "email",
+      "code",
+      "url"
+    ],
+    "link": "recover"
+  },
+  "password_changed": {
+    "vars": [
+      "name",
+      "url"
+    ],
+    "link": "recover"
+  },
+  "ticket_received": {
+    "vars": [
+      "name",
+      "subject",
+      "url"
+    ],
+    "link": "tickets"
+  },
+  "ticket_reply": {
+    "vars": [
+      "name",
+      "subject",
+      "message",
+      "url"
+    ],
+    "link": "tickets"
+  },
+  "contact_received": {
+    "vars": [
+      "name",
+      "subject"
+    ],
+    "link": null
+  },
+  "contact_new": {
+    "vars": [
+      "name",
+      "email",
+      "subject",
+      "message",
+      "url"
+    ],
+    "link": "submission"
+  },
+  "contact_reply": {
+    "vars": [
+      "name",
+      "subject",
+      "reply",
+      "original"
+    ],
+    "link": null
+  },
+  "course_completed": {
+    "vars": [
+      "name",
+      "course",
+      "url"
+    ],
+    "link": "results"
+  }
+}

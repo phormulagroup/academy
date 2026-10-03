@@ -90,7 +90,9 @@ export default function Template() {
       <Table
         dataSource={rows}
         loading={isLoading}
-        scroll={{ x: 700 }}
+        // Larguras fixas: o nome e o assunto repartem o espaço que sobra e as restantes colunas têm o tamanho do seu conteúdo
+        tableLayout="fixed"
+        scroll={{ x: 960 }}
         pagination={{ placement: ["none", "bottomCenter"], showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}` }}
         // A linha toda abre os detalhes, onde se edita tudo (nome, assunto e conteúdo)
         onRow={(record) => ({ className: "cursor-pointer", onClick: () => navigate(`/admin/templates/${record.id}`) })}
@@ -100,6 +102,8 @@ export default function Template() {
             dataIndex: "name",
             key: "name",
             sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+            width: "30%",
+            ellipsis: true,
             render: (name, row) => (
               <div className="min-w-0">
                 <p className="font-semibold mb-0! truncate">{name}</p>
@@ -107,14 +111,14 @@ export default function Template() {
               </div>
             ),
           },
-          { title: t("Subject"), dataIndex: "subject", key: "subject", ellipsis: true, render: (subject) => subject || <span className="text-[#B0B3BD]">{t("No subject")}</span> },
+          { title: t("Subject"), dataIndex: "subject", key: "subject", width: "28%", ellipsis: true, render: (subject) => subject || <span className="text-[#B0B3BD]">{t("No subject")}</span> },
           {
             title: t("Type"),
             key: "kind",
-            width: 190,
+            width: 210,
             render: (_, row) => (
               <Tooltip title={row.kind.system ? t("This e-mail is sent by the platform, so the template cannot be deleted") : undefined}>
-                <Tag variant="outlined" color={row.kind.system ? "blue" : "default"}>
+                <Tag variant="outlined" color={row.kind.system ? "blue" : "default"} style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", verticalAlign: "middle" }}>
                   {t(row.kind.label)}
                 </Tag>
               </Tooltip>
@@ -124,7 +128,7 @@ export default function Template() {
             title: t("Last updated"),
             dataIndex: "modified_at",
             key: "modified_at",
-            width: 150,
+            width: 190,
             sorter: (a, b) => dayjs(a.modified_at).valueOf() - dayjs(b.modified_at).valueOf(),
             render: (date) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-"),
           },
@@ -132,7 +136,7 @@ export default function Template() {
             title: t("Is active"),
             dataIndex: "is_active",
             key: "is_active",
-            width: 100,
+            width: 110,
             render: (active) => (
               <Tag variant="outlined" color={active ? "green" : "red"}>
                 {active ? t("Active") : t("Inactive")}
@@ -142,7 +146,7 @@ export default function Template() {
           {
             title: "",
             key: "actions",
-            width: 70,
+            width: 64,
             render: (_, row) => (
               // stopPropagation: a linha toda abre os detalhes ao clicar (ver onRow)
               <div className="flex justify-end items-center" onClick={(e) => e.stopPropagation()}>

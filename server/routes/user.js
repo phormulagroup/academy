@@ -9,8 +9,8 @@ var db = require("../utils/database");
 const { requirePermission, hasPermission, denied } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
-const { generatePassword } = require("../utils/email");
-const email = require("../utils/email");
+const crypto = require("crypto");
+const { notifyUser } = require("../utils/notify");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -121,9 +121,8 @@ router.post("/create", requirePermission("user", "create"), async (req, res, nex
 		// Novo utilizador: estado pendente e atividade inativa (is_deleted = 1) até ser aprovado
 		data.status = "pending";
 		data.is_deleted = 1;
-		const token = await createToken(data);
 		const insertedRow = await query("INSERT INTO user SET ?", data);
-		const sendEmail = await generatePassword({ ...data, token });
+		// O e-mail de acesso (com o código para definir a password) sai quando a conta for aprovada (changeStatus)
 		res.send(insertedRow);
 	} catch (err) {
 		throw err;
@@ -145,6 +144,7 @@ router.post("/update", async (req, res, next) => {
 		if (whereId !== req.user.id) {
 			delete data.new_password;
 			delete data.confirm_new_password;
+			delete data.current_password;
 			delete data.password;
 			delete data.recover_code;
 			delete data.generate_password;
@@ -155,7 +155,16 @@ router.post("/update", async (req, res, next) => {
 			delete data.is_deleted;
 		}
 
+		const passwordChanged = !!data.new_password;
+		const currentPassword = data.current_password;
+		delete data.current_password;
 		if (data.new_password) {
+			// Para ter a certeza de que é a própria pessoa a mudar a password, exige-se a atual (contas sem password definida ficam isentas)
+			const [account] = await util.promisify(db.query).bind(db)("SELECT password FROM user WHERE id = ?", [whereId]);
+			if (account?.password) {
+				const valid = typeof currentPassword === "string" && currentPassword !== "" && (await bcrypt.compare(currentPassword, account.password));
+				if (!valid) return res.status(400).send({ message: "The current password is incorrect", code: "invalid_current_password" });
+			}
 			data.password = await bcrypt.hash(data.new_password, saltRounds);
 			delete data.new_password;
 			delete data.confirm_new_password;
@@ -169,6 +178,8 @@ router.post("/update", async (req, res, next) => {
 			await query("UPDATE user SET " + columns.map((c) => `${db.escapeId(c)} = ?`).join(", ") + " WHERE id = ?", [...values, whereId]);
 		}
 		let user = await query("SELECT * FROM user WHERE id = ?", whereId);
+		// A própria pessoa mudou a sua password: aviso de segurança (se não foi ela, pode recuperar a conta logo)
+		if (passwordChanged && whereId === req.user.id) notifyUser("password_changed", user[0]);
 
 		let newToken = await createToken(user[0]);
 		res.send({ user: user[0], token: newToken });
@@ -190,8 +201,22 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 			"UPDATE user SET status = ?, is_deleted = ? WHERE id = " + whereId,
 			[data.status, data.status === "approved" ? 0 : 1],
 		);
-		const emailResult = await email.change_status(data);
 		res.send(updatedRow);
+
+		// E-mail à pessoa conforme o novo estado: aprovada (ou, se a conta foi criada por um admin e ainda não tem password, o acesso com o
+		// código para a definir) ou não aprovada. Voltar a pendente não envia nada. Nunca atrasa nem parte a resposta.
+		const [person] = await query("SELECT id, name, email, id_lang, password FROM user WHERE id = ?", [whereId]);
+		if (person) {
+			if (data.status === "approved" && !person.password) {
+				const code = crypto.randomBytes(4).toString("hex").slice(0, 6);
+				await query("UPDATE user SET recover_code = ? WHERE id = ?", [await bcrypt.hash(code, saltRounds), person.id]);
+				notifyUser("account_access", person, { code });
+			} else if (data.status === "approved") {
+				notifyUser("account_approved", person);
+			} else if (data.status === "not_approved") {
+				notifyUser("account_rejected", person);
+			}
+		}
 	} catch (err) {
 		throw err;
 	}
