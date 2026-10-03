@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { Button, Drawer, Form, Input, Select } from "antd";
-import countries from "../../../utils/countries.json";
+import CountriesPicker from "./countriesPicker";
 
 import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
@@ -81,16 +81,7 @@ export default function Create({ open, close, submit }) {
           />
         </Form.Item>
         <Form.Item name="country" label={t("Countries")} rules={[requiredSelectRule]}>
-          <Select
-            mode="multiple"
-            size="large"
-            className="w-full"
-            placeholder={t("Select...")}
-            showSearch={{
-              optionFilterProp: ["label"],
-            }}
-            options={countries.sort().map((o) => ({ label: o, value: o }))}
-          />
+          <CountriesPicker />
         </Form.Item>
       </Form>
     </Drawer>

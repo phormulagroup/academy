@@ -60,16 +60,9 @@ router.post("/update", middleware, requirePermission("language", "update"), asyn
 	}
 });
 
-router.post("/delete", middleware, requirePermission("language", "delete"), async (req, res, next) => {
-	try {
-		const query = util.promisify(db.query).bind(db);
-		const deletedRow = await query(
-			"UPDATE language SET is_deleted = 1 WHERE id = " + req.body.data.id,
-		);
-		res.send(deletedRow);
-	} catch (err) {
-		throw err;
-	}
+// Os idiomas não se apagam pelo backoffice: as contas, os cursos e as traduções dependem deles
+router.post("/delete", middleware, requirePermission("language", "delete"), (req, res) => {
+	res.status(405).send({ message: "Languages cannot be deleted" });
 });
 
 router.post("/default", middleware, requirePermission("language", "update"), async (req, res, next) => {
