@@ -126,13 +126,10 @@ router.post("/create", requirePermission("email_template", "create"), (req, res,
 		try {
 			let data = req.body.data;
 			const query = util.promisify(conn.query).bind(conn);
-			const templateDefault = await query(
-				"SELECT * FROM settings WHERE name_key = 'email_template_default_design'",
-			);
-
+			// Os templates novos usam o editor GrapesJS: o design só leva a marca do editor e o editor arranca com o modelo base
 			const insertRow = await query(
 				"INSERT INTO email_template SET name = ?, id_lang = ?, name_key = ?, design = ?",
-				[data.name, data.id_lang, data.name_key, templateDefault[0].meta_data],
+				[data.name, data.id_lang, data.name_key, JSON.stringify({ editor: "grapes" })],
 			);
 
 			res.send(insertRow);
@@ -143,33 +140,52 @@ router.post("/create", requirePermission("email_template", "create"), (req, res,
 	});
 });
 
+// Atualização parcial: só muda o que vem no pedido (as definições e o conteúdo gravam-se em páginas diferentes)
 router.post("/update", requirePermission("email_template", "update"), (req, res, next) => {
 	db.getConnection(async (error, conn) => {
 		if (error) return res.status(500).send({ message: "Some error on server.", error });
 
 		try {
-			let data = req.body.data;
+			const data = req.body.data || {};
+			if (!data.name_key) {
+				conn.release();
+				return res.status(400).send({ message: "name_key is required" });
+			}
+			const fields = [];
+			const values = [];
+			if (data.name !== undefined) {
+				fields.push("name = ?");
+				values.push(data.name);
+			}
+			if (data.subject !== undefined) {
+				fields.push("subject = ?");
+				values.push(data.subject);
+			}
+			if (data.design !== undefined) {
+				fields.push("design = ?");
+				values.push(JSON.stringify(data.design));
+			}
+			if (data.html !== undefined) {
+				fields.push("html = ?");
+				values.push(JSON.stringify(data.html));
+			}
+			if (data.id_lang !== undefined) {
+				fields.push("id_lang = ?");
+				values.push(data.id_lang);
+			}
+			if (fields.length === 0) {
+				conn.release();
+				return res.status(400).send({ message: "Nothing to update" });
+			}
 
-			let whereKey = data.name_key;
-			delete data.name_key;
-			
 			const query = util.promisify(conn.query).bind(conn);
-			const updatedRow = await query(
-				"UPDATE email_template SET name = ?, design = ?, html = ?, subject = ?, id_lang = ? WHERE name_key = ?",
-				[
-					data.name,
-					JSON.stringify(data.design),
-					JSON.stringify(data.html),
-					data.subject,
-					data.id_lang,
-					whereKey,
-				],
-			);
+			const updatedRow = await query(`UPDATE email_template SET ${fields.join(", ")} WHERE name_key = ?`, [...values, data.name_key]);
 
 			res.send(updatedRow);
 			conn.release();
 		} catch (err) {
-			throw err;
+			conn.release();
+			res.status(500).send({ message: "Some error on server.", error: err.message });
 		}
 	});
 });

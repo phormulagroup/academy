@@ -61,6 +61,8 @@ db.getConnection((error, conn) => {
 });
 
 app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media")));
+// Fontes da marca para os e-mails (ficheiros em server/public/fonts): os e-mails vão buscá-las a este endereço
+app.use(`${prefix}/fonts`, express.static(require("path").join(__dirname, "public", "fonts"), { maxAge: "30d" }));
 
 // Estado da API para o webapp (e monitorização): 200 se o servidor e a base de dados respondem, 503 caso contrário
 app.get(`${prefix}/health`, (req, res) => {

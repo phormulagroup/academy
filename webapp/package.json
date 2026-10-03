@@ -29,6 +29,8 @@
     "dayjs": "^1.11.19",
     "dompurify": "^3.4.16",
     "file-saver": "^2.0.5",
+    "grapesjs": "^0.23.6",
+    "grapesjs-mjml": "^1.0.8",
     "html-to-react": "^1.7.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",

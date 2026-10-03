@@ -9,6 +9,7 @@ const SYSTEM_TYPES = {
 
 export const VARIABLES = {
   name: { label: "Name", hint: "The name of the person receiving the e-mail", sample: "Maria Silva" },
+  email: { label: "E-mail", hint: "The e-mail address of the person receiving the e-mail", sample: "maria@example.com" },
   status: { label: "Status", hint: "The new status of the account", sample: "Active" },
   code: { label: "Code", hint: "The code to recover the password", sample: "123456" },
 };

@@ -17,6 +17,7 @@ import Test from "../pages/admin/course/test";
 import SMTP from "../pages/admin/email/smtp";
 import Template from "../pages/admin/email/template";
 import TemplateDetails from "../pages/admin/email/templateDetails";
+import TemplateEditor from "../pages/admin/email/templateEditor";
 import Certificate from "../pages/admin/certificate";
 import CertificateDetails from "../pages/admin/certificate/details";
 import UserDetails from "../pages/admin/user/details";
@@ -45,6 +46,7 @@ export const adminRoutes = [
 			{ path: "smtp", element: <SMTP /> },
 			{ path: "templates", element: <Template /> },
 			{ path: "templates/:id", element: <TemplateDetails /> },
+			{ path: "templates/:id/editor", element: <TemplateEditor /> },
 			{ path: "users", element: <User /> },
 			{ path: "users/:id", element: <UserDetails /> },
 			{ path: "perfil", element: <UserDetails /> },

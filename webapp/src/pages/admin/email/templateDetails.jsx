@@ -1,23 +1,24 @@
 import axios from "axios";
 import dayjs from "dayjs";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Breadcrumb, Button, Form, Input, Spin, Tag, Tooltip } from "antd";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Breadcrumb, Button, Form, Input, Modal, Spin, Tag, Tooltip } from "antd";
 import { IoReturnDownBackOutline } from "react-icons/io5";
-import { RxReload } from "react-icons/rx";
-import { LuBraces, LuMail, LuPencilLine, LuSend, LuSettings } from "react-icons/lu";
-import EmailEditor from "react-email-editor";
+import { LuBraces, LuEye, LuMail, LuSend, LuSettings } from "react-icons/lu";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import EmailPreview from "../../../components/admin/email/emailPreview";
+import PageFooter from "../../../components/admin/pageFooter";
+import { SettingsSection } from "../../../components/admin/settingsSection";
 import { Context } from "../../../utils/context";
-import config from "../../../utils/config";
 import endpoints from "../../../utils/endpoints";
+import { parseEmailHtml } from "../../../utils/emailHtml";
 import { VARIABLES, templateType } from "../../../utils/emailTemplates";
 import { requiredRule } from "../../../utils/formFieldError";
 import { usePermission } from "../../../utils/usePermission";
-import { SettingsSection } from "../../../components/admin/settingsSection";
-import PageFooter from "../../../components/admin/pageFooter";
 
+// Detalhes de um template: definições, variáveis, envio de teste e a pré-visualização do e-mail. O conteúdo edita-se noutra
+// página (/admin/templates/:id/editor), só com o editor.
 export default function TemplateDetails() {
   const { user, toastApi } = useContext(Context);
   const { t } = useTranslation();
@@ -30,15 +31,13 @@ export default function TemplateDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [editorReady, setEditorReady] = useState(false);
   const [testEmail, setTestEmail] = useState(user?.email || "");
+  const [isOpenTest, setIsOpenTest] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
 
-  const emailEditorRef = useRef(null);
-  // O editor também dispara "design:updated" ao carregar o desenho: só conta como alteração depois de estabilizar
-  const listenChanges = useRef(false);
-
   const kind = useMemo(() => templateType(data?.name_key), [data?.name_key]);
+  const html = useMemo(() => parseEmailHtml(data?.html), [data?.html]);
+  const sample = useMemo(() => Object.fromEntries(Object.keys(VARIABLES).map((key) => [key, VARIABLES[key].sample])), []);
 
   useEffect(() => {
     getData();
@@ -64,118 +63,45 @@ export default function TemplateDetails() {
         setData(row);
         form.setFieldsValue({ name: row.name, subject: row.subject });
         setIsDirty(false);
-        // Recarregar com o editor já aberto: volta a carregar o desenho guardado
-        if (editorReady) loadDesign(row);
       })
       .catch((err) => console.log(err))
       .finally(() => setIsLoading(false));
   }
 
-  function loadDesign(row) {
-    const unlayer = emailEditorRef.current?.editor;
-    if (!unlayer) return;
-    listenChanges.current = false;
-    unlayer.loadDesign(row?.design ? JSON.parse(row.design) : {});
-    setTimeout(() => (listenChanges.current = true), 1000);
-  }
-
-  // Variáveis do tipo de e-mail: aparecem no editor como "merge tags" (inserem-se com um clique no texto)
-  const mergeTags = useMemo(
-    () => Object.fromEntries(kind.variables.map((key) => [key, { name: t(VARIABLES[key].label), value: `{{${key}}}` }])),
-    [kind, t],
-  );
-
-  const onReady = (unlayer) => {
-    setEditorReady(true);
-    loadDesign(data);
-    unlayer.addEventListener("design:updated", () => {
-      if (listenChanges.current) setIsDirty(true);
-    });
-    unlayer.registerCallback("image", (file, done) => {
-      const formData = new FormData();
-      formData.append("file", file.attachments[0]);
-      axios
-        .post(endpoints.email.upload, formData, { headers: { "Content-Type": "multipart/form-data" } })
-        .then((res) => done({ progress: 100, url: `${config.server_ip}/media/${res.data.data.url}` }))
-        .catch((err) => {
-          console.log(err);
-          toastApi.open({ type: "error", content: t("The image could not be uploaded") });
-          done({ progress: 100, url: "" });
-        });
-    });
-  };
-
-  const exportHtml = () =>
-    new Promise((resolve) => {
-      const unlayer = emailEditorRef.current?.editor;
-      if (!unlayer) return resolve(null);
-      unlayer.exportHtml(({ design, html }) => resolve({ design, html }));
-    });
-
+  // Só o nome e o assunto: o conteúdo grava-se no editor
   async function submit(values) {
-    const exported = await exportHtml();
-    if (!exported) return;
     setIsSaving(true);
-    axios
-      .post(endpoints.email.update, {
-        data: {
-          name_key: data.name_key,
-          name: values.name,
-          subject: values.subject,
-          design: exported.design,
-          html: exported.html,
-          // O idioma é o do template (e não o escolhido no cabeçalho do backoffice, que pode ter mudado entretanto)
-          id_lang: data.id_lang,
-        },
-      })
-      .then(() => {
-        setData((prev) => ({ ...prev, name: values.name, subject: values.subject, modified_at: new Date().toISOString() }));
-        setIsDirty(false);
-        toastApi.open({ type: "success", content: t("Template updated successfully!") });
-      })
-      .catch((err) => {
-        console.log(err);
-        toastApi.open({ type: "error", content: t("Something went wrong, try again later.") });
-      })
-      .finally(() => setIsSaving(false));
-  }
-
-  async function downloadHtml() {
-    const exported = await exportHtml();
-    if (!exported) return;
-    const url = URL.createObjectURL(new Blob([exported.html], { type: "text/html" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${data?.name_key || "template"}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      await axios.post(endpoints.email.update, { data: { name_key: data.name_key, name: values.name, subject: values.subject } });
+      setData((prev) => ({ ...prev, name: values.name, subject: values.subject, modified_at: new Date().toISOString() }));
+      setIsDirty(false);
+      toastApi.open({ type: "success", content: t("Template updated successfully!") });
+    } catch (err) {
+      console.log(err);
+      toastApi.open({ type: "error", content: t("Something went wrong, try again later.") });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function sendTest() {
-    const exported = await exportHtml();
-    if (!exported) return;
     setIsSendingTest(true);
-    axios
-      .post(endpoints.email.sendTest, {
-        data: {
-          email: testEmail.trim(),
-          subject: form.getFieldValue("subject"),
-          html: exported.html,
-          sample: Object.fromEntries(kind.variables.map((key) => [key, VARIABLES[key].sample])),
-        },
-      })
-      .then((res) => {
-        if (res.data.sent) toastApi.open({ type: "success", content: t("Test e-mail sent to {{email}}", { email: testEmail.trim() }) });
-        else toastApi.open({ type: "error", content: `${t("The test e-mail could not be sent")}: ${res.data.message}` });
-      })
-      .catch((err) => {
-        console.log(err);
-        toastApi.open({ type: "error", content: err.response?.data?.message || t("The test e-mail could not be sent") });
-      })
-      .finally(() => setIsSendingTest(false));
+    try {
+      const res = await axios.post(endpoints.email.sendTest, { data: { email: testEmail.trim(), subject: form.getFieldValue("subject"), html, sample } });
+      if (res.data.sent) {
+        toastApi.open({ type: "success", content: t("Test e-mail sent to {{email}}", { email: testEmail.trim() }) });
+        setIsOpenTest(false);
+      } else toastApi.open({ type: "error", content: `${t("The test e-mail could not be sent")}: ${res.data.message}` });
+    } catch (err) {
+      console.log(err);
+      toastApi.open({ type: "error", content: err.response?.data?.message || t("The test e-mail could not be sent") });
+    } finally {
+      setIsSendingTest(false);
+    }
   }
 
   const validTestEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail.trim());
+  const editContent = () => navigate(`/admin/templates/${id}/editor`);
 
   return (
     <div>
@@ -206,8 +132,8 @@ export default function TemplateDetails() {
 
         <div className="p-6">
           <Spin spinning={isLoading}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 items-stretch [&_section]:h-[calc(100%-20px)]">
-              <div className="contents">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-x-6 items-start">
+              <div className="xl:col-span-1">
                 <Form form={form} layout="vertical" onFinish={submit} onValuesChange={() => setIsDirty(true)} disabled={!perm.canUpdate}>
                   <SettingsSection id="template-general" icon={<LuSettings />} title={t("General")} description={t("The name only identifies this template in the dashboard. The subject is what the person sees in their inbox")}>
                     <Form.Item name="name" label={t("Name")} rules={[requiredRule]}>
@@ -240,51 +166,20 @@ export default function TemplateDetails() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[12px] text-[#8A8D98] mt-4! mb-0!">{t("In the editor, the variables are also in the Merge Tags option of the text toolbar")}</p>
                 </SettingsSection>
 
                 {perm.canUpdate && (
-                  <SettingsSection id="template-test" icon={<LuSend />} title={t("Send a test")} description={t("Sends the template as it is in the editor (even unsaved), with example data. The result is recorded in System monitoring")}>
-                    <Input
-                      size="large"
-                      type="email"
-                      value={testEmail}
-                      onChange={(e) => setTestEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      prefix={<LuMail className="text-[#8A8D98]" />}
-                      onPressEnter={() => validTestEmail && !isSendingTest && sendTest()}
-                    />
-                    <Button className="mt-3!" block icon={<LuSend />} loading={isSendingTest} disabled={!validTestEmail || !editorReady} onClick={sendTest}>
+                  <SettingsSection id="template-test" icon={<LuSend />} title={t("Send a test")} description={t("Sends the saved template to an address, with example data. The result is recorded in System monitoring")}>
+                    <Button block icon={<LuSend />} disabled={!html} onClick={() => setIsOpenTest(true)}>
                       {t("Send test e-mail")}
                     </Button>
                   </SettingsSection>
                 )}
               </div>
 
-              <div className="lg:col-span-3">
-                <SettingsSection
-                  id="template-content"
-                  icon={<LuPencilLine />}
-                  title={t("Content")}
-                  description={t("Design the e-mail with the editor. Use the eye icon in the editor to preview it on desktop and mobile")}
-                  extra={
-                    <div className="flex gap-2 shrink-0">
-                      <Button icon={<RxReload />} onClick={getData} aria-label={t("Reload")} title={t("Reload")} />
-                      <Button onClick={downloadHtml} disabled={!editorReady}>
-                        {t("Export HTML")}
-                      </Button>
-                    </div>
-                  }>
-                  {data && (
-                    <div className="-m-2">
-                      <EmailEditor
-                        ref={emailEditorRef}
-                        onReady={onReady}
-                        minHeight={720}
-                        options={{ version: "latest", appearance: { theme: "modern_light" }, mergeTags }}
-                      />
-                    </div>
-                  )}
+              <div className="xl:col-span-2">
+                <SettingsSection id="template-preview" icon={<LuEye />} title={t("Preview")} description={t("How the saved e-mail looks, with example data")}>
+                  <EmailPreview html={html} sample={sample} onEdit={perm.canUpdate ? editContent : undefined} />
                 </SettingsSection>
               </div>
             </div>
@@ -292,10 +187,15 @@ export default function TemplateDetails() {
         </div>
       </div>
 
+      <Modal open={isOpenTest} title={t("Send test e-mail")} onCancel={() => setIsOpenTest(false)} okText={t("Send test e-mail")} cancelText={t("Cancel")} okButtonProps={{ disabled: !validTestEmail }} confirmLoading={isSendingTest} onOk={sendTest}>
+        <p className="text-[13px] text-[#8A8D98]">{t("Sends the saved template to an address, with example data. The result is recorded in System monitoring")}</p>
+        <Input size="large" type="email" autoFocus value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="name@example.com" prefix={<LuMail className="text-[#8A8D98]" />} onPressEnter={() => validTestEmail && !isSendingTest && sendTest()} />
+      </Modal>
+
       <PageFooter className="justify-end px-12 md:px-14">
         {isDirty && <span className="text-[12px] text-[#8A8D98]">{t("Unsaved changes")}</span>}
         {perm.canUpdate && (
-          <Button type="primary" loading={isSaving} disabled={!isDirty || !editorReady} onClick={form.submit}>
+          <Button type="primary" loading={isSaving} disabled={!isDirty} onClick={form.submit}>
             {t("Save")}
           </Button>
         )}

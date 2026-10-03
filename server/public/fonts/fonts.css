@@ -1,0 +1,7 @@
+/* Fonte Ryker da identidade Bial, para os e-mails (mj-font / @import). Os clientes que não carregam fontes externas
+   (Gmail, Outlook) usam a alternativa definida no e-mail (Poppins, Arial). */
+@font-face { font-family: "Ryker"; src: url("ryker-light.otf") format("opentype"); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "Ryker"; src: url("ryker-regular.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Ryker"; src: url("ryker-medium.otf") format("opentype"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Ryker"; src: url("ryker-bold.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Ryker"; src: url("ryker-black.otf") format("opentype"); font-weight: 900; font-style: normal; font-display: swap; }

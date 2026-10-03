@@ -1,0 +1,27 @@
+/* GrapesJS com as cores da plataforma */
+.gjs-editor-cont,
+.gjs-editor {
+  --gjs-primary-color: #163986;
+  --gjs-secondary-color: #e6ebf7;
+  --gjs-tertiary-color: #00b9d6;
+  --gjs-quaternary-color: #00b9d6;
+  --gjs-main-font: Poppins, system-ui, sans-serif;
+}
+.gjs-editor-cont { font-family: inherit; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+/* Blocos numa grelha de 2 (ou mais) colunas, conforme a largura do painel */
+.gjs-blocks-c { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; padding: 10px; }
+.gjs-block { width: auto; min-width: 0; margin: 0; min-height: 84px; padding: 10px 6px; border-radius: 8px; border: 1px solid #ffffff22; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.gjs-block__media { display: flex; justify-content: center; margin-bottom: 6px; }
+.gjs-block-label { font-size: 12px; }
+/* Barra do editor de texto: o seletor de variáveis tem largura própria (os botões de formatação são quadrados de 25 px) */
+.gjs-rte-toolbar { display: flex; align-items: stretch; }
+.gjs-rte-action:has(.gjs-variable-select) { width: auto; min-width: 0; padding: 0; border-right: 0; }
+.gjs-variable-select { appearance: none; -webkit-appearance: none; height: 100%; min-height: 25px; padding: 0 22px 0 10px; border: 0; border-left: 1px solid rgba(255, 255, 255, 0.15); border-radius: 0; outline: 0; cursor: pointer; font: inherit; font-size: 12px; line-height: 1; color: inherit; background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round'/></svg>") no-repeat right 7px center; }
+.gjs-variable-select:hover { background-color: rgba(255, 255, 255, 0.1); }
+.gjs-variable-select option { color: #333; background: #fff; }
+
+/* Painel de blocos/estilos mais largo (por omissão são 15% da largura) */
+.gjs-pn-views, .gjs-pn-views-container { width: 22%; }
+.gjs-cv-canvas { width: 78%; }
+.gjs-pn-commands { width: 78%; }
+.gjs-pn-options { right: 22%; }
