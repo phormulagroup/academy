@@ -29,6 +29,8 @@ const endpoints = {
 		deleteErrors: "/monitor/errors/delete",
 		emails: "/monitor/emails",
 		blocks: "/monitor/blocks",
+		audit: "/monitor/audit",
+		auditFacets: "/monitor/audit/facets",
 		unblock: "/monitor/blocks/unblock",
 	},
 	ticket: {
@@ -46,6 +48,9 @@ const endpoints = {
 	},
 	user: {
 		read: "/user/read",
+		list: "/user/list",
+		search: "/user/search",
+		counts: "/user/counts",
 		readById: "/user/readById",
 		readByEmail: "/user/readByEmail",
 		update: "/user/update",
@@ -70,11 +75,14 @@ const endpoints = {
 		setAccessGroups: "/course/setAccessGroups",
 		read: "/course/read",
 		readByLang: "/course/readByLang",
+		list: "/course/list",
+		options: "/course/options",
 		readById: "/course/readById",
 		readBySlug: "/course/readBySlug",
 		readByTopicId: "/course/readByTopicId",
 		readByTestId: "/course/readByTestId",
 		report: "/course/report",
+		reportCourse: "/course/report/course",
 		update: "/course/update",
 		updateTopic: "/course/updateTopic",
 		updateProgress: "/course/updateProgress",
@@ -141,6 +149,7 @@ const endpoints = {
 	},
 	language: {
 		read: "/language/read",
+		translation: "/language/translation",
 		update: "/language/update",
 		create: "/language/create",
 		delete: "/language/delete",
@@ -154,6 +163,7 @@ const endpoints = {
 	},
 	media: {
 		read: "/media/read",
+		list: "/media/list",
 		upload: "/media/upload",
 		singleUpload: "/media/singleUpload",
 		update: "/media/update",
@@ -170,6 +180,7 @@ const endpoints = {
 	iec: {
 		read: "/iec/read",
 		check: "/iec/check",
+		list: "/iec/list",
 		upload: "/iec/upload",
 		file: "/iec/file",
 		delete: "/iec/delete",
@@ -177,6 +188,7 @@ const endpoints = {
 	notification: {
 		read: "/notification/read",
 		readByUser: "/notification/readByUser",
+		summary: "/notification/summary",
 		readByLang: "/notification/readByLang",
 		update: "/notification/update",
 		markAsRead: "/notification/markAsRead",

@@ -45,6 +45,9 @@ app.use(compression());
 const limiter = rateLimit({
 	windowMs: 1 * 60 * 1000,
 	max: 600,
+	// Atrás da Cloudflare o IP de cada pessoa vem em CF-Connecting-IP (sem isto todos partilhavam o IP do proxy e o mesmo limite)
+	keyGenerator: (req) => String(req.headers["cf-connecting-ip"] || req.ip),
+	validate: { xForwardedForHeader: false },
 });
 
 app.use(limiter);
@@ -69,6 +72,18 @@ app.use(
 	}),
 );
 app.use(requestMonitor);
+app.use(require("./utils/timing").timing(logError));
+// Registo de atividade (quem criou, editou ou apagou o quê): Monitorização > Atividade
+app.use(require("./utils/audit").auditMiddleware(prefix)); // Server-Timing e registo de pedidos lentos
+
+// Depois de mudar utilizadores, funções, permissões ou importar contas, a cache de sessão/permissões (utils/authCache.js) é limpa
+const { clear: clearAuthCache } = require("./utils/authCache");
+app.use((req, res, next) => {
+	if (req.method === "POST" && /^\/(user|role|permission|import)\//.test(req.path.slice(prefix.length))) {
+		res.on("finish", () => res.statusCode < 400 && clearAuthCache());
+	}
+	next();
+});
 app.use(require("./utils/stripSecrets")); // nunca devolve hashes de password
 
 /* MUDAR DE app.listen para server.listen */
@@ -85,7 +100,9 @@ db.getConnection((error, conn) => {
 
 // Rastreio de cliques das comunicações (público, sem login): redireccionamento assinado
 app.use(`${prefix}/t`, require("./routes/tracking"));
-app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media")));
+// Multimédia sem cache fixa: os ficheiros podem ser trocados (mesmo nome) e têm de aparecer atualizados. O browser pergunta sempre (ETag/Last-Modified)
+// e só volta a descarregar se o ficheiro mudou (resposta 304, sem corpo). Na Cloudflare, ver a regra de cache em docs/deploy-staging.md.
+app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media"), { setHeaders: (res) => res.setHeader("Cache-Control", "no-cache") }));
 // Fontes da marca para os e-mails (ficheiros em server/public/fonts): os e-mails vão buscá-las a este endereço
 app.use(`${prefix}/fonts`, express.static(require("path").join(__dirname, "public", "fonts"), { maxAge: "30d" }));
 

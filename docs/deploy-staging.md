@@ -44,8 +44,11 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `IEC_DIR` | `/home/<utilizador-cpanel>/public_html/regional/wp-content/uploads/iec` |
    | `IEC_PUBLIC_URL` | `https://academy.phormuladev.com/regional/wp-content/uploads/iec` |
    | `MEDIA_FALLBACK_URL` | vazio (usa `https://academy.phormuladev.com/api/media/`) |
+   | `DB_POOL_SIZE` | opcional: ligações simultâneas à base de dados (por omissão 10); baixar se o alojamento limitar |
+   | `SLOW_REQUEST_MS` | opcional: pedidos mais lentos do que isto (por omissão 1500 ms) ficam como aviso "Pedido lento" em *Monitorização → Erros do servidor*, com o tempo total e o tempo na base de dados |
    | `API_PUBLIC_URL` | `https://academy.phormuladev.com/api` (endereço público da API: links de rastreio das comunicações) |
    | `JWT_SECRET` | **Obrigatório.** Segredo que assina as sessões e os links de rastreio (a API não arranca sem ele). Em staging/produção usar um valor longo e aleatório e nunca o pôr no código. Mudá-lo termina todas as sessões |
+   | _(já preenchidas no `.env.staging` do zip)_ | `TRUST_PROXY=1`, `CORS_ORIGINS=https://academy.phormuladev.com`, `DB_POOL_SIZE=10` e `SLOW_REQUEST_MS=1500` |
    | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
    | `TRUST_PROXY` | opcional: nº de proxies à frente da API (Cloudflare = 1; Cloudflare + Apache = 2), para o limite de pedidos usar o IP real |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
@@ -76,6 +79,15 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
      Sem ela as notificações funcionam como antes, só não é possível agendar. O envio das agendadas corre no mesmo serviço em segundo plano das comunicações.
    - `2026-10-10-security-blocks.sql`: cria `security_block` (bloqueios por tentativas excessivas de login e de recuperação de password, visíveis e desbloqueáveis em *Monitorização → Bloqueios*).
      Sem ela os limites funcionam em memória, mas não se veem nem se desbloqueiam.
+   - `2026-10-11-indexes.sql`: cria 18 índices nas tabelas principais (`logs`, `course_user_activity`, `user`, `course`, módulos, tópicos, testes, notificações, submissões).
+     Antes só tinham a chave primária e cada listagem lia a tabela inteira. Repetível (só cria o que não existe) e não altera dados; demora segundos com poucos dados.
+   - `2026-10-12-team-email-templates.sql`: cria os e-mails para a equipa (novo registo, novo pedido, resposta a um pedido) e converte os templates de recuperação de password
+     que ainda estavam no editor antigo (Unlayer) para o editor novo. Só toca nos que ainda estão no editor antigo; repetível. Sem as linhas na BD os e-mails saem na mesma (modelos de origem).
+   - `2026-10-13-template-names.sql`: tira o "(equipa)" do fim do nome dos e-mails para a equipa (a coluna "Enviado para" já o diz).
+   - `2026-10-13-audit-log.sql`: cria `audit_log` (registo de atividade: quem criou, editou ou apagou o quê, com o antes e o depois, sem passwords). Aparece em *Monitorização → Atividade*
+     e guarda-se um ano. Sem a tabela a API funciona na mesma, só não regista.
+   - `2026-10-14-permissions-audit-security.sql`: duas secções novas nas permissões, "Registo de atividade" (ver) e "Acessos bloqueados" (ver e desbloquear), que saem de "Monitorização".
+     Cada função fica com nelas o que já tinha em Monitorização, por isso ninguém perde acesso. Repetível.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
@@ -131,6 +143,13 @@ A webapp vai buscar as imagens/documentos a `https://academy.phormuladev.com/api
 - O backoffice lista automaticamente os PDF/MP4/PNG/JPG que estiverem na pasta (registados na tabela `iec`).
 - **O URL e o nome de cada ficheiro nunca podem mudar**: é o que está nos QRCodes impressos. Substituir = mesmo nome.
 
+## Manter a API acordada (cron)
+A app Node do cPanel adormece sem tráfego e o primeiro pedido seguinte demora vários segundos (arranque a frio). No cPanel → *Cron Jobs*, de 5 em 5 minutos:
+```
+*/5 * * * * curl -s -o /dev/null https://academy.phormuladev.com/api/health
+```
+Serve também para o serviço em segundo plano (comunicações e notificações agendadas), que só corre com a app acordada.
+
 ## 6. Cloudflare (obrigatório)
 A Cloudflare faz cache de PDF/MP4/imagens (por omissão 4 h, `cache-control: max-age=14400` imposto por ela) e pode guardar
 404s. Sem esta regra, **depois de substituir um IEC o QRCode continua a mostrar o ficheiro antigo** durante horas.
@@ -144,6 +163,13 @@ A Cloudflare faz cache de PDF/MP4/imagens (por omissão 4 h, `cache-control: max
   fica "em branco" durante 4 h **mesmo depois de existir**, e só em janela anónima se vê bem.
 
 Assim a Cloudflare segue o que o servidor diz (`no-cache` nos IECs; sem cache forçada nas respostas da API).
+
+**Ficheiros trocados (multimédia e IECs):** a API serve `/api/media/` e `/api/iecs/` com `Cache-Control: no-cache` (o browser pergunta sempre
+e só descarrega se o ficheiro mudou, resposta 304 sem corpo) e os IECs em `/regional/wp-content/uploads/iec/` também (`.htaccess`). Com a regra acima a
+Cloudflare segue estes cabeçalhos, por isso um ficheiro substituído (mesmo nome) aparece atualizado sem purge nem esperas.
+Já as respostas públicas que mudam pouco levam cache curta de propósito: texto da página inicial (30 s). A lista de idiomas é sempre confirmada na API (resposta 304 minúscula) e as traduções de cada idioma
+têm a versão no URL (`/api/language/translation?code=pt&v=...`): ficam em cache um ano, mas mudam de URL assim que se edita uma tradução,
+por isso uma tradução editada chega à página seguinte de cada utilizador (ou ao voltar ao separador), sem purge nem esperas.
 
 **Como saber se a regra está ativa:** pedir um ficheiro que não existe e ver os cabeçalhos.
 ```
