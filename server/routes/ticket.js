@@ -9,7 +9,7 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { hasPermission, requirePermission } = require("../utils/permissions");
-const { notifyUser, excerpt } = require("../utils/notify");
+const { notifyUser, notifyTeam, notifyMember, excerpt } = require("../utils/notify");
 
 const poolQuery = util.promisify(db.query).bind(db);
 // A pessoa dona do ticket (para os e-mails): fora da transação, só depois de gravar
@@ -291,7 +291,14 @@ router.post("/create", (req, res) => {
     await query("INSERT INTO ticket_message (id_ticket, id_user, message, attachment) VALUES (?, ?, ?, ?)", [inserted.insertId, req.user.id, message, state.attachment]);
     await commit();
     // "Pedido recebido": à parte, nunca atrasa nem parte a criação do ticket
-    ticketOwner(req.user.id).then((owner) => owner && notifyUser("ticket_received", owner, { subject: String(subject).trim() })).catch(() => {});
+    ticketOwner(req.user.id)
+      .then((owner) => {
+        if (!owner) return;
+        notifyUser("ticket_received", owner, { subject: String(subject).trim() });
+        // A equipa que atende pedidos fica a saber que há um novo (quem o abriu, se for da equipa, não recebe o próprio aviso)
+        return notifyTeam("ticket_new", "ticket", { name: owner.name, email: owner.email, subject: String(subject).trim(), message: excerpt(message) }, { excludeUserId: owner.id });
+      })
+      .catch(() => {});
     res.send({ id: inserted.insertId });
   });
 });
@@ -332,6 +339,16 @@ router.post("/reply", (req, res) => {
     await commit();
     // A equipa respondeu: a pessoa recebe um aviso com a resposta (quando é ela a responder não se avisa ninguém)
     if (!isOwner) ticketOwner(ticket.id_user).then((owner) => owner && notifyUser("ticket_reply", owner, { subject: ticket.subject, message: excerpt(message) })).catch(() => {});
+    // A pessoa respondeu: avisa quem tem o pedido atribuído ou, se ainda ninguém o tem, a equipa
+    if (isOwner)
+      ticketOwner(ticket.id_user)
+        .then(async (owner) => {
+          if (!owner) return;
+          const vars = { name: owner.name, email: owner.email, subject: ticket.subject, message: excerpt(message) };
+          if (ticket.id_assignee && (await notifyMember("ticket_user_reply", ticket.id_assignee, vars))) return;
+          return notifyTeam("ticket_user_reply", "ticket", vars, { excludeUserId: owner.id });
+        })
+        .catch(() => {});
     res.send({ success: true, id_assignee: newAssigneeId });
   });
 });

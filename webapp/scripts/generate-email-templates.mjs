@@ -88,10 +88,10 @@ const T = {
   contact_new: {
     vars: ["name", "email", "subject", "message", "url"],
     link: "submission",
-    pt: { name: "Nova mensagem de contacto (equipa)", subject: "Nova mensagem de contacto: {{subject}}", title: "Nova mensagem de contacto", paragraphs: ["{{name}} ({{email}}) enviou uma mensagem pelo formulário de contacto, com o assunto «{{subject}}»:"], box: "{{message}}", button: "Ver a submissão" },
-    es: { name: "Nuevo mensaje de contacto (equipo)", subject: "Nuevo mensaje de contacto: {{subject}}", title: "Nuevo mensaje de contacto", paragraphs: ["{{name}} ({{email}}) ha enviado un mensaje por el formulario de contacto, con el asunto «{{subject}}»:"], box: "{{message}}", button: "Ver el envío" },
-    en: { name: "New contact message (team)", subject: "New contact message: {{subject}}", title: "New contact message", paragraphs: ["{{name}} ({{email}}) sent a message through the contact form, with the subject “{{subject}}”:"], box: "{{message}}", button: "View the submission" },
-    fr: { name: "Nouveau message de contact (équipe)", subject: "Nouveau message de contact : {{subject}}", title: "Nouveau message de contact", paragraphs: ["{{name}} ({{email}}) a envoyé un message via le formulaire de contact, avec pour objet « {{subject}} » :"], box: "{{message}}", button: "Voir la soumission" },
+    pt: { name: "Nova mensagem de contacto", subject: "Nova mensagem de contacto: {{subject}}", title: "Nova mensagem de contacto", paragraphs: ["{{name}} ({{email}}) enviou uma mensagem pelo formulário de contacto, com o assunto «{{subject}}»:"], box: "{{message}}", button: "Ver a submissão" },
+    es: { name: "Nuevo mensaje de contacto", subject: "Nuevo mensaje de contacto: {{subject}}", title: "Nuevo mensaje de contacto", paragraphs: ["{{name}} ({{email}}) ha enviado un mensaje por el formulario de contacto, con el asunto «{{subject}}»:"], box: "{{message}}", button: "Ver el envío" },
+    en: { name: "New contact message", subject: "New contact message: {{subject}}", title: "New contact message", paragraphs: ["{{name}} ({{email}}) sent a message through the contact form, with the subject “{{subject}}”:"], box: "{{message}}", button: "View the submission" },
+    fr: { name: "Nouveau message de contact", subject: "Nouveau message de contact : {{subject}}", title: "Nouveau message de contact", paragraphs: ["{{name}} ({{email}}) a envoyé un message via le formulaire de contact, avec pour objet « {{subject}} » :"], box: "{{message}}", button: "Voir la soumission" },
   },
   // A resposta da equipa a uma mensagem do formulário de contacto: {{{reply}}} e {{{original}}} chegam já escapados e com quebras de linha (<br>)
   contact_reply: {
@@ -108,6 +108,47 @@ const T = {
     es: { name: "Curso completado", subject: "Enhorabuena, ha completado el curso {{course}}", title: "¡Enhorabuena, {{name}}!", paragraphs: ["Ha completado el curso «{{course}}» en Bial Regional Academy. Gracias por su dedicación.", "Puede consultar sus resultados y, si el curso tiene certificado, descargarlo en la página de resultados."], button: "Ver mis resultados" },
     en: { name: "Course completed", subject: "Congratulations, you completed the course {{course}}", title: "Congratulations, {{name}}!", paragraphs: ["You completed the course “{{course}}” at Bial Regional Academy. Thank you for your dedication.", "You can see your results and, if the course has a certificate, download it on the results page."], button: "See my results" },
     fr: { name: "Cours terminé", subject: "Félicitations, vous avez terminé le cours {{course}}", title: "Félicitations, {{name}} !", paragraphs: ["Vous avez terminé le cours « {{course}} » à la Bial Regional Academy. Merci pour votre engagement.", "Vous pouvez consulter vos résultats et, si le cours comporte un certificat, le télécharger sur la page des résultats."], button: "Voir mes résultats" },
+  },
+  // ---- Acrescentados em 2026-10-12 (migração 2026-10-12-team-email-templates.sql) ----
+  // Recuperação de password: substitui o template antigo (editor Unlayer, com texto de outro projeto) pelo do editor novo
+  recover: {
+    since: "2026-10-12",
+    vars: ["name", "code", "url"],
+    link: "recover",
+    pt: { name: "Recuperar password", subject: "Recupere a sua password", title: "Olá {{name}},", paragraphs: ["Recebemos um pedido para recuperar a password da sua conta na Bial Regional Academy.", "Introduza este código na página de recuperação para escolher uma nova password:"], box: "{{code}}", button: "Recuperar a minha password" },
+    es: { name: "Recuperar contraseña", subject: "Recupere su contraseña", title: "Hola {{name}},", paragraphs: ["Hemos recibido una solicitud para recuperar la contraseña de su cuenta en Bial Regional Academy.", "Introduzca este código en la página de recuperación para elegir una nueva contraseña:"], box: "{{code}}", button: "Recuperar mi contraseña" },
+    en: { name: "Recover password", subject: "Recover your password", title: "Hello {{name}},", paragraphs: ["We received a request to recover the password of your Bial Regional Academy account.", "Enter this code on the recovery page to choose a new password:"], box: "{{code}}", button: "Recover my password" },
+    fr: { name: "Récupérer le mot de passe", subject: "Récupérez votre mot de passe", title: "Bonjour {{name}},", paragraphs: ["Nous avons reçu une demande de récupération du mot de passe de votre compte Bial Regional Academy.", "Saisissez ce code sur la page de récupération pour choisir un nouveau mot de passe :"], box: "{{code}}", button: "Récupérer mon mot de passe" },
+  },
+  // Para a equipa: novo registo à espera de aprovação
+  registration_new: {
+    since: "2026-10-12",
+    vars: ["name", "email", "country", "url"],
+    link: "user",
+    pt: { name: "Novo registo", subject: "Novo registo para aprovar: {{name}}", title: "Novo registo", paragraphs: ["{{name}} ({{email}}), de {{country}}, registou-se na plataforma e aguarda aprovação."], button: "Ver o utilizador" },
+    es: { name: "Nuevo registro", subject: "Nuevo registro por aprobar: {{name}}", title: "Nuevo registro", paragraphs: ["{{name}} ({{email}}), de {{country}}, se ha registrado en la plataforma y espera aprobación."], button: "Ver el usuario" },
+    en: { name: "New registration", subject: "New registration to approve: {{name}}", title: "New registration", paragraphs: ["{{name}} ({{email}}), from {{country}}, registered on the platform and is waiting for approval."], button: "View the user" },
+    fr: { name: "Nouvelle inscription", subject: "Nouvelle inscription à approuver : {{name}}", title: "Nouvelle inscription", paragraphs: ["{{name}} ({{email}}), de {{country}}, s’est inscrit sur la plateforme et attend l’approbation."], button: "Voir l’utilisateur" },
+  },
+  // Para a equipa: novo pedido (ticket)
+  ticket_new: {
+    since: "2026-10-12",
+    vars: ["name", "email", "subject", "message", "url"],
+    link: "ticket_admin",
+    pt: { name: "Novo pedido", subject: "Novo pedido: {{subject}}", title: "Novo pedido", paragraphs: ["{{name}} ({{email}}) abriu um pedido com o assunto «{{subject}}»:"], box: "{{message}}", button: "Ver o pedido" },
+    es: { name: "Nueva solicitud", subject: "Nueva solicitud: {{subject}}", title: "Nueva solicitud", paragraphs: ["{{name}} ({{email}}) ha abierto una solicitud con el asunto «{{subject}}»:"], box: "{{message}}", button: "Ver la solicitud" },
+    en: { name: "New request", subject: "New request: {{subject}}", title: "New request", paragraphs: ["{{name}} ({{email}}) opened a request with the subject “{{subject}}”:"], box: "{{message}}", button: "View the request" },
+    fr: { name: "Nouvelle demande", subject: "Nouvelle demande : {{subject}}", title: "Nouvelle demande", paragraphs: ["{{name}} ({{email}}) a ouvert une demande avec pour objet « {{subject}} » :"], box: "{{message}}", button: "Voir la demande" },
+  },
+  // Para a equipa: a pessoa respondeu a um pedido
+  ticket_user_reply: {
+    since: "2026-10-12",
+    vars: ["name", "email", "subject", "message", "url"],
+    link: "ticket_admin",
+    pt: { name: "Resposta a um pedido", subject: "Nova resposta ao pedido: {{subject}}", title: "Nova resposta a um pedido", paragraphs: ["{{name}} ({{email}}) respondeu ao pedido «{{subject}}»:"], box: "{{message}}", button: "Ver o pedido" },
+    es: { name: "Respuesta a una solicitud", subject: "Nueva respuesta a la solicitud: {{subject}}", title: "Nueva respuesta a una solicitud", paragraphs: ["{{name}} ({{email}}) ha respondido a la solicitud «{{subject}}»:"], box: "{{message}}", button: "Ver la solicitud" },
+    en: { name: "Reply to a request", subject: "New reply to the request: {{subject}}", title: "New reply to a request", paragraphs: ["{{name}} ({{email}}) replied to the request “{{subject}}”:"], box: "{{message}}", button: "View the request" },
+    fr: { name: "Réponse à une demande", subject: "Nouvelle réponse à la demande : {{subject}}", title: "Nouvelle réponse à une demande", paragraphs: ["{{name}} ({{email}}) a répondu à la demande « {{subject}} » :"], box: "{{message}}", button: "Voir la demande" },
   },
 };
 
@@ -159,7 +200,7 @@ for (const [type, tpl] of Object.entries(T)) {
     const key = `${type}_${idLang}`;
     // Só o que o servidor precisa para enviar (o MJML fica no design que vai para a BD)
     defaults[key] = { name: x.name, subject: x.subject, html, id_lang: Number(idLang) };
-    rows.push({ key, name: x.name, subject: x.subject, design: JSON.stringify({ editor: "grapes", mjml }), html: JSON.stringify(html), idLang });
+    rows.push({ key, type, since: tpl.since || null, name: x.name, subject: x.subject, design: JSON.stringify({ editor: "grapes", mjml }), html: JSON.stringify(html), idLang });
   }
 }
 
@@ -175,12 +216,32 @@ const lines = [
   "-- Aditivo: só acrescenta o que falta (não altera templates existentes) e pode repetir-se sem estragar nada. Depois editam-se em E-mail > Templates.",
   "",
 ];
-for (const r of rows) {
+for (const r of rows.filter((row) => !row.since)) {
   lines.push(
     `INSERT INTO \`email_template\` (\`name\`, \`name_key\`, \`subject\`, \`design\`, \`html\`, \`id_lang\`, \`is_active\`, \`can_delete\`) SELECT ${sql(r.name)}, ${sql(r.key)}, ${sql(r.subject)}, ${sql(r.design)}, ${sql(r.html)}, ${r.idLang}, 1, 0 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM \`email_template\` WHERE \`name_key\` = ${sql(r.key)});`,
   );
 }
 fs.writeFileSync(path.join(root, "server", "database", "migrations", "2026-10-07-email-templates.sql"), lines.join("\n") + "\n");
+
+// Acrescentados depois: um migração própria (a anterior já foi aplicada). INSERT só do que falta; e o "recover", que já existia no editor antigo
+// (Unlayer), passa para o editor novo (só os que ainda estão no editor antigo, por isso repetir não estraga o que se editou depois).
+const later = [
+  "-- E-mails da equipa (novo registo, novo pedido, resposta a um pedido) e recuperação de password no editor novo, em pt, es, en e fr.",
+  "-- Gerado por webapp/scripts/generate-email-templates.mjs. Os que faltam são criados; os templates de recuperação que ainda estão no editor antigo",
+  "-- (Unlayer, com texto de outro projeto) passam para o novo. Os que já estão no editor novo não são alterados. Pode repetir-se.",
+  "",
+];
+for (const r of rows.filter((row) => row.since)) {
+  later.push(
+    `INSERT INTO \`email_template\` (\`name\`, \`name_key\`, \`subject\`, \`design\`, \`html\`, \`id_lang\`, \`is_active\`, \`can_delete\`) SELECT ${sql(r.name)}, ${sql(r.key)}, ${sql(r.subject)}, ${sql(r.design)}, ${sql(r.html)}, ${r.idLang}, 1, 0 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM \`email_template\` WHERE \`name_key\` = ${sql(r.key)});`,
+  );
+  if (r.type === "recover") {
+    later.push(
+      `UPDATE \`email_template\` SET \`name\` = ${sql(r.name)}, \`subject\` = ${sql(r.subject)}, \`design\` = ${sql(r.design)}, \`html\` = ${sql(r.html)} WHERE \`name_key\` = ${sql(r.key)} AND (\`design\` IS NULL OR \`design\` NOT LIKE '%"editor":"grapes"%');`,
+    );
+  }
+}
+fs.writeFileSync(path.join(root, "server", "database", "migrations", "2026-10-12-team-email-templates.sql"), later.join("\n") + "\n");
 
 // As variáveis de cada tipo e o endereço que o botão usa (o servidor e o backoffice usam esta lista)
 fs.writeFileSync(path.join(root, "server", "utils", "emailTypes.json"), JSON.stringify(Object.fromEntries(Object.entries(T).map(([type, tpl]) => [type, { vars: tpl.vars, link: tpl.link || null }])), null, 2) + "\n");

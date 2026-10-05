@@ -125,26 +125,7 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 	}
 });
 
-router.post("/create", requirePermission("email_template", "create"), (req, res, next) => {
-	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
-
-		try {
-			let data = req.body.data;
-			const query = util.promisify(conn.query).bind(conn);
-			// Os templates novos usam o editor GrapesJS: o design só leva a marca do editor e o editor arranca com o modelo base
-			const insertRow = await query(
-				"INSERT INTO email_template SET name = ?, id_lang = ?, name_key = ?, design = ?",
-				[data.name, data.id_lang, data.name_key, JSON.stringify({ editor: "grapes" })],
-			);
-
-			res.send(insertRow);
-			conn.release();
-		} catch (err) {
-			throw err;
-		}
-	});
-});
+// Não há criação de templates: cada template está ligado a uma ação da plataforma (utils/emailTypes.json) e é criado pela migração. Só se editam.
 
 // Atualização parcial: só muda o que vem no pedido (as definições e o conteúdo gravam-se em páginas diferentes)
 router.post("/update", requirePermission("email_template", "update"), (req, res, next) => {

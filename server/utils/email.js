@@ -92,47 +92,8 @@ async function findTemplate(query, type, idLang) {
 module.exports = {
   // Recuperação de password (código por e-mail). Os restantes e-mails automáticos usam notify (abaixo)
   recover: function (data) {
-    return new Promise((resolve, reject) => {
-      db.getConnection(async (error, conn) => {
-        if (error) return reject(error);
-        try {
-          const query = util.promisify(conn.query).bind(conn);
-          const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
-          const smtpSettings = smtpFromRows(rows);
-          const template = await query("SELECT * FROM email_template WHERE name_key = ?", `recover_${data.id_lang}`);
-
-          if (!template || template.length === 0) {
-            throw new Error(`Template not found for recover_${data.id_lang}`);
-          }
-
-          const fullContext = {
-            name: data.name,
-            code: data.code,
-          };
-
-          const subject = Handlebars.compile(template[0].subject)(fullContext);
-          const htmlString = typeof template[0].html === 'string' ? JSON.parse(template[0].html) : template[0].html;
-          const html = Handlebars.compile(htmlString)(fullContext);
-          const { transporter, from } = buildTransporter(smtpSettings);
-
-          const mailOptions = {
-            from: from,
-            to: data.email,
-            subject: subject,
-            html: html,
-          };
-
-          transporter.sendMail(mailOptions, (err, info) => {
-            if (err) reject(err);
-            resolve(info);
-            conn.release();
-          });
-        } catch (err) {
-          reject(err);
-          conn.release();
-        }
-      });
-    });
+    // Mesmo caminho dos outros e-mails automáticos: template da BD, ou o predefinido se faltar (nunca deixa de sair), e fica registado
+    return module.exports.notify({ type: "recover", to: data.email, id_lang: data.id_lang, vars: { name: data.name, code: data.code, url: data.url } });
   },
 
   // E-mail automático da plataforma por tipo (registration_received, account_approved...): procura o template na BD (`<tipo>_<id do idioma>`)

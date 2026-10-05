@@ -13,7 +13,7 @@ import { SettingsSection } from "../../../components/admin/settingsSection";
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { parseEmailHtml } from "../../../utils/emailHtml";
-import { VARIABLES, templateType } from "../../../utils/emailTemplates";
+import { AUDIENCES, VARIABLES, templateType } from "../../../utils/emailTemplates";
 import { requiredRule } from "../../../utils/formFieldError";
 import { usePermission } from "../../../utils/usePermission";
 
@@ -122,6 +122,11 @@ export default function TemplateDetails() {
             <Tag variant="outlined" color={kind.system ? "blue" : "default"} className="m-0!">
               {t(kind.label)}
             </Tag>
+            <Tooltip title={t(AUDIENCES[kind.audience].hint)}>
+              <Tag variant="outlined" color={AUDIENCES[kind.audience].color} className="m-0!">
+                {t("Sent to")}: {t(AUDIENCES[kind.audience].label)}
+              </Tag>
+            </Tooltip>
             {data?.modified_at && (
               <span>
                 {t("Last updated")}: {dayjs(data.modified_at).format("DD/MM/YYYY HH:mm")}

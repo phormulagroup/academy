@@ -84,5 +84,42 @@
       "url"
     ],
     "link": "results"
+  },
+  "recover": {
+    "vars": [
+      "name",
+      "code",
+      "url"
+    ],
+    "link": "recover"
+  },
+  "registration_new": {
+    "vars": [
+      "name",
+      "email",
+      "country",
+      "url"
+    ],
+    "link": "user"
+  },
+  "ticket_new": {
+    "vars": [
+      "name",
+      "email",
+      "subject",
+      "message",
+      "url"
+    ],
+    "link": "ticket_admin"
+  },
+  "ticket_user_reply": {
+    "vars": [
+      "name",
+      "email",
+      "subject",
+      "message",
+      "url"
+    ],
+    "link": "ticket_admin"
   }
 }

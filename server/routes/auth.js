@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const { verifyToken, createToken, passwordFingerprint } = require("../utils/token");
 const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
-const { notifyUser } = require("../utils/notify");
+const { notifyUser, notifyTeam, appUrl } = require("../utils/notify");
 const { mergeName } = require("../utils/userName");
 
 const saltRounds = 10;
@@ -116,6 +116,8 @@ router.post("/register", async (req, res, next) => {
         const insertedRow = await query("INSERT INTO user SET ?", data);
         // "Registo recebido": à parte, um e-mail que falhe nunca desfaz o registo
         notifyUser("registration_received", data);
+        // E a equipa (Admin e quem pode ver os utilizadores) fica a saber que há um registo para aprovar
+        notifyTeam("registration_new", "user", { name: data.name || "", email: data.email, country: data.country || "—", id_user: insertedRow.insertId }).catch((err) => console.error("[notify:registration_new]", err.message));
         await commit();
         conn.release();
         res.send(insertedRow);
@@ -170,7 +172,7 @@ router.post("/recover", async (req, res, next) => {
           }
           const codeEncrypt = await bcrypt.hash(code, saltRounds);
           await query("UPDATE user SET recover_code = ? WHERE id = ?", [codeEncrypt, user[0].id]);
-          const emailResult = await email.recover({ ...user[0], code: code });
+          const emailResult = await email.recover({ ...user[0], code: code, url: `${appUrl()}/recover` });
           await commit();
           conn.release();
           res.send({ status: true });

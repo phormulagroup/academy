@@ -29,6 +29,10 @@ function linkFor(kind, idLang, vars) {
       return `${base}/${lang}/result`;
     case "submission":
       return `${base}/admin/answers/${vars.id_submission || ""}`;
+    case "user":
+      return `${base}/admin/users/${vars.id_user || ""}`;
+    case "ticket_admin":
+      return `${base}/admin/tickets`;
     default:
       return base;
   }
@@ -43,19 +47,23 @@ const excerpt = (text, max = 400) => {
 // Envia um e-mail automático a uma pessoa SEM nunca atrasar nem partir o que a pessoa estava a fazer: corre à parte e, se falhar (SMTP por
 // configurar, template em falta...), a razão fica em Monitorização > E-mails e o pedido original segue normalmente.
 // `user`: { name, email, id_lang }; `vars`: as variáveis do template (as do tipo estão em emailTypes.json).
-function notifyUser(type, user, vars = {}) {
+// Com { strict: true} um erro de envio não se engole (quem chama decide: ex. a recuperação de password tem de avisar que o e-mail não saiu).
+function notifyUser(type, user, vars = {}, { strict = false } = {}) {
   if (!user?.email) return Promise.resolve(null);
   const kind = types[type]?.link;
   const context = { name: user.name || "", email: user.email, ...vars };
   if (kind && !context.url) context.url = linkFor(kind, user.id_lang, context);
-  return email.notify({ type, to: user.email, id_lang: user.id_lang, vars: context }).catch((err) => {
+  const sending = email.notify({ type, to: user.email, id_lang: user.id_lang, vars: context });
+  if (strict) return sending;
+  return sending.catch((err) => {
     console.error(`[notify:${type}]`, err.message);
     return null;
   });
 }
 
 // Avisa a equipa que pode ler uma secção do backoffice (os Admin e as funções com permissão de ver essa secção)
-async function notifyTeam(type, resource, vars = {}) {
+// `excludeUserId`: quem fez a ação não recebe o aviso dela (ex.: um administrador que abre um pedido).
+async function notifyTeam(type, resource, vars = {}, { excludeUserId = null } = {}) {
   let team = [];
   try {
     team = await query(
@@ -68,8 +76,17 @@ async function notifyTeam(type, resource, vars = {}) {
     // Sem a tabela de permissões só os Admin
     team = await query("SELECT id, name, email, id_lang FROM user WHERE is_deleted = 0 AND status = 'approved' AND id_role = 1 AND email IS NOT NULL AND email != ''").catch(() => []);
   }
+  team = team.filter((member) => !excludeUserId || member.id !== Number(excludeUserId));
   await Promise.all(team.map((member) => notifyUser(type, member, vars)));
   return team.length;
 }
 
-module.exports = { notifyUser, notifyTeam, appUrl, excerpt, LANG_CODES };
+// Avisa uma pessoa concreta da equipa (ex.: quem tem o pedido atribuído), se continuar ativa e aprovada
+async function notifyMember(type, userId, vars = {}) {
+  const [member] = await query("SELECT id, name, email, id_lang FROM user WHERE id = ? AND is_deleted = 0 AND status = 'approved'", [userId]).catch(() => []);
+  if (!member) return false;
+  await notifyUser(type, member, vars);
+  return true;
+}
+
+module.exports = { notifyUser, notifyTeam, notifyMember, appUrl, excerpt, LANG_CODES };

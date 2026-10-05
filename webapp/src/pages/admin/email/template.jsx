@@ -4,7 +4,6 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Table, Tag, Tooltip } from "antd";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CgDetailsMore } from "react-icons/cg";
-import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -12,11 +11,10 @@ import RefreshButton from "../../../components/admin/refreshButton";
 import RowActions from "../../../components/admin/rowActions";
 import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import Delete from "../../../components/admin/delete";
-import Create from "../../../components/admin/template/create";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
-import { templateType } from "../../../utils/emailTemplates";
+import { AUDIENCES, templateType } from "../../../utils/emailTemplates";
 import { usePermission } from "../../../utils/usePermission";
 
 export default function Template() {
@@ -29,7 +27,6 @@ export default function Template() {
   const [data, setData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenCreate, setIsOpenCreate] = useState(false);
 
   useEffect(() => {
     getData();
@@ -47,44 +44,27 @@ export default function Template() {
   function closeAction(c) {
     if (c) getData();
     setIsOpenDelete(false);
-    setIsOpenCreate(false);
   }
 
   // Pesquisa e filtros fora da tabela: campos à vista e os restantes em "Mais filtros"
   const { filterRows, toolbar } = useListFilters([
     { key: "q", type: "text", primary: true, placeholder: t("Search by name or subject..."), match: (row, v) => includesText(row.name, v) || includesText(row.subject, v) },
-    {
-      key: "kind",
-      type: "select",
-      primary: true,
-      label: t("Type"),
-      options: [
-        { label: t("Sent by the platform"), value: "system" },
-        { label: t("Custom"), value: "custom" },
-      ],
-      match: (row, v) => (row.kind.system ? "system" : "custom") === v,
-    },
+    { key: "audience", type: "select", primary: true, label: t("Sent to"), options: [{ label: t("User"), value: "user" }, { label: t("Team"), value: "staff" }, { label: t("Chosen when sending"), value: "custom" }], match: (row, v) => row.kind.audience === v },
     { key: "active", type: "select", label: t("Is active"), options: [{ label: t("Yes"), value: 1 }, { label: t("No"), value: 0 }], match: (row, v) => (row.is_active ? 1 : 0) === v },
   ]);
   const rows = filterRows(data);
 
   return (
     <div className="p-2">
-      <Create open={isOpenCreate} close={closeAction} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="email" />
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
           <p className="text-xl font-bold font-ryker">{t("Templates")}</p>
-          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} templates", { total: rows.length })}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("{{total}} templates", { total: rows.length })} · {t("Each template is sent by an action of the platform")}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
           <RefreshButton onClick={getData} />
-          {perm.canCreate && (
-            <Button type="primary" icon={<AiOutlinePlus />} onClick={() => setIsOpenCreate(true)}>
-              <span className="hidden sm:inline">{t("Add")}</span>
-            </Button>
-          )}
         </div>
       </div>
       <Table
@@ -123,6 +103,21 @@ export default function Template() {
                 </Tag>
               </Tooltip>
             ),
+          },
+          {
+            title: t("Sent to"),
+            key: "audience",
+            width: 170,
+            render: (_, row) => {
+              const audience = AUDIENCES[row.kind.audience];
+              return (
+                <Tooltip title={t(audience.hint)}>
+                  <Tag variant="outlined" color={audience.color} className="m-0!">
+                    {t(audience.label)}
+                  </Tag>
+                </Tooltip>
+              );
+            },
           },
           {
             title: t("Last updated"),
