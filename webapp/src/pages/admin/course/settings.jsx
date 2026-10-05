@@ -33,6 +33,7 @@ import { RxTrash } from "react-icons/rx";
 import RichTextFormField from "../../../components/admin/richText/richTextFormField";
 import dayjs from "dayjs";
 import AddTile from "../../../utils/addTile";
+import UserSelect from "../../../components/admin/userSelect";
 import ObjectionBooks from "../../../components/admin/course/objectionBooks";
 
 // Secções do separador, pela ordem em que aparecem: alimenta o índice lateral
@@ -54,7 +55,8 @@ export default function Settings({ course, isActive = true, onSaved }) {
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   // Utilizadores e grupos com acesso (tabelas à parte, não fazem parte do curso): guardam-se depois de o curso
-  const [allUsers, setAllUsers] = useState([]);
+  // Pessoas com acesso (nome e e-mail, para o seletor mostrar quem já está escolhido; a pesquisa de outras faz-se no servidor)
+  const [accessUsers, setAccessUsers] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
   const [accessUserIds, setAccessUserIds] = useState([]);
   const [accessGroupIds, setAccessGroupIds] = useState([]);
@@ -97,15 +99,14 @@ export default function Settings({ course, isActive = true, onSaved }) {
   function getAccess() {
     setAccessLoaded(false);
     Promise.all([
-      axios.get(endpoints.user.read),
       axios.get(endpoints.userGroup.read),
       axios.get(endpoints.course.accessUsers, { params: { id_course: course.id } }),
       axios.get(endpoints.course.accessGroups, { params: { id_course: course.id } }),
-      axios.get(endpoints.course.read),
+      axios.get(endpoints.course.options),
     ])
-      .then(([users, groups, accessUsers, accessGroups, courses]) => {
-        setLanguageCourses(courses.data.courses.filter((c) => c.id_lang === course.id_lang));
-        setAllUsers(users.data.filter((u) => !u.is_deleted && u.id_role !== 1));
+      .then(([groups, accessUsers, accessGroups, courses]) => {
+        setLanguageCourses(courses.data.filter((c) => c.id_lang === course.id_lang));
+        setAccessUsers(accessUsers.data);
         setAllGroups(groups.data);
         setAccessUserIds(accessUsers.data.map((u) => u.id));
         setAccessGroupIds(accessGroups.data.map((g) => g.id));
@@ -410,19 +411,15 @@ export default function Settings({ course, isActive = true, onSaved }) {
                     <div className="flex flex-col gap-4">
                       <div>
                         <p className="pb-2">{t("Users")}</p>
-                        <Select
-                          mode="multiple"
-                          size="large"
-                          className="w-full"
+                        <UserSelect
                           placeholder={t("Select users...")}
-                          allowClear
-                          optionFilterProp="label"
+                          known={accessUsers}
+                          idLang={course.id_lang}
                           value={accessUserIds}
                           onChange={(ids) => {
                             setAccessUserIds(ids);
                             setIsDirty(true);
                           }}
-                          options={allUsers.map((u) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
                         />
                       </div>
                       <div>

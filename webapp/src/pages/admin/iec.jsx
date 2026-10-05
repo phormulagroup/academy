@@ -1,9 +1,10 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import useDebounced from "../../utils/useDebounced";
 import { usePermission } from "../../utils/usePermission";
 import { InboxOutlined, LinkOutlined, SwapRightOutlined, EyeOutlined, ExclamationCircleFilled, SearchOutlined } from "@ant-design/icons";
 import { LuCopy, LuExternalLink, LuQrCode, LuTrash2, LuTriangleAlert } from "react-icons/lu";
 import { useConfirm } from "../../components/admin/confirmModal";
-import { Upload, Pagination, Input, Modal, Button, QRCode, Tag, ConfigProvider, Tooltip } from "antd";
+import { Upload, Pagination, Input, Modal, Button, QRCode, Skeleton, Tag, ConfigProvider, Tooltip } from "antd";
 import dayjs from "dayjs";
 import axios from "axios";
 
@@ -124,29 +125,41 @@ function Iec() {
   const [replaceDialog, setReplaceDialog] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
-  const itemsPerPage = 32;
+  const itemsPerPage = 30;
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return iecs.filter((item) => !term || item.name.toLowerCase().includes(term));
-  }, [iecs, search]);
+  // Paginação e pesquisa são feitas no servidor: a página só pede os 30 IECs que mostra
+  const [total, setTotal] = useState(0);
+  const [reload, setReload] = useState(0);
+  const refresh = () => setReload((n) => n + 1);
+  const debouncedSearch = useDebounced(search.trim());
+  const requestRef = useRef(0);
 
-  const minValue = (currentPage - 1) * itemsPerPage;
+  // Mudar a pesquisa volta à 1.ª página
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [currentPage, debouncedSearch, reload]);
 
   function getData() {
+    const request = ++requestRef.current;
     setIsLoading(true);
     axios
-      .get(endpoints.iec.read)
-      .then((res) => setIecs(res.data))
+      .get(endpoints.iec.list, { params: { page: currentPage, limit: itemsPerPage, search: debouncedSearch } })
+      .then((res) => {
+        if (request !== requestRef.current) return;
+        // Apagou-se o último ficheiro da última página: recua uma
+        if (res.data.rows.length === 0 && currentPage > 1) return setCurrentPage(currentPage - 1);
+        setIecs(res.data.rows);
+        setTotal(res.data.total);
+      })
       .catch((err) => {
         console.log(err);
         toastApi.open({ type: "error", content: t("Failed to load IECs") });
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => request === requestRef.current && setIsLoading(false));
   }
 
   // Abre o modal de comparação e resolve com true/false conforme o utilizador confirme ou cancele
@@ -189,7 +202,7 @@ function Iec() {
   function batchFinish() {
     const b = batch.current;
     if (b.pending !== 0) return;
-    getData();
+    refresh();
     const extra = [b.replaced && `${b.replaced} ${t("replaced")}`, b.skipped && `${b.skipped} ${t("skipped")}`].filter(Boolean).join(", ");
     const counted = b.total - b.skipped;
     // Tudo cancelado (nada foi enviado nem falhou): não faz sentido um "0/0 com sucesso"
@@ -228,7 +241,7 @@ function Iec() {
       const { data: check } = await axios.post(endpoints.iec.check, { names: [file.name] });
       const exists = check.existing.length > 0;
       if (exists) {
-        const oldItem = iecs.find((i) => i.name === file.name) || { name: check.existing[0] };
+        const oldItem = check.items?.find((i) => i.name === file.name) || { name: check.existing[0] };
         if (!(await confirmReplace(file, oldItem))) {
           onError(new Error("cancelled"));
           return batchDone("skipped", file.name);
@@ -244,7 +257,8 @@ function Iec() {
       } catch (err) {
         // O servidor é quem decide: se afinal o ficheiro já existia, pede confirmação e repete com replace
         if (err.response?.status !== 409) throw err;
-        const oldItem = iecs.find((i) => i.name === file.name) || { name: file.name };
+        const { data: again } = await axios.post(endpoints.iec.check, { names: [file.name] }).catch(() => ({ data: {} }));
+        const oldItem = again.items?.find((i) => i.name === file.name) || { name: file.name };
         if (!(await confirmReplace(file, oldItem))) {
           onError(new Error("cancelled"));
           return batchDone("skipped", file.name);
@@ -303,7 +317,7 @@ function Iec() {
 
   function handleCloseDelete() {
     setIsOpenDelete(false);
-    getData();
+    refresh();
   }
 
   return (
@@ -335,7 +349,7 @@ function Iec() {
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
           <p className="text-xl font-bold font-ryker">{t("IECs")}</p>
-          <p className="text-[#8A8D98] text-[14px] mb-0!">{filtered.length === 1 ? t("1 file") : t("{{total}} files", { total: filtered.length })}{search.trim() ? ` ${t("found")}` : ""}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{isLoading && total === 0 ? "…" : total === 1 ? t("1 file") : t("{{total}} files", { total })}{search.trim() && !(isLoading && total === 0) ? ` ${t("found")}` : ""}</p>
         </div>
         <Input
           allowClear
@@ -343,10 +357,7 @@ function Iec() {
           prefix={<SearchOutlined />}
           placeholder={t("Search by file name")}
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
       {perm.canCreate && (
@@ -359,7 +370,19 @@ function Iec() {
         </Dragger>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4 mt-6">
-        {filtered.slice(minValue, minValue + itemsPerPage).map((item) => {
+        {/* Enquanto carrega: esqueletos com a forma dos cartões */}
+        {isLoading &&
+          Array.from({ length: iecs.length || 12 }).map((_, i) => (
+            <div key={`sk-${i}`} className="rounded-xl border border-solid border-[#E5E7EB] bg-white overflow-hidden">
+              <Skeleton.Node active style={{ width: "100%", height: 132, borderRadius: 0 }}>
+                <span />
+              </Skeleton.Node>
+              <div className="px-3 py-2 border-0 border-t border-solid border-[#F0F0F0]">
+                <Skeleton active title={false} paragraph={{ rows: 2, width: ["80%", "50%"] }} />
+              </div>
+            </div>
+          ))}
+        {!isLoading && iecs.map((item) => {
           const kind = kindOf(item.name);
           return (
             <div key={item.id} className="group relative rounded-xl border border-solid border-[#E5E7EB] bg-white overflow-hidden transition hover:border-[#163986]/50 hover:shadow-sm" title={item.name}>
@@ -402,10 +425,10 @@ function Iec() {
             </div>
           );
         })}
-        {!isLoading && iecs.length > 0 && filtered.length === 0 && <p className="col-span-full text-center text-gray-500 py-8">{t("No files found")}</p>}
-        {filtered.length > 0 && (
+        {!isLoading && iecs.length === 0 && <p className="col-span-full text-center text-gray-500 py-8">{t("No files found")}</p>}
+        {total > itemsPerPage && (
           <div className="col-span-full mt-4">
-            <Pagination align="center" showSizeChanger={false} onChange={setCurrentPage} pageSize={itemsPerPage} current={currentPage} total={filtered.length} />
+            <Pagination align="center" showSizeChanger={false} onChange={(page) => setCurrentPage(page)} pageSize={itemsPerPage} current={currentPage} total={total} />
           </div>
         )}
       </div>

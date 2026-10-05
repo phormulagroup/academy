@@ -37,4 +37,24 @@ function columnList(columns) {
     .join(", ");
 }
 
-module.exports = { toId, setClause, columnList, BadRequest };
+// Corre várias instruções SQL escritas numa só string, separadas por ";", como consultas independentes (em paralelo, ou por ordem com
+// { sequential: true } numa transação) e devolve a lista de resultados, pela mesma ordem. Os parâmetros (?) distribuem-se por instrução.
+// Existe para não depender de multipleStatements, que amplifica qualquer falha de injeção de SQL.
+async function multi(runQuery, sql, params = [], { sequential = false } = {}) {
+  const parts = sql.split(";").map((p) => p.trim()).filter(Boolean);
+  let offset = 0;
+  const jobs = parts.map((part) => {
+    const count = (part.match(/\?/g) || []).length;
+    const slice = params.slice(offset, offset + count);
+    offset += count;
+    return () => runQuery(part, slice);
+  });
+  if (sequential) {
+    const out = [];
+    for (const job of jobs) out.push(await job());
+    return out;
+  }
+  return Promise.all(jobs.map((job) => job()));
+}
+
+module.exports = { toId, setClause, columnList, multi, BadRequest };

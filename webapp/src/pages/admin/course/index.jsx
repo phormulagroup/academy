@@ -3,9 +3,9 @@ import dayjs from "dayjs";
 import RefreshButton from "../../../components/admin/refreshButton";
 import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
 import { usePermission } from "../../../utils/usePermission";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
-import { Avatar, Button, Table } from "antd";
+import { Avatar, Button, Input, Select, Table } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { FaCopy, FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { CiCalendar } from "react-icons/ci";
@@ -15,7 +15,6 @@ import { AiOutlinePlus } from "react-icons/ai";
 import Create from "../../../components/admin/course/create";
 import Delete from "../../../components/admin/delete";
 import Duplicate from "../../../components/admin/course/duplicate";
-import useListFilters, { includesText } from "../../../components/admin/listFilters";
 import RowActions from "../../../components/admin/rowActions";
 
 import StatusTag from "../../../utils/statusTag";
@@ -45,6 +44,9 @@ function courseDateFields(course) {
   };
 }
 
+// Coluna da tabela → campo de ordenação aceite pela API (/course/list)
+const SORT_FIELDS = { course_info: "internal_name", moduleCount: "moduleCount", topicCount: "topicCount", testCount: "testCount", start_label: "start", end_label: "end", is_deleted: "status" };
+
 export default function Course() {
   const { user, selectedLanguage } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +55,16 @@ export default function Course() {
   const [products, setProducts] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
+
+  // Paginação, pesquisa, filtro e ordenação são feitos no servidor: a página só pede as linhas que mostra
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [total, setTotal] = useState(0);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState(undefined);
+  const [sort, setSort] = useState({ field: "internal_name", order: "asc" });
+  const requestRef = useRef(0);
 
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
@@ -65,52 +77,63 @@ export default function Course() {
 
   const navigate = useNavigate();
 
+  // A pesquisa só segue para o servidor 350 ms depois de se parar de escrever
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   useEffect(() => {
     if (user) getData();
-  }, [user, selectedLanguage]);
+  }, [user, selectedLanguage, page, pageSize, search, status, sort.field, sort.order]);
+
+  // Produtos e identificação leve dos cursos (para nomes repetidos): carregam uma vez e depois de criar, duplicar ou apagar
+  function getSupport() {
+    axios.get(endpoints.product.read).then((res) => setProducts(res.data)).catch((err) => console.log(err));
+    axios.get(endpoints.course.options).then((res) => setAllCourses(res.data)).catch((err) => console.log(err));
+  }
+  useEffect(() => {
+    if (user) getSupport();
+  }, [user]);
+
+  const listParams = { id_lang: selectedLanguage.id, search, status, sort: sort.field, order: sort.order };
 
   function getData() {
+    const request = ++requestRef.current;
     setIsLoading(true);
-    // Buscar todos os cursos (incluindo deletados) para a tabela admin
     axios
-      .get(endpoints.course.read)
+      .get(endpoints.course.list, { params: { ...listParams, page, limit: pageSize } })
       .then((res) => {
-        // Filtrar apenas os cursos do idioma selecionado (incluindo deletados)
-        const languageFilteredCourses = res.data.courses.filter(
-          (course) => course.id_lang === selectedLanguage.id,
-        );
-        setData(languageFilteredCourses);
-        setProducts(res.data.products);
-        prepareData(languageFilteredCourses, res.data);
-        setAllCourses(res.data.courses); // Manter todos os cursos para validação
+        if (request !== requestRef.current) return;
+        setData(res.data.rows);
+        setTotal(res.data.total);
+        prepareData(res.data.rows);
       })
-      .catch((err) => {
-        console.log(err);
-      })
+      .catch((err) => console.log(err))
       .finally(() => {
-        setIsLoading(false);
+        if (request === requestRef.current) setIsLoading(false);
       });
   }
 
-  // Módulos, tópicos e testes de cada curso (a API devolve as listas completas, não contagens)
-  function countContent(courseId, { modules = [], topics = [], tests = [] }) {
-    const moduleIds = modules
-      .filter((m) => m.id_course === courseId && !m.is_deleted)
-      .map((m) => m.id);
-    return {
-      moduleCount: moduleIds.length,
-      topicCount: topics.filter((tp) => moduleIds.includes(tp.id_course_module)).length,
-      testCount: tests.filter((ts) => moduleIds.includes(ts.id_course_module)).length,
-    };
+  // Todas as linhas do filtro atual (para exportar), por páginas de 500
+  async function fetchAllRows() {
+    const rows = [];
+    for (let p = 1; ; p++) {
+      const res = await axios.get(endpoints.course.list, { params: { ...listParams, page: p, limit: 500 } });
+      rows.push(...res.data.rows);
+      if (rows.length >= res.data.total || res.data.rows.length === 0) return rows;
+    }
   }
 
-  function prepareData(array, content) {
+  function prepareData(array) {
     const aux = [];
     for (let i = 0; i < array.length; i++) {
       aux.push({
         ...array[i],
-        ...countContent(array[i].id, content),
-        key: i + 1,
+        key: array[i].id,
         course_info: (
           <div className="flex items-center">
             <Avatar
@@ -183,6 +206,7 @@ export default function Course() {
   function closeAction(c) {
     if (c) {
       getData();
+      getSupport();
     }
     setIsOpenDuplicate(false);
     setIsOpenCreate(false);
@@ -213,14 +237,8 @@ export default function Course() {
     );
 
   const canSeeStatus = user.id_role === 1 || user.id_role === 2;
-  // Pesquisa e estado ficam à vista na barra do cabeçalho (são só dois filtros, não precisam de gaveta)
-  const { filterRows, toolbar } = useListFilters([
-    { key: "q", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.internal_name, v) || includesText(row.full_data.name, v) },
-    ...(canSeeStatus
-      ? [{ key: "status", type: "select", primary: true, label: t("Status"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => row.full_data.is_deleted === v }]
-      : []),
-  ]);
-  const filteredData = filterRows(tableData);
+  const filteredData = tableData;
+  const sortOrderOf = (field) => (sort.field === field ? (sort.order === "desc" ? "descend" : "ascend") : null);
 
   return (
     <div className="p-2">
@@ -249,12 +267,25 @@ export default function Course() {
         <div>
           <p className="text-xl font-bold">{t("Courses")}</p>
           <p className="text-[#8A8D98] text-[14px] mb-0!">
-            {t("{{total}} courses", { total: filteredData.length })}
+            {t("{{total}} courses", { total })}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {toolbar}
-          <ExportButton table="courses" data={filteredData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, { title: "Internal name", dataIndex: "internal_name" }, { title: "Slug", dataIndex: "slug" }, languageColumn, { title: "Status", dataIndex: "status" }, { title: "Start date", dataIndex: "start_label", value: (row) => courseDateFields(row).start_label }, { title: "End date", dataIndex: "end_label", value: (row) => courseDateFields(row).end_label }, activityColumn, createdColumn]} />
+          <Input allowClear className="w-60!" prefix={<SearchOutlined />} placeholder={t("Search by name...")} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+          {canSeeStatus && (
+            <Select
+              allowClear
+              className="w-36"
+              placeholder={t("Status")}
+              value={status}
+              onChange={(v) => {
+                setStatus(v ?? undefined);
+                setPage(1);
+              }}
+              options={[{ label: t("Active"), value: "active" }, { label: t("Inactive"), value: "inactive" }]}
+            />
+          )}
+          <ExportButton table="courses" data={filteredData.map((r) => r.full_data)} fetchAll={fetchAllRows} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, { title: "Internal name", dataIndex: "internal_name" }, { title: "Slug", dataIndex: "slug" }, languageColumn, { title: "Status", dataIndex: "status" }, { title: "Start date", dataIndex: "start_label", value: (row) => courseDateFields(row).start_label }, { title: "End date", dataIndex: "end_label", value: (row) => courseDateFields(row).end_label }, activityColumn, createdColumn]} />
           <RefreshButton onClick={getData} />
           {perm.canCreate && (<Button
             type="primary"
@@ -270,7 +301,21 @@ export default function Course() {
         scroll={{ x: 50 }}
         pagination={{
           placement: ["none", "bottomCenter"],
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: [15, 30, 50, 100],
           showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
+        }}
+        onChange={(pagination, _filters, sorter) => {
+          if (pagination.pageSize !== pageSize) setPageSize(pagination.pageSize);
+          const field = SORT_FIELDS[sorter?.columnKey ?? sorter?.field];
+          const next = field && sorter.order ? { field, order: sorter.order === "descend" ? "desc" : "asc" } : { field: "internal_name", order: "asc" };
+          if (next.field !== sort.field || next.order !== sort.order) {
+            setSort(next);
+            setPage(1);
+          } else setPage(pagination.current);
         }}
         onRow={(record) => ({
           className: "cursor-pointer",
@@ -281,31 +326,32 @@ export default function Course() {
             title: t("Course"),
             dataIndex: "course_info",
             key: "course_info",
-            sorter: (a, b) =>
-              (a.full_data.internal_name || "").localeCompare(
-                b.full_data.internal_name || "",
-              ),
+            sorter: true,
+            sortOrder: sortOrderOf("internal_name"),
             width: "55%",
           },
           {
             title: t("Modules"),
             dataIndex: "moduleCount",
             key: "moduleCount",
-            sorter: (a, b) => a.moduleCount - b.moduleCount,
+            sorter: true,
+            sortOrder: sortOrderOf("moduleCount"),
             width: "100px",
           },
           {
             title: t("Topics"),
             dataIndex: "topicCount",
             key: "topicCount",
-            sorter: (a, b) => a.topicCount - b.topicCount,
+            sorter: true,
+            sortOrder: sortOrderOf("topicCount"),
             width: "100px",
           },
           {
             title: t("Tests"),
             dataIndex: "testCount",
             key: "testCount",
-            sorter: (a, b) => a.testCount - b.testCount,
+            sorter: true,
+            sortOrder: sortOrderOf("testCount"),
             width: "100px",
           },
           {
@@ -313,7 +359,8 @@ export default function Course() {
             dataIndex: "start_label",
             key: "start_label",
             onHeaderCell: () => ({ style: { whiteSpace: "nowrap" } }), // o título nunca quebra em duas linhas
-            sorter: (a, b) => (a.start_value || 0) - (b.start_value || 0),
+            sorter: true,
+            sortOrder: sortOrderOf("start"),
             width: "175px",
           },
           {
@@ -321,15 +368,16 @@ export default function Course() {
             dataIndex: "end_label",
             key: "end_label",
             onHeaderCell: () => ({ style: { whiteSpace: "nowrap" } }), // o título nunca quebra em duas linhas
-            sorter: (a, b) => (a.end_value || 0) - (b.end_value || 0),
+            sorter: true,
+            sortOrder: sortOrderOf("end"),
             width: "175px",
           },
           canSeeStatus && {
             title: t("Status"),
             dataIndex: "is_deleted",
             key: "is_deleted",
-            sorter: (a, b) =>
-              (a.full_data.is_deleted ? 1 : 0) - (b.full_data.is_deleted ? 1 : 0),
+            sorter: true,
+            sortOrder: sortOrderOf("status"),
             width: "110px",
           },
           {

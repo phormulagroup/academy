@@ -38,14 +38,10 @@ export default function Role() {
 
   function getData() {
     setIsLoading(true);
-    Promise.all([axios.get(endpoints.role.read), axios.get(endpoints.user.read)])
-      .then(([rolesRes, usersRes]) => {
+    Promise.all([axios.get(endpoints.role.read), axios.get(endpoints.user.counts)])
+      .then(([rolesRes, countsRes]) => {
         setRoles(rolesRes.data);
-        const counts = {};
-        for (const u of usersRes.data) {
-          if (!u.is_deleted) counts[u.id_role] = (counts[u.id_role] || 0) + 1;
-        }
-        setUserCounts(counts);
+        setUserCounts(countsRes.data);
         setIsLoading(false);
       })
       .catch((err) => {

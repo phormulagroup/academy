@@ -83,10 +83,10 @@ export default function CertificateDetails() {
   // Informação de apoio: onde este modelo está a ser usado
   function getUsage() {
     axios
-      .get(endpoints.course.read)
+      .get(endpoints.course.options)
       .then((res) =>
         setCourses(
-          (res.data?.courses || []).filter(
+          (res.data || []).filter(
             (c) => String(c.id_course_certificate) === String(id) && !c.is_deleted,
           ),
         ),

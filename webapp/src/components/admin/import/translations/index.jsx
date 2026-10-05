@@ -6,11 +6,18 @@ import UploadFile from "../upload";
 import SelectLanguages from "./selectLanguages";
 import ImportProcess from "./importProcess";
 
+import axios from "axios";
 import { Context } from "../../../../utils/context";
+import endpoints from "../../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 
 function TranslationsImport({ open, close }) {
-  const { languages, selectedLanguage } = useContext(Context);
+  const { selectedLanguage } = useContext(Context);
+  // A lista do contexto não leva as traduções (para a página abrir depressa): a importação junta-se às existentes, por isso lê as completas
+  const [languages, setLanguages] = useState([]);
+  useEffect(() => {
+    if (open) axios.get(endpoints.language.read).then((res) => setLanguages(res.data)).catch((err) => console.log(err));
+  }, [open]);
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedData, setUploadedData] = useState(null);

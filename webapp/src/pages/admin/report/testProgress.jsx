@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Empty, Select, Switch, Tag } from "antd";
+import { Button, Empty, Select, Skeleton, Switch, Tag } from "antd";
 import { LuBookOpen, LuChevronDown, LuCircleCheck, LuPill, LuUsers } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
@@ -284,7 +284,7 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, t
 }
 
 // Progresso dos testes agrupado por produto: as estatísticas de todos os cursos de cada produto, com a média por idioma ou por país
-export default function TestProgress({ data, products, languages }) {
+export default function TestProgress({ data, products, languages, isLoading = false }) {
   const { t } = useTranslation();
   const [productFilter, setProductFilter] = useState(null);
   const [groupByCountry, setGroupByCountry] = useState(false);
@@ -312,6 +312,9 @@ export default function TestProgress({ data, products, languages }) {
   const total = useMemo(() => (data?.users ? computeStats(data, visible.flatMap((g) => g.courses), languages) : null), [data, visible, languages]);
 
   const isOpen = (key, index) => (key in openProducts ? openProducts[key] : visible.length === 1 || index === 0);
+
+  // Os dados deste separador só se pedem quando se abre: esqueleto enquanto chegam
+  if (isLoading && !data?.users) return <Skeleton active paragraph={{ rows: 8 }} />;
 
   return (
     <div>

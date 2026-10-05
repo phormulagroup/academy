@@ -32,6 +32,7 @@ const ContextProvider = ({ children }) => {
 	const [personalization, setPersonalization] = useState({});
 
 	const unreadTicketsRef = useRef(0);
+	const notificationSummaryRef = useRef(null); // último resumo (total, não lidas, última) para só pedir a lista quando muda
 	const knownNotificationsRef = useRef(null); // ids já conhecidos (null até à 1ª leitura, para não avisar das antigas)
 	const ticketsLoadedRef = useRef(false);
 	const isExpiringRef = useRef(false); // evita várias mensagens quando vários pedidos falham ao mesmo tempo
@@ -131,10 +132,22 @@ const ContextProvider = ({ children }) => {
 	}
 
 	async function pollUpdates(auxUser) {
-		const [notificationsRes, ticketsRes] = await Promise.allSettled([
-			axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser.id } }),
-			axios.get(endpoints.ticket.unreadCount),
-		]);
+		// Verificação leve: só se pede a lista completa de notificações quando o resumo mudou
+		const [summaryRes, ticketsRes] = await Promise.allSettled([axios.get(endpoints.notification.summary), axios.get(endpoints.ticket.unreadCount)]);
+		let notificationsRes = { status: "rejected" };
+		if (summaryRes.status === "fulfilled") {
+			const next = summaryRes.value.data;
+			const prev = notificationSummaryRef.current;
+			const changed = !prev || prev.total !== next.total || prev.unread !== next.unread || prev.latest_id !== next.latest_id;
+			if (changed) {
+				try {
+					notificationsRes = { status: "fulfilled", value: await axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser.id } }) };
+					notificationSummaryRef.current = next;
+				} catch {
+					// tenta de novo na próxima verificação
+				}
+			}
+		}
 
 		// Notificações: avisa das que ainda não tinham aparecido e não foram lidas
 		if (notificationsRes.status === "fulfilled") {
@@ -159,28 +172,30 @@ const ContextProvider = ({ children }) => {
 		}
 	}
 
+	// Traduções por língua, com cache do browser (o URL leva a versão, por isso só se volta a descarregar quando mudam)
+	const loadedTranslationsRef = useRef({}); // código → versão já carregada
+	async function loadTranslation(language) {
+		if (!language?.has_translation || loadedTranslationsRef.current[language.code] === language.version) return;
+		const res = await axios.get(endpoints.language.translation, { params: { code: language.code, v: language.version } });
+		const translation = (res.data || []).reduce((acc, item) => {
+			acc[item.key] = item.value;
+			return acc;
+		}, {});
+		i18n.removeResourceBundle(language.code, "translation");
+		i18n.addResourceBundle(language.code, "translation", translation, true, true);
+		loadedTranslationsRef.current[language.code] = language.version;
+	}
+
 	async function getLanguages() {
 		try {
-			const res = await axios.get(endpoints.language.read);
+			// Só a lista (sem as traduções): as traduções vêm a seguir, a da língua em uso primeiro
+			const res = await axios.get(endpoints.language.read, { params: { light: 1 } });
 			setLanguages(res.data);
 			getPersonalization(res.data);
 
 			const auxLanguages = res.data;
-			for (let i = 0; i < auxLanguages.length; i++) {
-				if (auxLanguages[i].translation) {
-					const translation = JSON.parse(auxLanguages[i].translation).reduce(
-						(acc, item) => {
-							acc[item.key] = item.value;
-							return acc;
-						},
-						{},
-					);
-
-					// Remove old resource and add fresh translations
-					i18n.removeResourceBundle(auxLanguages[i].code, "translation");
-					i18n.addResourceBundle(auxLanguages[i].code, "translation", translation, true, true);
-				}
-			}
+			const current = auxLanguages.find((l) => l.code === i18n.language) ?? auxLanguages.find((l) => l.is_default === 1);
+			await loadTranslation(current).catch((err) => console.log(err));
 
 			const idLangStorage = localStorage.getItem("id_lang");
 
@@ -194,17 +209,9 @@ const ContextProvider = ({ children }) => {
 
 			// Refresh i18n to trigger re-render with updated translations
 			await i18n.changeLanguage(i18n.language);
-		} catch (err) {
-			console.log(err);
-		}
-	}
 
-	async function getCourses(auxUser) {
-		try {
-			const res = await axios.get(endpoints.course.read, {
-				params: { id_user: auxUser ? auxUser.id : user.id },
-			});
-			setCourses(res.data.courses);
+			// As restantes línguas carregam em segundo plano (ficam em cache; trocar de língua é então imediato)
+			Promise.all(auxLanguages.filter((l) => l !== current).map((l) => loadTranslation(l).catch(() => {}))).then(() => i18n.changeLanguage(i18n.language));
 		} catch (err) {
 			console.log(err);
 		}
@@ -278,7 +285,6 @@ const ContextProvider = ({ children }) => {
 				await login({ user: res.data.user, token: token });
 				getNotifications(res.data.user);
 				getTickets();
-				getCourses(res.data.user);
 				setTimeout(() => {
 					setIsLoading(false);
 				}, 3000);
@@ -321,10 +327,6 @@ const ContextProvider = ({ children }) => {
 
 	async function getInfoData(token) {
 		try {
-			const coursesList = await axios.get(endpoints.user.read, {
-				headers: { Authorization: token },
-			});
-			setCourses(coursesList.data);
 			const rolesList = await axios.get(endpoints.role.read, {
 				headers: { Authorization: token },
 			});

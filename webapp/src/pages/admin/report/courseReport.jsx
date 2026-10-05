@@ -1,7 +1,9 @@
 import { useContext, useEffect, useMemo, useRef } from "react";
 import { buildCourseStudentExport } from "../../../utils/courseExport";
 import { useState } from "react";
-import { Avatar, Button, ConfigProvider, Form, Input, Segmented, Select, Table, Tag } from "antd";
+import axios from "axios";
+import { Avatar, Button, ConfigProvider, Form, Input, Segmented, Select, Skeleton, Table, Tag } from "antd";
+import endpoints from "../../../utils/endpoints";
 import { CiCalendar } from "react-icons/ci";
 import config from "../../../utils/config";
 import { IoSearch } from "react-icons/io5";
@@ -174,6 +176,31 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
   );
 }
 
+// Linha aberta de um curso: carrega o detalhe e desenha o painel
+function ExpandedCourse({ record, build }) {
+  const { t } = useTranslation();
+  const [detail, setDetail] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    axios
+      .get(endpoints.course.reportCourse, { params: { id: record.id } })
+      .then((res) => active && setDetail(res.data))
+      .catch((err) => {
+        console.log(err);
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [record.id]);
+
+  if (failed) return <p className="py-6 text-center text-[#DB0709]">{t("Could not load the data")}</p>;
+  if (!detail) return <Skeleton active paragraph={{ rows: 6 }} className="p-4" />;
+  return build(record, detail);
+}
+
 export default function CourseReport({ data, isLoading }) {
   const { user, selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
@@ -317,10 +344,11 @@ export default function CourseReport({ data, isLoading }) {
     if (obj.users && obj.courses && obj.courses.length > 0) {
       for (let i = 0; i < obj.courses.length; i++) {
         let course = obj.courses[i];
+        // Curso sem definições guardadas: tratado como sem limites (antes rebentava a página)
         course.settings =
-          course.settings && typeof course.settings === "string"
+          (course.settings && typeof course.settings === "string"
             ? JSON.parse(course.settings)
-            : course.settings;
+            : course.settings) || {};
 
         // Admins can see draft and published courses, but not deleted ones
         if (course.is_deleted === 1) continue;
@@ -454,7 +482,8 @@ export default function CourseReport({ data, isLoading }) {
     setIsOpenExport(false);
   }
 
-  const expandedRowRender = (e) => {
+  // Monta o painel de um curso a partir do detalhe desse curso (pedido à API quando a linha se abre)
+  const buildExpanded = (e, data) => {
     const columnsExpanded = getExpandedStudentColumns(t);
 
     let course = data.courses?.filter((c) => c.id === e.id)[0];
@@ -667,6 +696,9 @@ export default function CourseReport({ data, isLoading }) {
       openExport(detailed.rows, detailed.columns, "CourseStudentsReport");
     }} t={t} />;
   };
+
+  // Ao abrir uma linha pede-se à API só o detalhe desse curso (alunos, atividade, testes), em vez de trazer tudo no início
+  const expandedRowRender = (e) => <ExpandedCourse key={e.id} record={e} build={buildExpanded} />;
 
   return (
     <div>

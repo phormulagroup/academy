@@ -5,7 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
-const { toId, setClause, columnList } = require("../utils/sql");
+const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser } = require("../utils/notify");
@@ -21,6 +21,13 @@ async function notifyCourseCompleted(id_user, id_course) {
 		console.error(err.message);
 	}
 }
+
+// Listas de cursos, tópicos e testes SEM os campos pesados (material e objeções do curso, conteúdo dos tópicos, perguntas dos testes): as
+// listagens e o progresso não os usam e, somados, passavam dos 2 MB por pedido. O conteúdo completo vem dos endpoints por id/slug.
+const COURSE_COLUMNS = "course.id, course.name, course.internal_name, course.img, course.thumbnail, course.id_lang, course.status, course.date_start, course.date_end, course.slug, course.enrollment, course.id_course_certificate, course.settings, course.id_product, course.is_deleted, course.created_at, course.modified_at";
+const TOPIC_COLUMNS = "course_topic.id, course_topic.id_course_module, course_topic.title, course_topic.slug, course_topic.is_deleted, course_topic.created_at, course_topic.modified_at";
+// question_count: nº de perguntas, para o resumo do teste sem enviar as perguntas
+const TEST_COLUMNS = "course_test.id, course_test.id_course_module, course_test.title, course_test.settings, course_test.status, course_test.is_deleted, course_test.created_at, course_test.modified_at, IF(JSON_VALID(course_test.question), JSON_LENGTH(course_test.question), 0) AS question_count";
 
 // Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
 const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
@@ -78,12 +85,12 @@ async function visibleCourses(query, courses, userId) {
 router.get("/read", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query(
-			"SELECT * FROM course; " +
+		const rows = await multi(query, 
+			`SELECT ${COURSE_COLUMNS} FROM course; ` +
 				"SELECT course_module. * FROM course_module WHERE is_deleted = 0; " +
-				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
+				`SELECT ${TOPIC_COLUMNS} FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id ` +
 				"WHERE course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
-				"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+				`SELECT ${TEST_COLUMNS} FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id ` +
 				"WHERE course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
 				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
 				"WHERE course_user_activity.id_user = ?; SELECT * FROM product",
@@ -101,6 +108,53 @@ router.get("/read", async (req, res) => {
 	} catch (e) {
 		throw e;
 	}
+});
+
+// Lista paginada para o backoffice (a pesquisa, o filtro e a ordenação são feitos na base de dados: a lista cresce, a página não):
+// ?page=1&limit=15&search=&status=active|inactive&id_lang=&sort=internal_name|moduleCount|topicCount|testCount|start|end|status&order=asc|desc
+const startExpr = "IF(JSON_VALID(course.settings), JSON_UNQUOTE(JSON_EXTRACT(course.settings, '$.course_access_expiration_dates.start_date')), NULL)";
+const endExpr = "IF(JSON_VALID(course.settings), JSON_UNQUOTE(JSON_EXTRACT(course.settings, '$.course_access_expiration_dates.end_date')), NULL)";
+const SORTS = { internal_name: "course.internal_name", moduleCount: "moduleCount", topicCount: "topicCount", testCount: "testCount", start: startExpr, end: endExpr, status: "course.is_deleted" };
+
+router.get("/list", requirePermission("course", "read"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	try {
+		const page = Math.max(1, parseInt(req.query.page) || 1);
+		const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 15));
+		const where = ["course.id_lang = ?"];
+		const params = [toId(req.query.id_lang)];
+		const search = String(req.query.search || "").trim();
+		if (search) {
+			where.push("(course.internal_name LIKE ? OR course.name LIKE ?)");
+			params.push(`%${search}%`, `%${search}%`);
+		}
+		if (req.query.status === "active") where.push("course.is_deleted = 0");
+		if (req.query.status === "inactive") where.push("course.is_deleted = 1");
+		const sort = SORTS[req.query.sort] || SORTS.internal_name;
+		const order = req.query.order === "desc" ? "DESC" : "ASC";
+		const clause = where.join(" AND ");
+
+		const [{ total }] = await query(`SELECT COUNT(*) AS total FROM course WHERE ${clause}`, params);
+		const rows = await query(
+			`SELECT ${COURSE_COLUMNS},
+				(SELECT COUNT(*) FROM course_module m WHERE m.id_course = course.id AND m.is_deleted = 0) AS moduleCount,
+				(SELECT COUNT(*) FROM course_topic tp JOIN course_module m ON tp.id_course_module = m.id WHERE m.id_course = course.id AND m.is_deleted = 0 AND tp.is_deleted = 0) AS topicCount,
+				(SELECT COUNT(*) FROM course_test ts JOIN course_module m ON ts.id_course_module = m.id WHERE m.id_course = course.id AND m.is_deleted = 0 AND ts.is_deleted = 0) AS testCount
+			FROM course WHERE ${clause} ORDER BY ${sort} ${order}, course.id DESC LIMIT ? OFFSET ?`,
+			[...params, limit, (page - 1) * limit],
+		);
+		res.send({ rows, total, page, limit });
+	} catch (e) {
+		if (e.status) return res.status(e.status).send({ message: e.message });
+		throw e;
+	}
+});
+
+// Identificação leve de todos os cursos (para validar nomes repetidos e mostrar onde um modelo é usado), sem conteúdo
+router.get("/options", requirePermission("course", "read"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	const rows = await query("SELECT id, id_lang, name, internal_name, slug, is_deleted, id_course_certificate FROM course");
+	res.send(rows);
 });
 
 router.get("/readProgress", async (req, res) => {
@@ -127,12 +181,12 @@ router.get("/readProgress", async (req, res) => {
 router.get("/readByLang", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query(
-			"SELECT * FROM course WHERE id_lang = ? AND is_deleted = 0; " +
+		const rows = await multi(query, 
+			`SELECT ${COURSE_COLUMNS} FROM course WHERE id_lang = ? AND is_deleted = 0; ` +
 				"SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ? AND course_module.is_deleted = 0; " +
-				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
+				`SELECT ${TOPIC_COLUMNS} FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id ` +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
-				"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+				`SELECT ${TEST_COLUMNS} FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id ` +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
 				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
 				"WHERE course_user_activity.id_user = ? AND course.id_lang = ?; SELECT * FROM product ",
@@ -173,7 +227,7 @@ router.get("/readByLang", async (req, res) => {
 router.get("/readById", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query(
+		const rows = await multi(query, 
 			"SELECT * FROM course WHERE id = ?; SELECT course_module.* FROM course_module WHERE id_course = ? AND is_deleted = 0; " +
 				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id WHERE course_module.id_course = ? " +
 				"AND course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
@@ -207,7 +261,7 @@ router.get("/readBySlug", async (req, res) => {
 			testQuery += " AND course_test.status != 'draft'";
 		}
 
-		const rows = await query(
+		const rows = await multi(query, 
 			`SELECT * FROM course WHERE ${courseFilter}; SELECT course_module.* FROM course_module ` +
 				`LEFT JOIN course ON course.id = course_module.id_course WHERE ${courseFilter} AND course_module.is_deleted = 0; ` +
 				"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
@@ -277,56 +331,89 @@ router.get("/readByTestId", async (req, res) => {
 	}
 });
 
+// ---- Relatórios ----
+// Os relatórios pedem os dados por partes, só quando fazem falta:
+//   /report?scope=summary  → o suficiente para a tabela de cursos e os números do topo (sem datas, respostas nem perguntas)
+//   /report?scope=full     → tudo do idioma, para os separadores Progresso dos alunos e Relatório de testes
+//   /report?scope=global   → tudo, de todos os idiomas (separador Progresso dos testes)
+//   /report/course?id=     → o detalhe de um curso, quando se abre a linha na tabela
+//   (sem scope: filtered + global, como antes)
+function reportQueries({ lang, courseId, slim = false, skipUsers = false }) {
+	const query = util.promisify(db.query).bind(db);
+	const where = (langColumn, courseColumn) => {
+		const conditions = [];
+		const params = [];
+		if (lang) {
+			conditions.push(`${langColumn} = ?`);
+			params.push(lang);
+		}
+		if (courseId) {
+			conditions.push(`${courseColumn} = ?`);
+			params.push(courseId);
+		}
+		return { sql: conditions.length ? `${conditions.join(" AND ")} AND ` : "", params };
+	};
+	const courseWhere = where("id_lang", "id");
+	const moduleWhere = where("course.id_lang", "course.id");
+	const activityCols = slim
+		? "cua.id, cua.id_user, cua.id_course, cua.id_course_module, cua.id_course_topic, cua.id_course_test, cua.activity_type, cua.is_completed, cua.is_deleted"
+		: "cua.*, course_test.title as `test_title`, user.name as `user_name`";
+	return Promise.all([
+		skipUsers ? Promise.resolve([]) : query(`SELECT ${slim ? "id, name, email, id_role, status, country, id_lang" : "*"} FROM user WHERE ${lang ? "id_lang = ? AND " : ""}is_deleted = 0`, lang ? [lang] : []),
+		query(`SELECT ${COURSE_COLUMNS} FROM course WHERE ${courseWhere.sql}is_deleted = 0`, courseWhere.params),
+		query(`SELECT ${slim ? "course_module.id, course_module.id_course, course_module.is_deleted" : "course_module.*"} FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course.is_deleted = 0 AND course_module.is_deleted = 0`, moduleWhere.params),
+		query(`SELECT ${slim ? "course_topic.id, course_topic.is_deleted" : TOPIC_COLUMNS}, course_module.id_course FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course_module.is_deleted = 0 AND course_topic.is_deleted = 0 AND course.is_deleted = 0`, moduleWhere.params),
+		query(`SELECT ${slim ? "course_test.id, course_test.settings, course_test.is_deleted" : "course_test.*"}, course_module.id_course FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course.is_deleted = 0`, moduleWhere.params),
+		query(
+			`SELECT ${activityCols} FROM course_user_activity cua LEFT JOIN course ON cua.id_course = course.id ` +
+				"LEFT JOIN course_module ON cua.id_course_module = course_module.id LEFT JOIN course_topic ON cua.id_course_topic = course_topic.id " +
+				"LEFT JOIN course_test ON cua.id_course_test = course_test.id LEFT JOIN user ON user.id = cua.id_user " +
+				`WHERE ${moduleWhere.sql}course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) ` +
+				"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL) ORDER BY cua.created_at DESC",
+			moduleWhere.params,
+		),
+	]).then(([users, courses, modules, topics, tests, activity]) => ({ users, courses, modules, topics, tests, activity }));
+}
+
 router.get("/report", requirePermission("report", "read"), async (req, res) => {
+	try {
+		const lang = req.query.id_lang ? toId(req.query.id_lang) : null;
+		const scope = req.query.scope;
+		if (scope === "summary") return res.send({ filtered: await reportQueries({ lang, slim: true }) });
+		if (scope === "full") return res.send({ filtered: await reportQueries({ lang }) });
+		if (scope === "global") return res.send({ global: await reportQueries({ lang: null }) });
+		const [filtered, global] = await Promise.all([reportQueries({ lang }), reportQueries({ lang: null })]);
+		res.send({ filtered, global });
+	} catch (err) {
+		if (err.status) return res.status(err.status).send({ message: err.message });
+		throw err;
+	}
+});
+
+// Detalhe de um curso (linha aberta na tabela de cursos): o curso, os seus módulos, tópicos e testes, a atividade dos alunos neste curso e
+// os alunos a que o curso se aplica (por país, se o curso tem limite de país; senão, os do idioma do curso)
+router.get("/report/course", requirePermission("report", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const idLang = req.query.id_lang;
-		const hasLanguageFilter = !!idLang;
-
-		// SQL template builder - WHERE clause dinâmico baseado na presença de idLang
-		const buildSqlQueries = (filter) =>
-			`SELECT * FROM user WHERE ${filter ? "id_lang = ? AND" : ""} is_deleted = 0; ` +
-			`SELECT * FROM course WHERE ${filter ? "id_lang = ? AND" : ""} is_deleted = 0; ` +
-			`SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE ${filter ? "course.id_lang = ? AND" : ""} course.is_deleted = 0 AND course_module.is_deleted = 0; ` +
-			`SELECT course_topic.*, course_module.id_course FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id ` +
-			`LEFT JOIN course ON course.id = course_module.id_course WHERE ${filter ? "course.id_lang = ? AND" : ""} course_module.is_deleted = 0 AND course_topic.is_deleted = 0 AND course.is_deleted = 0; ` +
-			`SELECT course_test.*, course_module.id_course FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id ` +
-			`LEFT JOIN course ON course.id = course_module.id_course WHERE ${filter ? "course.id_lang = ? AND" : ""} course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course.is_deleted = 0; ` +
-			`SELECT cua.*, course_test.title as \`test_title\`, user.name as \`user_name\` FROM course_user_activity cua LEFT JOIN course ON course.id = cua.id_course ` +
-			`LEFT JOIN course_module ON cua.id_course_module = course_module.id LEFT JOIN course_topic ON cua.id_course_topic = course_topic.id ` +
-			`LEFT JOIN course_test ON cua.id_course_test = course_test.id LEFT JOIN user ON user.id = cua.id_user ` +
-			`WHERE ${filter ? "course.id_lang = ? AND" : ""} course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) ` +
-			`AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) ` +
-			`AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL) ` +
-			`ORDER BY cua.created_at DESC; `;
-
-		// Build params array: repetir idLang para cada query que precisa do filtro
-		const buildParams = (filter) => filter ? [idLang, idLang, idLang, idLang, idLang, idLang, idLang] : [];
-
-		// Fetch FILTERED data (apenas para a linguagem selecionada, se houver filtro)
-		const filteredRows = await query(buildSqlQueries(hasLanguageFilter), buildParams(hasLanguageFilter));
-
-		// Fetch GLOBAL data (sempre sem filtro - todas as linguagens)
-		const globalRows = await query(buildSqlQueries(false), []);
-
-		const parseRows = (rows) => ({
-			users: rows[0],
-			courses: rows[1],
-			modules: rows[2],
-			topics: rows[3],
-			tests: rows[4],
-			activity: rows[5]
-		});
-
-		const filteredData = parseRows(filteredRows);
-		const globalData = parseRows(globalRows);
-
-		// Devolve os dados filtrados e globais em um único objeto
-		res.send({
-			filtered: filteredData,
-			global: globalData
-		});
+		const courseId = toId(req.query.id);
+		const [course] = await query(`SELECT ${COURSE_COLUMNS} FROM course WHERE id = ? AND is_deleted = 0`, [courseId]);
+		if (!course) return res.status(404).send({ message: "Course not found" });
+		let settings = {};
+		try {
+			settings = typeof course.settings === "string" ? JSON.parse(course.settings) || {} : course.settings || {};
+		} catch {
+			// definições inválidas: sem limite de país
+		}
+		const detail = await reportQueries({ courseId, skipUsers: true });
+		const countries = settings.country_limit && Array.isArray(settings.country) ? settings.country : null;
+		const users = countries
+			? countries.length
+				? await query("SELECT * FROM user WHERE is_deleted = 0 AND id_role = 2 AND status = 'approved' AND country IN (?)", [countries])
+				: []
+			: await query("SELECT * FROM user WHERE is_deleted = 0 AND id_role = 2 AND status = 'approved' AND id_lang = ?", [course.id_lang]);
+		res.send({ ...detail, users });
 	} catch (err) {
+		if (err.status) return res.status(err.status).send({ message: err.message });
 		throw err;
 	}
 });
@@ -632,12 +719,15 @@ router.post("/resetProgress", requirePermission("course", "update"), async (req,
 				modulesToDelete = modules[0].id;
 			}
 
-			const resp = await query(
-				`DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_module IN (?) AND activity_type = 'module'; ` +
-					`DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_topic IN (?) AND activity_type = 'topic'; ` +
-					`DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND id_course_test IN (?) AND activity_type = 'test' ` +
-					`DELETE FROM course_user_activity WHERE id_user = ${data.user.id} AND id_course = ${course.id} AND activity_type = 'course'`,
-				[modulesToDelete, topicsToDelete, testsToDelete],
+			const studentId = toId(data.user.id);
+			const courseId = toId(course.id);
+			const resp = await multi(query, 
+				"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_module IN (?) AND activity_type = 'module'; " +
+					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_topic IN (?) AND activity_type = 'topic'; " +
+					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_test IN (?) AND activity_type = 'test'; " +
+					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course'",
+				[studentId, courseId, modulesToDelete, studentId, courseId, topicsToDelete, studentId, courseId, testsToDelete, studentId, courseId],
+				{ sequential: true }, // dentro da transação, na mesma ligação
 			);
 
 

@@ -22,6 +22,8 @@ router.get("/readByLang", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query("SELECT * FROM personalization WHERE id_lang = ?", [req.query.id_lang]);
+    // Texto público da página inicial: cache curta no browser e na Cloudflare (o backoffice lê por /read, sem cache)
+    res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
     res.send(rows);
   } catch (e) {
     throw e;

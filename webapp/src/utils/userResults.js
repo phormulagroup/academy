@@ -46,7 +46,8 @@ export function courseStats(c) {
 export function testResult(c, test) {
   const tries = c.progress.filter((p) => p.activity_type === "test" && p.id_course_test === test.id);
   const settings = parseJson(test.settings, null);
-  const questions = parseJson(test.question, []);
+  // question_count vem do servidor (as perguntas em si não seguem na listagem); o JSON só existe quando o teste vem completo
+  const questionCount = test.question_count ?? parseJson(test.question, []).length;
   const maxTries = settings?.retries_allowed ?? 0;
   const passed = tries.some((p) => p.is_completed);
   const failedTries = tries.filter((p) => p.is_completed === 0).length;
@@ -62,7 +63,7 @@ export function testResult(c, test) {
       return { ...p, seconds: meta?.time ?? null, items: answers, correct: answers.filter((a) => a.is_correct).length, totalAnswers: answers.length };
     }),
     maxTries,
-    questions: questions.length,
+    questions: questionCount,
     time: settings?.time ?? null,
     passingScore: settings?.passing_score ?? 80,
   };

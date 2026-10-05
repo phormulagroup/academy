@@ -104,5 +104,6 @@ export default function useListFilters(definitions) {
     </div>
   );
 
-  return { filterRows, toolbar, hasActiveFilters: Object.values(applied).some((v) => !isEmpty(v)) };
+  // `applied`: valores dos filtros em vigor, para listas paginadas no servidor (que filtram na API em vez de usar filterRows)
+  return { filterRows, toolbar, applied, hasActiveFilters: Object.values(applied).some((v) => !isEmpty(v)) };
 }

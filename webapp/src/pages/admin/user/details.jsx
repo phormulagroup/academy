@@ -2,7 +2,7 @@ import axios from "axios";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Button, DatePicker, Divider, Empty, Form, Input, Select, Skeleton, Tag } from "antd";
 import dayjs from "dayjs";
-import { LuAward, LuBookOpen, LuCircleCheck, LuLock, LuPlay, LuUser, LuIdCard, LuMail, LuMapPin } from "react-icons/lu";
+import { LuAward, LuBookOpen, LuCircleCheck, LuLock, LuPlay, LuSearch, LuUser, LuIdCard, LuMail, LuMapPin } from "react-icons/lu";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -21,7 +21,7 @@ import {
   requiredDateRule,
   requiredRule,
   requiredSelectRule,
-  uniqueRule,
+  userEmailRule,
   passwordRule,
 } from "../../../utils/formFieldError";
 import { academicBackgroundOptions, genderOptions, namePlaceholders, splitName } from "../../../utils/userFields";
@@ -32,11 +32,11 @@ const STATUS_TAGS = {
   not_approved: { label: "Not Approved", color: "red" },
 };
 
-const SummaryTile = ({ icon, label, value }) => (
+const SummaryTile = ({ icon, label, value, loading = false }) => (
   <div className="flex items-center gap-3 rounded-[14px] bg-white p-4 shadow">
     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[#E6F9FC] text-[20px] text-[#163986]">{icon}</span>
     <div>
-      <p className="mb-0! text-[22px] font-bold leading-tight">{value}</p>
+      {loading ? <Skeleton.Input active size="small" style={{ width: 40, minWidth: 40, height: 26 }} /> : <p className="mb-0! text-[22px] font-bold leading-tight">{value}</p>}
       <p className="mb-0! text-[12px] text-[#8A8D98]">{label}</p>
     </div>
   </div>
@@ -58,7 +58,7 @@ export default function UserDetails() {
   const isProfile = paramId === undefined;
   const id = paramId ?? user.id;
   const navigate = useNavigate();
-  const { canUpdate: canUpdateUsers, canRead: canReadUsers } = usePermission("user");
+  const { canUpdate: canUpdateUsers } = usePermission("user");
   // Cada um edita a sua conta; editar as dos outros exige permissão
   const isOwnAccount = Number(id) === user.id;
   const canEdit = canUpdateUsers || isOwnAccount;
@@ -68,9 +68,8 @@ export default function UserDetails() {
   const [data, setData] = useState({});
   const [courseData, setCourseData] = useState([]);
   const [countries, setCountries] = useState([]);
-  // Utilizadores existentes, para o uniqueRule do e-mail
-  const [users, setUsers] = useState([]);
   const [view, setView] = useState("results");
+  const [courseSearch, setCourseSearch] = useState("");
 
   // Exemplos de Nome e Apelido no idioma atual
   const placeholders = namePlaceholders(i18n.language);
@@ -79,14 +78,6 @@ export default function UserDetails() {
   useEffect(() => {
     getData();
   }, [id]);
-
-  useEffect(() => {
-    if (!canReadUsers) return;
-    axios
-      .get(endpoints.user.read)
-      .then((res) => setUsers(res.data))
-      .catch((err) => console.log(err));
-  }, [canReadUsers]);
 
   function getData() {
     setIsLoading(true);
@@ -217,7 +208,19 @@ export default function UserDetails() {
     };
   }, [courseData]);
 
+  // Cursos por ordem da última atividade do aluno (os mais recentes primeiro; sem atividade, no fim por nome) e filtrados pela pesquisa
+  const visibleCourses = useMemo(() => {
+    const term = courseSearch.trim().toLowerCase();
+    const lastActivity = (c) => c.progress.reduce((max, p) => Math.max(max, new Date(p.created_at).getTime() || 0), 0);
+    return courseData
+      .filter((c) => !term || `${c.course.name} ${c.course.internal_name ?? ""}`.toLowerCase().includes(term))
+      .map((c) => ({ c, last: lastActivity(c) }))
+      .sort((a, b) => b.last - a.last || (a.c.course.name || "").localeCompare(b.c.course.name || ""))
+      .map((x) => x.c);
+  }, [courseData, courseSearch]);
+
   const statusTag = STATUS_TAGS[data.status];
+  const loadingUser = isLoading && !data.id;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -231,6 +234,12 @@ export default function UserDetails() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-6 rounded-[16px] bg-white p-6 shadow md:p-8">
+        {loadingUser ? (
+          <div className="flex min-w-0 flex-1 items-center gap-5">
+            <Skeleton.Avatar active size={88} />
+            <Skeleton active title={{ width: 220 }} paragraph={{ rows: 2, width: [320, 200] }} className="max-w-xl" />
+          </div>
+        ) : (
         <div className="flex min-w-0 items-center gap-5">
           <UserAvatar user={data} size={88} className="shrink-0" />
           <div className="min-w-0">
@@ -266,6 +275,7 @@ export default function UserDetails() {
             </div>
           </div>
         </div>
+        )}
         <div className="flex rounded-[12px] bg-[#F2F3F5] p-1">
           {[
             { value: "results", label: t("Results"), icon: <LuBookOpen /> },
@@ -284,23 +294,29 @@ export default function UserDetails() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryTile icon={<LuBookOpen />} label={t("Course(s)")} value={summary.courses} />
-        <SummaryTile icon={<LuPlay />} label={t("In progress")} value={summary.inProgress} />
-        <SummaryTile icon={<LuCircleCheck />} label={t("Completed")} value={summary.completed} />
-        <SummaryTile icon={<LuAward />} label={t("Certificate(s)")} value={summary.certificates} />
+        <SummaryTile icon={<LuBookOpen />} label={t("Course(s)")} value={summary.courses} loading={isLoading} />
+        <SummaryTile icon={<LuPlay />} label={t("In progress")} value={summary.inProgress} loading={isLoading} />
+        <SummaryTile icon={<LuCircleCheck />} label={t("Completed")} value={summary.completed} loading={isLoading} />
+        <SummaryTile icon={<LuAward />} label={t("Certificate(s)")} value={summary.certificates} loading={isLoading} />
       </div>
 
       {view === "results" ? (
         <div className="rounded-[16px] bg-white p-6 shadow lg:p-8">
-          <p className="mb-1! text-xl font-bold">{t("Results")}</p>
-          <p className="mb-6! text-[14px] text-[#8A8D98]">{isProfile ? t("Your progress and tests in each course") : t("Progress and tests of this student in each course")}</p>
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="mb-1! text-xl font-bold">{t("Results")}</p>
+              <p className="mb-0! text-[14px] text-[#8A8D98]">{isProfile ? t("Your progress and tests in each course") : t("Progress and tests of this student in each course")}</p>
+            </div>
+            {courseData.length > 1 && <Input allowClear className="w-full sm:w-72" prefix={<LuSearch className="text-[#8A8D98]" />} placeholder={t("Search course...")} value={courseSearch} onChange={(e) => setCourseSearch(e.target.value)} />}
+          </div>
           {isLoading && courseData.length === 0 ? (
             <Skeleton active paragraph={{ rows: 6 }} />
           ) : courseData.length > 0 ? (
             <div className="flex flex-col gap-4">
-              {courseData.map((c) => (
+              {visibleCourses.map((c) => (
                 <CourseResult key={c.course.id} course={c} student={data} onChange={getData} onDownloadCertificate={handleDownloadCertificate} />
               ))}
+              {visibleCourses.length === 0 && <Empty description={t("No courses match your search")} />}
             </div>
           ) : (
             <Empty description={t("No courses available")} />
@@ -324,7 +340,7 @@ export default function UserDetails() {
                 name="email"
                 label={t("E-mail")}
                 {...emailFieldProps}
-                rules={[requiredRule, emailRule, uniqueRule(users, t("This e-mail is already associated with another account"), { field: "email", excludeId: Number(id) })]}
+                rules={[requiredRule, emailRule, userEmailRule({ excludeId: Number(id) })]}
                 className="mb-0!">
                 <Input type="email" placeholder={t("youremail@domain.com")} />
               </Form.Item>

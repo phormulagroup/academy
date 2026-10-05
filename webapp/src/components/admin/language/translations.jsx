@@ -2,14 +2,16 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import ConfirmModal from "./../confirmModal";
 import { toastRef } from "../../../utils/notify";
 import RowActions from "../rowActions";
-import { Button, Drawer, Empty, Form, Input, Pagination, Space, Table, Tag } from "antd";
+import { Button, Drawer, Empty, Form, Input, Pagination, Skeleton, Space, Table, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { LuLanguages, LuSearch } from "react-icons/lu";
 
 import { useTranslation } from "react-i18next";
 
+import axios from "axios";
 import { Context } from "../../../utils/context";
+import endpoints from "../../../utils/endpoints";
 import { requiredRule } from "../../../utils/formFieldError";
 
 // Ordem alfabética das chaves, sem distinguir maiúsculas nem acentos
@@ -57,26 +59,37 @@ export default function Translations({ data, defaultLanguage, open, close }) {
   const [deleteConfirmRecord, setDeleteConfirmRecord] = useState(null);
   const [newRowId, setNewRowId] = useState(null);
 
-  useEffect(() => {
-    if (open && data && defaultLanguage) {
-      // Sem tradução própria, as chaves do idioma padrão servem de base
-      const source = data.translation || defaultLanguage.translation;
-      let loaded = [];
-      try {
-        loaded = (JSON.parse(source) || []).map((item, index) => ({ ...item, id: `${index}-${Date.now()}` }));
-      } catch (err) {
-        console.error("Erro ao analisar traduções:", err);
-      }
-      loaded.sort(byKey);
+  const [isFetching, setIsFetching] = useState(false);
 
-      setTranslations(loaded);
-      setInitial(JSON.stringify(loaded.map(({ key, value }) => [key, value])));
-      setSearch("");
-      setCurrentPage(1);
-      setEditingKey("");
-      setNewRowId(null);
-    }
-  }, [open, data, defaultLanguage]);
+  // A lista de idiomas não traz as traduções (pesam centenas de KB): pedem-se ao abrir o drawer, as do idioma e, se este ainda não tem,
+  // as do idioma padrão (servem de base)
+  useEffect(() => {
+    if (!open || !data?.code) return;
+    let active = true;
+    setIsFetching(true);
+    const fetchOf = (code) => axios.get(endpoints.language.translation, { params: { code } }).then((res) => res.data || []);
+    fetchOf(data.code)
+      .then(async (own) => {
+        const list = own.length || !defaultLanguage?.code || defaultLanguage.code === data.code ? own : await fetchOf(defaultLanguage.code);
+        if (!active) return;
+        const loaded = list.map((item, index) => ({ ...item, id: `${index}-${Date.now()}` }));
+        loaded.sort(byKey);
+        setTranslations(loaded);
+        setInitial(JSON.stringify(loaded.map(({ key, value }) => [key, value])));
+        setSearch("");
+        setCurrentPage(1);
+        setEditingKey("");
+        setNewRowId(null);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar traduções:", err);
+        if (active) toastRef.current?.error(t("Error loading translations"));
+      })
+      .finally(() => active && setIsFetching(false));
+    return () => {
+      active = false;
+    };
+  }, [open, data?.code, defaultLanguage?.code]);
 
   const isDirty = useMemo(() => JSON.stringify(translations.map(({ key, value }) => [key, value])) !== initial, [translations, initial]);
 
@@ -282,7 +295,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           </div>
         </div>
       }>
-      {data && defaultLanguage ? (
+      {data && defaultLanguage && !isFetching ? (
         <Form form={form} layout="vertical">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Input
@@ -349,7 +362,7 @@ export default function Translations({ data, defaultLanguage, open, close }) {
           />
         </Form>
       ) : (
-        <p>{t("Loading...")}</p>
+        <Skeleton active paragraph={{ rows: 10 }} />
       )}
     </Drawer>
   );

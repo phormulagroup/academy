@@ -1,6 +1,7 @@
 const util = require("util");
 const { verifyToken } = require("./token");
 const db = require("./database");
+const { cached } = require("./authCache");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -14,10 +15,14 @@ const middleware = async (req, res, next) => {
     const result = await verifyToken(token);
     if (!result.token_valid) return res.status(401).send("Invalid Token");
 
-    const rows = await query("SELECT id, id_role, id_lang, country, is_deleted FROM user WHERE id = ?", [result.token_decoded.id]);
-    if (rows.length === 0 || rows[0].is_deleted) return res.status(401).send("Invalid Token");
+    // Cache de 20 s (utils/authCache.js): a maior parte dos pedidos repete o mesmo utilizador
+    const row = await cached("user", result.token_decoded.id, async () => {
+      const rows = await query("SELECT id, id_role, id_lang, country, is_deleted FROM user WHERE id = ?", [result.token_decoded.id]);
+      return rows[0] ?? null;
+    });
+    if (!row || row.is_deleted) return res.status(401).send("Invalid Token");
 
-    req.user = { id: rows[0].id, id_role: rows[0].id_role, id_lang: rows[0].id_lang, country: rows[0].country };
+    req.user = { id: row.id, id_role: row.id_role, id_lang: row.id_lang, country: row.country };
     return next();
   } catch (err) {
     console.error(err);

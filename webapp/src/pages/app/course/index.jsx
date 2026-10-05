@@ -479,7 +479,7 @@ export default function CourseDetails() {
                   className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""}`}>
                   <div
                     // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
-                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-40 lg:w-50 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
+                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-28 lg:w-36 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
                     style={{
                       backgroundImage: item.course?.thumbnail
                         ? `url(${config.server_ip}/media/${item.course?.thumbnail})`
@@ -559,7 +559,7 @@ export default function CourseDetails() {
                   <div
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
-                      className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10" : "col-span-1"} p-4 sm:p-5 md:p-6 lg:p-6`}>
+                      className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10 px-5 py-3 lg:px-6 lg:py-3" : "col-span-1 p-4 sm:p-5 md:p-6 lg:p-6"}`}>
                       <div
                         className={`flex flex-col col-span-3 ${isListView ? "justify-center h-full" : ""}`}>
                         {/* 

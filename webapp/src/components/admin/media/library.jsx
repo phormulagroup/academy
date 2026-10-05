@@ -11,6 +11,7 @@ import { toastRef } from "../../../utils/notify";
 import { usePermission } from "../../../utils/usePermission";
 import { CHECKER, FileBadge, fileKind } from "../../../utils/fileKind";
 import { uploadMediaFiles } from "./upload";
+import useDebounced from "../../../utils/useDebounced";
 
 const PAGE_SIZE = 18;
 const kindOf = (name = "") => fileKind(name).type;
@@ -43,37 +44,51 @@ function Library({ mediaKey, fileType, close }) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInput = useRef(null);
 
-  useEffect(() => {
-    getData();
-  }, []);
+  // Paginação, pesquisa, tipo e ordenação são feitos no servidor: só se pede a página que se vê
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({ all: 0, image: 0, pdf: 0 });
+  const [selectedItem, setSelectedItem] = useState(null);
+  const debouncedSearch = useDebounced(search.trim());
+  const requestRef = useRef(0);
+  const pendingSelect = useRef(null); // ficheiro acabado de carregar: fica escolhido quando a lista voltar
+  const [reload, setReload] = useState(0);
 
-  function getData(selectName) {
+  // O campo pode aceitar só um tipo (imagem ou PDF); no resto, "Imagens" ou "Documentos" (tudo o que não é imagem)
+  const kinds = fileType === "image" ? "image" : fileType === "pdf" ? "pdf" : kind === "image" ? "image" : kind === "doc" ? "pdf,presentation,video,other" : "";
+
+  useEffect(() => setPage(1), [debouncedSearch, kind, sort]);
+
+  function getData() {
+    const request = ++requestRef.current;
     setIsLoading(true);
     axios
-      .get(endpoints.media.read)
+      .get(endpoints.media.list, { params: { page, limit: PAGE_SIZE, search: debouncedSearch, kinds, sort, counts: 1 } })
       .then((res) => {
-        setData(res.data);
-        if (selectName) setSelected(selectName);
+        if (request !== requestRef.current) return;
+        setData(res.data.rows);
+        setTotal(res.data.total);
+        setCounts(res.data.counts);
+        if (pendingSelect.current) {
+          const name = pendingSelect.current;
+          pendingSelect.current = null;
+          setSelected(name);
+          setSelectedItem(res.data.rows.find((item) => item.name === name) ?? null);
+        }
       })
       .catch((err) => console.log(err))
-      .finally(() => setIsLoading(false));
+      .finally(() => request === requestRef.current && setIsLoading(false));
   }
 
-  // O campo pode aceitar só um tipo (imagem ou PDF): a lista mostra só esses ficheiros
-  const allowed = useMemo(() => data.filter((item) => (fileType === "image" ? kindOf(item.name) === "image" : fileType === "pdf" ? kindOf(item.name) === "pdf" : true)), [data, fileType]);
+  useEffect(() => {
+    getData();
+  }, [page, debouncedSearch, kinds, sort, reload]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = allowed.filter((item) => (kind === "all" || (kind === "image" ? kindOf(item.name) === "image" : kindOf(item.name) !== "image")) && (!q || item.name.toLowerCase().includes(q)));
-    list.sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name) : sort === "oldest" ? dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf() : dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()));
-    return list;
-  }, [allowed, search, kind, sort]);
-
-  useEffect(() => setPage(1), [search, kind, sort]);
-
-  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const selectedItem = data.find((item) => item.name === selected);
+  const visible = data;
   const choose = (name = selected) => name && close({ [mediaKey]: name });
+  const select = (item) => {
+    setSelected(item.name);
+    setSelectedItem(item);
+  };
 
   async function handleFiles(files) {
     if (!files?.length) return;
@@ -82,15 +97,17 @@ function Library({ mediaKey, fileType, close }) {
     setUploading(null);
     if (uploaded.length) {
       toastRef.current?.success(uploaded.length === 1 ? t("File uploaded successfully.") : t("{{count}} files uploaded successfully.", { count: uploaded.length }));
+      // Volta à lista completa, dos mais recentes, para o ficheiro novo aparecer (e ficar escolhido)
+      pendingSelect.current = uploaded[0];
       setKind("all");
       setSearch("");
       setSort("newest");
-      getData(uploaded[0]);
+      setPage(1);
+      setReload((n) => n + 1);
     }
     if (failed.length) toastRef.current?.error(`${t("The upload failed")}: ${failed.join(", ")}`);
   }
 
-  const counts = { all: allowed.length, image: allowed.filter((i) => kindOf(i.name) === "image").length };
 
   return (
     <div
@@ -170,8 +187,8 @@ function Library({ mediaKey, fileType, close }) {
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <Empty className="py-12" description={allowed.length === 0 ? t("The library has no files yet") : t("No files match your search")}>
-            {allowed.length === 0 && perm.canCreate && (
+          <Empty className="py-12" description={counts.all === 0 ? t("The library has no files yet") : t("No files match your search")}>
+            {counts.all === 0 && perm.canCreate && (
               <Button type="primary" icon={<LuUpload />} onClick={() => fileInput.current?.click()}>
                 {t("Upload files")}
               </Button>
@@ -188,13 +205,13 @@ function Library({ mediaKey, fileType, close }) {
                   role="button"
                   tabIndex={0}
                   title={item.name}
-                  onClick={() => setSelected(item.name)}
+                  onClick={() => select(item)}
                   onDoubleClick={() => choose(item.name)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") choose(item.name);
                     if (e.key === " ") {
                       e.preventDefault();
-                      setSelected(item.name);
+                      select(item);
                     }
                   }}
                   className={`group relative cursor-pointer rounded-xl border bg-white overflow-hidden transition ${isSelected ? "border-[#163986] ring-2 ring-[#163986]" : "border-[#E5E7EB] hover:border-[#163986]/50 hover:shadow-sm"}`}>
@@ -233,7 +250,7 @@ function Library({ mediaKey, fileType, close }) {
 
       <Image style={{ display: "none" }} preview={{ src: previewSrc, open: !!previewSrc, onOpenChange: (open) => !open && setPreviewSrc(null) }} />
 
-      {filtered.length > PAGE_SIZE && <Pagination className="mt-4" align="center" size="small" current={page} pageSize={PAGE_SIZE} total={filtered.length} showSizeChanger={false} onChange={setPage} />}
+      {total > PAGE_SIZE && <Pagination className="mt-4" align="center" size="small" current={page} pageSize={PAGE_SIZE} total={total} showSizeChanger={false} onChange={setPage} />}
 
       {/* Rodapé: o que está escolhido */}
       <div className="mt-5 pt-4 border-0 border-t border-solid border-[#F0F0F0] flex items-center justify-between gap-3 flex-wrap">

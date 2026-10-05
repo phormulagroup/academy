@@ -1,21 +1,22 @@
+import { lazyPage } from "../components/lazyPage";
 import { Navigate } from "react-router-dom";
 
 import MainLayout from "../layout/main";
-import Main from "../pages/app";
-import Course from "../pages/app/course";
-import CourseDetails from "../pages/app/course/details";
-import Learning from "../pages/app/course/eLearning";
-import Account from "../pages/app/account";
-import Result from "../pages/app/results";
-import Notifications from "../pages/app/notification";
-import Ticket from "../pages/app/ticket";
-import Document from "../pages/app/document";
-import DocumentDetails from "../pages/app/document/details";
-import Error404 from "../pages/app/404";
-import Download from "../pages/app/download";
-import DownloadDetails from "../pages/app/download/details";
-import Faqs from "../pages/app/faqs";
-import Contact from "../pages/app/contact";
+const Main = lazyPage(() => import("../pages/app"));
+const Course = lazyPage(() => import("../pages/app/course"));
+const CourseDetails = lazyPage(() => import("../pages/app/course/details"));
+const Learning = lazyPage(() => import("../pages/app/course/eLearning"));
+const Account = lazyPage(() => import("../pages/app/account"));
+const Result = lazyPage(() => import("../pages/app/results"));
+const Notifications = lazyPage(() => import("../pages/app/notification"));
+const Ticket = lazyPage(() => import("../pages/app/ticket"));
+const Document = lazyPage(() => import("../pages/app/document"));
+const DocumentDetails = lazyPage(() => import("../pages/app/document/details"));
+const Error404 = lazyPage(() => import("../pages/app/404"));
+const Download = lazyPage(() => import("../pages/app/download"));
+const DownloadDetails = lazyPage(() => import("../pages/app/download/details"));
+const Faqs = lazyPage(() => import("../pages/app/faqs"));
+const Contact = lazyPage(() => import("../pages/app/contact"));
 
 export const userRoutes = [
 	// Com layout principal

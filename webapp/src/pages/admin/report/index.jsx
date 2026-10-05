@@ -1,6 +1,6 @@
 import axios from "axios";
 import RefreshButton from "../../../components/admin/refreshButton";
-import { useContext, useEffect, useCallback, useMemo } from "react";
+import { useContext, useEffect, useCallback, useMemo, useRef } from "react";
 import { useState } from "react";
 import { Button, Tabs } from "antd";
 import { LuBookOpen, LuCircleCheck, LuFileQuestion, LuGraduationCap, LuUsers } from "react-icons/lu";
@@ -71,41 +71,48 @@ function SummaryCards({ data, isLoading }) {
 
 export default function Report() {
 	const { selectedLanguage, languages } = useContext(Context);
-	const [data, setData] = useState([]); // Dados filtrados para a linguagem selecionada
-	const [globalData, setGlobalData] = useState([]); // Dados globais sem filtro de linguagem
+	// Os dados chegam por partes, só quando fazem falta (a tabela de cursos e os números do topo primeiro; cada separador pesado quando se abre)
+	const [data, setData] = useState([]); // resumo do idioma: tabela de cursos e números do topo
+	const [fullData, setFullData] = useState([]); // tudo do idioma: Progresso dos alunos e Relatório de testes
+	const [globalData, setGlobalData] = useState([]); // tudo, de todos os idiomas: Progresso dos testes
 	const [products, setProducts] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [isLoadingFull, setIsLoadingFull] = useState(false);
+	const [isLoadingGlobal, setIsLoadingGlobal] = useState(false);
+	const [activeTab, setActiveTab] = useState("1");
+	const requestRef = useRef(0);
 
 	const { t } = useTranslation();
 
-	const fetchAllData = useCallback(() => {
-		const localParams = { id_lang: selectedLanguage.id };
-		setIsLoading(true);
+	const load = useCallback(
+		(scope, setter, setLoading) => {
+			const request = requestRef.current;
+			setLoading(true);
+			axios
+				.get(endpoints.course.report, { params: { id_lang: selectedLanguage.id, scope } })
+				.then((res) => {
+					if (request !== requestRef.current) return; // o idioma mudou entretanto
+					setter(scope === "global" ? res.data.global : res.data.filtered);
+				})
+				.catch((err) => console.error("Error fetching data:", err))
+				.finally(() => request === requestRef.current && setLoading(false));
+		},
+		[selectedLanguage.id],
+	);
 
-		axios
-			.get(endpoints.course.report, { params: localParams })
-			.then((res) => {
-				setData(res.data.filtered);
-				setGlobalData(res.data.global);
-				console.log("Fetched data:", {
-					filtered: res.data.filtered,
-					global: res.data.global,
-				});
-			})
-			.catch((err) => {
-				console.error("Error fetching data:", err);
-			})
-			.finally(() => {
-				setIsLoading(false);
-			});
-	}, [selectedLanguage]);
+	const fetchAllData = useCallback(() => {
+		requestRef.current += 1;
+		setFullData([]);
+		setGlobalData([]);
+		load("summary", setData, setIsLoading);
+	}, [load]);
 
 	const getProducts = useCallback(() => {
 		axios
 			.get(endpoints.product.read)
 			.then((res) => {
 				if (res.data.length > 0) {
-						setProducts(res.data.filter((p) => p.is_deleted === 0).map((p) => ({ id: p.id, name: p.name })));
+					setProducts(res.data.filter((p) => p.is_deleted === 0).map((p) => ({ id: p.id, name: p.name })));
 				}
 			})
 			.catch((err) => {
@@ -118,6 +125,15 @@ export default function Report() {
 		getProducts();
 	}, [fetchAllData, getProducts]);
 
+	// Dados pesados: só se pedem quando o separador que os usa está aberto (e voltam a pedir-se depois de atualizar)
+	const needsFull = activeTab === "2" || activeTab === "3";
+	useEffect(() => {
+		if (needsFull && Object.keys(fullData).length === 0 && !isLoadingFull) load("full", setFullData, setIsLoadingFull);
+	}, [needsFull, fullData, isLoadingFull, load]);
+	useEffect(() => {
+		if (activeTab === "4" && Object.keys(globalData).length === 0 && !isLoadingGlobal) load("global", setGlobalData, setIsLoadingGlobal);
+	}, [activeTab, globalData, isLoadingGlobal, load]);
+
 	// Cada separador num cartão branco, como no resto do backoffice
 	const card = (child) => <div className="p-4 md:p-6 bg-white shadow rounded-[16px]">{child}</div>;
 
@@ -129,16 +145,13 @@ export default function Report() {
 			</div>
 			<SummaryCards data={data} isLoading={isLoading} />
 			<Tabs
+				activeKey={activeTab}
+				onChange={setActiveTab}
 				items={[
-					{ key: "1", label: t("Course reports"), forceRender: true, children: card(<CourseReport data={data} isLoading={isLoading} />) },
-					{ key: "2", label: t("Students progress"), forceRender: true, children: card(<StudentProgress data={data} isLoading={isLoading} />) },
-					{ key: "3", label: t("Test reports"), forceRender: true, children: card(<TestReport data={data} isLoading={isLoading} />) },
-					{
-						key: "4",
-						label: t("Tests progress"),
-						forceRender: true,
-						children: card(<TestProgress data={globalData} products={products} languages={languages} />),
-					},
+					{ key: "1", label: t("Course reports"), children: card(<CourseReport data={data} isLoading={isLoading} />) },
+					{ key: "2", label: t("Students progress"), children: card(<StudentProgress data={fullData} isLoading={isLoadingFull} />) },
+					{ key: "3", label: t("Test reports"), children: card(<TestReport data={fullData} isLoading={isLoadingFull} />) },
+					{ key: "4", label: t("Tests progress"), children: card(<TestProgress data={globalData} products={products} languages={languages} isLoading={isLoadingGlobal} />) },
 				]}
 			/>
 		</div>

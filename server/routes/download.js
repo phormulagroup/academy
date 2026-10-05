@@ -5,7 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 
 var db = require("../utils/database");
-const { toId, setClause, columnList } = require("../utils/sql");
+const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 
 router.get("/read", async (req, res) => {
@@ -24,7 +24,7 @@ router.get("/readByLang", async (req, res) => {
 		// Para incluir downloads inativos, o backoffice envia include_deleted=1
 		const includeDeleted = req.query.include_deleted === "1";
 		const downloadFilter = includeDeleted ? "" : " AND is_deleted = 0";
-		const rows = await query(
+		const rows = await multi(query, 
 			`SELECT * FROM download WHERE id_lang = ?${downloadFilter}; ` +
 				`SELECT * FROM download_item WHERE is_deleted = 0 AND id_download IN (SELECT id FROM download WHERE id_lang = ?${downloadFilter})`,
 			[req.query.id_lang, req.query.id_lang],
@@ -38,7 +38,7 @@ router.get("/readByLang", async (req, res) => {
 router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query(
+		const rows = await multi(query, 
 			"SELECT * FROM download WHERE slug = ? AND id_lang = ? AND is_deleted = 0; " +
 				"SELECT * FROM download_item WHERE is_deleted = 0 AND id_download IN (SELECT id FROM download WHERE slug = ? AND id_lang = ? AND is_deleted = 0)",
 			[req.query.slug, req.query.id_lang, req.query.slug, req.query.id_lang],

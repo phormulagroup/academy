@@ -1,7 +1,7 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import RowActions from "../../components/admin/rowActions";
-import { Divider, Pagination, Progress, Select, Table, Tag } from "antd";
+import { Divider, Pagination, Progress, Select, Skeleton, Table, Tag } from "antd";
 import { FaRegEdit } from "react-icons/fa";
 import { useContext } from "react";
 import { LuClipboardCheck, LuAward, LuGraduationCap, LuSettings, LuUsers } from "react-icons/lu";
@@ -18,15 +18,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { RxSwitch } from "react-icons/rx";
 import Status from "../../components/admin/user/status";
 import UserCell from "../../components/admin/userCell";
-import { StackedBar, HorizontalBars } from "../../components/admin/charts";
+import { StackedBar, HorizontalBars, emptyProgressBuckets, progressBucketKey } from "../../components/admin/charts";
+
+// Cores da marca Bial para os gráficos (do mais claro ao mais escuro), as mesmas dos relatórios
+const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
 
 // Número-resumo compacto que liga à página respetiva (mesmo estilo dos cartões-resumo dos Relatórios)
-function StatTile({ to, icon, label, value }) {
+function StatTile({ to, icon, label, value, loading = false }) {
   return (
     <Link to={to}>
       <div className="flex flex-col items-center justify-center gap-1 bg-white shadow rounded-[16px] py-4 px-3 transition-shadow hover:shadow-md">
         <span className="text-[20px] text-[#163986]">{icon}</span>
-        <p className="text-[18px] font-bold mb-0! whitespace-nowrap">{value ?? "—"}</p>
+        {loading ? <Skeleton.Input active size="small" style={{ width: 48, minWidth: 48, height: 24 }} /> : <p className="text-[18px] font-bold mb-0! whitespace-nowrap">{value ?? "—"}</p>}
         <p className="text-[12px] text-[#8A8D98] mb-0! text-center whitespace-nowrap">{label}</p>
       </div>
     </Link>
@@ -56,9 +59,12 @@ function Card({ title, subtitle, to, extra, className = "", children }) {
 }
 
 export default function Main() {
-  const { user, selectedLanguage } = useContext(Context);
+  const { user, selectedLanguage, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [data, setData] = useState({});
+  // A carregar os dados do painel (mostra esqueletos); requestRef ignora respostas de um idioma que já mudou
+  const [isLoading, setIsLoading] = useState(true);
+  const requestRef = useRef(0);
   const [courseActivity, setCourseActivity] = useState([]);
   const [logsData, setLogsData] = useState([]);
   const [usersData, setUsersData] = useState([]);
@@ -69,13 +75,7 @@ export default function Main() {
     inProgress: { value: 0, label: "In progress", color: "#80DCEB" },
     completed: { value: 0, label: "Completed", color: "#00B9D6" },
   });
-  const [graphicCoursesProgress, setGraphicCoursesProgress] = useState({
-    "< 100%": { value: 0, label: "< 100%", color: "#0397AE" },
-    "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
-    "< 60%": { value: 0, label: "< 60%", color: "#40CBE0" },
-    "< 40%": { value: 0, label: "< 40%", color: "#9BE3EF" },
-    "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
-  });
+  const [graphicCoursesProgress, setGraphicCoursesProgress] = useState(() => emptyProgressBuckets(PALETTE));
   const [colors] = useState({
     create: "green",
     logout: "red",
@@ -99,17 +99,24 @@ export default function Main() {
   }, [selectedLanguage]);
 
   function getData() {
+    const request = ++requestRef.current;
+    setIsLoading(true);
     axios
       .get(endpoints.dashboard.read, {
         params: { id_lang: selectedLanguage.id },
       })
       .then((res) => {
+        if (request !== requestRef.current) return;
         setSelectedCourse(null);
         setData(res.data);
         prepareData(res.data);
       })
       .catch((err) => {
         console.log(err);
+        if (request === requestRef.current) toastApi.error(t("Could not load the dashboard, try again"));
+      })
+      .finally(() => {
+        if (request === requestRef.current) setIsLoading(false);
       });
   }
 
@@ -236,12 +243,6 @@ export default function Main() {
     });
     auxBestStudents = [...bestByUser.values()].sort((a, b) => b.percentage - a.percentage);
 
-    for (let l = 0; l < obj.logs.length; l++) {
-      obj.logs[l].meta_data = obj.logs[l].meta_data
-        ? JSON.parse(obj.logs[l].meta_data)
-        : null;
-    }
-
     for (let u = 0; u < obj.users.length; u++) {
       auxUsers.push({
         name: (
@@ -351,13 +352,8 @@ export default function Main() {
       completed: { value: 0, label: "Completed", color: "#00B9D6" },
     };
 
-    let auxGraphicCoursesProgress = {
-      "< 100%": { value: 0, label: "< 100%", color: "#0397AE" },
-      "< 80%": { value: 0, label: "< 80%", color: "#00B9D6" },
-      "< 60%": { value: 0, label: "< 60%", color: "#40CBE0" },
-      "< 40%": { value: 0, label: "< 40%", color: "#9BE3EF" },
-      "< 20%": { value: 0, label: "< 20%", color: "#C7F1F8" },
-    };
+    // Escalões ≤ 25%, ≤ 50%, ≤ 75% e ≤ 100% (os mesmos dos relatórios): quem concluiu conta em ≤ 100% e quem não começou em ≤ 25%
+    const auxGraphicCoursesProgress = emptyProgressBuckets(PALETTE);
 
     // Cursos em causa e se o curso está disponível para o aluno (limite de país)
     const scopedCourses = id_course ? courses.filter((c) => c.id === id_course) : courses;
@@ -375,20 +371,17 @@ export default function Main() {
       if (findActivity.length > 0) {
         if (findActivity.filter((_f) => _f.activity_type === "course" && _f.is_completed === 1).length > 0) {
           auxGraphicCourses.completed.value += 1;
+          auxGraphicCoursesProgress[progressBucketKey(100)].value += 1;
         } else {
           const totalSteps = findActivity.filter((_f) => _f.activity_type === "topic" || _f.activity_type === "test");
           const percentage = totalSteps.length > 0 ? (totalSteps.filter((_t) => _t.is_completed).length * 100) / totalSteps.length : 0;
-          if (percentage < 20) auxGraphicCoursesProgress["< 20%"].value += 1;
-          else if (percentage < 40) auxGraphicCoursesProgress["< 40%"].value += 1;
-          else if (percentage < 60) auxGraphicCoursesProgress["< 60%"].value += 1;
-          else if (percentage < 80) auxGraphicCoursesProgress["< 80%"].value += 1;
-          else auxGraphicCoursesProgress["< 100%"].value += 1;
+          auxGraphicCoursesProgress[progressBucketKey(percentage)].value += 1;
 
           auxGraphicCourses.inProgress.value += 1;
         }
       } else if (isAvailableTo(users[u])) {
         auxGraphicCourses.notStarted.value += 1;
-        auxGraphicCoursesProgress["< 20%"].value += 1;
+        auxGraphicCoursesProgress[progressBucketKey(0)].value += 1;
       }
     }
 
@@ -426,7 +419,7 @@ export default function Main() {
   // Os rótulos dos estados vêm em inglês (chave de tradução): traduzem-se ao mostrar
   const progressSegments = Object.values(graphicCourses).map((seg) => ({ ...seg, label: t(seg.label) }));
   // Do escalão mais baixo ao mais alto
-  const progressBuckets = Object.values(graphicCoursesProgress).slice().reverse();
+  const progressBuckets = Object.values(graphicCoursesProgress);
 
   const pagination = (key, total) => (
     <div className="flex justify-center items-center mt-4 w-full">
@@ -451,10 +444,10 @@ export default function Main() {
 
       <p className="text-[18px] font-bold mb-0!">{t("Overview e-Learning")}</p>
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatTile to="/admin/users" icon={<LuUsers />} label={t("Total of students")} value={data.users?.length} />
-        <StatTile to="/admin/courses" icon={<LuGraduationCap />} label={t("Total of courses")} value={data.courses?.length} />
-        <StatTile to="/admin/reports" icon={<LuClipboardCheck />} label={t("Active tests")} value={data.tests ? calcActiveTests(data.tests) : undefined} />
-        <StatTile to="/admin/reports" icon={<LuAward />} label={t("Completions")} value={data.activity ? completions : undefined} />
+        <StatTile to="/admin/users" icon={<LuUsers />} label={t("Total of students")} value={data.users?.length} loading={isLoading} />
+        <StatTile to="/admin/courses" icon={<LuGraduationCap />} label={t("Total of courses")} value={data.courses?.length} loading={isLoading} />
+        <StatTile to="/admin/reports" icon={<LuClipboardCheck />} label={t("Active tests")} value={data.tests ? calcActiveTests(data.tests) : undefined} loading={isLoading} />
+        <StatTile to="/admin/reports" icon={<LuAward />} label={t("Completions")} value={data.activity ? completions : undefined} loading={isLoading} />
       </div>
 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-4">
@@ -474,15 +467,16 @@ export default function Main() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title={t("Progress distribution")}>
-          <StackedBar segments={progressSegments} />
+          {isLoading ? <Skeleton active title={false} paragraph={{ rows: 3 }} /> : <StackedBar segments={progressSegments} />}
         </Card>
         <Card title={t("Progress Percentage")}>
-          <HorizontalBars rows={progressBuckets} />
+          {isLoading ? <Skeleton active title={false} paragraph={{ rows: 5 }} /> : <HorizontalBars rows={progressBuckets} />}
         </Card>
       </div>
 
       <Card title={t("Activity")}>
         <Table
+          loading={isLoading}
           dataSource={selectedCourse ? courseActivity.filter((row) => row.fullData.id_course === selectedCourse) : courseActivity}
           scroll={{ x: "max-content" }}
           pagination={{
@@ -508,6 +502,7 @@ export default function Main() {
           to="/admin/users"
           className="xl:col-span-2">
           <Table
+            loading={isLoading}
             dataSource={usersData}
             rowKey="id"
             scroll={{ x: "max-content" }}
@@ -545,7 +540,9 @@ export default function Main() {
         {/* Melhores alunos */}
         <Card title={t("Best students")} to="/admin/users">
           <div>
-            {bestStudentsData.length === 0 ? (
+            {isLoading ? (
+              <Skeleton active avatar title={false} paragraph={{ rows: 3 }} />
+            ) : bestStudentsData.length === 0 ? (
               <div className="py-6 text-center text-[#8A8D98] text-[13px]">{t("No students yet")}</div>
             ) : (
               <div className="flex flex-col gap-4">
@@ -562,13 +559,15 @@ export default function Main() {
               </div>
             )}
           </div>
-          {bestStudentsData.length > 0 && pagination("bestStudents", bestStudentsData.length)}
+          {!isLoading && bestStudentsData.length > 0 && pagination("bestStudents", bestStudentsData.length)}
         </Card>
 
         {/* Registos de acesso */}
-        <Card title={t("Access logs")} subtitle={t("{{total}} accesses", { total: logsData.length })} to="/admin/users">
+        <Card title={t("Access logs")} subtitle={isLoading ? undefined : t("{{total}} accesses", { total: data.logsTotal ?? logsData.length })} to="/admin/users">
           <div>
-            {logsData.length === 0 ? (
+            {isLoading ? (
+              <Skeleton active avatar title={false} paragraph={{ rows: 3 }} />
+            ) : logsData.length === 0 ? (
               <div className="py-6 text-center text-[#8A8D98] text-[13px] flex flex-col items-center gap-2">
                 <AiOutlineClockCircle className="text-[40px] text-[#BFBFBF]" />
                 {t("No access logs yet")}
@@ -609,7 +608,7 @@ export default function Main() {
               </div>
             )}
           </div>
-          {logsData.length > 0 && pagination("logs", logsData.length)}
+          {!isLoading && logsData.length > 0 && pagination("logs", logsData.length)}
         </Card>
       </div>
     </div>

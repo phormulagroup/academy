@@ -6,16 +6,30 @@ import { useTranslation } from "react-i18next";
 import ExportTable from "./export";
 
 // Botão de exportar para o cabeçalho de uma listagem: abre a janela de exportação com as linhas atuais (já filtradas)
-export default function ExportButton({ data, columns, table }) {
+// Com listas paginadas no servidor, `fetchAll` (async, devolve todas as linhas do filtro atual) é chamado ao clicar; `data` é então só o que está à vista.
+export default function ExportButton({ data, columns, table, fetchAll }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [all, setAll] = useState(null);
+  const [isFetching, setIsFetching] = useState(false);
+
+  async function openExport() {
+    if (!fetchAll) return setOpen(true);
+    setIsFetching(true);
+    try {
+      setAll(await fetchAll());
+      setOpen(true);
+    } finally {
+      setIsFetching(false);
+    }
+  }
 
   return (
     <>
       <Tooltip title={t("Export the list to Excel or CSV")}>
-        <Button icon={<LuDownload />} disabled={!data || data.length === 0} onClick={() => setOpen(true)} aria-label={t("Export")} />
+        <Button icon={<LuDownload />} loading={isFetching} disabled={!fetchAll && (!data || data.length === 0)} onClick={openExport} aria-label={t("Export")} />
       </Tooltip>
-      <ExportTable open={open} close={() => setOpen(false)} data={data} table={table} columns={columns} />
+      <ExportTable open={open} close={() => setOpen(false)} data={fetchAll ? (all ?? []) : data} table={table} columns={columns} />
     </>
   );
 }

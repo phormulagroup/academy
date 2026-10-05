@@ -1,40 +1,41 @@
+import { lazyPage } from "../components/lazyPage";
 import { Navigate } from "react-router-dom";
 
-import MainAdmin from "../pages/admin/index";
+const MainAdmin = lazyPage(() => import("../pages/admin/index"));
 import AdminLayout from "../layout/admin";
-import User from "../pages/admin/user/index";
-import Language from "../pages/admin/language";
-import Media from "../pages/admin/media";
-import Iec from "../pages/admin/iec";
-import UserGroup from "../pages/admin/userGroup";
-import Role from "../pages/admin/role";
+const User = lazyPage(() => import("../pages/admin/user/index"));
+const Language = lazyPage(() => import("../pages/admin/language"));
+const Media = lazyPage(() => import("../pages/admin/media"));
+const Iec = lazyPage(() => import("../pages/admin/iec"));
+const UserGroup = lazyPage(() => import("../pages/admin/userGroup"));
+const Role = lazyPage(() => import("../pages/admin/role"));
 
-import Course from "../pages/admin/course";
-import CourseDetails from "../pages/admin/course/details";
+const Course = lazyPage(() => import("../pages/admin/course"));
+const CourseDetails = lazyPage(() => import("../pages/admin/course/details"));
 
-import Topic from "../pages/admin/course/topic";
-import Test from "../pages/admin/course/test";
-import SMTP from "../pages/admin/email/smtp";
-import Template from "../pages/admin/email/template";
-import TemplateDetails from "../pages/admin/email/templateDetails";
-import TemplateEditor from "../pages/admin/email/templateEditor";
-import Certificate from "../pages/admin/certificate";
-import CertificateDetails from "../pages/admin/certificate/details";
-import UserDetails from "../pages/admin/user/details";
-import Notification from "../pages/admin/notification";
-import Document from "../pages/admin/document";
-import Ticket from "../pages/admin/ticket";
-import Monitoring from "../pages/admin/monitoring";
-import Communication from "../pages/admin/communication/index";
-import CommunicationDetails from "../pages/admin/communication/details";
-import CommunicationEditor from "../pages/admin/communication/editor";
-import Report from "../pages/admin/report";
-import Download from "../pages/admin/download";
-import Faqs from "../pages/admin/faqs";
-import FormSubmission from "../pages/admin/formSubmission";
-import FormSubmissionDetails from "../pages/admin/formSubmissionDetails";
-import Personalization from "../pages/admin/personalization";
-import Product from "../pages/admin/product";
+const Topic = lazyPage(() => import("../pages/admin/course/topic"));
+const Test = lazyPage(() => import("../pages/admin/course/test"));
+const SMTP = lazyPage(() => import("../pages/admin/email/smtp"));
+const Template = lazyPage(() => import("../pages/admin/email/template"));
+const TemplateDetails = lazyPage(() => import("../pages/admin/email/templateDetails"));
+const TemplateEditor = lazyPage(() => import("../pages/admin/email/templateEditor"));
+const Certificate = lazyPage(() => import("../pages/admin/certificate"));
+const CertificateDetails = lazyPage(() => import("../pages/admin/certificate/details"));
+const UserDetails = lazyPage(() => import("../pages/admin/user/details"));
+const Notification = lazyPage(() => import("../pages/admin/notification"));
+const Document = lazyPage(() => import("../pages/admin/document"));
+const Ticket = lazyPage(() => import("../pages/admin/ticket"));
+const Monitoring = lazyPage(() => import("../pages/admin/monitoring"));
+const Communication = lazyPage(() => import("../pages/admin/communication/index"));
+const CommunicationDetails = lazyPage(() => import("../pages/admin/communication/details"));
+const CommunicationEditor = lazyPage(() => import("../pages/admin/communication/editor"));
+const Report = lazyPage(() => import("../pages/admin/report"));
+const Download = lazyPage(() => import("../pages/admin/download"));
+const Faqs = lazyPage(() => import("../pages/admin/faqs"));
+const FormSubmission = lazyPage(() => import("../pages/admin/formSubmission"));
+const FormSubmissionDetails = lazyPage(() => import("../pages/admin/formSubmissionDetails"));
+const Personalization = lazyPage(() => import("../pages/admin/personalization"));
+const Product = lazyPage(() => import("../pages/admin/product"));
 
 export const adminRoutes = [
 	{

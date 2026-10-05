@@ -18,13 +18,21 @@ router.get("/read", async (req, res) => {
   }
 });
 
+// Resumo leve para a verificação periódica da webapp: a lista completa só se pede quando algo mudou (nº de notificações, não lidas ou a última)
+router.get("/summary", async (req, res) => {
+  const query = util.promisify(db.query).bind(db);
+  const [row] = await query("SELECT COUNT(*) AS total, COALESCE(SUM(is_read = 0), 0) AS unread, COALESCE(MAX(id), 0) AS latest_id FROM notification_user WHERE id_user = ?", [req.user.id]);
+  res.set("Cache-Control", "no-store");
+  res.send({ total: Number(row.total), unread: Number(row.unread), latest_id: Number(row.latest_id) });
+});
+
 router.get("/readByUser", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
     const rows = await query(
       "SELECT notification.title, notification.description, notification_user.* FROM notification_user " +
-        "LEFT JOIN notification ON notification.id = notification_user.id_notification WHERE id_user = ? ORDER BY created_at DESC",
-      [req.user.id], // sempre as notificações de quem faz o pedido
+        "LEFT JOIN notification ON notification.id = notification_user.id_notification WHERE id_user = ? ORDER BY created_at DESC LIMIT 300",
+      [req.user.id], // sempre as notificações de quem faz o pedido (as 300 mais recentes)
     );
     res.send(rows);
   } catch (e) {

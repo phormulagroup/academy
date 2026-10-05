@@ -1,12 +1,13 @@
 import axios from "axios";
 import { useContext, useEffect, useState } from "react";
-import { Button, Drawer, Form, Input, Select, Table } from "antd";
+import { Button, Drawer, Form, Input, Table } from "antd";
 import { RxTrash } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { requiredRule } from "../../../utils/formFieldError";
+import UserSelect from "../userSelect";
 
 // Criar e editar um grupo; os membros só se gerem ao editar (sem um grupo criado não há a quem os associar)
 export default function UserGroupForm({ data, open, close }) {
@@ -15,7 +16,6 @@ export default function UserGroupForm({ data, open, close }) {
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
-  const [allUsers, setAllUsers] = useState([]);
   const [members, setMembers] = useState([]);
   const [userToAdd, setUserToAdd] = useState(null);
   const [hasMembersError, setHasMembersError] = useState(false);
@@ -26,23 +26,12 @@ export default function UserGroupForm({ data, open, close }) {
     if (!open) return;
     if (isUpdate) {
       form.setFieldsValue(data);
-      getAllUsers();
       getMembers();
     } else {
       form.resetFields();
       setMembers([]);
     }
   }, [open, data]);
-
-  function getAllUsers() {
-    axios
-      .get(endpoints.user.read)
-      .then((res) => setAllUsers(res.data.filter((u) => !u.is_deleted && u.id_role !== 1)))
-      .catch((err) => {
-        console.log(err);
-        toastApi.open({ type: "error", content: t("Failed to load the users") });
-      });
-  }
 
   function getMembers() {
     axios
@@ -59,9 +48,12 @@ export default function UserGroupForm({ data, open, close }) {
   }
 
   function addMember(id) {
-    const found = allUsers.find((u) => u.id === id);
-    if (found) setMembers((prev) => [...prev, found]);
     setUserToAdd(null);
+    if (!id) return;
+    axios
+      .get(endpoints.user.search, { params: { ids: String(id) } })
+      .then((res) => res.data[0] && setMembers((prev) => (prev.some((m) => m.id === id) ? prev : [...prev, res.data[0]])))
+      .catch(() => toastApi.open({ type: "error", content: t("Failed to load the users") }));
   }
 
   function removeMember(id) {
@@ -129,16 +121,7 @@ export default function UserGroupForm({ data, open, close }) {
       {isUpdate ? (
         <>
           <p className="mb-2 mt-6">{t("Add member")}</p>
-          <Select
-            className="w-full"
-            size="large"
-            placeholder={t("Search user...")}
-            options={allUsers.filter((u) => !members.some((m) => m.id === u.id)).map((u) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
-            value={userToAdd}
-            onChange={addMember}
-            optionFilterProp="label"
-            showSearch
-          />
+          <UserSelect multiple={false} value={userToAdd} onChange={addMember} excludeIds={members.map((m) => m.id)} />
 
           <p className="mb-2 mt-6">
             {t("Members")} ({members.length})

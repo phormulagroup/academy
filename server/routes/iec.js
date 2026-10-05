@@ -55,20 +55,50 @@ router.use("/files", serveFiles);
 const diskNames = () => fs.readdirSync(IEC_DIR, { withFileTypes: true }).filter((f) => f.isFile() && isValidName(f.name)).map((f) => f.name);
 
 // Regista na BD os PDFs que já estão na pasta (os IECs em uso) e os que lá forem postos por outra via
-async function syncFolder() {
+let lastSync = 0;
+async function syncFolder({ force = false } = {}) {
+  // Ler a pasta e registar tudo a cada pedido não escala com muitos IECs: no máximo uma vez a cada 20 s (o upload e o apagar já atualizam a BD)
+  if (!force && Date.now() - lastSync < 20 * 1000) return;
+  lastSync = Date.now();
   const names = diskNames();
   if (names.length) await query("INSERT INTO iec (name) VALUES ? ON DUPLICATE KEY UPDATE is_deleted = 0", [names.map((n) => [n])]);
 }
 
-router.get("/read", middleware, requirePermission("iec", "read"), async (req, res) => {
+// Ficheiro de um IEC com o tamanho, a data de modificação e o endereço público (só se consulta o disco dos que se mostram)
+function describe(req, r) {
+  const file = path.join(IEC_DIR, r.name);
+  const stat = fs.existsSync(file) ? fs.statSync(file) : null;
+  return { ...r, size: stat ? stat.size : null, updated_at: stat ? stat.mtime : r.updated_at, missing: !stat, url: publicUrl(req, r.name) };
+}
+
+// Lista paginada: ?page=1&limit=30&search= — pesquisa e ordenação (mais recentes primeiro) na base de dados
+router.get("/list", middleware, requirePermission("iec", "read"), async (req, res) => {
   try {
     await syncFolder();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 30));
+    const where = ["is_deleted = 0"];
+    const params = [];
+    const search = String(req.query.search || "").trim();
+    if (search) {
+      where.push("name LIKE ?");
+      params.push(`%${search}%`);
+    }
+    const clause = where.join(" AND ");
+    const [{ total }] = await query(`SELECT COUNT(*) AS total FROM iec WHERE ${clause}`, params);
+    const rows = await query(`SELECT id, name, created_at, updated_at FROM iec WHERE ${clause} ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?`, [...params, limit, (page - 1) * limit]);
+    res.send({ rows: rows.map((r) => describe(req, r)), total, page, limit });
+  } catch (e) {
+    console.error(e);
+    res.status(500).send("Error");
+  }
+});
+
+router.get("/read", middleware, requirePermission("iec", "read"), async (req, res) => {
+  try {
+    await syncFolder({ force: true });
     const rows = await query("SELECT id, name, created_at, updated_at FROM iec WHERE is_deleted = 0");
-    const items = rows.map((r) => {
-      const file = path.join(IEC_DIR, r.name);
-      const stat = fs.existsSync(file) ? fs.statSync(file) : null;
-      return { ...r, size: stat ? stat.size : null, updated_at: stat ? stat.mtime : r.updated_at, missing: !stat, url: publicUrl(req, r.name) };
-    });
+    const items = rows.map((r) => describe(req, r));
     res.send(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
   } catch (e) {
     console.error(e);
@@ -83,7 +113,8 @@ router.post("/check", middleware, requirePermission("iec", "create"), async (req
     const rows = names.length ? await query("SELECT name FROM iec WHERE is_deleted = 0 AND name IN (?)", [names]) : [];
     const existing = new Set(rows.map((r) => r.name));
     names.forEach((n) => fs.existsSync(path.join(IEC_DIR, n)) && existing.add(n));
-    res.send({ existing: [...existing] });
+    // Também os dados dos que já existem (tamanho, data, endereço), para o ecrã de substituição mostrar o ficheiro atual
+    res.send({ existing: [...existing], items: [...existing].map((name) => describe(req, { name })) });
   } catch (e) {
     console.error(e);
     res.status(500).send("Error");

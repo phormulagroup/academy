@@ -1,4 +1,5 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import useDebounced from "../../utils/useDebounced";
 import { useConfirm } from "../../components/admin/confirmModal";
 import { usePermission } from "../../utils/usePermission";
 import { CopyOutlined, DeleteOutlined, InboxOutlined, SearchOutlined } from "@ant-design/icons";
@@ -91,43 +92,44 @@ function Media() {
 
   const [media, setMedia] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 32;
+  const itemsPerPage = 30;
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState([]);
 
-  const filteredMedia = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return media.filter(
-      (item) =>
-        (kindFilter.length === 0 || kindFilter.includes(getFileType(item.name))) &&
-        (!term || item.name.toLowerCase().includes(term)),
-    );
-  }, [media, search, kindFilter]);
-
-  const minValue = (currentPage - 1) * itemsPerPage;
+  // Paginação, pesquisa e tipo são feitos no servidor: a página só pede os 30 ficheiros que mostra
+  const [total, setTotal] = useState(0);
+  const [reload, setReload] = useState(0);
+  const refresh = () => setReload((n) => n + 1);
+  const debouncedSearch = useDebounced(search.trim());
+  const requestRef = useRef(0);
+  const selectedFilesRef = useRef({}); // id → ficheiro, para apagar vários mesmo noutras páginas
 
   // Mudar a pesquisa ou o filtro volta sempre à 1.ª página
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, kindFilter]);
+  }, [debouncedSearch, kindFilter]);
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [currentPage, debouncedSearch, kindFilter, reload]);
 
   function getData() {
+    const request = ++requestRef.current;
     setIsLoading(true);
     axios
-      .get(endpoints.media.read)
+      .get(endpoints.media.list, { params: { page: currentPage, limit: itemsPerPage, search: debouncedSearch, kinds: kindFilter.join(",") } })
       .then((res) => {
-        setMedia(res.data);
-        setIsLoading(false);
+        if (request !== requestRef.current) return;
+        // Apagou-se o último ficheiro da última página: recua uma
+        if (res.data.rows.length === 0 && currentPage > 1) return setCurrentPage(currentPage - 1);
+        setMedia(res.data.rows);
+        setTotal(res.data.total);
       })
       .catch((err) => {
         console.log(err);
-        setIsLoading(false);
         toastApi.open({ type: "error", content: t("Failed to load media") });
-      });
+      })
+      .finally(() => request === requestRef.current && setIsLoading(false));
   }
 
   function getBatch(fileList) {
@@ -173,7 +175,7 @@ function Media() {
     }
 
     // A grelha principal já mostra os ficheiros carregados: a tira temporária de pré-visualização deixa de ser precisa
-    getData();
+    refresh();
     setUploadingItems([]);
   }
 
@@ -260,7 +262,7 @@ function Media() {
 
   function handleCloseDelete() {
     setIsOpenDelete(false);
-    getData();
+    refresh();
   }
 
   // O servidor não tem endpoint de detalhes: o tamanho vem do cabeçalho do ficheiro e as dimensões da própria imagem
@@ -275,19 +277,22 @@ function Media() {
       .catch(() => {});
   }
 
-  function toggleSelect(id) {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]));
+  function toggleSelect(item) {
+    if (selectedFilesRef.current[item.id]) delete selectedFilesRef.current[item.id];
+    else selectedFilesRef.current[item.id] = item;
+    setSelectedIds(Object.keys(selectedFilesRef.current).map(Number));
   }
 
   function exitSelectMode() {
     setIsSelectMode(false);
+    selectedFilesRef.current = {};
     setSelectedIds([]);
   }
 
   async function handleBulkDelete() {
     setIsBulkDeleting(true);
     try {
-      const itemsToDelete = media.filter((m) => selectedIds.includes(m.id));
+      const itemsToDelete = Object.values(selectedFilesRef.current);
       await Promise.all(
         itemsToDelete.map((item) =>
           axios.post(endpoints.media.delete, { data: { id: item.id, name: item.name } }),
@@ -301,7 +306,7 @@ function Media() {
             : t("{{total}} files deleted successfully.", { total: itemsToDelete.length }),
       });
       exitSelectMode();
-      getData();
+      refresh();
     } catch (err) {
       console.log(err);
       toastApi.open({ type: "error", content: t("The selected files could not be deleted.") });
@@ -407,9 +412,9 @@ function Media() {
         <div>
           <p className="text-xl font-bold">{t("Multimedia")}</p>
           <p className="text-[#8A8D98] text-[14px] mb-0!">
-            {filteredMedia.length === 1
+            {total === 1
               ? t("1 file")
-              : t("{{total}} files", { total: filteredMedia.length })}
+              : t("{{total}} files", { total })}
             {search.trim() || kindFilter.length ? ` ${t("found")}` : ""}
           </p>
         </div>
@@ -503,7 +508,7 @@ function Media() {
             </div>
           </div>
         ))}
-        {filteredMedia.slice(minValue, minValue + itemsPerPage).map((item) => {
+        {media.map((item) => {
           const { type, color, ext } = fileKind(item.name);
           const isSelected = selectedIds.includes(item.id);
           return (
@@ -512,9 +517,9 @@ function Media() {
               role="button"
               tabIndex={0}
               title={item.name}
-              onClick={isSelectMode ? () => toggleSelect(item.id) : () => handleOpenDetails(item)}
+              onClick={isSelectMode ? () => toggleSelect(item) : () => handleOpenDetails(item)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") (isSelectMode ? toggleSelect(item.id) : handleOpenDetails(item));
+                if (e.key === "Enter") (isSelectMode ? toggleSelect(item) : handleOpenDetails(item));
               }}
               className={`group relative cursor-pointer rounded-xl border border-solid bg-white overflow-hidden transition ${isSelected ? "border-[#163986] ring-2 ring-[#163986]" : "border-[#E5E7EB] hover:border-[#163986]/50 hover:shadow-sm"}`}>
               <div className="relative aspect-[4/3] grid place-items-center" style={type === "image" ? CHECKER : { background: "#F6F7FB" }}>
@@ -547,18 +552,18 @@ function Media() {
             </div>
           );
         })}
-        {media.length > 0 && filteredMedia.length === 0 && (
+        {!isLoading && media.length === 0 && (
           <p className="col-span-full text-center text-gray-500 py-8">{t("No files found")}</p>
         )}
-        {filteredMedia.length > 0 && (
+        {total > itemsPerPage && (
           <div className="col-span-full mt-4">
             <Pagination
               align="center"
               showSizeChanger={false}
-              onChange={setCurrentPage}
+              onChange={(page) => setCurrentPage(page)}
               pageSize={itemsPerPage}
               current={currentPage}
-              total={filteredMedia.length}
+              total={total}
               showTotal={(total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`}
             />
           </div>

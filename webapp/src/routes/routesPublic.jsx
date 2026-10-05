@@ -1,14 +1,15 @@
+import { lazyPage } from "../components/lazyPage";
 import { Navigate, Route, Routes, useRoutes } from "react-router-dom";
 
 import MainLayout from "../layout/main";
 
-import Login from "../pages/auth/login";
-import Register from "../pages/auth/register";
-import Main from "../pages/app";
-import Error404 from "../pages/app/404";
-import Recover from "../pages/auth/recover";
-import Faqs from "../pages/app/faqs";
-import Contact from "../pages/app/contact";
+const Login = lazyPage(() => import("../pages/auth/login"));
+const Register = lazyPage(() => import("../pages/auth/register"));
+const Main = lazyPage(() => import("../pages/app"));
+const Error404 = lazyPage(() => import("../pages/app/404"));
+const Recover = lazyPage(() => import("../pages/auth/recover"));
+const Faqs = lazyPage(() => import("../pages/app/faqs"));
+const Contact = lazyPage(() => import("../pages/app/contact"));
 
 export const publicRoutes = [
   {

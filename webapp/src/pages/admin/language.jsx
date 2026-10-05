@@ -88,7 +88,8 @@ export default function Language() {
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.language.read)
+      // Só a lista e o nº de traduções de cada idioma: as traduções em si só se pedem ao abrir o drawer de um idioma
+      .get(endpoints.language.read, { params: { light: 1 } })
       .then((res) => {
         setData(res.data);
         prepareData(res.data);
@@ -103,13 +104,7 @@ export default function Language() {
   function prepareData(array) {
     const aux = [];
     // Nº de traduções de cada idioma; a referência é o idioma com mais (o idioma base não guarda lista própria e conta como completo)
-    const counts = array.map((l) => {
-      try {
-        return JSON.parse(l.translation || "[]").length;
-      } catch {
-        return 0;
-      }
-    });
+    const counts = array.map((l) => l.translation_count || 0);
     const reference = Math.max(0, ...counts);
     for (let i = 0; i < array.length; i++) {
       aux.push({

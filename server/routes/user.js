@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 var router = express.Router();
 
 var db = require("../utils/database");
-const { toId, setClause, columnList } = require("../utils/sql");
+const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission, hasPermission, denied } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
@@ -26,6 +26,80 @@ router.get("/read", requirePermission("user", "read"), async (req, res) => {
 	} catch (e) {
 		throw e;
 	}
+});
+
+// Lista paginada para o backoffice: pesquisa, filtros e ordenação na base de dados (a página pede só as linhas que mostra)
+// ?id_lang=&page=1&limit=15&search=&role=<id>&status=&activity=0|1&country=&sort=name|email|role_name|country|status|is_deleted|created_at&order=asc|desc
+const USER_SORTS = { name: "user.name", email: "user.email", role_name: "role.name", country: "user.country", status: "user.status", is_deleted: "user.is_deleted", created_at: "user.created_at" };
+router.get("/list", requirePermission("user", "read"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	try {
+		const page = Math.max(1, parseInt(req.query.page) || 1);
+		const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 15));
+		const where = ["user.id_lang = ?"];
+		const params = [toId(req.query.id_lang)];
+		const search = String(req.query.search || "").trim();
+		if (search) {
+			where.push("(user.name LIKE ? OR user.email LIKE ?)");
+			params.push(`%${search}%`, `%${search}%`);
+		}
+		if (req.query.role) {
+			where.push("user.id_role = ?");
+			params.push(toId(req.query.role));
+		}
+		if (["approved", "pending", "not_approved"].includes(req.query.status)) {
+			where.push("user.status = ?");
+			params.push(req.query.status);
+		}
+		if (req.query.activity === "0" || req.query.activity === "1") {
+			where.push("user.is_deleted = ?");
+			params.push(Number(req.query.activity));
+		}
+		if (req.query.country) {
+			where.push("user.country = ?");
+			params.push(String(req.query.country));
+		}
+		const sort = USER_SORTS[req.query.sort] || USER_SORTS.name;
+		const order = req.query.order === "desc" ? "DESC" : "ASC";
+		const clause = where.join(" AND ");
+		const [{ total }] = await query(`SELECT COUNT(*) AS total FROM user WHERE ${clause}`, params);
+		const rows = await query(
+			`SELECT user.id, user.name, user.email, user.img, user.country, user.gender, user.birth_date, user.bial_starting_date, user.academic_background, user.status, user.id_role, user.id_lang, user.is_deleted, user.created_at, role.name AS role_name
+			 FROM user LEFT JOIN role ON user.id_role = role.id WHERE ${clause} ORDER BY ${sort} ${order}, user.id DESC LIMIT ? OFFSET ?`,
+			[...params, limit, (page - 1) * limit],
+		);
+		res.send({ rows, total, page, limit });
+	} catch (e) {
+		if (e.status) return res.status(e.status).send({ message: e.message });
+		throw e;
+	}
+});
+
+// Pesquisa leve para seletores de pessoas (acesso a cursos, grupos): até 30 resultados por nome ou e-mail, ou os ids pedidos (para mostrar
+// quem já está escolhido). Só contas ativas que não são Admin.
+router.get("/search", requirePermission("user", "read"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	const ids = String(req.query.ids || "").split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 500);
+	if (ids.length) return res.send(await query("SELECT id, name, email FROM user WHERE id IN (?)", [ids]));
+	const q = String(req.query.q || "").trim();
+	const where = ["is_deleted = 0", "id_role != 1"];
+	const params = [];
+	if (req.query.id_lang) {
+		where.push("id_lang = ?");
+		params.push(toId(req.query.id_lang));
+	}
+	if (q) {
+		where.push("(name LIKE ? OR email LIKE ?)");
+		params.push(`%${q}%`, `%${q}%`);
+	}
+	res.send(await query(`SELECT id, name, email FROM user WHERE ${where.join(" AND ")} ORDER BY name LIMIT 30`, params));
+});
+
+// Nº de utilizadores ativos por função (página das funções), sem trazer a lista de utilizadores
+router.get("/counts", requirePermission("user", "read"), async (req, res) => {
+	const query = util.promisify(db.query).bind(db);
+	const rows = await query("SELECT id_role, COUNT(*) AS total FROM user WHERE is_deleted = 0 GROUP BY id_role");
+	res.send(Object.fromEntries(rows.map((r) => [r.id_role, r.total])));
 });
 
 router.get("/readById", async (req, res) => {
@@ -48,14 +122,14 @@ router.get("/readById", async (req, res) => {
 			// For students, exclude draft courses; for admins, show all courses
 			const draftFilter = user.id_role === 1 ? "" : "AND c.status != 'draft'";
 			
-			const rows = await query(
-				"SELECT c.* FROM course c WHERE id_lang = ? " + draftFilter + "; " +
+			const rows = await multi(query, 
+				"SELECT c.id, c.name, c.internal_name, c.img, c.thumbnail, c.id_lang, c.status, c.date_start, c.date_end, c.slug, c.enrollment, c.id_course_certificate, c.settings, c.id_product, c.is_deleted, c.created_at, c.modified_at FROM course c WHERE id_lang = ? AND c.is_deleted = 0 " + draftFilter + "; " +
 					"SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? " +
 					"AND course.is_deleted = 0 AND course_module.is_deleted = 0;" +
-					"SELECT course_topic.* FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
+					"SELECT course_topic.id, course_topic.id_course_module, course_topic.title, course_topic.slug, course_topic.is_deleted FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id " +
 					"LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course.is_deleted = 0 " +
 					"AND course_module.is_deleted = 0 AND course_topic.is_deleted = 0; " +
-					"SELECT course_test.* FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
+					"SELECT course_test.id, course_test.id_course_module, course_test.title, course_test.settings, course_test.status, course_test.is_deleted, IF(JSON_VALID(course_test.question), JSON_LENGTH(course_test.question), 0) AS question_count FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
 					"LEFT JOIN course ON course.id = course_module.id_course WHERE course.id_lang = ? AND course.is_deleted = 0 " +
 					"AND course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND (course_test.status != 'draft' OR ? = 1); " +
 					"SELECT cua.* FROM course_user_activity cua LEFT JOIN course ON course.id = cua.id_course " +

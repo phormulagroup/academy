@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useContext } from "react";
 import { Collapse, Empty, Tooltip } from "antd";
+import dayjs from "dayjs";
 import { LuCheck, LuCircleCheck, LuRotateCcw } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
@@ -40,6 +41,16 @@ export default function ModuleProgress({ course, student, onChange }) {
 
   const isDone = (type, id) => course.progress.some((p) => p.is_completed === 1 && p.activity_type === type && p[`id_course_${type}`] === id);
   const isModuleDone = (module) => course.progress.some((p) => p.activity_type === "module" && p.id_course_module === module.id);
+  // Quando foi concluído: a atividade mais recente (concluída) do item; no módulo, a do módulo ou a do último item
+  const doneAt = (type, id) => {
+    const dates = course.progress.filter((p) => p.is_completed === 1 && p.activity_type === type && p[`id_course_${type}`] === id).map((p) => new Date(p.created_at).getTime());
+    return dates.length ? Math.max(...dates) : null;
+  };
+  const moduleDoneAt = (module) => {
+    const dates = [doneAt("module", module.id), ...(module.items ?? []).map((i) => doneAt(i.type, i.id))].filter(Boolean);
+    return dates.length ? Math.max(...dates) : null;
+  };
+  const fmtDate = (ms) => dayjs(ms).format("DD/MM/YYYY HH:mm");
   const allDone = course.modules.every((m) => (m.items ?? []).every((i) => isDone(i.type, i.id)));
 
   // Repõe o progresso deste item e de todos os seguintes
@@ -112,6 +123,7 @@ export default function ModuleProgress({ course, student, onChange }) {
         const items = module.items ?? [];
         const doneCount = items.filter((i) => isDone(i.type, i.id)).length;
         const moduleComplete = items.length > 0 && doneCount === items.length;
+        const completedAt = moduleComplete || isModuleDone(module) ? moduleDoneAt(module) : null;
         return (
           <Collapse
             key={module.id}
@@ -126,7 +138,9 @@ export default function ModuleProgress({ course, student, onChange }) {
                       <Dot done={isModuleDone(module) || moduleComplete} />
                       <div className="min-w-0">
                         <p className="mb-0! font-bold text-[14px] truncate">{module.title}</p>
-                        <p className="mb-0! text-[12px] text-[#8A8D98]">{t("{{done}} of {{total}} items completed", { done: doneCount, total: items.length })}</p>
+                        <p className="mb-0! text-[12px] text-[#8A8D98]">{t("{{done}} of {{total}} items completed", { done: doneCount, total: items.length })}
+                          {completedAt && <span className="text-[#2F8351]"> · {t("Completed on {{date}}", { date: fmtDate(completedAt) })}</span>}
+                        </p>
                       </div>
                     </div>
                     {canUpdate && !moduleComplete && items.length > 0 && (
@@ -149,6 +163,7 @@ export default function ModuleProgress({ course, student, onChange }) {
                             <Dot done={done} />
                             <p className="mb-0! text-sm truncate">{item.title}</p>
                             <span className="rounded-full bg-[#F2F3F5] px-2 py-0.5 text-[11px] text-[#5B5F6B]">{item.type === "test" ? t("Test") : t("Topic")}</span>
+                            {done && doneAt(item.type, item.id) && <span className="hidden shrink-0 text-[12px] text-[#8A8D98] sm:inline">{fmtDate(doneAt(item.type, item.id))}</span>}
                           </div>
                           {canUpdate && (
                             <div className="flex shrink-0 items-center">

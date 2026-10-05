@@ -4,35 +4,21 @@ import { Button, Drawer, Form, Input, Select, DatePicker } from "antd";
 import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import axios from "axios";
-import endpoints from "../../../utils/endpoints";
 import {
   emailFieldProps,
   emailRule,
   requiredDateRule,
   requiredRule,
   requiredSelectRule,
-  uniqueRule,
+  userEmailRule,
 } from "../../../utils/formFieldError";
 
 export default function Create({ open, close }) {
   const { create, roles, languages, selectedLanguage } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  // Utilizadores existentes, para o uniqueRule do e-mail
-  const [users, setUsers] = useState([]);
-
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (open) {
-      axios
-        .get(endpoints.user.read)
-        .then((res) => setUsers(res.data))
-        .catch((err) => console.log(err));
-    }
-  }, [open]);
 
   function onClose() {
     form.resetFields();
@@ -76,11 +62,7 @@ export default function Create({ open, close }) {
             rules={[
               requiredRule,
               emailRule,
-              uniqueRule(
-                users,
-                t("This e-mail is already associated with another account"),
-                { field: "email" },
-              ),
+              userEmailRule(),
             ]}>
             <Input
               type="email"
