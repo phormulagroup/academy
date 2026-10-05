@@ -6,6 +6,7 @@ var db = require("../utils/database");
 const { requirePermission } = require("../utils/permissions");
 const { getStatus, RETENTION_DAYS } = require("../utils/monitor");
 const { tableReady } = require("../utils/throttle");
+const { tableReady: auditReady } = require("../utils/audit");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -92,7 +93,7 @@ router.get("/emails", requirePermission("monitoring", "read"), async (req, res) 
 
 // Bloqueios por tentativas excessivas (login, código de recuperação): os ativos e as tentativas recentes, com o IP, para o Admin poder desbloquear
 // quem for um utilizador real. Sem a tabela (migração 2026-10-10) devolve available: false.
-router.get("/blocks", requirePermission("monitoring", "read"), async (req, res) => {
+router.get("/blocks", requirePermission("security", "read"), async (req, res) => {
   if (!(await tableReady())) return res.send({ available: false, rows: [], blocked: 0 });
   const rows = await query(
     `SELECT b.id, b.scope, b.kind, b.identifier, b.ip, b.attempts, b.blocked_until, b.last_attempt_at, b.window_ends,
@@ -106,11 +107,64 @@ router.get("/blocks", requirePermission("monitoring", "read"), async (req, res) 
 });
 
 // Desbloqueia um (id) ou todos (sem id): apaga o registo, por isso o contador recomeça do zero
-router.post("/blocks/unblock", requirePermission("monitoring", "update"), async (req, res) => {
+router.post("/blocks/unblock", requirePermission("security", "update"), async (req, res) => {
   if (!(await tableReady())) return res.status(409).send({ message: "Blocks are not available yet (database migration pending)" });
   const id = Number(req.body.data?.id);
   const result = id ? await query("DELETE FROM security_block WHERE id = ?", [id]) : await query("DELETE FROM security_block");
   res.send({ unblocked: result.affectedRows });
+});
+
+// Registo de atividade (CRUD): ?page=&limit=&search=&user=<id>&resource=&action=&from=YYYY-MM-DD&to=YYYY-MM-DD. Sem a tabela (migração 2026-10-13)
+// devolve available: false.
+router.get("/audit", requirePermission("audit", "read"), async (req, res) => {
+  if (!(await auditReady())) return res.send({ available: false, rows: [], total: 0 });
+  const { page, limit, offset } = paging(req);
+  const where = ["1=1"];
+  const params = [];
+  const search = String(req.query.search || "").trim();
+  if (search) {
+    where.push("(a.label LIKE ? OR a.record_id = ? OR a.route LIKE ?)");
+    params.push(`%${search}%`, search, `%${search}%`);
+  }
+  if (req.query.user) {
+    where.push("a.id_user = ?");
+    params.push(Number(req.query.user) || 0);
+  }
+  if (req.query.resource) {
+    where.push("a.resource = ?");
+    params.push(String(req.query.resource));
+  }
+  if (req.query.action) {
+    where.push("a.action = ?");
+    params.push(String(req.query.action));
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(req.query.from || "")) {
+    where.push("a.created_at >= ?");
+    params.push(`${req.query.from} 00:00:00`);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(req.query.to || "")) {
+    where.push("a.created_at <= ?");
+    params.push(`${req.query.to} 23:59:59`);
+  }
+  const clause = where.join(" AND ");
+  const [{ total }] = await query(`SELECT COUNT(*) AS total FROM audit_log a WHERE ${clause}`, params);
+  const rows = await query(
+    `SELECT a.*, u.name AS user_name, u.email AS user_email, u.img AS user_img, r.name AS role_name
+     FROM audit_log a LEFT JOIN user u ON u.id = a.id_user LEFT JOIN role r ON r.id = u.id_role
+     WHERE ${clause} ORDER BY a.created_at DESC, a.id DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+  res.send({ available: true, rows, total, page, limit });
+});
+
+// Opções dos filtros: secções com registos e quem fez alterações
+router.get("/audit/facets", requirePermission("audit", "read"), async (req, res) => {
+  if (!(await auditReady())) return res.send({ resources: [], users: [] });
+  const [resources, users] = await Promise.all([
+    query("SELECT DISTINCT resource FROM audit_log ORDER BY resource"),
+    query("SELECT DISTINCT a.id_user AS id, u.name, u.email FROM audit_log a LEFT JOIN user u ON u.id = a.id_user WHERE a.id_user IS NOT NULL ORDER BY u.name LIMIT 200"),
+  ]);
+  res.send({ resources: resources.map((r) => r.resource), users });
 });
 
 module.exports = router;

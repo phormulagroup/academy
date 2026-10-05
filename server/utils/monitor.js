@@ -95,7 +95,10 @@ async function recordStartup() {
 
 async function purgeOldLogs() {
   try {
-    await query("DELETE FROM server_log WHERE created_at < (NOW() - INTERVAL ? DAY); DELETE FROM email_log WHERE created_at < (NOW() - INTERVAL ? DAY)", [RETENTION_DAYS, RETENTION_DAYS]);
+    await query("DELETE FROM server_log WHERE created_at < (NOW() - INTERVAL ? DAY)", [RETENTION_DAYS]);
+    await query("DELETE FROM email_log WHERE created_at < (NOW() - INTERVAL ? DAY)", [RETENTION_DAYS]);
+    // O registo de atividade guarda-se mais tempo (um ano): é a memória do que o cliente e a equipa mexeram
+    await query("DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL 365 DAY)").catch(() => {});
   } catch (err) {
     console.error("Could not purge the old logs:", err.message);
   }

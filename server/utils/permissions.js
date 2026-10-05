@@ -1,5 +1,6 @@
 const util = require("util");
 const db = require("./database");
+const { cached } = require("./authCache");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -23,6 +24,8 @@ const RESOURCES = [
   "form_submission",
   "ticket",
   "monitoring",
+  "audit",
+  "security",
   "email_template",
   "settings",
 ];
@@ -36,8 +39,9 @@ async function hasPermission(user, resource, action) {
   if (!user) return false;
   if (user.id_role === ADMIN_ROLE_ID) return true;
   try {
-    const rows = await query("SELECT * FROM permission WHERE id_role = ? AND resource = ?", [user.id_role, resource]);
-    return rows.length > 0 && !!rows[0][`can_${action}`];
+    // As permissões de uma função mudam raramente: cache de 20 s (utils/authCache.js)
+    const row = await cached("perm", `${user.id_role}:${resource}`, async () => (await query("SELECT * FROM permission WHERE id_role = ? AND resource = ?", [user.id_role, resource]))[0] ?? null);
+    return !!row && !!row[`can_${action}`];
   } catch (err) {
     if (err.code !== "ER_NO_SUCH_TABLE") console.error(err);
     return false;
@@ -49,8 +53,7 @@ async function isStaff(user) {
   if (!user) return false;
   if (user.id_role === ADMIN_ROLE_ID) return true;
   try {
-    const rows = await query("SELECT 1 FROM permission WHERE id_role = ? AND can_read = 1 LIMIT 1", [user.id_role]);
-    return rows.length > 0;
+    return await cached("staff", user.id_role, async () => (await query("SELECT 1 FROM permission WHERE id_role = ? AND can_read = 1 LIMIT 1", [user.id_role])).length > 0);
   } catch {
     return false;
   }

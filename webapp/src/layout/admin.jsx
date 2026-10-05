@@ -217,7 +217,8 @@ const Main = () => {
     const segment = path.split("/")[2];
     if (segment === "permissions") return false;
     const resource = ADMIN_PATH_RESOURCES[segment];
-    return !resource || permissions.some((p) => p.resource === resource && p.can_read);
+    const accepted = [].concat(resource || []);
+    return accepted.length === 0 || permissions.some((p) => accepted.includes(p.resource) && p.can_read);
   }
   const items = useMemo(
     () =>

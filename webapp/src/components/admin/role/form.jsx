@@ -5,6 +5,8 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
   LuActivity,
+  LuHistory,
+  LuLockKeyhole,
   LuSend,
   LuAward,
   LuBell,
@@ -54,7 +56,7 @@ const GROUPS = [
   { key: "learning", label: "e-Learning", resources: ["course", "certificate", "report", "document", "download", "product"] },
   { key: "manage", label: "Management", resources: ["user", "user_group", "form_submission", "ticket"] },
   { key: "email", label: "E-mail", resources: ["communication", "email_template", "settings"] },
-  { key: "system", label: "System", resources: ["monitoring"] },
+  { key: "system", label: "System", resources: ["monitoring", "audit", "security"] },
 ];
 
 const RESOURCE_ICONS = {
@@ -75,10 +77,16 @@ const RESOURCE_ICONS = {
   form_submission: <LuMessageSquareText />,
   ticket: <LuTicket />,
   monitoring: <LuActivity />,
+  audit: <LuHistory />,
+  security: <LuLockKeyhole />,
   communication: <LuSend />,
   email_template: <LuLayoutTemplate />,
   settings: <LuServer />,
 };
+
+// Ações que cada secção tem: todas as quatro, salvo as que o `actions` da secção restringe (ex.: o registo de atividade só se vê)
+const ALL_ACTIONS = ACTIONS.map((a) => a.key);
+const actionsOf = (resource) => ACTIONS.filter((a) => (resource.actions ?? ALL_ACTIONS).includes(a.key));
 
 const emptyRow = () => ({ can_create: false, can_read: false, can_update: false, can_delete: false });
 const fullRow = () => ({ can_create: true, can_read: true, can_update: true, can_delete: true });
@@ -147,13 +155,16 @@ export default function RoleForm({ data, open, close }) {
     });
   }
 
-  const isRowFull = (key) => ACTIONS.every((a) => !!matrix[key]?.[a.key]);
-  const rowCount = (key) => ACTIONS.filter((a) => !!matrix[key]?.[a.key]).length;
+  const resourceOf = (key) => RESOURCES.find((r) => r.key === key);
+  const isRowFull = (key) => actionsOf(resourceOf(key)).every((a) => !!matrix[key]?.[a.key]);
+  const rowCount = (key) => actionsOf(resourceOf(key)).filter((a) => !!matrix[key]?.[a.key]).length;
+  // Linha cheia só com as ações que a secção tem
+  const fullRowOf = (key) => () => Object.fromEntries(ALL_ACTIONS.map((a) => [a, actionsOf(resourceOf(key)).some((x) => x.key === a)]));
 
   function setResources(keys, builder) {
     setMatrix((prev) => {
       const next = { ...prev };
-      keys.forEach((k) => (next[k] = builder()));
+      keys.forEach((k) => (next[k] = (builder === fullRow ? fullRowOf(k) : builder)()));
       return next;
     });
   }
@@ -167,7 +178,7 @@ export default function RoleForm({ data, open, close }) {
     return list;
   }, []);
 
-  const totalPossible = RESOURCES.length * ACTIONS.length;
+  const totalPossible = RESOURCES.reduce((sum, r) => sum + actionsOf(r).length, 0);
   const totalActive = RESOURCES.reduce((sum, r) => sum + rowCount(r.key), 0);
 
   function onClose() {
@@ -294,7 +305,7 @@ export default function RoleForm({ data, open, close }) {
                       <p className="mb-0! text-[12px] font-bold uppercase tracking-wide text-[#5B5F6B]">
                         {t(group.label)}
                         <span className="ml-2 font-normal normal-case tracking-normal text-[#8A8D98]">
-                          {groupActive}/{keys.length * ACTIONS.length}
+                          {groupActive}/{group.items.reduce((sum, r) => sum + actionsOf(r).length, 0)}
                         </span>
                       </p>
                       <div className="flex items-center gap-2">
@@ -318,7 +329,7 @@ export default function RoleForm({ data, open, close }) {
                           <span className="text-[14px] font-medium">{t(resource.label)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {ACTIONS.map((action) => {
+                          {actionsOf(resource).map((action) => {
                             const on = !!matrix[resource.key]?.[action.key];
                             return (
                               <button
