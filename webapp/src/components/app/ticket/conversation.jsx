@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Button, Empty, Form, Select, Spin, Tag, Upload } from "antd";
 import { PiPaperclip } from "react-icons/pi";
@@ -33,7 +33,11 @@ export default function TicketConversation({ ticketId }) {
 
   const [confirm, confirmHolder] = useConfirm();
   const [form] = Form.useForm();
-  const messagesEndRef = useRef();
+  // A lista de mensagens começa (e fica) no fundo: sem animação ao abrir, e a seguir só acompanha as mensagens novas se a pessoa não tiver subido
+  // para ler as antigas. O scroll é posto à mão no próprio contentor (scrollTop), por isso não depende da animação da gaveta a abrir.
+  const scrollRef = useRef(null);
+  const stickToBottomRef = useRef(true);
+  const lastSetTopRef = useRef(null); // onde o código pôs o scroll: distingue o scroll próprio do da pessoa
 
   const isOwner = ticket && Number(ticket.id_user) === Number(user.id);
   const showStaffControls = !!ticket && !isOwner && canManage;
@@ -43,9 +47,27 @@ export default function TicketConversation({ ticketId }) {
     if (ticketId) getData();
   }, [ticketId]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const scrollToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    lastSetTopRef.current = el.scrollTop;
+  };
+
+  // Antes de pintar: nunca se vê a lista a começar no topo nem a deslizar até ao fundo
+  useLayoutEffect(() => {
+    if (stickToBottomRef.current) scrollToBottom();
+  }, [messages, isLoading, ticket?.id]);
+
+  // Imagens e tipos de letra que carregam depois aumentam a lista: mantém-se no fundo enquanto a pessoa não subir
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => stickToBottomRef.current && scrollToBottom());
+    observer.observe(el);
+    Array.from(el.children).forEach((child) => observer.observe(child));
+    return () => observer.disconnect();
+  }, [messages, isLoading, ticket?.id]);
 
   // Enquanto a conversa está aberta, volta a pedi-la de 5 em 5 segundos para as respostas novas aparecerem
   useEffect(() => {
@@ -103,6 +125,7 @@ export default function TicketConversation({ ticketId }) {
       .then(() => {
         form.resetFields();
         setFileList([]);
+        stickToBottomRef.current = true; // a resposta que acabou de enviar fica à vista
         getData();
       })
       .catch((err) => toastApi.error(err.response?.data?.message || t("Could not send the reply.")))
@@ -189,7 +212,16 @@ export default function TicketConversation({ ticketId }) {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-auto flex flex-col pr-1">
+      <div
+        ref={scrollRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          // O scroll que o próprio código fez não conta; só o da pessoa decide se continua a acompanhar o fundo
+          if (lastSetTopRef.current !== null && Math.abs(el.scrollTop - lastSetTopRef.current) < 2) return;
+          lastSetTopRef.current = null;
+          stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+        }}
+        className="flex-1 min-h-0 overflow-auto flex flex-col pr-1">
         {messages.map((m) => {
           const attachments = parseAttachments(m.attachment);
           const isMine = Number(m.id_user) === Number(user.id);
@@ -221,7 +253,6 @@ export default function TicketConversation({ ticketId }) {
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
       </div>
 
       {canReply && (
