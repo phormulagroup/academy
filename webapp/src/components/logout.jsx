@@ -5,12 +5,13 @@ import { useTranslation } from "react-i18next";
 import { Context } from "../utils/context";
 import UserAvatar from "../utils/userAvatar";
 import ConfirmModal from "./admin/confirmModal";
+import { hasFullAccess } from "../utils/roles";
 
 // Confirmação de terminar a sessão: mostra a conta que vai sair e o que acontece a seguir
 function Logout({ open, close, submit }) {
   const { t } = useTranslation();
   const { user } = useContext(Context);
-  const isStaff = user?.id_role === 1;
+  const isStaff = hasFullAccess(user);
 
   return (
     <ConfirmModal

@@ -40,6 +40,8 @@ import endpoints from "../../../utils/endpoints";
 import { RESOURCES } from "../../../utils/permissions";
 
 const ADMIN_ROLE_ID = 1;
+// O Gestor (como o Utilizador) tem matriz de permissões, mas não se renomeia
+const GESTOR_ROLE_ID = 4;
 const USER_ROLE_ID = 2;
 
 // "Ver" primeiro: é a base das outras três (ver toggle)
@@ -51,6 +53,8 @@ const ACTIONS = [
 ];
 
 // Só apresentação: agrupa as secções como no menu do backoffice. Uma secção nova que não esteja aqui aparece em "Other".
+// Secções do grupo Sistema: só o Admin altera as permissões delas
+const SYSTEM_RESOURCES = ["monitoring", "audit", "security"];
 const GROUPS = [
   { key: "web", label: "Website", resources: ["media", "iec", "personalization", "language", "notification", "faqs"] },
   { key: "learning", label: "e-Learning", resources: ["course", "certificate", "report", "document", "download", "product"] },
@@ -95,7 +99,10 @@ const fullRow = () => ({ can_create: true, can_read: true, can_update: true, can
 // permissões; ao editar guarda nome e permissões de uma vez. O Admin tem sempre acesso total (o servidor ignora a tabela
 // de permissões para ele), por isso não tem matriz.
 export default function RoleForm({ data, open, close }) {
-  const { toastApi, setRoles } = useContext(Context);
+  const { toastApi, setRoles, user } = useContext(Context);
+  // O Admin altera tudo. O Gestor vê todas as matrizes e só altera a do Utilizador (aluno), sem a parte do Sistema
+  const isAdminUser = Number(user?.id_role) === ADMIN_ROLE_ID;
+  const isGestorUser = Number(user?.id_role) === GESTOR_ROLE_ID;
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
@@ -104,6 +111,14 @@ export default function RoleForm({ data, open, close }) {
   const [localRole, setLocalRole] = useState(data);
   const isUpdate = !!localRole?.id;
   const isAdminRole = localRole?.id === ADMIN_ROLE_ID;
+  const isGestorRole = localRole?.id === GESTOR_ROLE_ID;
+  const canEdit = isAdminUser || (isGestorUser && localRole?.id === USER_ROLE_ID);
+  const canEditResource = (key) => isAdminUser || (canEdit && !SYSTEM_RESOURCES.includes(key));
+  // Porque não se pode mexer (tooltip nos controlos bloqueados, em vez de só ficarem desativados)
+  const lockedReason = (key) =>
+    !canEdit ? t("Only the Admin can change the permissions of this role.") : !canEditResource(key) ? t("Only the Admin can change the System permissions.") : null;
+  // O Admin tem acesso total: sem matriz de permissões
+  const isFixedRole = isAdminRole;
   // "Guardar" substitui SEMPRE as permissões da função pelo conteúdo da matriz: se o carregamento das atuais falhar, a
   // matriz fica vazia e guardar apagaria permissões reais. Esta flag bloqueia o "Guardar" nesse caso.
   const [hasLoadError, setHasLoadError] = useState(false);
@@ -145,6 +160,7 @@ export default function RoleForm({ data, open, close }) {
 
   // Criar/Editar/Apagar sem Ver não faz sentido: ligar qualquer um liga também o Ver; desligar o Ver desliga tudo
   function toggle(resourceKey, actionKey) {
+    if (!canEditResource(resourceKey)) return;
     setMatrix((prev) => {
       const row = { ...emptyRow(), ...prev[resourceKey] };
       const next = !row[actionKey];
@@ -164,7 +180,7 @@ export default function RoleForm({ data, open, close }) {
   function setResources(keys, builder) {
     setMatrix((prev) => {
       const next = { ...prev };
-      keys.forEach((k) => (next[k] = (builder === fullRow ? fullRowOf(k) : builder)()));
+      keys.filter(canEditResource).forEach((k) => (next[k] = (builder === fullRow ? fullRowOf(k) : builder)()));
       return next;
     });
   }
@@ -214,7 +230,7 @@ export default function RoleForm({ data, open, close }) {
       if (values.name !== localRole.name) {
         await axios.post(endpoints.role.update, { data: { id: localRole.id, name: values.name } });
       }
-      if (!isAdminRole) {
+      if (!isFixedRole) {
         const permissions = RESOURCES.map((resource) => ({ resource: resource.key, ...emptyRow(), ...matrix[resource.key] }));
         await axios.post(endpoints.permission.set, { data: { id_role: localRole.id, permissions } });
       }
@@ -238,7 +254,7 @@ export default function RoleForm({ data, open, close }) {
       mask={{ closable: false }}
       title={isUpdate ? t("Update role") : t("Add role")}
       extra={[
-        <Button key="save" type="primary" loading={isButtonLoading} disabled={isUpdate && hasLoadError} onClick={form.submit}>
+        <Button key="save" type="primary" loading={isButtonLoading} disabled={!canEdit || (isUpdate && hasLoadError)} onClick={form.submit}>
           {isUpdate ? t("Save") : t("Add")}
         </Button>,
       ]}
@@ -252,8 +268,8 @@ export default function RoleForm({ data, open, close }) {
         validateMessages={{ required: t("This field is required!") }}
       >
         {/* Admin e Utilizador têm o nome fixo; do Utilizador (a função do registo) só se editam as permissões */}
-        <Form.Item name="name" label={t("Role name")} rules={[{ required: true }]} className="mb-0!" extra={isUpdate && localRole?.id === USER_ROLE_ID ? t("This is the role given at registration: its name is fixed, only its permissions can be changed") : undefined}>
-          <Input placeholder={t("E.g.: Content manager")} disabled={isAdminRole || (isUpdate && localRole?.id === USER_ROLE_ID)} />
+        <Form.Item name="name" label={t("Role name")} rules={[{ required: true }]} className="mb-0!" extra={isUpdate && (localRole?.id === USER_ROLE_ID || isGestorRole) ? t("This is the role given at registration: its name is fixed, only its permissions can be changed") : undefined}>
+          <Input placeholder={t("E.g.: Content manager")} disabled={!isAdminUser || isAdminRole || (isUpdate && (localRole?.id === USER_ROLE_ID || isGestorRole))} />
         </Form.Item>
       </Form>
 
@@ -268,7 +284,7 @@ export default function RoleForm({ data, open, close }) {
         />
       )}
 
-      {isUpdate && !isAdminRole && (
+      {isUpdate && !isFixedRole && (
         <div className="mt-8">
           <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
             <div>
@@ -278,13 +294,13 @@ export default function RoleForm({ data, open, close }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="small" onClick={() => setResources(RESOURCES.map((r) => r.key), fullRow)} disabled={isLoading}>
+              <Button size="small" onClick={() => setResources(RESOURCES.map((r) => r.key), fullRow)} disabled={isLoading || !canEdit} title={!canEdit ? t("Only the Admin can change the permissions of this role.") : undefined}>
                 {t("Full access")}
               </Button>
-              <Button size="small" onClick={() => setResources(RESOURCES.map((r) => r.key), () => ({ ...emptyRow(), can_read: true }))} disabled={isLoading}>
+              <Button size="small" onClick={() => setResources(RESOURCES.map((r) => r.key), () => ({ ...emptyRow(), can_read: true }))} disabled={isLoading || !canEdit} title={!canEdit ? t("Only the Admin can change the permissions of this role.") : undefined}>
                 {t("View only")}
               </Button>
-              <Button size="small" icon={<LuEraser />} onClick={() => setResources(RESOURCES.map((r) => r.key), emptyRow)} disabled={isLoading}>
+              <Button size="small" icon={<LuEraser />} onClick={() => setResources(RESOURCES.map((r) => r.key), emptyRow)} disabled={isLoading || !canEdit} title={!canEdit ? t("Only the Admin can change the permissions of this role.") : undefined}>
                 {t("Clear")}
               </Button>
             </div>
@@ -310,7 +326,9 @@ export default function RoleForm({ data, open, close }) {
                       </p>
                       <div className="flex items-center gap-2">
                         <span className="text-[12px] text-[#8A8D98]">{t("All")}</span>
-                        <Switch size="small" checked={keys.every(isRowFull)} onChange={(on) => setResources(keys, on ? fullRow : emptyRow)} />
+                        <Tooltip title={lockedReason(keys[0])}>
+                          <Switch disabled={!keys.some(canEditResource)} size="small" checked={keys.every(isRowFull)} onChange={(on) => setResources(keys, on ? fullRow : emptyRow)} />
+                        </Tooltip>
                       </div>
                     </div>
                     {group.items.map((resource, i) => (
@@ -332,22 +350,25 @@ export default function RoleForm({ data, open, close }) {
                           {actionsOf(resource).map((action) => {
                             const on = !!matrix[resource.key]?.[action.key];
                             return (
+                              <Tooltip key={action.key} title={lockedReason(resource.key)}>
                               <button
                                 key={action.key}
                                 type="button"
                                 aria-pressed={on}
                                 onClick={() => toggle(resource.key, action.key)}
-                                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] font-medium cursor-pointer transition-colors ${
+                                disabled={!canEditResource(resource.key)}
+                                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] font-medium transition-colors disabled:cursor-not-allowed ${canEditResource(resource.key) ? "cursor-pointer" : ""} ${
                                   on ? "bg-[#163986] border-[#163986] text-white" : "bg-white border-[#E2E4E9] text-[#5B5F6B] hover:border-[#163986] hover:text-[#163986]"
                                 }`}
                               >
                                 <span className="text-[13px] flex">{action.icon}</span>
                                 {t(action.label)}
                               </button>
+                              </Tooltip>
                             );
                           })}
-                          <Tooltip title={isRowFull(resource.key) ? t("Remove all") : t("Give all")}>
-                            <Switch size="small" className="ml-2!" checked={isRowFull(resource.key)} onChange={(on) => setResources([resource.key], on ? fullRow : emptyRow)} />
+                          <Tooltip title={lockedReason(resource.key) || (isRowFull(resource.key) ? t("Remove all") : t("Give all"))}>
+                            <Switch disabled={!canEditResource(resource.key)} size="small" className="ml-2!" checked={isRowFull(resource.key)} onChange={(on) => setResources([resource.key], on ? fullRow : emptyRow)} />
                           </Tooltip>
                         </div>
                       </div>

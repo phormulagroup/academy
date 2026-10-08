@@ -25,6 +25,7 @@ import config from "../../../utils/config";
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { hasFullAccess } from "../../../utils/roles";
 
 // Datas de início e de fim do curso (opcionais), guardadas nas definições do curso
 function courseDateFields(course) {
@@ -236,7 +237,7 @@ export default function Course() {
       },
     );
 
-  const canSeeStatus = user.id_role === 1 || user.id_role === 2;
+  const canSeeStatus = hasFullAccess(user) || user.id_role === 2;
   const filteredData = tableData;
   const sortOrderOf = (field) => (sort.field === field ? (sort.order === "desc" ? "descend" : "ascend") : null);
 

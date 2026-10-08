@@ -1,6 +1,10 @@
 import axios from "axios";
 import RefreshButton from "../../../components/admin/refreshButton";
-import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
+import ExportButton, {
+  activityColumn,
+  languageColumn,
+  createdColumn,
+} from "../../../components/admin/export/exportButton";
 import { usePermission } from "../../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
@@ -13,7 +17,9 @@ import { AiOutlinePlus } from "react-icons/ai";
 import Delete from "../../../components/admin/delete";
 import Create from "../../../components/admin/certificate/create";
 import Logs from "../../../components/admin/logs";
-import useListFilters, { includesText } from "../../../components/admin/listFilters";
+import useListFilters, {
+  includesText,
+} from "../../../components/admin/listFilters";
 import RowActions from "../../../components/admin/rowActions";
 
 import StatusTag from "../../../utils/statusTag";
@@ -23,6 +29,7 @@ import endpoints from "../../../utils/endpoints";
 import { uniqueRule } from "../../../utils/formFieldError";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { hasFullAccess } from "../../../utils/roles";
 
 export default function Certificate() {
   const { user, toastApi, selectedLanguage } = useContext(Context);
@@ -34,7 +41,6 @@ export default function Certificate() {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenLogs, setIsOpenLogs] = useState(false);
-
 
   const { t } = useTranslation();
 
@@ -75,7 +81,9 @@ export default function Certificate() {
         full_data: array[i],
         actions: (
           // stopPropagation: a linha toda abre os detalhes ao clicar (ver onRow)
-          <div className="flex justify-end items-center" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex justify-end items-center"
+            onClick={(e) => e.stopPropagation()}>
             <RowActions
               items={[
                 {
@@ -130,12 +138,30 @@ export default function Certificate() {
       excludeId,
     });
 
-  const canSeeStatus = user.id_role === 1 || user.id_role === 2;
+  const canSeeStatus = hasFullAccess(user) || user.id_role === 2;
   // Pesquisa e estado ficam à vista na barra do cabeçalho (são só dois filtros, não precisam de gaveta)
   const { filterRows, toolbar } = useListFilters([
-    { key: "q", type: "text", primary: true, placeholder: t("Search by name..."), match: (row, v) => includesText(row.full_data.name, v) },
+    {
+      key: "q",
+      type: "text",
+      primary: true,
+      placeholder: t("Search by name..."),
+      match: (row, v) => includesText(row.full_data.name, v),
+    },
     ...(canSeeStatus
-      ? [{ key: "status", type: "select", primary: true, label: t("Status"), options: [{ label: t("Active"), value: 0 }, { label: t("Inactive"), value: 1 }], match: (row, v) => row.full_data.is_deleted === v }]
+      ? [
+          {
+            key: "status",
+            type: "select",
+            primary: true,
+            label: t("Status"),
+            options: [
+              { label: t("Active"), value: 0 },
+              { label: t("Inactive"), value: 1 },
+            ],
+            match: (row, v) => row.full_data.is_deleted === v,
+          },
+        ]
       : []),
   ]);
   const filteredData = filterRows(tableData);
@@ -165,14 +191,26 @@ export default function Certificate() {
         </div>
         <div className="flex items-center gap-2">
           {toolbar}
-          <ExportButton table="certificates" data={filteredData.map((r) => r.full_data)} columns={[{ title: "ID", dataIndex: "id" }, { title: "Name", dataIndex: "name" }, languageColumn, activityColumn, createdColumn]} />
+          <ExportButton
+            table="certificates"
+            data={filteredData.map((r) => r.full_data)}
+            columns={[
+              { title: "ID", dataIndex: "id" },
+              { title: "Name", dataIndex: "name" },
+              languageColumn,
+              activityColumn,
+              createdColumn,
+            ]}
+          />
           <RefreshButton onClick={getData} />
-          {perm.canCreate && (<Button
-            type="primary"
-            icon={<AiOutlinePlus />}
-            onClick={() => setIsOpenCreate(true)}>
-            <span className="hidden sm:inline">{t("Add")}</span>
-          </Button>)}
+          {perm.canCreate && (
+            <Button
+              type="primary"
+              icon={<AiOutlinePlus />}
+              onClick={() => setIsOpenCreate(true)}>
+              <span className="hidden sm:inline">{t("Add")}</span>
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -181,7 +219,8 @@ export default function Certificate() {
         scroll={{ x: 50 }}
         pagination={{
           placement: ["none", "bottomCenter"],
-          showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} ${t("of")} ${total}`,
         }}
         onRow={(record) => ({
           className: "cursor-pointer",
@@ -192,7 +231,8 @@ export default function Certificate() {
             title: t("Name"),
             dataIndex: "name",
             key: "name",
-            sorter: (a, b) => (a.full_data.name || "").localeCompare(b.full_data.name || ""),
+            sorter: (a, b) =>
+              (a.full_data.name || "").localeCompare(b.full_data.name || ""),
             width: "80%",
           },
           canSeeStatus && {
@@ -200,7 +240,8 @@ export default function Certificate() {
             dataIndex: "is_deleted",
             key: "is_deleted",
             sorter: (a, b) =>
-              (a.full_data.is_deleted ? 1 : 0) - (b.full_data.is_deleted ? 1 : 0),
+              (a.full_data.is_deleted ? 1 : 0) -
+              (b.full_data.is_deleted ? 1 : 0),
           },
           {
             title: "",

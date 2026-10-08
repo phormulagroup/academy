@@ -8,6 +8,7 @@ import { AiOutlineGlobal } from "react-icons/ai";
 
 import { Context } from "../utils/context";
 import { ADMIN_PATH_RESOURCES } from "../utils/permissions";
+import { ADMIN_ROLE_ID, GESTOR_ROLE_ID } from "../utils/roles";
 import LanguageSelector from "../utils/languageSelector";
 import UserAvatar from "../utils/userAvatar";
 import Logout from "../components/logout";
@@ -210,12 +211,13 @@ const Main = () => {
     [t],
   );
 
-  // O Admin vê tudo; as outras funções só as secções em que podem ver. "Permissões" é só do Admin
-  const isAdmin = user.id_role === 1;
+  // O Admin vê tudo; as outras funções (incluindo o Gestor) só as secções em que podem ver. "Permissões": o Admin edita, o Gestor só vê
+  const isAdmin = Number(user.id_role) === ADMIN_ROLE_ID;
+  const isGestor = Number(user.id_role) === GESTOR_ROLE_ID;
   function canAccess(path) {
     if (isAdmin || path === "/admin/perfil" || path === `/admin/users/${user.id}`) return true; // o próprio perfil é sempre acessível
     const segment = path.split("/")[2];
-    if (segment === "permissions") return false;
+    if (segment === "permissions") return isGestor;
     const resource = ADMIN_PATH_RESOURCES[segment];
     const accepted = [].concat(resource || []);
     return accepted.length === 0 || permissions.some((p) => accepted.includes(p.resource) && p.can_read);
@@ -226,7 +228,7 @@ const Main = () => {
         .map((group) => ({ ...group, children: group.children.filter((item) => canAccess(item.key)) }))
         .filter((group) => group.children.length > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allItems, permissions, isAdmin],
+    [allItems, permissions, isAdmin, isGestor],
   );
 
   const selectLanguage = (lang) => {
