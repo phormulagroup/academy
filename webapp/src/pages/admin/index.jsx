@@ -147,68 +147,52 @@ export default function Main() {
       // Curso concluído: 100%
       if (current.activity_type === "course" && current.is_completed === 1) percentageProgress = 100;
 
+      // A atividade traz o nome, e-mail e foto de quem a fez (user_name, user_email, img): a lista users só tem os utilizadores ativos deste
+      // idioma, por isso uma atividade de alguém apagado ou de outro idioma partia o painel («Não foi possível carregar o painel»)
+      const activityUser = obj.users.find((x) => x.id === current.id_user) || { id: current.id_user, name: current.user_name, email: current.user_email, img: current.img };
+      const courseName = obj.courses.find((c) => c.id === current.id_course)?.name ?? "";
+      const itemTitle =
+        current.activity_type === "test"
+          ? obj.tests.find((_t) => _t.id === current.id_course_test)?.title
+          : current.activity_type === "topic"
+            ? obj.topics.find((_t) => _t.id === current.id_course_topic)?.title
+            : current.activity_type === "module"
+              ? obj.modules.find((_t) => _t.id === current.id_course_module)?.title
+              : t(`${current.activity_type}`);
+
       auxActivity.push({
-        user: (() => {
-          const u = obj.users.find((x) => x.id === obj.activity[i].id_user);
-          return <UserCell id={u?.id} name={u?.name} email={u?.email} img={u?.img} />;
-        })(),
-        course: obj.courses.filter((c) => c.id === obj.activity[i].id_course)[0]
-          .name,
+        user: <UserCell id={activityUser.id} name={activityUser.name} email={activityUser.email} img={activityUser.img} />,
+        course: courseName,
         progress: (
           <div>
-            <p className="text-[12px] font-bold">
-              {
-                obj.courses.filter((c) => c.id === obj.activity[i].id_course)[0]
-                  .name
-              }
-            </p>
+            <p className="text-[12px] font-bold">{courseName}</p>
             <Progress percent={percentageProgress} size="small" strokeColor="#2F8351" />
-            <p className="text-[12px] line-clamp-1">
-              {obj.activity[i].activity_type === "test"
-                ? obj.tests.filter(
-                    (_t) => _t.id === obj.activity[i].id_course_test,
-                  )[0].title
-                : obj.activity[i].activity_type === "topic"
-                  ? obj.topics.filter(
-                      (_t) => _t.id === obj.activity[i].id_course_topic,
-                    )[0].title
-                  : obj.activity[i].activity_type === "module"
-                    ? obj.modules.filter(
-                        (_t) => _t.id === obj.activity[i].id_course_module,
-                      )[0].title
-                    : t(`${obj.activity[i].activity_type}`)}
-            </p>
-            {obj.activity[i].activity_type !== "enroll" &&
-              obj.activity[i].activity_type !== "course" && (
+            <p className="text-[12px] line-clamp-1">{itemTitle ?? ""}</p>
+            {current.activity_type !== "enroll" &&
+              current.activity_type !== "course" && (
                 <p className="text-[10px]">
-                  {t(`${obj.activity[i].activity_type}`)}
+                  {t(`${current.activity_type}`)}
                 </p>
               )}
           </div>
         ),
-        status: obj.activity[i].is_completed ? (
+        status: current.is_completed ? (
           <CheckCircle className="text-green-500 w-5 h-5" />
         ) : (
           <CircleX className="text-red-500 w-5 h-5" />
         ),
         date: (
           <p className="text-[12px]">
-            {dayjs(obj.activity[i].created_at).format("DD MMMM, YYYY HH:mm")}
+            {dayjs(current.created_at).format("DD MMMM, YYYY HH:mm")}
           </p>
         ),
         fullData: {
-          id_course: obj.activity[i].id_course,
-          user_name: obj.users.filter(
-            (u) => u.id === obj.activity[i].id_user,
-          )[0].name,
-          user_email: obj.users.filter(
-            (u) => u.id === obj.activity[i].id_user,
-          )[0].email,
-          course: obj.courses.filter(
-            (c) => c.id === obj.activity[i].id_course,
-          )[0].name,
-          is_completed: obj.activity[i].is_completed,
-          date: obj.activity[i].created_at,
+          id_course: current.id_course,
+          user_name: activityUser.name,
+          user_email: activityUser.email,
+          course: courseName,
+          is_completed: current.is_completed,
+          date: current.created_at,
         },
       });
 

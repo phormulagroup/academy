@@ -24,6 +24,7 @@ import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
+import { hasFullAccess } from "../../../utils/roles";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
 // Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
@@ -87,7 +88,7 @@ const Test = ({
 }) => {
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
-  const isAdmin = user?.id_role === 1;
+  const isAdmin = hasFullAccess(user);
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});

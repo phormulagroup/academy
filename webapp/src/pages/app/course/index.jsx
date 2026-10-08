@@ -41,6 +41,7 @@ import {
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
+import { hasFullAccess } from "../../../utils/roles";
 
 // Cursos expirados que o admin escondeu do SEU catálogo (só no browser; não altera a BD)
 const hiddenExpiredKey = (userId) => `hidden_expired_courses_${userId}`;
@@ -55,7 +56,7 @@ function readHiddenExpired(userId) {
 }
 
 export default function CourseDetails() {
-  const { t, user, windowDimension, selectedLanguage } = useContext(Context);
+  const { t, user, windowDimension, selectedLanguage, isStaff } = useContext(Context);
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +64,7 @@ export default function CourseDetails() {
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
   // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
   const isListView = viewType === "list" && windowDimension.width > 640;
-  const isAdmin = user?.id_role === 1;
+  const isAdmin = hasFullAccess(user);
   const [hiddenExpired, setHiddenExpired] = useState([]);
   const [showHiddenExpired, setShowHiddenExpired] = useState(false);
 
@@ -109,7 +110,8 @@ export default function CourseDetails() {
         params: {
           id_user: user.id,
           id_lang:
-            user.id_role === 1 && selectedLanguage
+            // A equipa (Admin, Gestor…) vê os cursos do idioma escolhido; o aluno os do idioma da sua conta
+            isStaff && selectedLanguage
               ? selectedLanguage.id
               : user.id_lang,
         },
@@ -117,14 +119,14 @@ export default function CourseDetails() {
       let auxData = [];
       for (let c = 0; c < res.data.courses.length; c++) {
         let auxCourse = res.data.courses[c];
-        if (auxCourse.status === "draft" && user.id_role !== 1) continue;
+        if (auxCourse.status === "draft" && !hasFullAccess(user)) continue;
         auxCourse.settings = auxCourse.settings
           ? JSON.parse(auxCourse.settings)
           : null;
 
         // Validade do curso: alunos só veem cursos ativos; o admin vê todos (expirados com estado próprio)
         const dateState = courseDateState(auxCourse);
-        if (user.id_role !== 1 && dateState !== "active") continue;
+        if (!hasFullAccess(user) && dateState !== "active") continue;
 
         // Restrição de países: aplica-se a alunos e admin
         if (
@@ -179,12 +181,12 @@ export default function CourseDetails() {
                     if (
                       testData &&
                       testData.is_deleted !== 1 &&
-                      (user.id_role === 1 || testData.status !== "draft")
+                      (hasFullAccess(user) || testData.status !== "draft")
                     ) {
                       courseTests.push(testData);
                       // Alunos: testes expirados saem do eLearning, logo também do progresso
                       if (
-                        user.id_role === 1 ||
+                        hasFullAccess(user) ||
                         testDateState(testData) !== "expired"
                       )
                         enrichedItem = {

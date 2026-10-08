@@ -9,6 +9,7 @@ import { notification, Tour } from "antd";
 import i18n from "./i18n";
 import { createToastApi, toastRef } from "./notify";
 import { useTranslation } from "react-i18next";
+import { ADMIN_ROLE_ID, hasFullAccess } from "./roles";
 
 export const Context = createContext();
 
@@ -24,6 +25,8 @@ const ContextProvider = ({ children }) => {
 	const [user, setUser] = useState({});
 	const [roles, setRoles] = useState([]);
 	const [permissions, setPermissions] = useState([]); // permissões da função do utilizador (o Admin tem sempre tudo)
+	// De quem são as permissões carregadas: até chegarem não se sabe se uma conta (ex.: Gestor) é da equipa
+	const [permissionsUserId, setPermissionsUserId] = useState(null);
 	const [courses, setCourses] = useState([]);
 	const [languages, setLanguages] = useState([]);
 	const [selectedLanguage, setSelectedLanguage] = useState(null);
@@ -248,6 +251,7 @@ const ContextProvider = ({ children }) => {
 		setIsLoggedIn(false);
 		setUser({});
 		setPermissions([]);
+		setPermissionsUserId(null);
 		setNotifications([]);
 		setUnreadTicketsCount(0);
 		toastApi.open({
@@ -312,7 +316,12 @@ const ContextProvider = ({ children }) => {
 
 	// Permissões da função do utilizador, para mostrar só o que pode usar no backoffice (o servidor volta a validar tudo)
 	async function loadPermissions(auxUser, token) {
-		if (!auxUser?.id_role || auxUser.id_role === 1) return setPermissions([]);
+		// O Admin tem tudo; as outras funções (incluindo o Gestor) seguem a sua matriz
+		if (!auxUser?.id_role || Number(auxUser.id_role) === ADMIN_ROLE_ID) {
+			setPermissions([]);
+			setPermissionsUserId(auxUser?.id ?? null);
+			return;
+		}
 		try {
 			const res = await axios.get(endpoints.permission.read, {
 				params: { id_role: auxUser.id_role },
@@ -323,6 +332,7 @@ const ContextProvider = ({ children }) => {
 			console.log(err);
 			setPermissions([]);
 		}
+		setPermissionsUserId(auxUser.id);
 	}
 
 	async function getInfoData(token) {
@@ -364,12 +374,13 @@ const ContextProvider = ({ children }) => {
 		setIsLoading(true);
 		setUser({});
 		setPermissions([]);
+		setPermissionsUserId(null);
 		navigate(`/${i18n.language}/login`);
 		createLog({
 			id_user: auxUser.id,
 			action: "logout",
 			id_lang:
-				auxUser.id_role !== 1
+				!hasFullAccess(auxUser)
 					? languages.filter((l) => l.code === i18n.language)[0].id
 					: selectedLanguage.id,
 		});
@@ -484,7 +495,9 @@ const ContextProvider = ({ children }) => {
 				roles,
 				setRoles,
 				permissions,
-				isStaff: user?.id_role === 1 || permissions.some((p) => p.can_read),
+				isStaff: hasFullAccess(user) || permissions.some((p) => p.can_read),
+				// Já se sabe se o utilizador com sessão é da equipa (as permissões dele foram carregadas)
+				isStaffKnown: !!user?.id && permissionsUserId === user.id,
 				windowDimension,
 				setWindowDimension,
 				selectedLanguage,

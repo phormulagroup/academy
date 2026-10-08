@@ -13,9 +13,10 @@ import { downloadCertificate } from "../../utils/certificate";
 import { isAllowedByCountry } from "../../utils/courseStatus";
 import config from "../../utils/config";
 import { courseStats } from "../../utils/userResults";
+import { hasFullAccess } from "../../utils/roles";
 
 export default function Result() {
-  const { user, selectedLanguage } = useContext(Context);
+  const { user, selectedLanguage, isStaff } = useContext(Context);
   const [coursesData, setCoursesData] = useState([]);
 
   const { t } = useTranslation();
@@ -32,7 +33,8 @@ export default function Result() {
       id_role: user.id_role,
     };
     // For admins: pass the selected language; for students: no parameter needed
-    if (user.id_role === 1 && selectedLanguage) {
+    // A equipa (Admin, Gestor…) vê os resultados do idioma escolhido
+    if (isStaff && selectedLanguage) {
       params.id_lang = selectedLanguage.id;
     } else {
       // console.log("Student fetching results for their language:", user.id_lang);
@@ -112,7 +114,7 @@ export default function Result() {
                   if (
                     testData &&
                     testData.is_deleted !== 1 &&
-                    (res.data.user.id_role === 1 || testData.status !== "draft")
+                    (hasFullAccess(res.data.user) || testData.status !== "draft")
                   ) {
                     itemToAdd = {
                       type: courseModules[i].items[y].type,

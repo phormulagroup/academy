@@ -331,8 +331,8 @@ const Main = () => {
                 )}
               </div>
               <div className="flex justify-end items-center">
-                {((user && Object.keys(user).length === 0) ||
-                  user?.id_role === 1) && (
+                {/* Seletor de idioma: visitantes e equipa (Admin, Gestor…); o aluno fica no idioma da sua conta */}
+                {((user && Object.keys(user).length === 0) || isStaff) && (
                   <LanguageSelector
                     languages={languages}
                     selectedLanguage={selectedLanguage}
@@ -484,8 +484,8 @@ const Main = () => {
                 <img src={logo} className="max-h-10 sm:max-h-12 lg:max-h-15" />
               </div>
               <div className="flex items-center">
-                {((user && Object.keys(user).length === 0) ||
-                  user?.id_role === 1) && (
+                {/* Seletor de idioma: visitantes e equipa (Admin, Gestor…); o aluno fica no idioma da sua conta */}
+                {((user && Object.keys(user).length === 0) || isStaff) && (
                   <LanguageSelector
                     languages={languages}
                     selectedLanguage={selectedLanguage}
