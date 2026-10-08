@@ -11,7 +11,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
 import LoginCode from "../../components/auth/loginCode";
-import { AuthStepLoading } from "../../components/auth/authStep";
+import { LuArrowLeft, LuHourglass, LuUserX } from "react-icons/lu";
+import { AuthStepHeader, AuthStepLoading, authLinkClass } from "../../components/auth/authStep";
 import { RetryNotice, RetryTooltip } from "../../components/auth/retryLock";
 import useRetryLock, { lockFromResponse, longestLock } from "../../utils/useRetryLock";
 import {
@@ -45,6 +46,8 @@ export default function Login() {
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [pending2fa, setPending2fa] = useState(readPending2fa);
   const [step, setStep] = useState(() => (pending2fa ? "code" : "credentials"));
+  // Estado da conta quando o login não pode continuar (pending / not_approved): passo "checking" (carregamento) e depois "status"
+  const [accountStatus, setAccountStatus] = useState(null);
 
   function savePending2fa(value) {
     setPending2fa(value);
@@ -91,34 +94,22 @@ export default function Login() {
   function submit(values) {
     setIsButtonLoading(true);
     axios
-      .post(endpoints.auth.login, { data: values })
+      // lang: idioma dos e-mails para a equipa (o aluno recebe sempre no idioma da sua conta)
+      .post(endpoints.auth.login, { data: { ...values, lang: i18n.language } })
       .then((res) => {
         if (res.data.otp_required) {
           savePending2fa({ email: res.data.email, sentAt: Date.now() });
           // Último pedido de código permitido: o Reenviar do passo do código já aparece bloqueado
           sendLock.lock(res.data.retry_after, res.data.email);
-          toastApi.open({
-            type: "success",
-            content: t("A verification code was sent to your e-mail"),
-          });
+          // Sem popup: a transição e o passo do código já dão a resposta (um popup antecipava-a)
           setStep("sending");
           setTimeout(() => setStep("code"), 900);
         } else if (res.data.status) {
-          // Contas pendentes ou não aprovadas: não entram (sem sessão nem código), só a mensagem do estado
-          if (res.data.status === "pending")
-            toastApi.open({
-              type: "warning",
-              content: t(
-                "This user is still pending on approval. You'll need to wait until we approved you registration.",
-              ),
-            });
-          else if (res.data.status === "denied" || res.data.status === "not_approved")
-            toastApi.open({
-              type: "error",
-              content: t(
-                "This user was denied from our administration. If you have some complaints contact us through email",
-              ),
-            });
+          // Contas pendentes ou não aprovadas: não entram (sem sessão nem código). No próprio cartão, uma transição
+          // (a verificar a conta) e depois o estado, com ícone e explicação; sem popup, que antecipava a resposta
+          setAccountStatus(res.data.status);
+          setStep("checking");
+          setTimeout(() => setStep("status"), 1200);
         } else if (
           res.data.message === "This user does not exist on our database!"
         ) {
@@ -161,9 +152,32 @@ export default function Login() {
 
   const labelClass = "pb-2 text-center text-[13px] sm:text-sm";
 
+  const isPending = accountStatus === "pending";
+
   return (
     <AuthLayout>
-      {step === "sending" ? (
+      {step === "checking" ? (
+        <AuthStepLoading title={t("Checking your account")} subtitle={t("Just a moment")} />
+      ) : step === "status" ? (
+        <div key="status" className="auth-step">
+          <AuthStepHeader
+            icon={isPending ? <LuHourglass /> : <LuUserX />}
+            tone={isPending ? "warning" : "danger"}
+            title={t(isPending ? "Account pending approval" : "Account not approved")}>
+            {t(
+              isPending
+                ? "Your registration was received and is waiting for approval by the administration. You will receive an e-mail as soon as it is approved."
+                : "Your registration was not approved by the administration. If you think this is a mistake, contact our support team.",
+            )}
+          </AuthStepHeader>
+          <p className="text-center text-[12.5px] sm:text-[13px] mt-2 mb-2">
+            <button type="button" onClick={() => setStep("credentials")} className={authLinkClass}>
+              <LuArrowLeft />
+              {t("Back to login")}
+            </button>
+          </p>
+        </div>
+      ) : step === "sending" ? (
         <AuthStepLoading
           title={t("Sending the verification code")}
           subtitle={t("Check your e-mail inbox")}
@@ -177,7 +191,7 @@ export default function Login() {
           onResent={(sentAt) => savePending2fa({ ...pending2fa, sentAt })}
         />
       ) : (
-        <div className="auth-step">
+        <div key="credentials" className="auth-step">
           <div className="flex justify-center items-center mx-auto max-w-75">
             <p className="font-ryker text-center text-[13px] sm:text-sm mb-4 sm:mb-6 font-semibold">
               {t("Welcome to the BIAL Regional Academy e-Learning platform")}

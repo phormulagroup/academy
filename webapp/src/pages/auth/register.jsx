@@ -94,6 +94,13 @@ export default function Register() {
             t("This e-mail is already associated with another account"),
           );
           setIsButtonLoading(false);
+        } else if (res.data.fields) {
+          // A API só cria o utilizador com todos os campos válidos: os que faltam ficam assinalados no formulário
+          form.setFields(
+            res.data.fields.map((name) => ({ name, errors: [t("This field is required")] })),
+          );
+          toastApi.error(t("Some fields are missing"));
+          setIsButtonLoading(false);
         } else {
           toastApi.open({
             type: "error",

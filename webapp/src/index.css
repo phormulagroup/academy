@@ -2624,13 +2624,34 @@ deles invalida a regra inteira. */
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 76px;
+  height: 76px;
   border-radius: 9999px;
   background: #f1f9ff;
   border: 2px dashed #00b9d6;
   color: #00b9d6;
-  font-size: 26px;
+  font-size: 36px;
+}
+
+@media (max-width: 480px) {
+  .auth-otp-icon {
+    width: 66px;
+    height: 66px;
+    font-size: 31px;
+  }
+}
+
+/* Passos de estado da conta no login: pendente (laranja Bial) e não aprovada (vermelho) */
+.auth-otp-icon--warning {
+  background: #fff6ec;
+  border-color: #ff9e4a;
+  color: #f07d1a;
+}
+
+.auth-otp-icon--danger {
+  background: #fff1f0;
+  border-color: #ff7875;
+  color: #e5484d;
 }
 
 /* Campos do código: o mesmo padrão dos inputs (borda, raio, cor do texto), maiores e em destaque */
@@ -2690,12 +2711,12 @@ deles invalida a regra inteira. */
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px 0 8px;
+  padding: 32px 0 12px;
 }
 
 .auth-otp-check {
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   stroke-width: 3;
   stroke-linecap: round;

@@ -163,16 +163,11 @@ export default function Recover() {
   function sendCode(values) {
     setIsButtonLoading(true);
     axios
-      .post(endpoints.auth.recover, { data: values })
+      // lang: idioma dos e-mails para a equipa (o aluno recebe sempre no idioma da sua conta)
+      .post(endpoints.auth.recover, { data: { ...values, lang: i18n.language } })
       .then((res) => {
         if (res.data.status) {
-          toastApi.open({
-            type: "success",
-            content: t(
-              "An e-mail was sent with the code to recover your password",
-            ),
-          });
-          // Transição suave (a enviar o código) para o passo do código
+          // Transição suave (a enviar o código) para o passo do código; sem popup, que antecipava a resposta
           savePending({ email: values.email, sentAt: Date.now() });
           setResendIn(RESEND_SECONDS);
           // Último pedido permitido: o próximo só depois do tempo indicado pela API
@@ -203,7 +198,7 @@ export default function Recover() {
   function recover(values) {
     setIsButtonLoading(true);
     axios
-      .post(endpoints.auth.password, { data: values })
+      .post(endpoints.auth.password, { data: { ...values, lang: i18n.language } })
       .then((res) => {
         if (res.data.status) {
           toastApi.open({
@@ -241,7 +236,7 @@ export default function Recover() {
   function resend() {
     setIsResending(true);
     axios
-      .post(endpoints.auth.recover, { data: { email: pending?.email, resend: true } })
+      .post(endpoints.auth.recover, { data: { email: pending?.email, resend: true, lang: i18n.language } })
       .then((res) => {
         if (res.data.status) {
           formCode.resetFields();

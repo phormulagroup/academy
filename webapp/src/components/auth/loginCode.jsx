@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Form, Input } from "antd";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
+import i18n from "../../utils/i18n";
 import { LuMailCheck, LuRotateCw, LuArrowLeft } from "react-icons/lu";
 
 import { Context } from "../../utils/context";
@@ -91,7 +92,7 @@ export default function LoginCode({ email, sentAt, onVerified, onRestart, onRese
   function resend() {
     setIsResending(true);
     axios
-      .post(endpoints.auth.resendLoginCode, { data: { email } })
+      .post(endpoints.auth.resendLoginCode, { data: { email, lang: i18n.language } })
       .then((res) => {
         if (res.data.status) {
           form.resetFields();
