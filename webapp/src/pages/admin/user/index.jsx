@@ -50,7 +50,7 @@ export default function User() {
   const perm = usePermission("user");
   // Rótulos traduzidos dos estados (filtro da coluna Estado)
   const statusLabels = {
-    approved: t("Approved"),
+    approved: t("Approved", { context: "user" }),
     pending: t("Pending"),
     not_approved: t("Not Approved"),
   };
@@ -79,7 +79,7 @@ export default function User() {
       type: "select",
       label: t("Status"),
       options: [
-        { label: t("Approved"), value: "approved" },
+        { label: t("Approved", { context: "user" }), value: "approved" },
         { label: t("Pending"), value: "pending" },
         { label: t("Not Approved"), value: "not_approved" },
       ],
@@ -156,7 +156,7 @@ export default function User() {
         status_tag:
           array[i].status === "approved" ? (
             <Tag variant="outlined" color={"#06D186"}>
-              {t("Approved")}
+              {t("Approved", { context: "user" })}
             </Tag>
           ) : array[i].status === "not_approved" ? (
             <Tag variant="outlined" color={"#F04C4B"}>

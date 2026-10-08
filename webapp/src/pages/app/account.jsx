@@ -6,6 +6,8 @@ import { useContext } from "react";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
+import api from "../../utils/api";
+import PasswordChangedLogout from "../../components/passwordChangedLogout";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import UserHero from "../../components/app/user/hero";
@@ -62,8 +64,12 @@ export default function Account() {
     // Só ao carregar o utilizador: mudar o avatar não deve repor alterações por guardar no formulário
   }, [user.id]);
 
+  // Password alterada: animação e a sessão termina ao fim de 5 s (tem de voltar a entrar com a password nova)
+  const [passwordChanged, setPasswordChanged] = useState(false);
+
   function submit(values) {
     if (values.password) values.new_password = values.password;
+    const changingPassword = !!values.new_password;
     delete values.password;
     delete values.confirm_password;
 
@@ -72,9 +78,14 @@ export default function Account() {
         data: values,
       })
       .then((res) => {
-        if (res.data.user && res.data.token) {
+        if (res.data.user && res.data.token && changingPassword) {
+          form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
+          setPasswordChanged(true);
+        } else if (res.data.user && res.data.token) {
           setUser(res.data.user);
+          // Token novo (muda com a password): também nos pedidos seguintes, senão a sessão terminava no pedido a seguir
           localStorage.setItem("token", res.data.token);
+          api.token(res.data.token);
           form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
           toastApi.open({
             type: "success",
@@ -104,6 +115,7 @@ export default function Account() {
     <div className="flex-1 bg-[#F1F9FF] py-4 sm:py-8 lg:py-10">
       <div className="page-frame flex flex-col gap-4 sm:gap-6">
         <UserHero editable />
+        <PasswordChangedLogout open={passwordChanged} />
 
         <div className="min-w-0 rounded-[16px] bg-white p-3 shadow-[0px_3px_6px_#00000029] sm:p-6 lg:p-8">
           <p className="mb-1! font-ryker text-[20px] font-bold sm:text-[24px]">{t("My account")}</p>
