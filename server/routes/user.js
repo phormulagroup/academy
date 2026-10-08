@@ -224,6 +224,7 @@ router.post("/update", async (req, res, next) => {
 		// A password só muda por new_password (com a atual verificada); o hash e o código de recuperação nunca se gravam pelo cliente
 		delete data.password;
 		delete data.recover_code;
+		delete data.recover_code_expires;
 		delete data.generate_password;
 		if (!canManage) {
 			delete data.id_role;
@@ -286,7 +287,7 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 		if (person) {
 			if (data.status === "approved" && !person.password) {
 				const code = crypto.randomBytes(4).toString("hex").slice(0, 6);
-				await query("UPDATE user SET recover_code = ? WHERE id = ?", [await bcrypt.hash(code, saltRounds), person.id]);
+				await query("UPDATE user SET recover_code = ?, recover_code_expires = NULL WHERE id = ?", [await bcrypt.hash(code, saltRounds), person.id]);
 				notifyUser("account_access", person, { code });
 			} else if (data.status === "approved") {
 				notifyUser("account_approved", person);
