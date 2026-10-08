@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const { verifyToken, createToken, passwordFingerprint } = require("../utils/token");
 const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
-const { notifyUser, notifyTeam, appUrl } = require("../utils/notify");
+const { notifyUser, notifyTeam, appUrl, emailLanguage } = require("../utils/notify");
 const { mergeName } = require("../utils/userName");
 
 const saltRounds = 10;
@@ -63,11 +63,11 @@ router.post("/verifyToken", async (req, res, next) => {
 });
 
 // 2FA: gera um código de 6 dígitos, guarda o hash com a validade e envia-o por e-mail (template "login_code", no idioma do utilizador)
-async function sendLoginCode(query, user) {
+async function sendLoginCode(query, user, lang) {
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
   const hash = await bcrypt.hash(code, saltRounds);
   await query("UPDATE user SET login_code = ?, login_code_expires = NOW() + INTERVAL ? MINUTE WHERE id = ?", [hash, LOGIN_CODE_MINUTES, user.id]);
-  await notifyUser("login_code", user, { login_code: code, minutes: LOGIN_CODE_MINUTES }, { strict: true });
+  await notifyUser("login_code", { ...user, id_lang: await emailLanguage(user, lang) }, { login_code: code, minutes: LOGIN_CODE_MINUTES }, { strict: true });
 }
 
 router.post("/login", async (req, res, next) => {
@@ -95,7 +95,7 @@ router.post("/login", async (req, res, next) => {
         const sendWait = await loginCodeRequests.blocked(key, clientIp(req));
         if (sendWait) return res.status(429).send({ user: null, message: TOO_MANY_REQUESTS, limit: "otp_send", retry_after: sendWait });
         await loginCodeRequests.fail(key, clientIp(req));
-        await sendLoginCode(query, user[0]);
+        await sendLoginCode(query, user[0], data.lang);
         // retry_after: se este foi o último pedido permitido, o Reenviar do passo do código já aparece bloqueado
         return res.send({ user: null, otp_required: true, email: user[0].email, name: user[0].name, retry_after: await loginCodeRequests.blocked(key, clientIp(req)) });
       }
@@ -158,7 +158,7 @@ router.post("/resendLoginCode", async (req, res, next) => {
     await loginCodeRequests.fail(key, ip);
     const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved' AND login_code IS NOT NULL", [data.email]);
     if (user.length === 0) return res.send({ status: false, restart: true, message: "Your verification session ended, log in again." });
-    await sendLoginCode(query, user[0]);
+    await sendLoginCode(query, user[0], data.lang);
     // Se este foi o último pedido permitido, o front já mostra quando pode pedir outro
     res.send({ status: true, retry_after: await loginCodeRequests.blocked(key, ip) });
   } catch (err) {
@@ -167,6 +167,34 @@ router.post("/resendLoginCode", async (req, res, next) => {
 });
 
 const REGISTER_FIELDS =["name", "email", "password", "country", "gender", "birth_date", "bial_starting_date", "academic_background", "id_lang"];
+// Opções do formulário de registo (webapp/src/utils/userFields.js)
+const GENDERS = ["Male", "Female", "Prefer not to say"];
+const ACADEMIC_BACKGROUNDS = ["Secondary School", "University Degree", "PhD", "Other"];
+
+// Todos os campos do registo são obrigatórios: devolve os que faltam ou são inválidos (vazio = pode criar o utilizador)
+async function invalidRegisterFields(query, raw, data) {
+  const filled = (v) => typeof v === "string" && v.trim() !== "";
+  const pastDate = (v) => filled(v) && dayjs(v).isValid() && !dayjs(v).isAfter(dayjs());
+  const invalid = [];
+  if (!filled(raw.first_name)) invalid.push("first_name");
+  if (!filled(raw.last_name)) invalid.push("last_name");
+  if (!filled(data.email) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) invalid.push("email");
+  if (typeof data.password !== "string" || data.password.length < 8) invalid.push("password");
+  if (!GENDERS.includes(data.gender)) invalid.push("gender");
+  if (!ACADEMIC_BACKGROUNDS.includes(data.academic_background)) invalid.push("academic_background");
+  if (!pastDate(data.birth_date)) invalid.push("birth_date");
+  if (!pastDate(data.bial_starting_date)) invalid.push("bial_starting_date");
+  // País: um dos países do idioma escolhido
+  const [language] = data.id_lang ? await query("SELECT country FROM language WHERE id = ?", [data.id_lang]) : [];
+  let countries = [];
+  try {
+    countries = JSON.parse(language?.country || "[]");
+  } catch {
+    countries = [];
+  }
+  if (!language || !countries.includes(data.country)) invalid.push("country");
+  return invalid;
+}
 
 router.post("/register", async (req, res, next) => {
 
@@ -179,14 +207,17 @@ router.post("/register", async (req, res, next) => {
     try {
       await transaction();
       // Nome + Apelido do formulário → coluna name
+      const raw = { ...(req.body.data || {}) };
       const merged = mergeName(req.body.data || {});
       // Só os campos do formulário de registo: nunca a função, o estado ou outros campos escolhidos pelo cliente
       const data = {};
       for (const field of REGISTER_FIELDS) if (merged[field] !== undefined) data[field] = merged[field];
-      if (!data.email || typeof data.password !== "string" || data.password.length < 8) {
+      // Só se cria o utilizador com todos os campos preenchidos e válidos (também para pedidos feitos fora do formulário)
+      const fields = await invalidRegisterFields(query, raw, data);
+      if (fields.length > 0) {
         await commit();
         conn.release();
-        return res.status(400).send({ message: "E-mail and a password of at least 8 characters are required" });
+        return res.send({ message: "Some fields are missing", fields });
       }
       // Contas pendentes/não aprovadas (inativas) também bloqueiam o e-mail
       const user = await query("SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved')", [data.email]);
@@ -203,7 +234,7 @@ router.post("/register", async (req, res, next) => {
         // "Registo recebido": à parte, um e-mail que falhe nunca desfaz o registo
         notifyUser("registration_received", data);
         // E a equipa (Admin e quem pode ver os utilizadores) fica a saber que há um registo para aprovar
-        notifyTeam("registration_new", "user", { name: data.name || "", email: data.email, country: data.country || "—", id_user: insertedRow.insertId }).catch((err) => console.error("[notify:registration_new]", err.message));
+        notifyTeam("registration_new", "user", { name: data.name || "", email: data.email, country: data.country || "—", id_user: insertedRow.insertId }, { translate: ["country"] }).catch((err) => console.error("[notify:registration_new]", err.message));
         await commit();
         conn.release();
         res.send(insertedRow);
@@ -261,7 +292,7 @@ router.post("/recover", async (req, res, next) => {
           }
           const codeEncrypt = await bcrypt.hash(code, saltRounds);
           await query("UPDATE user SET recover_code = ?, recover_code_expires = NOW() + INTERVAL ? MINUTE WHERE id = ?", [codeEncrypt, RECOVER_CODE_MINUTES, user[0].id]);
-          const emailResult = await email.recover({ ...user[0], code: code, minutes: RECOVER_CODE_MINUTES, url: `${appUrl()}/recover` });
+          const emailResult = await email.recover({ ...user[0], id_lang: await emailLanguage(user[0], data.lang), code: code, minutes: RECOVER_CODE_MINUTES, url: `${appUrl()}/recover` });
           await commit();
           conn.release();
           // Se este foi o último pedido permitido, o front já mostra quando pode pedir outro
@@ -324,7 +355,7 @@ router.post("/password", async (req, res, next) => {
     await query("UPDATE user SET recover_code = NULL, recover_code_expires = NULL, password = ? WHERE id = ?", [hash, result.user.id]);
     await codeThrottle.reset(emailKey(data.email));
     await loginThrottle.reset(emailKey(data.email));
-    notifyUser("password_changed", result.user);
+    notifyUser("password_changed", { ...result.user, id_lang: await emailLanguage(result.user, data.lang) });
     res.send({ status: true, message: "Congrats! You have a new password, now you can login!" });
   } catch (err) {
     throw err;

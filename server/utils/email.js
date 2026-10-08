@@ -119,7 +119,8 @@ module.exports = {
             return resolve(null); // desativado no backoffice
           }
           const context = { platform: "Bial Regional Academy", ...vars };
-          const subject = Handlebars.compile(template.subject || "")(context);
+          // O assunto é texto simples (não HTML): sem escapar, senão um apóstrofo chegava como &#x27;
+          const subject = Handlebars.compile(template.subject || "", { noEscape: true })(context);
           const html = Handlebars.compile(template.html)(context);
           const { transporter, from } = buildTransporter(smtpSettings);
           transporter.sendMail({ from, to, subject, html }, (err, info) => {
@@ -145,7 +146,7 @@ module.exports = {
           const rows = await query("SELECT * FROM settings WHERE name_key = 'smtp'");
           const smtpSettings = smtpFromRows(rows);
           const sample = { name: "Maria Silva", status: "Active", code: "123456", ...data.sample };
-          const subject = Handlebars.compile(data.subject || "")(sample);
+          const subject = Handlebars.compile(data.subject || "", { noEscape: true })(sample);
           const html = Handlebars.compile(data.html || "")(sample);
           const { transporter, from } = buildTransporter(smtpSettings);
           transporter.sendMail({ from, to: data.email, subject: `[TEST] ${subject}`, html }, (err, info) => {
