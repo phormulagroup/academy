@@ -2,13 +2,16 @@ const nodemailer = require("nodemailer");
 const Handlebars = require("handlebars");
 const util = require("util");
 const db = require("./database");
-const { AsyncLocalStorage } = require("async_hooks");
+const { AsyncLocalStorage, AsyncResource } = require("async_hooks");
 const { logEmail } = require("./monitor");
 const defaultTemplates = require("./defaultEmailTemplates.json");
 
 // Cada função de envio corre dentro deste contexto (nome do modelo): o transportador regista aí o resultado do envio e, se a função
 // falhar antes de chegar a enviar (modelo em falta, SMTP por configurar...), o erro também fica registado, com a razão.
 const emailContext = new AsyncLocalStorage();
+// O pool do mysql chama o callback fora deste contexto quando abre uma ligação nova (o tipo não chegava ao registo: template = NULL).
+// AsyncResource.bind prende o callback ao contexto de quem pediu a ligação.
+const getConnection = (callback) => db.getConnection(AsyncResource.bind(callback));
 
 // Definições SMTP guardadas em `settings`: erro claro (e registado) quando ainda não foram configuradas
 function smtpFromRows(rows) {
@@ -93,7 +96,7 @@ module.exports = {
   // Recuperação de password (código por e-mail). Os restantes e-mails automáticos usam notify (abaixo)
   recover: function (data) {
     // Mesmo caminho dos outros e-mails automáticos: template da BD, ou o predefinido se faltar (nunca deixa de sair), e fica registado
-    return module.exports.notify({ type: "recover", to: data.email, id_lang: data.id_lang, vars: { name: data.name, code: data.code, url: data.url } });
+    return module.exports.notify({ type: "recover", to: data.email, id_lang: data.id_lang, vars: { name: data.name, code: data.code, minutes: data.minutes, url: data.url } });
   },
 
   // E-mail automático da plataforma por tipo (registration_received, account_approved...): procura o template na BD (`<tipo>_<id do idioma>`)
@@ -101,7 +104,7 @@ module.exports = {
   // Um template desativado na BD não envia nada. `vars` são as variáveis do template ({{name}}, {{url}}...).
   notify: function ({ type, to, id_lang, vars = {} }) {
     return new Promise((resolve, reject) => {
-      db.getConnection(async (error, conn) => {
+      getConnection(async (error, conn) => {
         if (error) return reject(error);
         try {
           // O nome do tipo é o que fica no registo de e-mails (em vez do nome desta função)
@@ -135,7 +138,7 @@ module.exports = {
   // Envio de teste do editor de templates: usa o HTML/assunto que está no editor (mesmo por guardar) com dados de exemplo
   sendTest: function (data) {
     return new Promise((resolve, reject) => {
-      db.getConnection(async (error, conn) => {
+      getConnection(async (error, conn) => {
         if (error) return reject(error);
         try {
           const query = util.promisify(conn.query).bind(conn);
