@@ -453,7 +453,7 @@ function AuditTab() {
   );
 }
 
-const SCOPES = { login: "Login", code: "Recovery code", recover: "Recovery requests" };
+const SCOPES = { login: "Login", otp: "Login code", otp_send: "Login code requests", code: "Recovery code", recover: "Recovery requests" };
 
 // Bloqueios por tentativas excessivas (login e recuperação de password): quem está bloqueado e as tentativas recentes, com o IP.
 // Um utilizador real que errou a password várias vezes pode ser desbloqueado aqui.
