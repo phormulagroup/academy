@@ -66,11 +66,11 @@ function TestCountdown({ startDate, onReachZero }) {
         {tiles.map((tile) => (
           <div
             key={tile.label}
-            className="flex flex-col items-center justify-center bg-[#163986] rounded-[5px] py-2 sm:py-3 lg:py-4">
+            className="flex flex-col items-center justify-center bg-[#00B9D6] rounded-[5px] py-2 sm:py-3 lg:py-4">
             <span className="font-ryker font-bold text-white tabular-nums leading-none text-[22px] sm:text-[30px] lg:text-[36px]">
               {String(tile.value).padStart(2, "0")}
             </span>
-            <span className="text-[#C5CEE1] uppercase tracking-wide mt-1 sm:mt-2 text-[9px] sm:text-[11px] lg:text-[12px]">
+            <span className="text-[#163986] uppercase font-bold tracking-wide mt-1 sm:mt-2 text-[9px] sm:text-[11px] lg:text-[12px]">
               {tile.label}
             </span>
           </div>
