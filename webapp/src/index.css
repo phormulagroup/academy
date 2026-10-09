@@ -2560,6 +2560,15 @@ deles invalida a regra inteira. */
   padding: 14px 18px !important;
   border-radius: 12px !important;
 }
+/* Mobile: cabeçalho e espaçamento entre módulos mais apertados */
+@media (max-width: 639px) {
+  .collapse-course.collapse-course-compact .ant-collapse-item {
+    margin-bottom: 8px !important;
+  }
+  .collapse-course.collapse-course-compact .ant-collapse-header {
+    padding: 10px 12px !important;
+  }
+}
 .collapse-course.collapse-course-compact .ant-collapse-item-active > .ant-collapse-header {
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;

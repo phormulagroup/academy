@@ -503,11 +503,13 @@ export default function CourseDetails() {
                               </div>
                             ),
                             children: (
-                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-4 sm:py-5 lg:py-6">
+                                {/* Módulos em modo compacto, iguais aos dos Resultados do perfil */}
                                 <CourseContent
                                   modules={modules}
                                   progress={progress}
                                   data={data}
+                                  compact
                                 />
                               </div>
                             ),
