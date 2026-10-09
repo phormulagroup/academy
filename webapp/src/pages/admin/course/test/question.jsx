@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
 
 import { Context } from "../../../../utils/context";
+import PageFooter from "../../../../components/admin/pageFooter";
 
 import { useTranslation } from "react-i18next";
 import { Button, Empty, Form, Input, InputNumber, Space, Switch, Spin} from "antd";
@@ -69,7 +70,7 @@ const collectLeaves = (value, path, out) => {
   return out;
 };
 
-export default function Question({ data, onSaveSuccess, isLoading }) {
+export default function Question({ data, onSaveSuccess, isLoading, isActive = true }) {
   const { update } = useContext(Context);
 
   const { t } = useTranslation();
@@ -77,6 +78,7 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
   const [form] = Form.useForm();
   const [canSaveButton, setCanSaveButton] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isUnsaved, setIsUnsaved] = useState(false);
 
   /* ---------- Undo/Redo ---------- */
   const [history, setHistory] = useState([]);
@@ -147,6 +149,8 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
     const isFormValid = formQuestions.length === 0 || validateQuestions(formQuestions);
     const canSave = (formQuestions.length > 0 && isFormValid) || (formQuestions.length === 0 && dbQuestions.length > 0);
     setCanSaveButton(canSave);
+    // Alterações por guardar: as perguntas do formulário diferem das que vieram da base de dados
+    setIsUnsaved(JSON.stringify(formQuestions) !== JSON.stringify(dbQuestions));
   };
 
   useEffect(() => {
@@ -312,32 +316,33 @@ export default function Question({ data, onSaveSuccess, isLoading }) {
           </Form.List>
         </Form>
       </Spin>
-      <div className="mt-4 flex justify-center items-center">
-        <Space wrap>
-        <Button size="large" onClick={undo} disabled={!history.length || loading || isLoading}>
-          {t("Undo")}
-        </Button>
-        <Button size="large" onClick={redo} disabled={!future.length || loading || isLoading}>
-          {t("Redo")}
-        </Button>
-        <Button 
-          size="large" 
-          type="primary" 
-          onClick={form.submit}
-          disabled={!canSaveButton || loading}
-          loading={loading}
-          title={!canSaveButton ? ((() => {
-            const formQuestions = form.getFieldValue("question") || [];
-            const dbQuestions = data?.question || [];
-            return formQuestions.length === 0 && dbQuestions.length === 0 
-              ? t("No questions to save") 
-              : t("Please ensure all questions have titles, at least 2 answers each, and at least one correct answer");
-          })()) : ""}
-        >
-          {t("Save")}
-        </Button>
+      {/* Botões num rodapé fixo (components/admin/pageFooter.jsx), como no construtor de módulos: com muitas perguntas
+          não é preciso fazer scroll até ao fim para anular, refazer ou guardar. */}
+      <PageFooter active={isActive} className="justify-end px-4 md:px-6">
+        <Space wrap className="justify-end">
+          {isUnsaved && <span className="text-[12px] text-[#8A8D98]">{t("Unsaved changes")}</span>}
+          <Button onClick={undo} disabled={!history.length || loading || isLoading}>
+            {t("Undo")}
+          </Button>
+          <Button onClick={redo} disabled={!future.length || loading || isLoading}>
+            {t("Redo")}
+          </Button>
+          <Button
+            type="primary"
+            onClick={form.submit}
+            disabled={!canSaveButton || loading}
+            loading={loading}
+            title={
+              !canSaveButton
+                ? (form.getFieldValue("question") || []).length === 0 && (data?.question || []).length === 0
+                  ? t("No questions to save")
+                  : t("Please ensure all questions have titles, at least 2 answers each, and at least one correct answer")
+                : ""
+            }>
+            {t("Save")}
+          </Button>
         </Space>
-      </div>
+      </PageFooter>
     </div>
   );
 }
