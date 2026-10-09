@@ -106,16 +106,23 @@ function buildChanges(verb, before, rawData) {
 
 let tableOk = false;
 let checkedAt = 0;
+// Pedidos ao mesmo tempo esperam pela mesma verificação (antes, o segundo recebia "sem tabela" durante 30 s enquanto o primeiro consultava)
+let checking = null;
 async function tableReady() {
   if (tableOk) return true;
+  if (checking) return checking;
   if (Date.now() - checkedAt < 30 * 1000) return false;
-  checkedAt = Date.now();
-  try {
-    tableOk = (await query("SHOW TABLES LIKE 'audit_log'")).length > 0;
-  } catch {
-    tableOk = false;
-  }
-  return tableOk;
+  checking = (async () => {
+    try {
+      tableOk = (await query("SHOW TABLES LIKE 'audit_log'")).length > 0;
+    } catch {
+      tableOk = false;
+    }
+    checkedAt = Date.now();
+    checking = null;
+    return tableOk;
+  })();
+  return checking;
 }
 
 const parseData = (req) => {
