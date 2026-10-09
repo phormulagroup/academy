@@ -11,16 +11,23 @@ const query = util.promisify(db.query).bind(db);
 
 let tableOk = false;
 let checkedAt = 0;
+// Pedidos ao mesmo tempo esperam pela mesma verificação (antes, o segundo recebia "sem tabela" durante 30 s enquanto o primeiro consultava)
+let checking = null;
 async function tableReady() {
   if (tableOk) return true;
+  if (checking) return checking;
   if (Date.now() - checkedAt < 30 * 1000) return false;
-  checkedAt = Date.now();
-  try {
-    tableOk = (await query("SHOW TABLES LIKE 'security_block'")).length > 0;
-  } catch {
-    tableOk = false;
-  }
-  return tableOk;
+  checking = (async () => {
+    try {
+      tableOk = (await query("SHOW TABLES LIKE 'security_block'")).length > 0;
+    } catch {
+      tableOk = false;
+    }
+    checkedAt = Date.now();
+    checking = null;
+    return tableOk;
+  })();
+  return checking;
 }
 
 const ipBlocking = () => !!process.env.TRUST_PROXY;
@@ -34,13 +41,17 @@ function createThrottle({ scope, windowMs, max }) {
     return list;
   };
 
+  // Segundos que faltam até o bloqueio acabar (0 = não está bloqueado)
   async function blockedOne(t) {
     if (await tableReady()) {
-      const rows = await query("SELECT 1 FROM security_block WHERE scope = ? AND kind = ? AND identifier = ? AND blocked_until > NOW() LIMIT 1", [scope, t.kind, t.identifier]);
-      return rows.length > 0;
+      const rows = await query(
+        "SELECT TIMESTAMPDIFF(SECOND, NOW(), blocked_until) AS seconds FROM security_block WHERE scope = ? AND kind = ? AND identifier = ? AND blocked_until > NOW() LIMIT 1",
+        [scope, t.kind, t.identifier],
+      );
+      return rows.length > 0 ? Math.max(1, Number(rows[0].seconds) || 1) : 0;
     }
     const entry = memory.get(`${scope}|${t.kind}|${t.identifier}`);
-    return !!entry && entry.resetAt > Date.now() && entry.count >= t.limit;
+    return entry && entry.resetAt > Date.now() && entry.count >= t.limit ? Math.max(1, Math.ceil((entry.resetAt - Date.now()) / 1000)) : 0;
   }
 
   async function failOne(t, ip) {
@@ -69,10 +80,12 @@ function createThrottle({ scope, windowMs, max }) {
   }
 
   return {
-    // Já esgotou as tentativas (o e-mail ou, havendo, o IP)?
+    // Já esgotou as tentativas (o e-mail ou, havendo, o IP)? Devolve os segundos até poder tentar outra vez (0 = não bloqueado),
+    // por isso continua a servir como verdadeiro/falso
     async blocked(identifier, ip) {
-      for (const t of targets(identifier, ip)) if (await blockedOne(t)) return true;
-      return false;
+      let seconds = 0;
+      for (const t of targets(identifier, ip)) seconds = Math.max(seconds, await blockedOne(t));
+      return seconds;
     },
     // Regista uma tentativa falhada; devolve as falhas do e-mail na janela
     async fail(identifier, ip) {

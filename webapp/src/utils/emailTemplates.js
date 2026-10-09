@@ -5,7 +5,8 @@ const SYSTEM_TYPES = {
   account_approved: { label: "Account approved", description: "Sent when an administrator approves an account", audience: "user", variables: ["name", "url"] },
   account_rejected: { label: "Account not approved", description: "Sent when an account is marked as not approved", audience: "user", variables: ["name"] },
   account_access: { label: "Account access", description: "Sent to people whose account was created or imported by an administrator, with the code to set their password", audience: "user", variables: ["name", "email", "code", "url"] },
-  recover: { label: "Password recovery", description: "Sent with the code to recover a password", audience: "user", variables: ["name", "code", "url"] },
+  recover: { label: "Password recovery", description: "Sent with the code to recover a password", audience: "user", variables: ["name", "code", "minutes", "url"], samples: { minutes: "15" } },
+  login_code: { label: "Verification code", description: "Sent when a person logs in with the right password, with the code to finish the 2FA verification", audience: "user", variables: ["name", "login_code", "minutes"], samples: { minutes: "10" } },
   password_changed: { label: "Password changed", description: "Sent to confirm that the password of an account was changed", audience: "user", variables: ["name", "url"] },
   ticket_received: { label: "Request received", description: "Sent to a person when they open a ticket", audience: "user", variables: ["name", "subject", "url"] },
   ticket_reply: { label: "Reply to the request", description: "Sent to a person when the team replies to their ticket", audience: "user", variables: ["name", "subject", "message", "url"] },
@@ -30,6 +31,8 @@ export const VARIABLES = {
   country: { label: "Country", hint: "The country of the person who registered", sample: "Portugal" },
   status: { label: "Status", hint: "The new status of the account", sample: "Active" },
   code: { label: "Code", hint: "The code to recover the password", sample: "123456" },
+  login_code: { label: "Verification code", hint: "The code the person enters to finish the two-step verification of the login", sample: "482913" },
+  minutes: { label: "Validity (minutes)", hint: "How many minutes the code in the e-mail is valid", sample: "10" },
 };
 
 // Quem recebe o e-mail: "user" (a pessoa em causa), "staff" (a equipa) ou "custom" (os modelos criados no backoffice: o público escolhe-se ao enviar)

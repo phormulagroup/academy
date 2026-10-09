@@ -6,7 +6,7 @@ import { Context } from "../utils/context";
 
 export default function LanguageWrapper() {
 	const { lang } = useParams();
-	const { languages, user, selectedLanguage, setSelectedLanguage } =
+	const { languages, user, selectedLanguage, setSelectedLanguage, isStaff, isStaffKnown } =
 		useContext(Context);
 	const location = useLocation();
 
@@ -29,8 +29,10 @@ export default function LanguageWrapper() {
 	useEffect(() => {
 		if (!isSupported) return;
 
-		// Aluno: o idioma é sempre o do seu registo
-		if (user && Object.keys(user).length > 0 && user.id_role !== 1) {
+		// Aluno: o idioma é sempre o do seu registo. A equipa (Admin ou função com acesso ao backoffice, ex.: Gestor) escolhe o idioma;
+		// enquanto as permissões não chegam não se sabe se a conta é da equipa, por isso ainda não se muda o idioma
+		if (user && Object.keys(user).length > 0 && !isStaff) {
+			if (!isStaffKnown) return;
 			const userLang =
 				languages.filter((l) => l.id === user.id_lang)[0]?.code || "en";
 			if (lang !== userLang) {
@@ -42,7 +44,7 @@ export default function LanguageWrapper() {
 		}
 
 		syncLanguage(lang);
-	}, [lang, user, languages, isSupported]);
+	}, [lang, user, languages, isSupported, isStaff, isStaffKnown]);
 
 	// 2) se não for suportado, redireciona preservando o resto do caminho
 	if (!isSupported) {

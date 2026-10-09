@@ -98,10 +98,11 @@ router.post("/reorder", middleware, requirePermission("faqs", "update"), async (
   });
 });
 
+// A tabela faqs não tem is_deleted: apaga a FAQ de vez (como nas notificações)
 router.post("/delete", middleware, requirePermission("faqs", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    const deletedRow = await query("UPDATE faqs SET is_deleted = 1 WHERE id = ?", [toId(req.body.data.id)]);
+    const deletedRow = await query("DELETE FROM faqs WHERE id = ?", [toId(req.body.data.id)]);
     res.send(deletedRow);
   } catch (err) {
     throw err;

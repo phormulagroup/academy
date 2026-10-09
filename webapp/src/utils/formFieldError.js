@@ -109,6 +109,32 @@ export const requiredCheckboxRule = (message) => ({
 });
 
 /**
+ * @function otpCodeRule
+ * @description Validation rule for one-time codes (Input.OTP): required, and only complete when it has `length` digits.
+ * @param {number} [length=6] - Number of digits of the code.
+ * @returns {Object} Validation rule object for the code field.
+ */
+
+// Código enviado por e-mail (Input.OTP): obrigatório e só fica completo com `length` caracteres.
+// Verificação do login (2FA): só dígitos; recuperação de password: letras e dígitos ({ digitsOnly: false })
+export const otpPattern = (length = 6, { digitsOnly = true } = {}) =>
+  new RegExp(`^[${digitsOnly ? "0-9" : "A-Za-z0-9"}]{${length}}$`);
+
+export const otpCodeRule = (length = 6, { digitsOnly = true } = {}) => ({
+  required: true,
+  validator: async (_, value) => {
+    const code = String(value || "");
+    if (code.trim() === "") throw new Error(requiredMessage());
+    if (!otpPattern(length, { digitsOnly }).test(code))
+      throw new Error(
+        digitsOnly
+          ? i18n.t("The code must have {{count}} digits", { count: length })
+          : i18n.t("The code must have {{count}} characters", { count: length }),
+      );
+  },
+});
+
+/**
  * @constant emailRule
  * @description Validation rule for email fields. Ensures the value is a valid email format if provided.
  * @type {Object}

@@ -89,9 +89,18 @@
     "vars": [
       "name",
       "code",
+      "minutes",
       "url"
     ],
     "link": "recover"
+  },
+  "login_code": {
+    "vars": [
+      "name",
+      "login_code",
+      "minutes"
+    ],
+    "link": null
   },
   "registration_new": {
     "vars": [

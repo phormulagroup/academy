@@ -8,7 +8,7 @@ if (!privateKey || privateKey.length < 32) {
 }
 
 // Campos que nunca saem da API (hashes da password e do código de recuperação)
-const SECRET_FIELDS = ["password", "recover_code", "generate_password"];
+const SECRET_FIELDS = ["password", "recover_code", "recover_code_expires", "generate_password", "login_code", "login_code_expires"];
 
 // Impressão digital da password atual: muda quando a password muda, por isso um token antigo deixa de valer, sem levar o hash no token
 const passwordFingerprint = (hash) => crypto.createHmac("sha256", privateKey).update(String(hash || "")).digest("hex").slice(0, 24);

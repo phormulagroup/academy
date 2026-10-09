@@ -15,12 +15,16 @@ import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 
 const ADMIN_ROLE_ID = 1;
+// O Gestor (como o Utilizador) não se renomeia nem se apaga; só o Admin edita as suas permissões
+const GESTOR_ROLE_ID = 4;
 // A função Utilizador é a que o registo atribui: edita-se (permissões) mas não se apaga
 const USER_ROLE_ID = 2;
 
 // Funções (papéis) e as permissões de cada uma por secção do backoffice. Só o Admin gere esta página.
 export default function Role() {
-  const { toastApi, setRoles, roles } = useContext(Context);
+  const { toastApi, setRoles, roles, user } = useContext(Context);
+  // Só o Admin cria, altera e apaga funções; o Gestor vê-as e só altera as permissões do Utilizador (sem a parte do Sistema)
+  const canEdit = Number(user?.id_role) === ADMIN_ROLE_ID;
   const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -101,9 +105,11 @@ export default function Role() {
             onChange={(e) => setSearch(e.target.value)}
           />
           <RefreshButton onClick={getData} />
-          <Button type="primary" icon={<AiOutlinePlus />} onClick={() => setIsOpenCreate(true)}>
-            <span className="hidden sm:inline">{t("Add role")}</span>
-          </Button>
+          {canEdit && (
+            <Button type="primary" icon={<AiOutlinePlus />} onClick={() => setIsOpenCreate(true)}>
+              <span className="hidden sm:inline">{t("Add role")}</span>
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -134,8 +140,8 @@ export default function Role() {
               <RowActions
                 items={[
                   // O Admin tem sempre acesso total: não tem ações (não se edita nem se apaga)
-                  record.id !== ADMIN_ROLE_ID && { label: t("Update"), key: `${record.id}-update`, icon: <FaRegEdit />, onClick: () => openUpdate(record) },
-                  record.id !== ADMIN_ROLE_ID && record.id !== USER_ROLE_ID && {
+                  record.id !== ADMIN_ROLE_ID && { label: canEdit || (Number(user?.id_role) === GESTOR_ROLE_ID && record.id === USER_ROLE_ID) ? t("Update") : t("View"), key: `${record.id}-update`, icon: <FaRegEdit />, onClick: () => openUpdate(record) },
+                  canEdit && record.id !== ADMIN_ROLE_ID && record.id !== USER_ROLE_ID && record.id !== GESTOR_ROLE_ID && {
                     label: record.used_count > 0 ? t("This role has users, so it cannot be deleted.") : t("Delete"),
                     key: `${record.id}-delete`,
                     icon: <FaRegTrashAlt />,

@@ -68,13 +68,14 @@ import {
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import CourseLoading from "../../../components/app/courseLoading";
+import { hasFullAccess } from "../../../utils/roles";
 
 const { confirm } = Modal;
 
 const { Header, Content, Sider } = Layout;
 
 const Learning = () => {
-  const { user, logout, languages, windowDimension } = useContext(Context);
+  const { user, logout, languages, windowDimension, isStaff } = useContext(Context);
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -140,10 +141,9 @@ const Learning = () => {
 
   async function getData() {
     try {
-      // Admins can access courses from any language (use current UI language)
-      // Users are restricted to their assigned language
-      const isAdmin = user.id_role === 1;
-      const selectedLangId = isAdmin
+      // A equipa pode abrir cursos de qualquer idioma (o da interface); o aluno só os do idioma da sua conta
+      // A equipa (Admin, Gestor…) abre o curso no idioma escolhido
+      const selectedLangId = isStaff
         ? (languages.find((_l) => _l.code === i18n.language)?.id ??
           user.id_lang)
         : user.id_lang;
@@ -165,11 +165,11 @@ const Learning = () => {
         // os alunos têm sempre navegação linear
         auxCourse.settings = {
           ...(auxCourse.settings || {}),
-          progression_type: user.id_role === 1 ? "free" : "linear",
+          progression_type: hasFullAccess(user) ? "free" : "linear",
         };
 
         // Admins (id_role = 1) can access all courses regardless of restrictions
-        const isAdmin = user.id_role === 1;
+        const isAdmin = hasFullAccess(user);
 
         if (
           !isAdmin &&
@@ -318,7 +318,7 @@ const Learning = () => {
 
   // true quando o acesso está bloqueado (curso ainda não aberto ou já fechado); os administradores passam sempre
   function canAccess(obj) {
-    if (user.id_role === 1) return false;
+    if (hasFullAccess(user)) return false;
     return courseAccessState(obj) !== "open";
   }
 
@@ -796,7 +796,7 @@ const Learning = () => {
                         disabled={
                           isTestInProgress ||
                           nextBlocked ||
-                          (!allowNext && user.id_role !== 1)
+                          (!allowNext && !hasFullAccess(user))
                         }>
                         {windowDimension.width >= 1081 &&
                         windowDimension.width < 1270
@@ -1567,7 +1567,7 @@ const Learning = () => {
                         iconPlacement="end"
                         onClick={() => next()}
                         disabled={
-                          nextBlocked || (!allowNext && user.id_role !== 1)
+                          nextBlocked || (!allowNext && !hasFullAccess(user))
                         }
                         size="small"
                         className="course-button-next">

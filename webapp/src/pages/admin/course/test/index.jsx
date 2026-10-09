@@ -12,6 +12,8 @@ import Question from "./question";
 export default function Test() {
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
+  // Separador ativo: o rodapé fixo das perguntas só aparece no separador das perguntas
+  const [activeTab, setActiveTab] = useState("1");
 
   const { t } = useTranslation();
   const { idTest } = useParams();
@@ -53,11 +55,13 @@ export default function Test() {
         </div>
       </div>
       <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={[
           {
             key: "1",
             label: t("Questions"),
-            children: <Question data={data} onSaveSuccess={getData} isLoading={isLoading} />,
+            children: <Question data={data} onSaveSuccess={getData} isLoading={isLoading} isActive={activeTab === "1"} />,
           },
           {
             key: "2",

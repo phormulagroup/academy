@@ -12,6 +12,8 @@ const endpoints = {
 		verifyRecoverCode: "/auth/verifyRecoverCode",
 		recover: "/auth/recover",
 		password: "/auth/password",
+		verifyLoginCode: "/auth/verifyLoginCode",
+		resendLoginCode: "/auth/resendLoginCode",
 	},
 	import: {
 		fields: "/import/fields",

@@ -7,11 +7,11 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
-const { requirePermission, hasPermission, denied } = require("../utils/permissions");
+const { requirePermission, hasPermission, denied, isStaff, hasFullAccess } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const crypto = require("crypto");
-const { notifyUser } = require("../utils/notify");
+const { notifyUser, emailLanguage } = require("../utils/notify");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -115,12 +115,14 @@ router.get("/readById", async (req, res) => {
 			const user = userRow[0];
 			// For admins: use id_lang parameter if provided, otherwise use user's language
 			// For students: always use user's language
-			const languageId = user.id_role === 1 && req.query.id_lang 
+			// A equipa (Admin ou função com acesso ao backoffice, ex.: Gestor) também escolhe o idioma
+			const isStaffRole = await isStaff(user);
+			const languageId = isStaffRole && req.query.id_lang 
 				? parseInt(req.query.id_lang) 
 				: user.id_lang;
 			
 			// For students, exclude draft courses; for admins, show all courses
-			const draftFilter = user.id_role === 1 ? "" : "AND c.status != 'draft'";
+			const draftFilter = hasFullAccess(user) ? "" : "AND c.status != 'draft'";
 			
 			const rows = await multi(query, 
 				"SELECT c.id, c.name, c.internal_name, c.img, c.thumbnail, c.id_lang, c.status, c.date_start, c.date_end, c.slug, c.enrollment, c.id_course_certificate, c.settings, c.id_product, c.is_deleted, c.created_at, c.modified_at FROM course c WHERE id_lang = ? AND c.is_deleted = 0 " + draftFilter + "; " +
@@ -224,6 +226,7 @@ router.post("/update", async (req, res, next) => {
 		// A password só muda por new_password (com a atual verificada); o hash e o código de recuperação nunca se gravam pelo cliente
 		delete data.password;
 		delete data.recover_code;
+		delete data.recover_code_expires;
 		delete data.generate_password;
 		if (!canManage) {
 			delete data.id_role;
@@ -256,7 +259,7 @@ router.post("/update", async (req, res, next) => {
 		}
 		let user = await query("SELECT * FROM user WHERE id = ?", whereId);
 		// A própria pessoa mudou a sua password: aviso de segurança (se não foi ela, pode recuperar a conta logo)
-		if (passwordChanged && whereId === req.user.id) notifyUser("password_changed", user[0]);
+		if (passwordChanged && whereId === req.user.id) notifyUser("password_changed", { ...user[0], id_lang: await emailLanguage(user[0], req.headers["x-lang"]) });
 
 		let newToken = await createToken(user[0]);
 		res.send({ user: user[0], token: newToken });
@@ -286,7 +289,7 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 		if (person) {
 			if (data.status === "approved" && !person.password) {
 				const code = crypto.randomBytes(4).toString("hex").slice(0, 6);
-				await query("UPDATE user SET recover_code = ? WHERE id = ?", [await bcrypt.hash(code, saltRounds), person.id]);
+				await query("UPDATE user SET recover_code = ?, recover_code_expires = NULL WHERE id = ?", [await bcrypt.hash(code, saltRounds), person.id]);
 				notifyUser("account_access", person, { code });
 			} else if (data.status === "approved") {
 				notifyUser("account_approved", person);

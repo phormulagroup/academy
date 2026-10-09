@@ -113,12 +113,20 @@ const T = {
   // Recuperação de password: substitui o template antigo (editor Unlayer, com texto de outro projeto) pelo do editor novo
   recover: {
     since: "2026-10-12",
-    vars: ["name", "code", "url"],
+    vars: ["name", "code", "minutes", "url"],
     link: "recover",
-    pt: { name: "Recuperar password", subject: "Recupere a sua password", title: "Olá {{name}},", paragraphs: ["Recebemos um pedido para recuperar a password da sua conta na Bial Regional Academy.", "Introduza este código na página de recuperação para escolher uma nova password:"], box: "{{code}}", button: "Recuperar a minha password" },
-    es: { name: "Recuperar contraseña", subject: "Recupere su contraseña", title: "Hola {{name}},", paragraphs: ["Hemos recibido una solicitud para recuperar la contraseña de su cuenta en Bial Regional Academy.", "Introduzca este código en la página de recuperación para elegir una nueva contraseña:"], box: "{{code}}", button: "Recuperar mi contraseña" },
-    en: { name: "Recover password", subject: "Recover your password", title: "Hello {{name}},", paragraphs: ["We received a request to recover the password of your Bial Regional Academy account.", "Enter this code on the recovery page to choose a new password:"], box: "{{code}}", button: "Recover my password" },
-    fr: { name: "Récupérer le mot de passe", subject: "Récupérez votre mot de passe", title: "Bonjour {{name}},", paragraphs: ["Nous avons reçu une demande de récupération du mot de passe de votre compte Bial Regional Academy.", "Saisissez ce code sur la page de récupération pour choisir un nouveau mot de passe :"], box: "{{code}}", button: "Récupérer mon mot de passe" },
+    pt: { name: "Recuperar password", subject: "Recupere a sua password", title: "Olá {{name}},", paragraphs: ["Recebemos um pedido para recuperar a password da sua conta na Bial Regional Academy.", "Introduza este código na página de recuperação para escolher uma nova password:"], box: "{{code}}", after: ["O código é válido durante {{minutes}} minutos.", "Se não foi você a pedir a recuperação, ignore este e-mail: a sua password não é alterada."], button: "Recuperar a minha password" },
+    es: { name: "Recuperar contraseña", subject: "Recupere su contraseña", title: "Hola {{name}},", paragraphs: ["Hemos recibido una solicitud para recuperar la contraseña de su cuenta en Bial Regional Academy.", "Introduzca este código en la página de recuperación para elegir una nueva contraseña:"], box: "{{code}}", after: ["El código es válido durante {{minutes}} minutos.", "Si no ha solicitado la recuperación, ignore este correo: su contraseña no se modificará."], button: "Recuperar mi contraseña" },
+    en: { name: "Recover password", subject: "Recover your password", title: "Hello {{name}},", paragraphs: ["We received a request to recover the password of your Bial Regional Academy account.", "Enter this code on the recovery page to choose a new password:"], box: "{{code}}", after: ["The code is valid for {{minutes}} minutes.", "If you did not ask to recover your password, ignore this e-mail: your password will not change."], button: "Recover my password" },
+    fr: { name: "Récupérer le mot de passe", subject: "Récupérez votre mot de passe", title: "Bonjour {{name}},", paragraphs: ["Nous avons reçu une demande de récupération du mot de passe de votre compte Bial Regional Academy.", "Saisissez ce code sur la page de récupération pour choisir un nouveau mot de passe :"], box: "{{code}}", after: ["Le code est valable pendant {{minutes}} minutes.", "Si vous n’avez pas demandé la récupération, ignorez cet e-mail : votre mot de passe ne sera pas modifié."], button: "Récupérer mon mot de passe" },
+  },
+  // Verificação em dois passos (2FA): código enviado depois da password certa no login
+  login_code: {
+    vars: ["name", "login_code", "minutes"],
+    pt: { name: "Código de verificação", subject: "Código de verificação para iniciar sessão", title: "Olá {{name}},", paragraphs: ["Para concluir o início de sessão na Bial Regional Academy, introduza este código de verificação:"], box: "{{login_code}}", after: ["O código é válido durante {{minutes}} minutos.", "Se não foi você a iniciar sessão, altere a sua password e contacte-nos."] },
+    es: { name: "Código de verificación", subject: "Código de verificación para iniciar sesión", title: "Hola {{name}},", paragraphs: ["Para completar el inicio de sesión en Bial Regional Academy, introduzca este código de verificación:"], box: "{{login_code}}", after: ["El código es válido durante {{minutes}} minutos.", "Si no ha sido usted quien ha iniciado sesión, cambie su contraseña y póngase en contacto con nosotros."] },
+    en: { name: "Verification code", subject: "Verification code to log in", title: "Hello {{name}},", paragraphs: ["To finish logging in to Bial Regional Academy, enter this verification code:"], box: "{{login_code}}", after: ["The code is valid for {{minutes}} minutes.", "If you did not try to log in, change your password and contact us."] },
+    fr: { name: "Code de vérification", subject: "Code de vérification pour vous connecter", title: "Bonjour {{name}},", paragraphs: ["Pour terminer votre connexion à la Bial Regional Academy, saisissez ce code de vérification :"], box: "{{login_code}}", after: ["Le code est valable pendant {{minutes}} minutes.", "Si vous n’êtes pas à l’origine de cette connexion, changez votre mot de passe et contactez-nous."] },
   },
   // Para a equipa: novo registo à espera de aprovação
   registration_new: {
@@ -163,9 +171,15 @@ const FOOTER = {
 function buildMjml(tpl, lang) {
   const x = tpl[lang];
   const paragraphs = x.paragraphs.map((p) => `<mj-text>${p}</mj-text>`).join("\n        ");
+  // Caixa com um código (recuperação ou verificação do login): centrado, grande e espaçado
+  const isCodeBox = x.box === "{{code}}" || x.box === "{{login_code}}";
   const boxTitle = x.boxTitle ? `<mj-text font-size="12px" color="#8A8D98" padding-bottom="0">${x.boxTitle}</mj-text>` : "";
   const box = x.box
-    ? `<mj-section background-color="#ffffff" padding="0 24px 12px"><mj-column background-color="#F6F7FB" border-radius="10px" padding="14px 18px">${boxTitle}<mj-text align="${x.box === "{{code}}" ? "center" : "left"}" ${x.box === "{{code}}" ? `font-size="30px" font-weight="700" letter-spacing="4px" color="${BRAND}"` : `font-size="14px" font-style="italic" color="#3b4258"`}>${x.box}</mj-text></mj-column></mj-section>`
+    ? `<mj-section background-color="#ffffff" padding="0 24px 12px"><mj-column background-color="#F6F7FB" border-radius="10px" padding="14px 18px">${boxTitle}<mj-text align="${isCodeBox ? "center" : "left"}" ${isCodeBox ? `font-size="30px" font-weight="700" letter-spacing="4px" color="${BRAND}"` : `font-size="14px" font-style="italic" color="#3b4258"`}>${x.box}</mj-text></mj-column></mj-section>`
+    : "";
+  // Texto opcional depois da caixa (ex.: validade do código de verificação); os templates sem `after` ficam iguais
+  const after = x.after
+    ? `<mj-section background-color="#ffffff" padding="0 24px 8px"><mj-column>${x.after.map((p) => `<mj-text font-size="13px" color="#5b6275">${p}</mj-text>`).join("")}</mj-column></mj-section>`
     : "";
   const button = x.button ? `<mj-section background-color="#ffffff" padding="0 24px 28px"><mj-column><mj-button background-color="${BRAND}" color="#ffffff" border-radius="6px" font-weight="600" href="{{url}}">${x.button}</mj-button></mj-column></mj-section>` : `<mj-section background-color="#ffffff" padding="0 24px 12px"><mj-column><mj-spacer height="8px"></mj-spacer></mj-column></mj-section>`;
   return `<mjml>
@@ -182,7 +196,7 @@ function buildMjml(tpl, lang) {
         <mj-text font-family="${HEADING_FONT}" font-size="22px" font-weight="700" color="${BRAND}">${x.title}</mj-text>
         ${paragraphs}
     </mj-column></mj-section>
-    ${box}
+    ${box}${after}
     ${button}
     <mj-section background-color="#F4F5F7" padding="20px 24px"><mj-column><mj-text align="center" font-size="12px" color="#8A8D98" line-height="1.6">Bial Regional Academy<br/>${FOOTER[lang]}</mj-text></mj-column></mj-section>
   </mj-body>

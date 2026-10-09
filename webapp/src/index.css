@@ -2560,6 +2560,15 @@ deles invalida a regra inteira. */
   padding: 14px 18px !important;
   border-radius: 12px !important;
 }
+/* Mobile: cabeçalho e espaçamento entre módulos mais apertados */
+@media (max-width: 639px) {
+  .collapse-course.collapse-course-compact .ant-collapse-item {
+    margin-bottom: 8px !important;
+  }
+  .collapse-course.collapse-course-compact .ant-collapse-header {
+    padding: 10px 12px !important;
+  }
+}
 .collapse-course.collapse-course-compact .ant-collapse-item-active > .ant-collapse-header {
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
@@ -2601,4 +2610,206 @@ deles invalida a regra inteira. */
    com ou sem texto e só com ícone. Fora do @layer porque o antd (sem layer) sobrepunha-se à regra nos botões só com ícone. */
 .admin-layout .ant-btn.ant-btn-color-default:not(:disabled) svg {
   color: inherit;
+}
+
+/* ===== Login com verificação em dois passos (2FA): transições entre passos, código OTP e animação de sucesso ===== */
+/* Cada passo (credenciais, a enviar o código, código, sucesso) entra com um fade e um pequeno deslize */
+.auth-step {
+  animation: auth-step-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes auth-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-otp-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 9999px;
+  background: #f1f9ff;
+  border: 2px dashed #00b9d6;
+  color: #00b9d6;
+  font-size: 36px;
+}
+
+@media (max-width: 480px) {
+  .auth-otp-icon {
+    width: 66px;
+    height: 66px;
+    font-size: 31px;
+  }
+}
+
+/* Passos de estado da conta no login: pendente (laranja Bial) e não aprovada (vermelho) */
+.auth-otp-icon--warning {
+  background: #fff6ec;
+  border-color: #ff9e4a;
+  color: #f07d1a;
+}
+
+.auth-otp-icon--danger {
+  background: #fff1f0;
+  border-color: #ff7875;
+  color: #e5484d;
+}
+
+/* Campos do código: o mesmo padrão dos inputs (borda, raio, cor do texto), maiores e em destaque */
+.auth-otp-form .ant-otp {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-otp-form .ant-otp .ant-otp-input,
+.auth-otp-form .ant-otp .ant-input {
+  width: 46px;
+  height: 54px;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #163986;
+  border-color: #c5cee1;
+  border-radius: 8px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    background-color 0.2s;
+}
+
+.auth-otp-form .ant-otp .ant-input:hover {
+  border-color: #00b9d6;
+}
+
+.auth-otp-form .ant-otp .ant-input:focus,
+.auth-otp-form .ant-otp .ant-input-focused {
+  border-color: #00b9d6;
+  box-shadow: 0 0 0 3px rgba(0, 185, 214, 0.18);
+}
+
+.auth-otp-form .ant-form-item-has-error .ant-otp .ant-input {
+  border-color: #ff4d4f;
+}
+
+@media (max-width: 380px) {
+  .auth-otp-form .ant-otp {
+    gap: 6px;
+  }
+  .auth-otp-form .ant-otp .ant-otp-input,
+  .auth-otp-form .ant-otp .ant-input {
+    width: 40px;
+    height: 48px;
+    font-size: 20px;
+  }
+}
+
+/* Sucesso da verificação: círculo e visto desenhados (traço animado) + leve pulsação */
+.auth-otp-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 0 12px;
+}
+
+.auth-otp-check {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: auth-otp-pop 0.4s ease-in-out 0.9s both;
+}
+
+.auth-otp-check-circle {
+  stroke: #2f8351;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: auth-otp-stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.auth-otp-check-mark {
+  stroke: #2f8351;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: auth-otp-stroke 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+}
+
+@keyframes auth-otp-stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes auth-otp-pop {
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-step,
+  .auth-otp-check,
+  .auth-otp-check-circle,
+  .auth-otp-check-mark {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ===== Botões Bial desativados: mesmo estado do eLearning (cinzento, sem hover) ===== */
+.main-cta-button:disabled,
+.main-cta-button:disabled:hover,
+.main-secondary-cta-button:disabled,
+.main-secondary-cta-button:disabled:hover {
+  background-color: rgba(1, 2, 2, 0.2) !important;
+  border-color: rgba(1, 2, 2, 0.2) !important;
+  color: rgba(1, 2, 2, 0.5) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
+
+/* Contagem até poder tentar outra vez (demasiadas tentativas no login, verificação ou recuperação) */
+.auth-retry-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background: #fff4ef;
+  border: 1px solid #ff9e83;
+  color: #163986;
+  /* Nota: pequena mas legível; um pouco menor em ecrãs estreitos */
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .auth-retry-notice {
+    font-size: 11.5px;
+    padding: 7px 10px;
+  }
+}
+
+.auth-retry-notice svg {
+  color: #ff7d5a;
+  font-size: 16px;
 }

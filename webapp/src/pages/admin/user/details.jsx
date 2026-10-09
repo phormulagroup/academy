@@ -8,6 +8,8 @@ import { useTranslation } from "react-i18next";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
+import api from "../../../utils/api";
+import PasswordChangedLogout from "../../../components/passwordChangedLogout";
 import config from "../../../utils/config";
 import { downloadCertificate } from "../../../utils/certificate";
 import { usePermission } from "../../../utils/usePermission";
@@ -27,7 +29,7 @@ import {
 import { academicBackgroundOptions, genderOptions, namePlaceholders, splitName } from "../../../utils/userFields";
 
 const STATUS_TAGS = {
-  approved: { label: "Approved", color: "green" },
+  approved: { label: "Approved", context: "user", color: "green" },
   pending: { label: "Pending", color: "orange" },
   not_approved: { label: "Not Approved", color: "red" },
 };
@@ -169,6 +171,9 @@ export default function UserDetails() {
     }
   }
 
+  // A própria password alterada: animação e a sessão termina ao fim de 5 s
+  const [passwordChanged, setPasswordChanged] = useState(false);
+
   function submit(values) {
     const payload = { ...values, id };
     if (payload.password) payload.new_password = payload.password;
@@ -179,7 +184,15 @@ export default function UserDetails() {
     axios
       .post(endpoints.user.update, { data: payload })
       .then((res) => {
-        if (res.data.user) {
+        if (res.data.user && isOwnAccount && payload.new_password) {
+          form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
+          setPasswordChanged(true);
+        } else if (res.data.user) {
+          // A própria conta: guarda o token novo (muda com a password), senão a sessão terminava no pedido a seguir
+          if (isOwnAccount && res.data.token) {
+            localStorage.setItem("token", res.data.token);
+            api.token(res.data.token);
+          }
           toastApi.success(t("Account updated successfully!"));
           form.setFieldsValue({ current_password: undefined, password: undefined, confirm_password: undefined });
           getData();
@@ -224,6 +237,7 @@ export default function UserDetails() {
 
   return (
     <div className="flex w-full flex-col gap-6">
+      <PasswordChangedLogout open={passwordChanged} />
       <div className="flex items-center justify-between">
         <p className="mb-0! text-[18px] font-bold font-ryker">{isProfile ? t("My profile") : t("Student account")}</p>
         {!isProfile && (
@@ -263,7 +277,7 @@ export default function UserDetails() {
               {data.role_name && <Tag color="#163986" className="m-0!">{data.role_name}</Tag>}
               {statusTag && (
                 <Tag color={statusTag.color} className="m-0!">
-                  {t(statusTag.label)}
+                  {t(statusTag.label, { context: statusTag.context })}
                 </Tag>
               )}
               {!!data.is_deleted && (

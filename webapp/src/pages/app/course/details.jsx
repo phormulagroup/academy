@@ -34,6 +34,7 @@ import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
+import { hasFullAccess } from "../../../utils/roles";
 
 export default function CourseDetails() {
   const { user, languages, toastApi, windowDimension } = useContext(Context);
@@ -56,7 +57,7 @@ export default function CourseDetails() {
         ? obj.settings.country
         : null;
       if (!isAllowedByCountry(countries, user)) return false;
-      return user.id_role === 1 || courseDateState(obj) === "active";
+      return hasFullAccess(user) || courseDateState(obj) === "active";
     },
     [user],
   );
@@ -83,7 +84,7 @@ export default function CourseDetails() {
             // Alunos: testes expirados saem do eLearning, logo também dos módulos e do progresso
             const allTests = res.data.tests.filter((_t) => _t.is_deleted !== 1);
             const visibleTests =
-              user.id_role === 1
+              hasFullAccess(user)
                 ? res.data.tests
                 : res.data.tests.filter(
                     (_t) => testDateState(_t) !== "expired",
@@ -502,11 +503,13 @@ export default function CourseDetails() {
                               </div>
                             ),
                             children: (
-                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-6">
+                              <div className="w-screen bg-[#F1F9FF] -ml-[calc((100vw-100%)/2)] px-[calc((100vw-100%)/2)] py-4 sm:py-5 lg:py-6">
+                                {/* Módulos em modo compacto, iguais aos dos Resultados do perfil */}
                                 <CourseContent
                                   modules={modules}
                                   progress={progress}
                                   data={data}
+                                  compact
                                 />
                               </div>
                             ),

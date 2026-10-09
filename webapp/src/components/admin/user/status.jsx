@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Form, Select } from "antd";
 import { LuUserCog } from "react-icons/lu";
 
@@ -17,6 +17,11 @@ export default function Status({ data, open, close, status }) {
   const [form] = Form.useForm();
 
   const { t } = useTranslation();
+
+  // Cada abertura começa sem estado escolhido: a escolha anterior (feita para outro utilizador) não pode ficar selecionada
+  useEffect(() => {
+    if (open) form.resetFields();
+  }, [open, data?.id, form]);
 
   function onClose() {
     close();
@@ -81,7 +86,8 @@ export default function Status({ data, open, close, status }) {
                 placeholder={t("Select new status")}
                 options={[
                   {
-                    label: t("Approved"),
+                    // Contexto "user": em FR o estado da conta é «Approuvé» (o «Approved» dos testes é «Réussi»)
+                    label: t("Approved", { context: "user" }),
                     value: "approved",
                   },
                   {

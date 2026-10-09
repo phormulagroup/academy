@@ -136,7 +136,7 @@ export default function CourseContent({ modules, progress, data, courseSlug, com
                     )}
                     <div className={`flex flex-col ${compact ? "ml-3.5" : "ml-4"} max-w-full flex-1 min-w-0 overflow-hidden`}>
                       <p
-                        className={`font-ryker text-[#163986] font-bold ${compact ? "text-[14px] sm:text-[15px] leading-tight" : "text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px]"} line-clamp-2 w-full overflow-hidden`}>
+                        className={`font-ryker text-[#163986] font-bold ${compact ? "text-[13px] sm:text-[14px] lg:text-[15px] leading-tight" : "text-[14px] sm:text-[15px] lg:text-[16px] xl:text-[17px]"} line-clamp-2 w-full overflow-hidden`}>
                         {item.title}
                       </p>
                       <p className={`${compact ? "mt-0.5 mb-0! text-[12px]" : "mt-1 text-[12px] lg:text-[13px]"} text-[#163986] line-clamp-2`}>

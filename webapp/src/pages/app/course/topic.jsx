@@ -7,6 +7,7 @@ import LockedMessage from "../../../components/app/course/lockedMessage";
 import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
 import { Context } from "../../../utils/context";
+import { hasFullAccess } from "../../../utils/roles";
 
 const Topic = ({
   course,
@@ -21,7 +22,7 @@ const Topic = ({
   const { t } = useTranslation();
   const { user } = useContext(Context);
   // Admin (id_role = 1) sem restrições; aluno (id_role = 2) com navegação linear e vídeos obrigatórios
-  const isAdmin = user?.id_role === 1;
+  const isAdmin = hasFullAccess(user);
 
   const playerRef = useRef(null);
 

@@ -6,17 +6,18 @@ var slugify = require("slugify");
 
 var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
-const { requirePermission } = require("../utils/permissions");
+const { requirePermission, hasFullAccess } = require("../utils/permissions");
 const { read } = require("fs");
-const { notifyUser } = require("../utils/notify");
+const { notifyUser, emailLanguage } = require("../utils/notify");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
-async function notifyCourseCompleted(id_user, id_course) {
+// lang: idioma escolhido na app, só quando é a própria pessoa a concluir (a equipa recebe nesse idioma; o aluno no da sua conta)
+async function notifyCourseCompleted(id_user, id_course, lang) {
 	try {
 		const notifyQuery = util.promisify(db.query).bind(db);
-		const [person] = await notifyQuery("SELECT id, name, email, id_lang FROM user WHERE id = ? AND is_deleted = 0 AND status = 'approved'", [id_user]);
+		const [person] = await notifyQuery("SELECT id, name, email, id_lang, id_role FROM user WHERE id = ? AND is_deleted = 0 AND status = 'approved'", [id_user]);
 		const [course] = await notifyQuery("SELECT name FROM course WHERE id = ?", [id_course]);
-		if (person && course) notifyUser("course_completed", person, { course: course.name });
+		if (person && course) notifyUser("course_completed", { ...person, id_lang: await emailLanguage(person, lang) }, { course: course.name });
 	} catch (err) {
 		console.error(err.message);
 	}
@@ -71,7 +72,8 @@ async function accessibleCourseIds(query, userId) {
 async function isAdminUser(query, userId) {
 	if (!userId) return false;
 	const rows = await query("SELECT id_role FROM user WHERE id = ? AND is_deleted = 0", [userId]);
-	return rows[0]?.id_role === 1;
+	// Admin e Gestor veem todos os cursos
+	return hasFullAccess(rows[0]);
 }
 
 // Cursos que o utilizador pode ver (todos para administradores; os restritos só se tiver acesso)
@@ -249,7 +251,7 @@ router.get("/readById", async (req, res) => {
 router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const isAdmin = parseInt(req.query.id_role) === 1;
+		const isAdmin = hasFullAccess({ id_role: req.query.id_role });
 
 		// O mesmo slug pode existir em vários idiomas: todas as queries filtram por slug + id_lang
 		const courseFilter = "course.slug = ? AND course.id_lang = ? AND course.is_deleted = 0";
@@ -612,7 +614,7 @@ router.post("/updateProgress", async (req, res, next) => {
 		);
 
 		res.send(insertedRow);
-		completing.forEach((c) => notifyCourseCompleted(c.id_user, c.id_course));
+		completing.forEach((c) => notifyCourseCompleted(c.id_user, c.id_course, c.id_user === req.user?.id ? req.headers["x-lang"] : null));
 	} catch (err) {
 		throw err;
 	}
@@ -679,7 +681,7 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 			conn.release();
 			res.send({ inserted: rows.length });
 			// O Admin concluiu o curso todo em nome do aluno: também recebe o e-mail de parabéns (rows[i][2] é o activity_type)
-			if (rows.some((r) => r[2] === "course")) notifyCourseCompleted(id_user, id_course);
+			if (rows.some((r) => r[2] === "course")) notifyCourseCompleted(id_user, id_course, Number(id_user) === req.user?.id ? req.headers["x-lang"] : null);
 		} catch (err) {
 			await util.promisify(conn.rollback).bind(conn)().catch(() => {});
 			conn.release();

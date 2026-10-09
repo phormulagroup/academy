@@ -8,7 +8,14 @@ var db = require("../utils/database");
 const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
-const { notifyUser, notifyTeam, excerpt } = require("../utils/notify");
+const { notifyUser, notifyTeam, excerpt, emailLanguage, LANG_CODES } = require("../utils/notify");
+
+// Idioma para quem escreveu pelo formulário de contacto: se o e-mail for de uma conta, um aluno recebe no idioma da conta e a equipa no
+// idioma do formulário; sem conta, no idioma do formulário
+async function contactLanguage(query, emailAddress, idLang) {
+  const [account] = await query("SELECT id, id_role, id_lang FROM user WHERE email = ? AND is_deleted = 0 ORDER BY id DESC LIMIT 1", [emailAddress]).catch(() => []);
+  return account ? emailLanguage(account, LANG_CODES[Number(idLang)]) : idLang;
+}
 const email = require("../utils/email");
 
 // As respostas só existem depois de correr a migração 2026-10-08-form-submission-reply.sql: antes disso a lista e os detalhes
@@ -107,8 +114,8 @@ router.post("/create", async (req, res, next) => {
     // para o mesmo e-mail em 10 minutos, para o formulário não servir para encher uma caixa de correio alheia.
     try {
       const [{ n }] = await query("SELECT COUNT(*) AS n FROM form_submission WHERE email = ? AND id != ? AND created_at > (NOW() - INTERVAL 10 MINUTE)", [data.email, insertedRow.insertId]);
-      if (n === 0) notifyUser("contact_received", { name: data.name, email: data.email, id_lang: data.id_lang }, { subject: data.subject || "" });
-      notifyTeam("contact_new", "form_submission", { name: data.name || "", email: data.email || "", subject: data.subject || "", message: excerpt(data.message), id_submission: insertedRow.insertId });
+      if (n === 0) notifyUser("contact_received", { name: data.name, email: data.email, id_lang: await contactLanguage(query, data.email, data.id_lang) }, { subject: data.subject || "" }, { translate: ["subject"] });
+      notifyTeam("contact_new", "form_submission", { name: data.name || "", email: data.email || "", subject: data.subject || "", message: excerpt(data.message), id_submission: insertedRow.insertId }, { translate: ["subject"], excludeEmail: data.email });
     } catch (e) {
       console.error(e.message);
     }
@@ -124,7 +131,7 @@ async function sendReply(submission, subject, message) {
     const info = await email.notify({
       type: "contact_reply",
       to: submission.email,
-      id_lang: submission.id_lang,
+      id_lang: await contactLanguage(util.promisify(db.query).bind(db), submission.email, submission.id_lang),
       vars: { name: submission.name || "", subject, reply: toHtml(message), original: toHtml(excerpt(submission.message, 1500)) },
     });
     // Template desativado no backoffice: nada foi enviado

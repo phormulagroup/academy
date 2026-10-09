@@ -20,7 +20,7 @@ import i18n from "../utils/i18n";
 import I18nextBrowserLanguageDetector from "i18next-browser-languagedetector";
 
 export default function AppRoutes() {
-	const { isLoggedIn, isLoading, isLoadingLanguage, user, languages, isStaff } =
+	const { isLoggedIn, isLoading, isLoadingLanguage, user, languages, isStaff, isStaffKnown } =
 		useContext(Context);
 	const { lang } = useParams();
 
@@ -68,13 +68,15 @@ export default function AppRoutes() {
 				},
 			];
 		} else {
-			// USER NORMAL
+			// USER NORMAL: vai para o idioma da sua conta. Logo depois do login ainda não se sabe se a conta é da equipa (as permissões
+			// chegam a seguir): até lá fica no idioma atual, para um Gestor não ser levado para o idioma da conta
+			const homeLang = isStaffKnown ? languages.filter((l) => l.id === user.id_lang)[0]?.code || "en" : i18n.language;
 			return [
 				{
 					path: ":lang/login",
 					element: (
 						<Navigate
-							to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`}
+							to={`/${homeLang}`}
 							replace
 						/>
 					),
@@ -83,7 +85,7 @@ export default function AppRoutes() {
 					path: "/",
 					element: (
 						<Navigate
-							to={`/${languages.filter((l) => l.id === user.id_lang)[0]?.code || "en"}`}
+							to={`/${homeLang}`}
 							replace
 						/>
 					),

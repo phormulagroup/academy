@@ -157,7 +157,7 @@ router.post("/user", requirePermission("user", "create"), (req, res) => {
         for (const user of inserted) {
           try {
             const code = crypto.randomBytes(4).toString("hex").slice(0, 6);
-            await poolQuery("UPDATE user SET recover_code = ? WHERE id = ?", [await bcrypt.hash(code, saltRounds), user.id]);
+            await poolQuery("UPDATE user SET recover_code = ?, recover_code_expires = NULL WHERE id = ?", [await bcrypt.hash(code, saltRounds), user.id]);
             // "Acesso à conta": o código para definir a password (antes reutilizava o e-mail de recuperação de password)
             const info = await email.notify({ type: "account_access", to: user.email, id_lang: user.id_lang, vars: { name: user.name, email: user.email, code, url: `${appUrl()}/recover` } });
             if (info === null) emailResult.failed++;

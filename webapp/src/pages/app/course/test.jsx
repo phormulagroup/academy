@@ -24,6 +24,7 @@ import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
+import { hasFullAccess } from "../../../utils/roles";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
 // Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
@@ -87,7 +88,7 @@ const Test = ({
 }) => {
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
-  const isAdmin = user?.id_role === 1;
+  const isAdmin = hasFullAccess(user);
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
@@ -102,6 +103,25 @@ const Test = ({
   const [timePercentage, setTimePercentage] = useState(100);
   const [result, setResult] = useState([]);
   const [finished, setFinished] = useState(false);
+  // Aviso inline quando se tenta avançar sem responder à pergunta atual (aplica-se a todos os perfis)
+  const [showRequired, setShowRequired] = useState(false);
+
+  // Escolha única guarda uma string; escolha múltipla guarda um array (precisa de pelo menos uma opção)
+  function isQuestionAnswered(question) {
+    const answer = form.getFieldValue([question?.title, "answer"]);
+    return Array.isArray(answer) ? answer.length > 0 : !!answer;
+  }
+
+  // Só avança (ou termina) se a pergunta atual tiver resposta
+  function goToNextQuestion(isLast) {
+    if (!isQuestionAnswered(data.question[currentQuestion])) {
+      setShowRequired(true);
+      return;
+    }
+    setShowRequired(false);
+    if (isLast) form.submit();
+    else setCurrentQuestion(currentQuestion + 1);
+  }
 
   // Informa o eLearning se o teste está a decorrer (iniciado e não terminado), para bloquear a navegação
   useEffect(() => {
@@ -335,6 +355,7 @@ const Test = ({
     setCalculate({});
     setTimerEnded(false);
     setFinished(false);
+    setShowRequired(false);
     setBegin(true);
     prepareData();
     form.resetFields();
@@ -886,6 +907,16 @@ const Test = ({
                         {() => {
                           const isLastQuestion =
                             currentQuestion >= data.question.length - 1;
+                          // Aviso desaparece assim que a pergunta atual tiver resposta
+                          const requiredWarning =
+                            showRequired &&
+                            !isQuestionAnswered(
+                              data.question[currentQuestion],
+                            ) ? (
+                              <p className="text-[#E5484D] text-sm mt-2 mb-0">
+                                {t("Please select an answer to continue.")}
+                              </p>
+                            ) : null;
                           const navigation = (
                             <div
                               className={
@@ -901,9 +932,10 @@ const Test = ({
                                       ? "main-secondary-cta-button"
                                       : ""
                                   }
-                                  onClick={() =>
-                                    setCurrentQuestion(currentQuestion - 1)
-                                  }
+                                  onClick={() => {
+                                    setShowRequired(false);
+                                    setCurrentQuestion(currentQuestion - 1);
+                                  }}
                                   icon={<RxChevronLeft />}>
                                   {shortNavLabels
                                     ? t("Previous")
@@ -923,9 +955,7 @@ const Test = ({
                                   className="main-cta-button"
                                   size="large"
                                   type="primary"
-                                  onClick={() =>
-                                    setCurrentQuestion(currentQuestion + 1)
-                                  }
+                                  onClick={() => goToNextQuestion(false)}
                                   icon={<RxChevronRight />}
                                   iconPlacement="end">
                                   {shortNavLabels
@@ -937,7 +967,7 @@ const Test = ({
                                   className="main-cta-button"
                                   size="large"
                                   type="primary"
-                                  onClick={form.submit}>
+                                  onClick={() => goToNextQuestion(true)}>
                                   {t("Finish")}
                                 </Button>
                               )}
@@ -945,9 +975,14 @@ const Test = ({
                           );
                           // Fixa no fundo do ecrã (fora do scroll), para avançar sem procurar os botões
                           // em perguntas com muitas opções
-                          return footerSlot
-                            ? createPortal(navigation, footerSlot)
-                            : navigation;
+                          return (
+                            <>
+                              {requiredWarning}
+                              {footerSlot
+                                ? createPortal(navigation, footerSlot)
+                                : navigation}
+                            </>
+                          );
                         }}
                       </Form.Item>
                     </div>
