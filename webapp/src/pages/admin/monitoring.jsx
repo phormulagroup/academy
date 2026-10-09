@@ -553,6 +553,7 @@ function BlocksTab() {
 // Monitorização do sistema: disponibilidade (tempo em baixo), erros do servidor e e-mails enviados
 export default function Monitoring() {
   const { t } = useTranslation();
+  const { user, isStaffKnown } = useContext(Context);
   // Cada separador segue a sua permissão: disponibilidade, erros e e-mails (Monitorização), atividade (Registo de atividade) e bloqueios (Acessos bloqueados)
   const monitoring = usePermission("monitoring");
   const audit = usePermission("audit");
@@ -569,7 +570,8 @@ export default function Monitoring() {
         <p className="text-xl font-bold">{t("System monitoring")}</p>
         <p className="mb-0! text-[14px] text-[#8A8D98]">{t("Availability, server errors and e-mails sent by the platform")}</p>
       </div>
-      <Tabs items={items} />
+      {/* Só se montam os separadores (e se fazem os pedidos) depois de a sessão e as permissões estarem prontas */}
+      {user?.id && isStaffKnown ? <Tabs items={items} /> : <Skeleton active paragraph={{ rows: 6 }} />}
     </div>
   );
 }
