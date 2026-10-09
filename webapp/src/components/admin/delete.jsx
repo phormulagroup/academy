@@ -11,7 +11,7 @@ export default function Delete({ open, close, data, table, onDeleteSuccess }) {
   const { toastApi, createLog, user, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media"), user: t("User"), document: t("Document"), download: t("Download"), iec: t("IEC"), form: t("Submission"), userGroup: t("User group"), role: t("Role") });
+  const [tablesName] = useState({ account: t("Account"), course: t("Course"), course_certificate: t("Certificate"), project: t("Project"), test: t("Test"), question: t("Question"), answer: t("Answer"), media: t("Media"), user: t("User"), document: t("Document"), download: t("Download"), iec: t("IEC"), form: t("Submission"), userGroup: t("User group"), role: t("Role"), faqs: t("FAQ") });
 
   async function submit() {
     try {
