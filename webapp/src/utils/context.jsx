@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet";
 
 import endpoints from "./endpoints";
 import api from "./api";
@@ -57,6 +58,7 @@ const ContextProvider = ({ children }) => {
 		download: t("Download"),
 		personalization: t("Personalization"),
 		userGroup: t("User group"),
+		faqs: t("FAQ"),
 	});
 
 	// stack.threshold 1: a partir do 2.º toast em simultâneo ficam empilhados (só o mais recente visível, os outros por trás)
@@ -197,21 +199,24 @@ const ContextProvider = ({ children }) => {
 			getPersonalization(res.data);
 
 			const auxLanguages = res.data;
-			const current = auxLanguages.find((l) => l.code === i18n.language) ?? auxLanguages.find((l) => l.is_default === 1);
+			// Idioma escolhido: fonte única. No backoffice manda o id_lang guardado (escolha da equipa); no site manda o idioma em uso
+			// (vem do :lang do URL, que o LanguageWrapper sincroniza com o id_lang). Antes o id_lang era aplicado ao header sem mudar o
+			// i18n, e como isto volta a correr ao regressar ao separador o header/idioma pareciam mudar sozinhos
+			const idLangStorage = localStorage.getItem("id_lang");
+			const stored = auxLanguages.find((l) => l.id === parseInt(idLangStorage));
+			const byCode = auxLanguages.find((l) => l.code === i18n.language);
+			const fallback = auxLanguages.find((l) => l.is_default === 1);
+			const isAdminPath = window.location.pathname.startsWith("/admin");
+			const current = (isAdminPath ? stored ?? byCode : byCode ?? stored) ?? fallback;
 			await loadTranslation(current).catch((err) => console.log(err));
 
-			const idLangStorage = localStorage.getItem("id_lang");
+			if (current) {
+				setSelectedLanguage(current);
+				if (localStorage.getItem("id_lang") !== String(current.id)) localStorage.setItem("id_lang", current.id);
+			}
 
-			setSelectedLanguage(
-				res.data.filter((_l) =>
-					idLangStorage
-						? _l.id === parseInt(idLangStorage)
-						: _l.is_default === 1,
-				)[0],
-			);
-
-			// Refresh i18n to trigger re-render with updated translations
-			await i18n.changeLanguage(i18n.language);
+			// Garante que o i18n fica no mesmo idioma do header (também refresca as traduções carregadas)
+			await i18n.changeLanguage(current?.code ?? i18n.language);
 
 			// As restantes línguas carregam em segundo plano (ficam em cache; trocar de língua é então imediato)
 			Promise.all(auxLanguages.filter((l) => l !== current).map((l) => loadTranslation(l).catch(() => {}))).then(() => i18n.changeLanguage(i18n.language));
@@ -510,6 +515,11 @@ const ContextProvider = ({ children }) => {
 				getPersonalization
 			}}
 		>
+			{/* Título por defeito: o react-helmet não repõe o título quando a página que o definiu desmonta (ex.: logout ou páginas
+			sem Helmet), por isso fica sempre este como base e as páginas sobrepõem-no */}
+			<Helmet defaultTitle="Bial Regional Academy">
+				<title>Bial Regional Academy</title>
+			</Helmet>
 			{contextNotificationHolder}
 			{children}
 		</Context.Provider>
