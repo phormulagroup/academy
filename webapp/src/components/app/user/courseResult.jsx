@@ -2,16 +2,28 @@ import { useState } from "react";
 import { Button, Progress, Tag } from "antd";
 import dayjs from "dayjs";
 import { LuAward, LuCalendar, LuChevronDown, LuClipboardList, LuCloudDownload, LuLayers, LuListChecks } from "react-icons/lu";
+import { PiCalendarBlank, PiHourglassMedium, PiShieldCheck } from "react-icons/pi";
 import { useTranslation } from "react-i18next";
 
 import config from "../../../utils/config";
 import { courseStats } from "../../../utils/userResults";
+import { timeUntil } from "../../../utils/courseStatus";
 import CourseContent from "../../../pages/app/course/content";
 
+// Estado do aluno no curso: aprovado (100%), reprovado (esgotou as tentativas de um teste), em curso ou por iniciar
 const STATUS = {
-  completed: { label: "Completed", color: "green" },
+  completed: { label: "Approved", color: "green" },
+  failed: { label: "Failed", color: "red" },
   in_progress: { label: "In progress", color: "blue" },
   not_started: { label: "Not started", color: "default" },
+};
+
+// Borda do cartão como no catálogo: aprovado verde, reprovado vermelho, expirado azul do CTA, por abrir laranja Bial
+const BORDER = {
+  completed: "border-[#2F8351] bg-[#2F8351]/5",
+  failed: "border-[#DB0709] bg-[#DB0709]/5",
+  expired: "border-[#00B9D6] bg-[#00B9D6]/5",
+  upcoming: "border-[#FF7D5A] bg-[#FF7D5A]/5",
 };
 
 const Tile = ({ icon, label, value }) => (
@@ -29,20 +41,30 @@ export default function CourseResult({ course, onDownloadCertificate }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const stats = courseStats(course);
-  const status = STATUS[stats.status];
-  const isCompleted = stats.status === "completed";
+  const statusKey = stats.status !== "completed" && course.isFailed ? "failed" : stats.status;
+  const status = STATUS[statusKey];
+  const isCompleted = statusKey === "completed";
   const date = (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "-");
+  const dates = course.course.settings?.course_access_expiration_dates || {};
+  const border = BORDER[course.dateState] || BORDER[statusKey] || "border-[#E5E7EB] bg-white";
 
   return (
-    <div className={`overflow-hidden rounded-[16px] border border-solid shadow-[0px_3px_6px_#00000014] ${isCompleted ? "border-[#2F8351] bg-[#2F8351]/5" : "border-[#E5E7EB] bg-white"}`}>
+    <div className={`overflow-hidden rounded-[16px] border border-solid shadow-[0px_3px_6px_#00000014] ${border}`}>
       <div
         role="button"
         tabIndex={0}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)}
-        className={`flex cursor-pointer flex-wrap items-center gap-3 p-3 sm:gap-4 sm:p-4 ${isCompleted ? "hover:bg-[#2F8351]/10" : "hover:bg-[#FAFBFD]"}`}>
-        <div className="hidden h-16 w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC] sm:block">
-          {course.course.thumbnail && <img src={`${config.server_ip}/media/${course.course.thumbnail}`} alt="" className="h-full w-full object-cover" />}
+        className="flex cursor-pointer flex-wrap items-center gap-3 p-3 hover:bg-black/[0.02] sm:gap-4 sm:p-4">
+        {/* Miniaturas 800x600: caixa 4:3, a imagem não é cortada; expirado a cinzento como no catálogo */}
+        <div className="hidden aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC] sm:block">
+          {course.course.thumbnail && (
+            <img
+              src={`${config.server_ip}/media/${course.course.thumbnail}`}
+              alt=""
+              className={`h-full w-full object-cover ${course.dateState === "expired" ? "grayscale" : ""}`}
+            />
+          )}
         </div>
         <div className="min-w-[180px] flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -51,10 +73,34 @@ export default function CourseResult({ course, onDownloadCertificate }) {
               {t(status.label)}
             </Tag>
           </div>
-          <p className="mb-2! text-[12px] text-[#707070]">{stats.lastActivity ? `${t("Last activity at")} ${dayjs(stats.lastActivity).format("DD/MM/YYYY HH:mm")}` : t("Not started")}</p>
+          {/* Expirado / por abrir aos alunos (só o Admin vê estes cursos), como no catálogo */}
+          {(course.dateState === "expired" || course.dateState === "upcoming") && (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              {course.dateState === "expired" ? (
+                <span className="course-card-date-inline">
+                  <PiHourglassMedium className="shrink-0" />
+                  <span className="font-ryker font-bold uppercase">{t("Expired")}</span>
+                  {dates.end_date && <span>· {t("Ended on")} {date(dates.end_date)}</span>}
+                </span>
+              ) : (
+                <span className="course-card-date-inline course-card-date-inline-upcoming">
+                  <PiCalendarBlank className="shrink-0" />
+                  <span className="font-ryker font-bold uppercase">{t("Coming soon")}</span>
+                  <span>
+                    · {t("Opens to students in {{time}}", { time: timeUntil(dates.start_date) })} · {date(dates.start_date)}
+                  </span>
+                </span>
+              )}
+              <span className="course-card-admin-only course-card-admin-only-inline">
+                <PiShieldCheck className="shrink-0" />
+                <span>{t("Only visible to administrators")}</span>
+              </span>
+            </div>
+          )}
+          <p className="mb-2! text-[12px] text-[#707070]">{stats.lastActivity && statusKey !== "not_started" ? `${t("Last activity at")} ${dayjs(stats.lastActivity).format("DD/MM/YYYY HH:mm")}` : t("Not started")}</p>
           <div className="flex items-center gap-3">
-            <Progress percent={stats.percent} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" className="max-w-[320px]!" size="small" />
-            <span className={`whitespace-nowrap text-[12px] font-bold ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{stats.percent}%</span>
+            <Progress percent={stats.percent} showInfo={false} strokeColor={statusKey === "failed" ? "#DB0709" : "#2F8351"} railColor="#EAEAEA" className="max-w-[320px]!" size="small" />
+            <span className={`whitespace-nowrap text-[12px] font-bold ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{Number(stats.percent.toFixed(1))}%</span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-3">
