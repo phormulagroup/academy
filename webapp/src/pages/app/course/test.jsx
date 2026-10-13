@@ -19,7 +19,11 @@ import { PiCalendarXDuotone, PiHourglassMediumDuotone } from "react-icons/pi";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
-import { isTestFailed, parseSettings, testDateState } from "../../../utils/courseStatus";
+import {
+  isTestFailed,
+  parseSettings,
+  testDateState,
+} from "../../../utils/courseStatus";
 import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
@@ -53,7 +57,7 @@ function TestDateNotice({ type, date, t }) {
   const Icon = expired ? PiCalendarXDuotone : PiHourglassMediumDuotone;
   return (
     <div
-      className={`flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white ${expired ? "bg-[#8B9CC3]" : "bg-[#00B9D6]"}`}>
+      className={`flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white ${expired ? "bg-[#8B9CC3]" : "bg-[#FF7D5A]"}`}>
       <Icon className="shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
       <div className="min-w-0">
         <p className="font-ryker font-bold leading-tight text-[14px] sm:text-[16px] lg:text-[18px]">
@@ -85,6 +89,8 @@ const Test = ({
   onInProgressChange,
   // Elemento fixo no fundo do eLearning onde fica a navegação entre perguntas durante o teste
   footerSlot,
+  // Navegação livre: item a seguir a um ainda por concluir (mostra só o bloqueado)
+  forceLocked,
 }) => {
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
@@ -220,7 +226,11 @@ const Test = ({
       if (failedResult) setResult(failedResult);
     }
 
-    if (course.settings && course.settings.progression_type === "linear") {
+    // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (teste já aprovado não fica bloqueado)
+    if (forceLocked && !hasFullAccess(user) && completedTest.length === 0) setIsTopicLocked(true);
+
+    // Teste já aprovado (com o visto) nunca fica bloqueado
+    if (course.settings && course.settings.progression_type === "linear" && completedTest.length === 0) {
       let findIndex = allItems.findIndex(
         (i) =>
           i.id === selectedCourseItem.id && i.type === selectedCourseItem.type,
@@ -244,7 +254,7 @@ const Test = ({
         }
       }
     }
-  }, [selectedCourseItem]);
+  }, [selectedCourseItem, forceLocked]);
 
   function prepareData() {
     let aux = Object.assign({}, selectedCourseItem);

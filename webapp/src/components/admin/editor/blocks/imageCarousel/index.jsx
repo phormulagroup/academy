@@ -70,6 +70,12 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const slides = (images || []).filter((item) => item.image?.url);
+  // Todos os slides vistos (chegou ao último): fica marcado no elemento e avisa o tópico (eLearning: só avança depois disso)
+  // Só 1 slide: fica logo visto; com mais, quando o aluno chega ao último (onSlideChange)
+  const [seenAll, setSeenAll] = useState(slides.length <= 1);
+  useEffect(() => {
+    window.dispatchEvent(new Event("bial-carousel-progress"));
+  }, [seenAll]);
 
   // Mantém o switch sincronizado quando se sai do ecrã inteiro com Esc
   useEffect(() => {
@@ -93,12 +99,16 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
       alignItems={alignItems}>
       <div
         ref={containerRef}
+        data-seen-all={seenAll ? "true" : "false"}
         className={`bial-carousel ${isFullscreen ? "is-fullscreen" : ""}`}>
         <div className="bial-carousel-stage">
           <Swiper
             spaceBetween={10}
             onSwiper={(swiper) => (swiperRef.current = swiper)}
-            onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}>
+            onSlideChange={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (swiper.activeIndex >= slides.length - 1) setSeenAll(true);
+            }}>
             {slides.map((item, i) => (
               <SwiperSlide key={i}>
                 <img

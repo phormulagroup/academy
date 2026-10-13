@@ -96,6 +96,9 @@ const Learning = () => {
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
+  // Navegação livre: item aberto que fica com o ecrã de bloqueado e o item a partir do qual se conta o "seguinte"
+  const [forcedLockKey, setForcedLockKey] = useState(null);
+  const [lockAnchor, setLockAnchor] = useState(null);
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
@@ -161,11 +164,15 @@ const Learning = () => {
         auxCourse.settings = auxCourse.settings
           ? JSON.parse(auxCourse.settings)
           : null;
-        // Navegação: o admin navega sempre livremente (sem restrições, mesmo que o curso seja linear);
-        // os alunos têm sempre navegação linear
+        // Navegação: o admin navega sempre livremente (mesmo que o curso seja linear); os alunos seguem a definição
+        // do curso (linear por omissão; "free" = podem abrir qualquer item e avançar sem concluir o atual)
         auxCourse.settings = {
           ...(auxCourse.settings || {}),
-          progression_type: hasFullAccess(user) ? "free" : "linear",
+          progression_type: hasFullAccess(user)
+            ? "free"
+            : auxCourse.settings?.progression_type === "free"
+              ? "free"
+              : "linear",
         };
 
         // Admins (id_role = 1) can access all courses regardless of restrictions
@@ -368,8 +375,27 @@ const Learning = () => {
     wasFailedRef.current = courseFailed;
   }, [courseFailed, progress, data]);
 
+  // Navegação livre (alunos): pode abrir qualquer item; o que vem logo a seguir ao item em que estava (a "âncora"), enquanto
+  // esta não estiver concluída (todos os slides vistos / vídeo visto até ao fim / teste aprovado), abre com o ecrã de
+  // bloqueado (como no linear) e o Próximo fica desativado. A âncora não muda ao abrir um item bloqueado.
+  const itemKey = (item) => (item?.type ? `${item.type}-${item.id}` : null);
+  function isNextItemLocked(item) {
+    if (hasFullAccess(user) || data?.course?.settings?.progression_type !== "free") return false;
+    // Item já concluído (com o visto) nunca fica bloqueado
+    if (isItemCompleted(item)) return false;
+    const anchor = lockAnchor || selectedCourseItem;
+    if (!anchor?.type || isItemCompleted(anchor)) return false;
+    const current = indexInCourse(anchor);
+    return current >= 0 && indexInCourse(item) === current + 1;
+  }
+
   function selectCourseItem(item) {
     if (!isAccessibleWhenFailed(item)) return;
+    if (item.type) {
+      const locked = isNextItemLocked(item);
+      setForcedLockKey(locked ? itemKey(item) : null);
+      if (!locked) setLockAnchor(item);
+    }
     setSelectedCourseItem(item);
     // Only close drawer when selecting an actual topic/test item, not module headers
     if (item.type && windowDimension.width < 1080) {
@@ -390,6 +416,8 @@ const Learning = () => {
   function goToNextItem() {
     const nextItem = allItems?.[indexInCourse(selectedCourseItem) + 1];
     if (!nextItem || !isAccessibleWhenFailed(nextItem)) return false;
+    setForcedLockKey(null);
+    setLockAnchor(nextItem);
     setSelectedCourseItem(nextItem);
     return true;
   }
@@ -1019,7 +1047,7 @@ const Learning = () => {
                                   onClick={() => selectCourseItem(item)}>
                                   {item.title}
                                 </p>
-                                {data?.course?.settings.progression_type ===
+                                {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
                                 "linear"
                                   ? mInd > 0 &&
                                     progress.filter(
@@ -1067,7 +1095,12 @@ const Learning = () => {
                                     {_t.title}
                                   </p>
                                   {itemListExtras(_t).marker}
-                                  {data?.course?.settings.progression_type ===
+                                  {isNextItemLocked(_t) && (
+                                    <div className="flex justify-center items-center ml-4">
+                                      <RxLockClosed className="w-3.75 h-3.75" />
+                                    </div>
+                                  )}
+                                  {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
                                   "linear"
                                     ? ((_i > 0 && mInd === 0) ||
                                         (mInd > 0 && _i >= 0)) &&
@@ -1221,7 +1254,7 @@ const Learning = () => {
                                     }}>
                                     {item.title}
                                   </p>
-                                  {data?.course?.settings.progression_type ===
+                                  {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
                                   "linear"
                                     ? mInd > 0 &&
                                       progress.filter(
@@ -1272,7 +1305,12 @@ const Learning = () => {
                                       {_t.title}
                                     </p>
                                     {itemListExtras(_t).marker}
-                                    {data?.course?.settings.progression_type ===
+                                    {isNextItemLocked(_t) && (
+                                      <div className="flex justify-center items-center ml-4">
+                                        <RxLockClosed className="w-3.75 h-3.75" />
+                                      </div>
+                                    )}
+                                    {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
                                     "linear"
                                       ? ((_i > 0 && mInd === 0) ||
                                           (mInd > 0 && _i >= 0)) &&
@@ -1425,6 +1463,7 @@ const Learning = () => {
                             children:
                               selectedCourseItem.type === "topic" ? (
                                 <Topic
+                                  forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
                                   course={data.course}
                                   progress={progress}
                                   selectedCourseItem={selectedCourseItem}
@@ -1435,6 +1474,7 @@ const Learning = () => {
                                 />
                               ) : (
                                 <Test
+                                  forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
                                   course={data.course}
                                   progress={progress}
                                   selectedCourseItem={selectedCourseItem}
@@ -1474,6 +1514,7 @@ const Learning = () => {
                       />
                     ) : selectedCourseItem?.type === "topic" ? (
                       <Topic
+                        forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
                         course={data.course}
                         progress={progress}
                         selectedCourseItem={selectedCourseItem}
@@ -1483,6 +1524,7 @@ const Learning = () => {
                       />
                     ) : selectedCourseItem?.type === "test" ? (
                       <Test
+                        forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
                         course={data?.course}
                         progress={progress}
                         selectedCourseItem={selectedCourseItem}
