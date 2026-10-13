@@ -21,6 +21,7 @@ import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Context } from "../../../utils/context";
+import { isAllowedByCountry } from "../../../utils/courseStatus";
 
 import endpoints from "../../../utils/endpoints";
 import i18n from "../../../utils/i18n";
@@ -120,7 +121,7 @@ export default function DownloadDetails() {
           let item = res.data.download;
           item.country = item.country ? JSON.parse(item.country) : null;
 
-          if (item.country && !item.country.includes(user.country)) {
+          if (!isAllowedByCountry(item.country, user)) {
             setData(null);
             setIsLoading(false);
             return;
