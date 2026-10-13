@@ -12,6 +12,8 @@ const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const crypto = require("crypto");
 const { notifyUser, emailLanguage } = require("../utils/notify");
+const { visibleCourses } = require("../utils/courseAccess");
+const { completeAllCoursesForAdmin } = require("../utils/adminProgress");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -121,6 +123,8 @@ router.get("/readById", async (req, res) => {
 				? parseInt(req.query.id_lang) 
 				: user.id_lang;
 			
+			// Admin: cursos concluídos por defeito (acrescenta o que faltar antes de ler o progresso)
+			await completeAllCoursesForAdmin(user);
 			// For students, exclude draft courses; for admins, show all courses
 			const draftFilter = hasFullAccess(user) ? "" : "AND c.status != 'draft'";
 			
@@ -141,10 +145,12 @@ router.get("/readById", async (req, res) => {
 					"WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
 					"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
 					"AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-				[languageId, languageId, languageId, languageId, req.query.id_role || user.id_role, user.id],
+				// Testes em rascunho só para o Admin: pela função do utilizador dos resultados (nunca pelo id_role do pedido)
+				[languageId, languageId, languageId, languageId, user.id_role, user.id],
 			);
 
-			let courses = rows[0];
+			// Mesmas restrições do catálogo (países e utilizadores/grupos), vistas pelo utilizador dos resultados (o Admin vê todos)
+			let courses = await visibleCourses(query, rows[0], user);
 			let modules = rows[1];
 			let topics = rows[2];
 			let tests = rows[3];

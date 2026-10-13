@@ -9,6 +9,8 @@ const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission, hasFullAccess } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser, emailLanguage } = require("../utils/notify");
+const { completeAllCoursesForAdmin, approvedResult } = require("../utils/adminProgress");
+const { courseSettings, visibleCourses } = require("../utils/courseAccess");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
 // lang: idioma escolhido na app, só quando é a própria pessoa a concluir (a equipa recebe nesse idioma; o aluno no da sua conta)
@@ -33,56 +35,6 @@ const TEST_COLUMNS = "course_test.id, course_test.id_course_module, course_test.
 // Remove símbolos de marca (®, ™, ©) e "|" antes do slugify, que os converteria em "r", "tm", "c" e "or"
 const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
 
-
-// ---- Acesso restrito a utilizadores e grupos (course.settings.restrict_to_users) ----
-// A verificação é feita aqui, no servidor: o que o utilizador não pode ver nem chega ao browser. Os administradores
-// vêem sempre tudo. As tabelas vêm da migração 2026-10-02-course-access.sql; se ainda não existirem, os cursos
-// restritos ficam escondidos (falha fechada) e os outros funcionam como sempre.
-function isRestrictedCourse(course) {
-	let settings = course.settings;
-	if (typeof settings === "string") {
-		try {
-			settings = settings ? JSON.parse(settings) : null;
-		} catch {
-			settings = null;
-		}
-	}
-	return !!settings?.restrict_to_users;
-}
-
-// Cursos restritos a que o utilizador tem acesso: diretamente (course_user_access) ou por um grupo a que pertence
-async function accessibleCourseIds(query, userId) {
-	if (!userId) return new Set();
-	try {
-		const rows = await query(
-			"SELECT id_course FROM course_user_access WHERE id_user = ? " +
-				"UNION SELECT cg.id_course FROM course_group cg " +
-				"INNER JOIN user_group ug ON ug.id = cg.id_group AND ug.is_deleted = 0 " +
-				"INNER JOIN user_group_member ugm ON ugm.id_group = cg.id_group WHERE ugm.id_user = ?",
-			[userId, userId],
-		);
-		return new Set(rows.map((r) => r.id_course));
-	} catch (err) {
-		if (err.code !== "ER_NO_SUCH_TABLE") console.error(err);
-		return new Set();
-	}
-}
-
-// O papel vem da base de dados (id_user do pedido), não do que o cliente diz ser
-async function isAdminUser(query, userId) {
-	if (!userId) return false;
-	const rows = await query("SELECT id_role FROM user WHERE id = ? AND is_deleted = 0", [userId]);
-	// Admin e Gestor veem todos os cursos
-	return hasFullAccess(rows[0]);
-}
-
-// Cursos que o utilizador pode ver (todos para administradores; os restritos só se tiver acesso)
-async function visibleCourses(query, courses, userId) {
-	if (!courses.some(isRestrictedCourse)) return courses;
-	if (await isAdminUser(query, userId)) return courses;
-	const allowed = await accessibleCourseIds(query, userId);
-	return courses.filter((c) => !isRestrictedCourse(c) || allowed.has(c.id));
-}
 
 router.get("/read", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
@@ -183,6 +135,8 @@ router.get("/readProgress", async (req, res) => {
 router.get("/readByLang", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
+		// Admin: cursos concluídos por defeito (acrescenta o que faltar antes de ler o progresso)
+		await completeAllCoursesForAdmin(req.user);
 		const rows = await multi(query, 
 			`SELECT ${COURSE_COLUMNS} FROM course WHERE id_lang = ? AND is_deleted = 0; ` +
 				"SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ? AND course_module.is_deleted = 0; " +
@@ -202,8 +156,9 @@ router.get("/readByLang", async (req, res) => {
 			],
 		);
 
+		// Visibilidade pela sessão (req.user), nunca pelo id_user da query: senão bastava trocar o id para ver cursos de outra pessoa
 		// Cursos restritos a utilizadores/grupos: só os que o utilizador pode ver (e o que lhes pertence)
-		const courses = await visibleCourses(query, rows[0], req.query.id_user);
+		const courses = await visibleCourses(query, rows[0], req.user);
 		if (courses.length !== rows[0].length) {
 			const courseIds = new Set(courses.map((c) => c.id));
 			const moduleIds = new Set(rows[1].filter((m) => courseIds.has(m.id_course)).map((m) => m.id));
@@ -251,7 +206,9 @@ router.get("/readById", async (req, res) => {
 router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const isAdmin = hasFullAccess({ id_role: req.query.id_role });
+		// Admin: cursos concluídos por defeito (acrescenta o que faltar antes de ler o progresso)
+		await completeAllCoursesForAdmin(req.user);
+		const isAdmin = hasFullAccess(req.user);
 
 		// O mesmo slug pode existir em vários idiomas: todas as queries filtram por slug + id_lang
 		const courseFilter = "course.slug = ? AND course.id_lang = ? AND course.is_deleted = 0";
@@ -286,7 +243,7 @@ router.get("/readBySlug", async (req, res) => {
 			],
 		);
 		// Curso restrito a que o utilizador não tem acesso: responde como se não existisse
-		const courses = await visibleCourses(query, rows[0], req.query.id_user);
+		const courses = await visibleCourses(query, rows[0], req.user);
 		if (courses.length === 0 && rows[0].length > 0) {
 			return res.send({ course: [], modules: [], topics: [], tests: [], progress: [] });
 		}
@@ -358,14 +315,14 @@ function reportQueries({ lang, courseId, slim = false, skipUsers = false }) {
 	const courseWhere = where("id_lang", "id");
 	const moduleWhere = where("course.id_lang", "course.id");
 	const activityCols = slim
-		? "cua.id, cua.id_user, cua.id_course, cua.id_course_module, cua.id_course_topic, cua.id_course_test, cua.activity_type, cua.is_completed, cua.is_deleted"
+		? "cua.id, cua.id_user, cua.id_course, cua.id_course_module, cua.id_course_topic, cua.id_course_test, cua.activity_type, cua.is_completed, cua.is_deleted, cua.created_at"
 		: "cua.*, course_test.title as `test_title`, user.name as `user_name`";
 	return Promise.all([
 		skipUsers ? Promise.resolve([]) : query(`SELECT ${slim ? "id, name, email, id_role, status, country, id_lang" : "*"} FROM user WHERE ${lang ? "id_lang = ? AND " : ""}is_deleted = 0`, lang ? [lang] : []),
 		query(`SELECT ${COURSE_COLUMNS} FROM course WHERE ${courseWhere.sql}is_deleted = 0`, courseWhere.params),
-		query(`SELECT ${slim ? "course_module.id, course_module.id_course, course_module.is_deleted" : "course_module.*"} FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course.is_deleted = 0 AND course_module.is_deleted = 0`, moduleWhere.params),
+		query(`SELECT ${slim ? "course_module.id, course_module.id_course, course_module.items, course_module.is_deleted" : "course_module.*"} FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course.is_deleted = 0 AND course_module.is_deleted = 0`, moduleWhere.params),
 		query(`SELECT ${slim ? "course_topic.id, course_topic.is_deleted" : TOPIC_COLUMNS}, course_module.id_course FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course_module.is_deleted = 0 AND course_topic.is_deleted = 0 AND course.is_deleted = 0`, moduleWhere.params),
-		query(`SELECT ${slim ? "course_test.id, course_test.settings, course_test.is_deleted" : "course_test.*"}, course_module.id_course FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course.is_deleted = 0`, moduleWhere.params),
+		query(`SELECT ${slim ? "course_test.id, course_test.settings, course_test.status, course_test.is_deleted" : "course_test.*"}, course_module.id_course FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id LEFT JOIN course ON course.id = course_module.id_course WHERE ${moduleWhere.sql}course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course.is_deleted = 0`, moduleWhere.params),
 		query(
 			`SELECT ${activityCols} FROM course_user_activity cua LEFT JOIN course ON cua.id_course = course.id ` +
 				"LEFT JOIN course_module ON cua.id_course_module = course_module.id LEFT JOIN course_topic ON cua.id_course_topic = course_topic.id " +
@@ -654,6 +611,9 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 			}
 
 			const done = await query("SELECT activity_type, id_course_topic, id_course_test, id_course_module FROM course_user_activity WHERE id_user = ? AND id_course = ? AND is_completed = 1 AND is_deleted = 0", [id_user, id_course]);
+			// Teste concluído pelo Admin: aprovado a 100%, com todas as respostas certas (para a revisão do teste)
+			const testIds = targets.filter((t) => t.type === "test").map((t) => t.id);
+			const questions = testIds.length ? new Map((await query("SELECT id, question FROM course_test WHERE id IN (?)", [testIds])).map((t) => [t.id, t.question])) : new Map();
 			const isDone = (type, id) => done.some((d) => d.activity_type === type && d[`id_course_${type}`] === id);
 			const rows = [];
 			const add = (activity_type, ids = {}, meta_data = null) => rows.push([id_course, id_user, activity_type, ids.test ?? null, ids.topic ?? null, ids.module ?? null, 1, meta_data]);
@@ -662,7 +622,7 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 			for (const t of targets) {
 				if (isDone(t.type, t.id)) continue;
 				if (t.type === "topic") add("topic", { topic: t.id, module: t.id_module });
-				else add("test", { test: t.id, module: t.id_module }, JSON.stringify({ items: [], completed_by_admin: true }));
+				else add("test", { test: t.id, module: t.id_module }, approvedResult(questions.get(t.id)));
 				done.push({ activity_type: t.type, [`id_course_${t.type}`]: t.id });
 			}
 			// Módulos que ficam completos e, se forem todos, o curso
@@ -691,56 +651,48 @@ router.post("/completeProgress", requirePermission("course", "update"), async (r
 	});
 });
 
-router.post("/resetProgress", requirePermission("course", "update"), async (req, res, next) => {
+// O Admin desmarca o progresso do aluno a partir de um item: num curso linear, esse item e todos os seguintes; num curso livre, só esse.
+// Tudo é calculado aqui a partir do curso na BD (antes vinha do cliente e falhava, ex.: listas vazias no IN ()). Um teste desmarcado perde
+// todas as tentativas (o aluno pode voltar a fazê-lo); os módulos que deixam de estar completos e a conclusão do curso também saem.
+router.post("/resetProgress", requirePermission("course", "update"), async (req, res) => {
+	const { id_user, id_course, item } = req.body.data || {};
+	if (!id_user || !id_course || !["topic", "test"].includes(item?.type)) return res.status(400).send({ message: "Invalid request" });
+
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Error" });
 		const query = util.promisify(conn.query).bind(conn);
-		const transaction = util.promisify(conn.beginTransaction).bind(conn);
-		const commit = util.promisify(conn.commit).bind(conn);
-		const rollback = util.promisify(conn.rollback).bind(conn);
 		try {
-			await transaction();
-			let data = req.body.data;
-			let course = data.course;
-			let modules = data.module;
-			let items = data.items;
-			let tests = data.tests;
-			let topicsToDelete = [];
-			let testsToDelete = [];
-			let modulesToDelete = [];
-
-			if (course.settings && course.settings.progression_type === "linear") {
-				topicsToDelete = items
-					.map((i) => (i.type === "topic" ? i.id : null))
-					.filter((i) => i !== null);
-				testsToDelete = tests.map((i) => i.id);
-				modulesToDelete = modules.map((m) => m.id);
-			} else if (course.settings.progression_type === "free") {
-				topicsToDelete = items[0].type === "topic" ? items[0].id : [];
-				testsToDelete = tests.map((i) => i.id);
-				modulesToDelete = modules[0].id;
+			await util.promisify(conn.beginTransaction).bind(conn)();
+			const [course] = await query("SELECT settings FROM course WHERE id = ? AND is_deleted = 0", [id_course]);
+			const modules = await query("SELECT id, items FROM course_module WHERE id_course = ? AND is_deleted = 0 ORDER BY position, id", [id_course]);
+			const ordered = modules.flatMap((m) => (m.items ? JSON.parse(m.items) : []).map((i) => ({ type: i.type, id: Number(i.id), id_module: m.id })));
+			const start = ordered.findIndex((i) => i.type === item.type && i.id === Number(item.id));
+			if (!course || start < 0) {
+				await util.promisify(conn.rollback).bind(conn)();
+				conn.release();
+				return res.status(404).send({ message: "Not found" });
 			}
+			const linear = courseSettings(course).progression_type !== "free";
+			const targets = linear ? ordered.slice(start) : [ordered[start]];
+			const topics = targets.filter((t) => t.type === "topic").map((t) => t.id);
+			const tests = targets.filter((t) => t.type === "test").map((t) => t.id);
 
-			const studentId = toId(data.user.id);
-			const courseId = toId(course.id);
-			const resp = await multi(query, 
-				"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_module IN (?) AND activity_type = 'module'; " +
-					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_topic IN (?) AND activity_type = 'topic'; " +
-					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND id_course_test IN (?) AND activity_type = 'test'; " +
-					"DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course'",
-				[studentId, courseId, modulesToDelete, studentId, courseId, topicsToDelete, studentId, courseId, testsToDelete, studentId, courseId],
-				{ sequential: true }, // dentro da transação, na mesma ligação
-			);
+			let removed = 0;
+			if (topics.length) removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'topic' AND id_course_topic IN (?)", [id_user, id_course, topics])).affectedRows;
+			if (tests.length) removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'test' AND id_course_test IN (?)", [id_user, id_course, tests])).affectedRows;
+			// Módulos que deixam de estar completos (os dos itens desmarcados) e a conclusão do curso
+			const modulesHit = [...new Set(targets.map((t) => t.id_module))];
+			removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'module' AND id_course_module IN (?)", [id_user, id_course, modulesHit])).affectedRows;
+			removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course'", [id_user, id_course])).affectedRows;
 
-
-			await commit();
+			await util.promisify(conn.commit).bind(conn)();
 			conn.release();
-			res.send(data);
+			res.send({ removed });
 		} catch (err) {
-			console.error(err);
-			await rollback();
+			await util.promisify(conn.rollback).bind(conn)().catch(() => {});
 			conn.release();
-			throw err;
+			console.error(err);
+			res.status(500).send({ message: "Error" });
 		}
 	});
 });
