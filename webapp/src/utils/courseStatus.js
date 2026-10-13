@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { courseAccessState } from "./courseWindow";
+import { ADMIN_ROLE_ID } from "./roles";
 
 /**
  * Regras partilhadas de estado de cursos e testes (catálogo, detalhe do curso, eLearning e resultados).
@@ -88,6 +89,29 @@ export function testDateState(test) {
  * @returns {boolean}
  */
 export function isAllowedByCountry(countries, user) {
+  // O Admin vê tudo (cursos, documentos, downloads e materiais), sem limite de país
+  if (Number(user?.id_role) === ADMIN_ROLE_ID) return true;
   if (!countries || countries.length === 0) return true;
   return countries.includes(user?.country);
+}
+
+// Tempo até o curso abrir aos alunos (ex.: "3d 4h", "5h 20m")
+export function timeUntil(date) {
+  const minutes = Math.max(dayjs(date).diff(dayjs(), "minute"), 0);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes % 60}m`;
+}
+
+// Admin: esconder do SEU catálogo (e dos resultados do perfil, a mesma preferência) os cursos expirados e/ou os que ainda não abriram
+// aos alunos (só no browser; não altera a BD)
+export const catalogueFiltersKey = (userId) => `catalogue_filters_${userId}`;
+
+export function readCatalogueFilters(userId) {
+  try {
+    const value = JSON.parse(localStorage.getItem(catalogueFiltersKey(userId)));
+    return { hideExpired: !!value?.hideExpired, hideUpcoming: !!value?.hideUpcoming };
+  } catch {
+    return { hideExpired: false, hideUpcoming: false };
+  }
 }
