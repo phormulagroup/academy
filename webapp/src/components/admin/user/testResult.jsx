@@ -79,7 +79,7 @@ export default function TestResult({ course, test, onChange }) {
         </Tag>
       </div>
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Meta label={t("Tries")} value={`${result.tries.length}/${result.maxTries}`} />
+        <Meta label={t("Tries")} value={result.maxTries > 0 ? `${result.tries.length}/${result.maxTries}` : result.tries.length} />
         <Meta label={t("Questions")} value={result.questions} />
         <Meta label={t("Time")} value={result.time != null ? `${result.time} min` : "-"} />
         <Meta label={t("Passing score")} value={`${result.passingScore}%`} />

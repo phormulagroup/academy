@@ -40,7 +40,6 @@ export default function ModuleProgress({ course, student, onChange }) {
   const [confirm, confirmHolder] = useConfirm();
 
   const isDone = (type, id) => course.progress.some((p) => p.is_completed === 1 && p.activity_type === type && p[`id_course_${type}`] === id);
-  const isModuleDone = (module) => course.progress.some((p) => p.activity_type === "module" && p.id_course_module === module.id);
   // Quando foi concluído: a atividade mais recente (concluída) do item; no módulo, a do módulo ou a do último item
   const doneAt = (type, id) => {
     const dates = course.progress.filter((p) => p.is_completed === 1 && p.activity_type === type && p[`id_course_${type}`] === id).map((p) => new Date(p.created_at).getTime());
@@ -65,12 +64,11 @@ export default function ModuleProgress({ course, student, onChange }) {
     });
   }
 
+  // O servidor calcula o que sai (este item e os seguintes num curso linear), a partir do curso na BD
   function resetFrom(module, item) {
-    const itemsToRemove = course.allItems.slice(course.allItems.findIndex((i) => i.id === item.id && i.type === item.type));
-    const modulesToRemove = course.modules.slice(course.modules.findIndex((m) => m.id === module.id));
     return axios
       .post(endpoints.course.resetProgress, {
-        data: { user: student, module: modulesToRemove, items: itemsToRemove, course: course.course, tests: course.allItems.filter((i) => i.type === "test") },
+        data: { id_user: student.id, id_course: course.course.id, item: { type: item.type, id: item.id } },
       })
       .then(() => {
         toastApi.success(t("Progress reset successfully"));
@@ -123,7 +121,8 @@ export default function ModuleProgress({ course, student, onChange }) {
         const items = module.items ?? [];
         const doneCount = items.filter((i) => isDone(i.type, i.id)).length;
         const moduleComplete = items.length > 0 && doneCount === items.length;
-        const completedAt = moduleComplete || isModuleDone(module) ? moduleDoneAt(module) : null;
+        // Completo só pelos itens (um registo antigo de "módulo concluído" não conta depois de desmarcar um item)
+        const completedAt = moduleComplete ? moduleDoneAt(module) : null;
         return (
           <Collapse
             key={module.id}
@@ -135,7 +134,7 @@ export default function ModuleProgress({ course, student, onChange }) {
                 label: (
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <Dot done={isModuleDone(module) || moduleComplete} />
+                      <Dot done={moduleComplete} />
                       <div className="min-w-0">
                         <p className="mb-0! font-bold text-[14px] truncate">{module.title}</p>
                         <p className="mb-0! text-[12px] text-[#8A8D98]">{t("{{done}} of {{total}} items completed", { done: doneCount, total: items.length })}
