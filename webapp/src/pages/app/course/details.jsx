@@ -21,6 +21,7 @@ import {
   isAllowedByCountry,
   isCourseFailed,
   testDateState,
+  timeUntil,
 } from "../../../utils/courseStatus";
 
 import i18n from "../../../utils/i18n";
@@ -29,6 +30,9 @@ import {
   PiFileTextLight,
   PiBookBookmark,
   PiBookOpenLight,
+  PiCalendarBlank,
+  PiHourglassMedium,
+  PiShieldCheck,
 } from "react-icons/pi";
 import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
@@ -50,16 +54,24 @@ export default function CourseDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Mesmas regras do catálogo: restrição de países para alunos e admin; validade (datas) só para alunos
-  const canAccess = useCallback(
+  // Mesmas regras do catálogo: restrição de países para alunos e admin; validade (datas) só para alunos.
+  // Devolve a mensagem do motivo (país / ainda não abriu / expirou) ou null se pode entrar
+  const accessDeniedMessage = useCallback(
     (obj) => {
       const countries = obj.settings?.country_limit
         ? obj.settings.country
         : null;
-      if (!isAllowedByCountry(countries, user)) return false;
-      return hasFullAccess(user) || courseDateState(obj) === "active";
+      if (!isAllowedByCountry(countries, user)) return t("This course is not available in your country.");
+      if (hasFullAccess(user)) return null;
+      const state = courseDateState(obj);
+      if (state === "upcoming")
+        return t("This course is not open yet. It opens on {{date}}.", {
+          date: dayjs(obj.settings.course_access_expiration_dates.start_date).format("DD/MM/YYYY"),
+        });
+      if (state === "expired") return t("Your access period to this course has ended.");
+      return null;
     },
-    [user],
+    [user, t],
   );
 
   useEffect(() => {
@@ -79,7 +91,8 @@ export default function CourseDetails() {
           auxCourse.settings = auxCourse.settings
             ? JSON.parse(auxCourse.settings)
             : null;
-          if (!canAccess(auxCourse)) auxCourse = null;
+          const deniedMessage = accessDeniedMessage(auxCourse);
+          if (deniedMessage) auxCourse = null;
           if (auxCourse) {
             // Alunos: testes expirados saem do eLearning, logo também dos módulos e do progresso
             const allTests = res.data.tests.filter((_t) => _t.is_deleted !== 1);
@@ -161,15 +174,12 @@ export default function CourseDetails() {
               allTests,
             });
           } else {
-            toastApi.open({
-              type: "info",
-              content: t(
-                "This course is not available in your country or your access period has expired.",
-              ),
-            });
+            toastApi.open({ type: "info", content: deniedMessage });
             navigate(`/${i18n.language}/courses`, { replace: true });
           }
         } else {
+          // O servidor não devolve cursos restritos a utilizadores/grupos de que a pessoa não faz parte (ou slug inexistente)
+          toastApi.open({ type: "info", content: t("You do not have access to this course.") });
           navigate(`/${i18n.language}/courses`, { replace: true });
         }
         setTimeout(() => {
@@ -181,7 +191,7 @@ export default function CourseDetails() {
     }
 
     getData();
-  }, [slug, user, languages, navigate, t, toastApi, canAccess]);
+  }, [slug, user, languages, navigate, t, toastApi, accessDeniedMessage]);
 
   // Nº de tópicos/testes (não apagados) concluídos; cada item conta uma só vez, mesmo com registos repetidos
   function countCompletedItems() {
@@ -350,6 +360,30 @@ export default function CourseDetails() {
                   />
                 </div>
               </div>
+
+              {/* Só o admin chega aqui com o curso expirado ou por abrir: aviso de que os alunos não o veem */}
+              {hasFullAccess(user) && ["expired", "upcoming"].includes(courseDateState(data.course)) && (
+                <div
+                  className={`course-details-date-notice ${courseDateState(data.course) === "upcoming" ? "is-upcoming" : ""}`}>
+                  {courseDateState(data.course) === "upcoming" ? (
+                    <PiCalendarBlank className="shrink-0" />
+                  ) : (
+                    <PiHourglassMedium className="shrink-0" />
+                  )}
+                  <span className="font-ryker font-bold uppercase">
+                    {courseDateState(data.course) === "upcoming" ? t("Coming soon") : t("Expired")}
+                  </span>
+                  <span>
+                    {courseDateState(data.course) === "upcoming"
+                      ? `${t("Opens to students in {{time}}", { time: timeUntil(data.course.settings.course_access_expiration_dates.start_date) })} · ${dayjs(data.course.settings.course_access_expiration_dates.start_date).format("DD/MM/YYYY")}`
+                      : `${t("Ended on")} ${dayjs(data.course.settings.course_access_expiration_dates.end_date).format("DD/MM/YYYY")}`}
+                  </span>
+                  <span className="course-details-date-notice-admin">
+                    <PiShieldCheck className="shrink-0" />
+                    {t("Only visible to administrators")}
+                  </span>
+                </div>
+              )}
 
               {/* Grupo 2: Progress Bar */}
               <div className="bg-[#C5CEE1] p-3 sm:p-5 lg:p-6 rounded-[5px]">

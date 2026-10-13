@@ -1805,7 +1805,9 @@ body:has(.admin-layout)
   ):hover
   svg,
 body:has(.admin-layout)
-  .ant-dropdown-menu-submenu-title:not(.ant-dropdown-menu-submenu-title-disabled):hover {
+  .ant-dropdown-menu-submenu-title:not(
+    .ant-dropdown-menu-submenu-title-disabled
+  ):hover {
   color: #00b9d6 !important;
 }
 
@@ -2180,7 +2182,6 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   margin: 0;
 }
 
-
 /* ---- Menu lateral do admin recolhido (só ícones), como no eLearning ---- */
 
 /* Recolhido, os títulos dos grupos ("Website", "e-Learning"...) não cabem: escondem-se */
@@ -2202,7 +2203,10 @@ body:has(.admin-layout) .ant-drawer-close:hover {
    dentro de grupos e já existe uma regra com padding-inline !important nesse caminho, por isso o seletor tem de ser
    igual de específico e !important. */
 .principal-menu.ant-menu-inline-collapsed .ant-menu-item,
-.principal-menu.ant-menu-inline-collapsed .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item {
+.principal-menu.ant-menu-inline-collapsed
+  .ant-menu-item-group
+  .ant-menu-item-group-list
+  .ant-menu-item {
   display: flex !important;
   align-items: center;
   justify-content: center !important;
@@ -2223,7 +2227,9 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 }
 
 /* O texto do item continua a ocupar largura (só fica transparente): sem display:none o ícone ficava ~16px à esquerda do eixo */
-.principal-menu.ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
+.principal-menu.ant-menu-inline-collapsed
+  .ant-menu-item
+  .ant-menu-title-content {
   display: none !important;
 }
 
@@ -2240,7 +2246,10 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 /* Hover dos itens do menu lateral: o mesmo do botão de recolher (fundo branco a 10%), para se perceber melhor onde está o rato.
    O item selecionado mantém o fundo branco. */
 .principal-menu .ant-menu-item:not(.ant-menu-item-selected):hover,
-.principal-menu .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item:not(.ant-menu-item-selected):hover {
+.principal-menu
+  .ant-menu-item-group
+  .ant-menu-item-group-list
+  .ant-menu-item:not(.ant-menu-item-selected):hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #fff !important;
 }
@@ -2287,14 +2296,46 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 .rich-text-editor .ql-image-resize-handle:hover {
   background: #00b9d6;
 }
-.rich-text-editor .ql-image-resize-nw { left: -6px; top: -6px; cursor: nwse-resize; }
-.rich-text-editor .ql-image-resize-ne { right: -6px; top: -6px; cursor: nesw-resize; }
-.rich-text-editor .ql-image-resize-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
-.rich-text-editor .ql-image-resize-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
-.rich-text-editor .ql-image-resize-n { left: calc(50% - 5px); top: -6px; cursor: ns-resize; }
-.rich-text-editor .ql-image-resize-s { left: calc(50% - 5px); bottom: -6px; cursor: ns-resize; }
-.rich-text-editor .ql-image-resize-e { right: -6px; top: calc(50% - 5px); cursor: ew-resize; }
-.rich-text-editor .ql-image-resize-w { left: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+.rich-text-editor .ql-image-resize-nw {
+  left: -6px;
+  top: -6px;
+  cursor: nwse-resize;
+}
+.rich-text-editor .ql-image-resize-ne {
+  right: -6px;
+  top: -6px;
+  cursor: nesw-resize;
+}
+.rich-text-editor .ql-image-resize-se {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+.rich-text-editor .ql-image-resize-sw {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+.rich-text-editor .ql-image-resize-n {
+  left: calc(50% - 5px);
+  top: -6px;
+  cursor: ns-resize;
+}
+.rich-text-editor .ql-image-resize-s {
+  left: calc(50% - 5px);
+  bottom: -6px;
+  cursor: ns-resize;
+}
+.rich-text-editor .ql-image-resize-e {
+  right: -6px;
+  top: calc(50% - 5px);
+  cursor: ew-resize;
+}
+.rich-text-editor .ql-image-resize-w {
+  left: -6px;
+  top: calc(50% - 5px);
+  cursor: ew-resize;
+}
 .rich-text-editor .ql-editor img {
   cursor: pointer;
 }
@@ -2307,7 +2348,9 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   border: 1px solid #c5cee1;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .rich-text-table-visual:focus-within {
   border-color: #00b9d6;
@@ -2335,37 +2378,34 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   background-color: #db0709;
 }
 
-/* Expirado (só admin): imagem esbatida a azul Bial, faixa com ampulheta e data de fim */
+/* Expirado (só admin): borda e faixa no azul do CTA (#00b9d6), texto e ícone a branco; imagem a cinzento, a cores no hover */
 .course-card-expired {
   box-shadow:
-    0 0 0 2px #8b9cc3,
+    0 0 0 2px #00b9d6,
     0px 3px 6px #00000029 !important;
 }
 
-.course-card-expired > div:first-child::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(139, 156, 195, 0.55) 0%, rgba(22, 57, 134, 0.7) 100%);
-  pointer-events: none;
+.course-card-expired .course-card-thumb {
+  filter: grayscale(1);
+  transition: filter 0.3s ease;
+}
+
+.course-card-expired .course-card-thumb:hover {
+  filter: none;
 }
 
 .course-card-expired .course-card-info {
-  background-color: #e3e8f2 !important;
+  background-color: #e5f7fa !important;
 }
 
+/* Faixa por baixo da imagem (não a tapa nem a corta) */
 .course-card-expired-ribbon {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 8px 12px;
-  background-color: rgba(22, 57, 134, 0.92);
-  border-top: 3px solid #00b9d6;
+  background-color: #00b9d6;
   color: #ffffff;
   font-size: 13px;
 }
@@ -2373,41 +2413,12 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 .course-card-expired-icon {
   width: 20px;
   height: 20px;
-  color: #00b9d6;
+  color: #ffffff;
 }
 
 .course-card-expired-date {
   margin-top: 2px;
   font-size: 11px;
-  color: #c5cee1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.course-card-expired-hide {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 11;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #c5cee1;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  color: #163986;
-  font-size: 17px;
-  cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.course-card-expired-hide:hover {
-  background-color: #163986;
-  border-color: #163986;
   color: #ffffff;
 }
 
@@ -2417,25 +2428,123 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   }
 }
 
-.course-hidden-expired-toggle.ant-btn {
-  color: #163986;
-  border-color: #8b9cc3;
+/* Por abrir aos alunos (só admin): borda e faixa no laranja Bial */
+.course-card-upcoming {
+  box-shadow:
+    0 0 0 2px #ff7d5a,
+    0px 3px 6px #00000029 !important;
 }
 
-.course-hidden-expired-toggle.ant-btn:hover {
-  color: #00b9d6 !important;
-  border-color: #00b9d6 !important;
+.course-card-upcoming .course-card-info {
+  background-color: #ffece6 !important;
 }
 
-/* Por iniciar (só admin): data de início por cima do botão */
-.course-card-upcoming-hint {
-  display: flex;
+.course-card-expired-ribbon.course-card-upcoming-ribbon {
+  background-color: #ff7d5a;
+  color: #ffffff;
+}
+
+/* Selo "só visível para administradores" (na faixa por baixo da imagem e, em lista, no painel de informação) */
+.course-card-admin-only {
+  display: inline-flex;
   align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #163986;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+}
+
+.course-card-admin-only span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lista: estado expirado (azul do CTA) / por abrir (laranja Bial) no painel de informação, com o texto completo */
+.course-card-date-inline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
-  color: #00b9d6;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: #00b9d6;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+}
+
+.course-card-date-inline.course-card-date-inline-upcoming {
+  background-color: #ff7d5a;
+}
+
+.course-card-admin-only.course-card-admin-only-inline {
+  box-shadow: none;
+  border: 1px solid #163986;
+}
+
+.course-card-admin-only.course-card-admin-only-ribbon {
+  box-shadow: none;
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+/* Opções do catálogo (só admin): esconder expirados / por abrir */
+.course-catalogue-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #163986;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Detalhe do curso (só admin): aviso de curso expirado (azul do CTA) / ainda por abrir aos alunos (laranja Bial) */
+.course-details-date-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 5px;
+  background-color: #00b9d6;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.course-details-date-notice.is-upcoming {
+  background-color: #ff7d5a;
+}
+
+.course-details-date-notice svg {
+  width: 20px;
+  height: 20px;
+}
+
+.course-details-date-notice-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #163986;
+  font-size: 12px;
+}
+
+.course-details-date-notice-admin svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Detalhe do curso: estado do aluno (Aprovado / Reprovado) junto ao progresso */
@@ -2515,16 +2624,20 @@ deles invalida a regra inteira. */
   right: 16px !important;
   inset-inline-end: 16px !important;
 }
-.ant-notification-notice-success .ant-notification-notice-progress::-webkit-progress-value {
+.ant-notification-notice-success
+  .ant-notification-notice-progress::-webkit-progress-value {
   background: #1fb26a !important;
 }
-.ant-notification-notice-success .ant-notification-notice-progress::-moz-progress-bar {
+.ant-notification-notice-success
+  .ant-notification-notice-progress::-moz-progress-bar {
   background: #1fb26a !important;
 }
-.ant-notification-notice-error .ant-notification-notice-progress::-webkit-progress-value {
+.ant-notification-notice-error
+  .ant-notification-notice-progress::-webkit-progress-value {
   background: #ff4d4f !important;
 }
-.ant-notification-notice-error .ant-notification-notice-progress::-moz-progress-bar {
+.ant-notification-notice-error
+  .ant-notification-notice-progress::-moz-progress-bar {
   background: #ff4d4f !important;
 }
 
@@ -2569,7 +2682,9 @@ deles invalida a regra inteira. */
     padding: 10px 12px !important;
   }
 }
-.collapse-course.collapse-course-compact .ant-collapse-item-active > .ant-collapse-header {
+.collapse-course.collapse-course-compact
+  .ant-collapse-item-active
+  > .ant-collapse-header {
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }

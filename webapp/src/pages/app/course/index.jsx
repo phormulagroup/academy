@@ -1,7 +1,7 @@
 import axios from "axios";
 import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState } from "react";
-import { Button, Empty, Progress, Tooltip } from "antd";
+import { Button, Empty, Progress, Switch } from "antd";
 import { useContext } from "react";
 
 import { Context } from "../../../utils/context";
@@ -23,12 +23,7 @@ import {
   AiOutlineCloudDownload,
   // AiOutlinePlayCircle
 } from "react-icons/ai";
-import {
-  PiCalendarBlank,
-  PiEye,
-  PiEyeSlash,
-  PiHourglassMedium,
-} from "react-icons/pi";
+import { PiCalendarBlank, PiHourglassMedium, PiShieldCheck } from "react-icons/pi";
 
 import i18n from "../../../utils/i18n";
 import { downloadCertificate } from "../../../utils/certificate";
@@ -37,26 +32,21 @@ import {
   isAllowedByCountry,
   isCourseFailed,
   testDateState,
+  timeUntil,
+  catalogueFiltersKey,
+  readCatalogueFilters,
 } from "../../../utils/courseStatus";
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
 import { hasFullAccess } from "../../../utils/roles";
 
-// Cursos expirados que o admin escondeu do SEU catálogo (só no browser; não altera a BD)
-const hiddenExpiredKey = (userId) => `hidden_expired_courses_${userId}`;
-
-function readHiddenExpired(userId) {
-  try {
-    const value = JSON.parse(localStorage.getItem(hiddenExpiredKey(userId)));
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
+// Percentagem no card sem casas decimais a zero ("50.00" → "50", "33.33" → "33.3")
+const formatPercent = (value) => Number(Number(value).toFixed(1));
 
 export default function CourseDetails() {
-  const { t, user, windowDimension, selectedLanguage, isStaff } = useContext(Context);
+  const { t, user, windowDimension, selectedLanguage, isStaff } =
+    useContext(Context);
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,39 +55,32 @@ export default function CourseDetails() {
   // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
   const isListView = viewType === "list" && windowDimension.width > 640;
   const isAdmin = hasFullAccess(user);
-  const [hiddenExpired, setHiddenExpired] = useState([]);
-  const [showHiddenExpired, setShowHiddenExpired] = useState(false);
+  const [filters, setFilters] = useState({ hideExpired: false, hideUpcoming: false });
 
   useEffect(() => {
     if (user) getData();
   }, [user, selectedLanguage]);
 
   useEffect(() => {
-    if (user?.id) setHiddenExpired(readHiddenExpired(user.id));
+    if (user?.id) setFilters(readCatalogueFilters(user.id));
   }, [user?.id]);
 
-  // Esconder / voltar a mostrar um curso expirado no catálogo do admin
-  function toggleHiddenExpired(courseId) {
-    const next = hiddenExpired.includes(courseId)
-      ? hiddenExpired.filter((id) => id !== courseId)
-      : [...hiddenExpired, courseId];
-    setHiddenExpired(next);
+  function toggleFilter(key) {
+    const next = { ...filters, [key]: !filters[key] };
+    setFilters(next);
     try {
-      localStorage.setItem(hiddenExpiredKey(user.id), JSON.stringify(next));
+      localStorage.setItem(catalogueFiltersKey(user.id), JSON.stringify(next));
     } catch {
       // sem acesso ao localStorage: fica só nesta sessão
     }
   }
 
-  const hiddenExpiredCount = data.filter(
-    (item) =>
-      item.dateState === "expired" && hiddenExpired.includes(item.course.id),
-  ).length;
+  const expiredCount = data.filter((item) => item.dateState === "expired").length;
+  const upcomingCount = data.filter((item) => item.dateState === "upcoming").length;
   const visibleData = data.filter(
     (item) =>
-      showHiddenExpired ||
-      item.dateState !== "expired" ||
-      !hiddenExpired.includes(item.course.id),
+      !(filters.hideExpired && item.dateState === "expired") &&
+      !(filters.hideUpcoming && item.dateState === "upcoming"),
   );
 
   useEffect(() => {
@@ -111,9 +94,7 @@ export default function CourseDetails() {
           id_user: user.id,
           id_lang:
             // A equipa (Admin, Gestor…) vê os cursos do idioma escolhido; o aluno os do idioma da sua conta
-            isStaff && selectedLanguage
-              ? selectedLanguage.id
-              : user.id_lang,
+            isStaff && selectedLanguage ? selectedLanguage.id : user.id_lang,
         },
       });
       let auxData = [];
@@ -131,7 +112,9 @@ export default function CourseDetails() {
         // Restrição de países: aplica-se a alunos e admin
         if (
           !isAllowedByCountry(
-            auxCourse.settings?.country_limit ? auxCourse.settings.country : null,
+            auxCourse.settings?.country_limit
+              ? auxCourse.settings.country
+              : null,
             user,
           )
         )
@@ -434,19 +417,24 @@ export default function CourseDetails() {
         ) : data.length > 0 ? (
           <div>
             {(windowDimension.width > 768 ||
-              (isAdmin && hiddenExpiredCount > 0)) && (
-              <div className="col-span-3 flex justify-end items-center gap-4 mb-8">
-                {/* Admin: voltar a mostrar os cursos expirados que escondeu */}
-                {isAdmin && hiddenExpiredCount > 0 && (
-                  <Button
-                    size="small"
-                    className="course-hidden-expired-toggle"
-                    icon={showHiddenExpired ? <PiEyeSlash /> : <PiEye />}
-                    onClick={() => setShowHiddenExpired((v) => !v)}>
-                    {showHiddenExpired
-                      ? t("Hide expired courses again")
-                      : `${t("Show hidden expired courses")} (${hiddenExpiredCount})`}
-                  </Button>
+              (isAdmin && (expiredCount > 0 || upcomingCount > 0))) && (
+              <div className="col-span-3 flex flex-wrap justify-end items-center gap-x-5 gap-y-3 mb-8">
+                {/* Admin: esconder do catálogo os cursos expirados e os que ainda não abriram aos alunos */}
+                {isAdmin && expiredCount > 0 && (
+                  <label className="course-catalogue-filter">
+                    <Switch size="small" checked={filters.hideExpired} onChange={() => toggleFilter("hideExpired")} />
+                    <span>
+                      {t("Hide expired courses")} ({expiredCount})
+                    </span>
+                  </label>
+                )}
+                {isAdmin && upcomingCount > 0 && (
+                  <label className="course-catalogue-filter">
+                    <Switch size="small" checked={filters.hideUpcoming} onChange={() => toggleFilter("hideUpcoming")} />
+                    <span>
+                      {t("Hide coming soon courses")} ({upcomingCount})
+                    </span>
+                  </label>
                 )}
                 {windowDimension.width > 768 && (
                   <>
@@ -478,10 +466,10 @@ export default function CourseDetails() {
                   key={item.course.id}
                   // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem;
                   // reprovado: o mesmo em vermelho Bial; expirado (só admin): imagem esbatida com faixa "Expirado"
-                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""}`}>
+                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""} ${item.dateState === "upcoming" ? "course-card-upcoming" : ""}`}>
                   <div
-                    // Thumbnails 800x600 (4:3): a caixa tem a mesma proporção, por isso o bg-cover não corta a imagem
-                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-28 lg:w-36 shrink-0 self-center rounded-bl-[5px] rounded-tl-[5px]" : "w-full rounded-tl-[5px] rounded-tr-[5px]"} aspect-[4/3] bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative`}
+                    // Thumbnails 800x600 (4:3): a caixa tem sempre a mesma proporção (grelha e lista), por isso o bg-cover não corta a imagem
+                    className={`${viewType === "list" && windowDimension.width > 640 ? "w-44 lg:w-52 shrink-0 self-start aspect-[4/3] rounded-bl-[5px] rounded-tl-[5px]" : "w-full aspect-[4/3] rounded-tl-[5px] rounded-tr-[5px]"} bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative course-card-thumb`}
                     style={{
                       backgroundImage: item.course?.thumbnail
                         ? `url(${config.server_ip}/media/${item.course?.thumbnail})`
@@ -503,11 +491,11 @@ export default function CourseDetails() {
                     {/* Em lista o selo passa para o painel de informação (não sobrepõe a imagem) */}
                     {calcProgress(item.progress, item.modules) === 100 &&
                       !isListView && (
-                      <div className="course-card-completed-badge">
-                        <AiOutlineCheck className="shrink-0" />
-                        <span>{t("Completed")}</span>
-                      </div>
-                    )}
+                        <div className="course-card-completed-badge">
+                          <AiOutlineCheck className="shrink-0" />
+                          <span>{t("Approved")}</span>
+                        </div>
+                      )}
                     {calcProgress(item.progress, item.modules) !== 100 &&
                       item.isFailed &&
                       !isListView && (
@@ -516,8 +504,27 @@ export default function CourseDetails() {
                           <span>{t("Failed")}</span>
                         </div>
                       )}
-                    {/* Expirado (só o admin vê): faixa com a data de fim e ação para esconder do seu catálogo */}
-                    {item.dateState === "expired" && (
+                  </div>
+                  {/* Expirado ou por abrir (só o admin vê): faixa por baixo da imagem (não a tapa) com a data e o selo
+                      "só visível para administradores". Em lista o estado passa para o painel de informação */}
+                    {item.dateState === "upcoming" && !isListView && (
+                      <div className="course-card-expired-ribbon course-card-upcoming-ribbon">
+                        <PiCalendarBlank className="shrink-0 course-card-expired-icon" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-ryker font-bold uppercase leading-none">{t("Coming soon")}</span>
+                          <span className="course-card-expired-date font-semibold">
+                            {t("Opens to students in {{time}}", { time: timeUntil(item.course.settings?.course_access_expiration_dates?.start_date) })}
+                            {" · "}
+                            {courseDate(item.course, "start_date")}
+                          </span>
+                        </div>
+                        <span className="course-card-admin-only course-card-admin-only-ribbon">
+                          <PiShieldCheck className="shrink-0" />
+                          <span>{t("Only visible to administrators")}</span>
+                        </span>
+                      </div>
+                    )}
+                    {item.dateState === "expired" && !isListView && (
                       <>
                         <div className="course-card-expired-ribbon">
                           <PiHourglassMedium className="shrink-0 course-card-expired-icon" />
@@ -526,44 +533,53 @@ export default function CourseDetails() {
                               {t("Expired")}
                             </span>
                             {courseDate(item.course, "end_date") && (
-                              <span className="course-card-expired-date">
+                              <span className="course-card-expired-date font-semibold">
                                 {t("Ended on")}{" "}
                                 {courseDate(item.course, "end_date")}
                               </span>
                             )}
                           </div>
+                          <span className="course-card-admin-only course-card-admin-only-ribbon">
+                            <PiShieldCheck className="shrink-0" />
+                            <span>{t("Only visible to administrators")}</span>
+                          </span>
                         </div>
-                        <Tooltip
-                          title={
-                            hiddenExpired.includes(item.course.id)
-                              ? t("Show in catalogue")
-                              : t("Hide from catalogue")
-                          }>
-                          <button
-                            type="button"
-                            className="course-card-expired-hide"
-                            aria-label={
-                              hiddenExpired.includes(item.course.id)
-                                ? t("Show in catalogue")
-                                : t("Hide from catalogue")
-                            }
-                            onClick={() => toggleHiddenExpired(item.course.id)}>
-                            {hiddenExpired.includes(item.course.id) ? (
-                              <PiEye />
-                            ) : (
-                              <PiEyeSlash />
-                            )}
-                          </button>
-                        </Tooltip>
                       </>
                     )}
-                  </div>
                   <div
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
                       className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10 px-5 py-3 lg:px-6 lg:py-3" : "col-span-1 p-4 sm:p-5 md:p-6 lg:p-6"}`}>
                       <div
                         className={`flex flex-col col-span-3 ${isListView ? "justify-center h-full" : ""}`}>
+                        {isListView && (item.dateState === "expired" || item.dateState === "upcoming") && (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full mb-3">
+                            {item.dateState === "expired" ? (
+                              <span className="course-card-date-inline">
+                                <PiHourglassMedium className="shrink-0" />
+                                <span className="font-ryker font-bold uppercase">{t("Expired")}</span>
+                                {courseDate(item.course, "end_date") && (
+                                  <span>
+                                    · {t("Ended on")} {courseDate(item.course, "end_date")}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="course-card-date-inline course-card-date-inline-upcoming">
+                                <PiCalendarBlank className="shrink-0" />
+                                <span className="font-ryker font-bold uppercase">{t("Coming soon")}</span>
+                                <span>
+                                  · {t("Opens to students in {{time}}", { time: timeUntil(item.course.settings?.course_access_expiration_dates?.start_date) })} ·{" "}
+                                  {courseDate(item.course, "start_date")}
+                                </span>
+                              </span>
+                            )}
+                            <span className="course-card-admin-only course-card-admin-only-inline">
+                              <PiShieldCheck className="shrink-0" />
+                              <span>{t("Only visible to administrators")}</span>
+                            </span>
+                          </div>
+                        )}
                         {/* 
                                                 {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
@@ -599,7 +615,7 @@ export default function CourseDetails() {
                                 <div className="flex w-full mb-3">
                                   <div className="course-card-completed-badge course-card-completed-badge-inline">
                                     <AiOutlineCheck className="shrink-0" />
-                                    <span>{t("Completed")}</span>
+                                    <span>{t("Approved")}</span>
                                   </div>
                                 </div>
                               )}
@@ -696,9 +712,8 @@ export default function CourseDetails() {
                                               ? "12px"
                                               : "inherit",
                                       }}>
-                                      {calcProgress(
-                                        item.progress,
-                                        item.modules,
+                                      {formatPercent(
+                                        calcProgress(item.progress, item.modules),
                                       )}
                                       % {t("Completed").toLowerCase()}
                                     </p>
@@ -711,7 +726,6 @@ export default function CourseDetails() {
                                     showInfo={false}
                                     strokeColor="#2F8351"
                                     railColor="#FFFFFF"
-                                    
                                   />
                                 </>
                               ) : (
@@ -906,54 +920,44 @@ export default function CourseDetails() {
                       </div>
                     </div>
                     <div className="px-4 sm:px-4 md:px-4 lg:px-6 py-4 sm:py-6 md:py-4 lg:py-6 flex flex-col justify-center items-center w-full flex-1">
-                      {/* Cursos por iniciar só chegam aqui para o admin (alunos não os veem): indicação da data de início */}
-                      {item.dateState === "upcoming" && (
-                        <p className="course-card-upcoming-hint">
-                          <PiCalendarBlank className="shrink-0" />
-                          <span>
-                            {t("Starts on")}{" "}
-                            {courseDate(item.course, "start_date")}
-                          </span>
-                        </p>
-                      )}
                       {/* Action button: Review/Start/Enter */}
                       <Link
-                          to={`/${i18n.language}/courses/${item.course.slug}`}
-                          onClick={(e) => startCourse(e, item)}
-                          className="w-full! block">
-                          {calcProgress(item.progress, item.modules) === 100 ? (
-                            <Button
-                              size={
-                                windowDimension.width < 640 ? "middle" : "large"
-                              }
-                              className="w-full! course-button-review text-[8px] sm:text-[12px] lg:text-[13px]"
-                              style={{
-                                fontSize:
-                                  windowDimension.width < 640
-                                    ? "11px"
-                                    : "inherit",
-                              }}>
-                              {t("Review")}
-                            </Button>
-                          ) : (
-                            <Button
-                              size={
-                                windowDimension.width < 640 ? "middle" : "large"
-                              }
-                              type="primary"
-                              className={`w-full! text-[8px] sm:text-[12px] lg:text-[13px] ${calcProgress(item.progress, item.modules) === 0 ? "main-cta-button" : "course-button-enter"}`}
-                              style={{
-                                fontSize:
-                                  windowDimension.width < 640
-                                    ? "11px"
-                                    : "inherit",
-                              }}>
-                              {calcProgress(item.progress, item.modules) === 0
-                                ? t("Start")
-                                : t("Enter")}
-                            </Button>
-                          )}
-                        </Link>
+                        to={`/${i18n.language}/courses/${item.course.slug}`}
+                        onClick={(e) => startCourse(e, item)}
+                        className="w-full! block">
+                        {calcProgress(item.progress, item.modules) === 100 ? (
+                          <Button
+                            size={
+                              windowDimension.width < 640 ? "middle" : "large"
+                            }
+                            className="w-full! course-button-review text-[8px] sm:text-[12px] lg:text-[13px]"
+                            style={{
+                              fontSize:
+                                windowDimension.width < 640
+                                  ? "11px"
+                                  : "inherit",
+                            }}>
+                            {t("Review")}
+                          </Button>
+                        ) : (
+                          <Button
+                            size={
+                              windowDimension.width < 640 ? "middle" : "large"
+                            }
+                            type="primary"
+                            className={`w-full! text-[8px] sm:text-[12px] lg:text-[13px] ${calcProgress(item.progress, item.modules) === 0 ? "main-cta-button" : "course-button-enter"}`}
+                            style={{
+                              fontSize:
+                                windowDimension.width < 640
+                                  ? "11px"
+                                  : "inherit",
+                            }}>
+                            {calcProgress(item.progress, item.modules) === 0
+                              ? t("Start")
+                              : t("Enter")}
+                          </Button>
+                        )}
+                      </Link>
                     </div>
                   </div>
                 </div>
