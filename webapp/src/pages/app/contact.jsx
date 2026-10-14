@@ -82,7 +82,7 @@ export default function Contact() {
         </p>
         <p className="mt-6 text-[16px] text-[#163986]">
           {t(
-            "For any questions or clarifications, please send us a message through this Contact Form.",
+            "For any questions or clarifications, please send us a message through this contact form.",
           )}
         </p>
       </div>

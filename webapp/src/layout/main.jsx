@@ -14,6 +14,7 @@ import {
   FaInstagram,
   FaYoutube,
 } from "react-icons/fa6";
+import { TbWorld } from "react-icons/tb";
 import { MdNotificationsNone } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { Footer } from "antd/es/layout/layout";
@@ -76,7 +77,15 @@ const DRAWER_ICONS = {
 };
 
 // Link do drawer mobile: ícone, label e (opcional) contador de não lidos
-const DrawerLink = ({ to, icon: Icon, active, badge, children, onClick, ...rest }) => (
+const DrawerLink = ({
+  to,
+  icon: Icon,
+  active,
+  badge,
+  children,
+  onClick,
+  ...rest
+}) => (
   <Link
     to={to}
     onClick={onClick}
@@ -142,7 +151,9 @@ const Main = () => {
   ).length;
   // Quem pode gerir tickets vai para o backoffice; os restantes veem os seus tickets no site
   const { canRead: canManageTickets } = usePermission("ticket");
-  const ticketsPath = canManageTickets ? "/admin/tickets" : `/${i18n.language}/tickets`;
+  const ticketsPath = canManageTickets
+    ? "/admin/tickets"
+    : `/${i18n.language}/tickets`;
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -184,9 +195,7 @@ const Main = () => {
                       style={{ color: "#163986", backgroundColor: "#FFFFFF" }}
                     />
                     <div className="dm-user-text">
-                      <span className="dm-user-name">
-                        {userShortName}
-                      </span>
+                      <span className="dm-user-name">{userShortName}</span>
                       {user.email && (
                         <span className="dm-user-email">{user.email}</span>
                       )}
@@ -225,7 +234,9 @@ const Main = () => {
                       <DrawerLink
                         key={item.path}
                         to={item.path}
-                        icon={DRAWER_ICONS[item.section ?? ""] ?? MdOutlineSchool}
+                        icon={
+                          DRAWER_ICONS[item.section ?? ""] ?? MdOutlineSchool
+                        }
                         active={isActiveItem(item)}
                         onClick={closeDrawer}>
                         {t(item.label)}
@@ -345,7 +356,9 @@ const Main = () => {
                 {!isLoggedIn && (
                   <div className="flex items-center gap-2">
                     <Link to={`/${i18n.language}/login`}>
-                      <Button className="main-secondary-cta-button">{t("Login")}</Button>
+                      <Button className="main-secondary-cta-button">
+                        {t("Login")}
+                      </Button>
                     </Link>
                     <Link to={`/${i18n.language}/register`}>
                       <Button type="primary" className="main-cta-button">
@@ -369,7 +382,9 @@ const Main = () => {
                                 target="_blank"
                                 rel="noopener noreferrer">
                                 <div className="flex items-center">
-                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlineAdminPanelSettings className="text-[16px]" /></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                    <MdOutlineAdminPanelSettings className="text-[16px]" />
+                                  </div>
                                   <p>{t("Go to backoffice")}</p>
                                 </div>
                               </Link>
@@ -382,7 +397,9 @@ const Main = () => {
                                 className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "account" ? "active" : ""}`}
                                 to={`/${i18n.language}/account`}>
                                 <div className="flex items-center">
-                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlinePersonOutline className="text-[16px]" /></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                    <MdOutlinePersonOutline className="text-[16px]" />
+                                  </div>
                                   <p>{t("My account")}</p>
                                 </div>
                               </Link>
@@ -395,7 +412,9 @@ const Main = () => {
                                 className={`dropdown-user-menu-item flex items-center text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px] ${currentSection === "result" ? "active" : ""}`}
                                 to={`/${i18n.language}/result`}>
                                 <div className="flex items-center">
-                                  <div className="w-5 h-5 mr-2 flex justify-center items-center"><MdOutlineAssessment className="text-[16px]" /></div>
+                                  <div className="w-5 h-5 mr-2 flex justify-center items-center">
+                                    <MdOutlineAssessment className="text-[16px]" />
+                                  </div>
                                   <p>{t("Results")}</p>
                                 </div>
                               </Link>
@@ -411,7 +430,9 @@ const Main = () => {
                                   <div className="w-5 h-5 mr-2 flex justify-center items-center">
                                     {unreadTicketsCount > 0 ? (
                                       <div className="w-5 h-5 bg-[#00B9D6] flex justify-center items-center">
-                                        <p className="text-white text-[10px]">{unreadTicketsCount}</p>
+                                        <p className="text-white text-[10px]">
+                                          {unreadTicketsCount}
+                                        </p>
                                       </div>
                                     ) : (
                                       <MdOutlineConfirmationNumber className="text-[16px]" />
@@ -512,11 +533,11 @@ const Main = () => {
           <div className="page-frame flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-8">
             <div className="w-full">
               {/* Redes sociais: ícones discretos e alinhados com o label */}
-              <div className="mb-4 md:mb-6 flex justify-center md:justify-start items-center gap-3 md:gap-4">
+              <div className="mb-4 md:mb-6 flex flex-wrap justify-center md:justify-start items-center gap-x-3 gap-y-2 md:gap-4">
                 <p className="text-white text-[12px] md:text-[13px] leading-none">
                   {t("Follow us")}
                 </p>
-                <div className="flex items-center gap-3 md:gap-3.5">
+                <div className="flex items-center xs:gap-2 md:gap-1.5">
                   {[
                     {
                       Icon: FaFacebook,
@@ -538,14 +559,20 @@ const Main = () => {
                       url: "https://www.youtube.com/channel/UCcoeRBF4Ivdm4aCwTDZdYIA",
                       label: "YouTube",
                     },
+                    {
+                      Icon: TbWorld,
+                      url: "https://www.bial.com/en",
+                      label: "BIAL",
+                    },
                   ].map((social) => (
                     <Link
                       key={social.label}
                       to={social.url}
                       target="_blank"
+                      rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="flex items-center opacity-90 hover:opacity-100 transition-opacity">
-                      <social.Icon className="text-white text-[16px] md:text-[18px] xl:text-[19px]" />
+                      className="flex h-10 w-10 items-center justify-center rounded-full opacity-90 transition-[opacity,background-color] hover:bg-white/10 hover:opacity-100 md:h-9 md:w-9">
+                      <social.Icon className="text-white text-[19px] md:text-[18px] xl:text-[19px]" />
                     </Link>
                   ))}
                 </div>
