@@ -158,7 +158,7 @@ export default function Report() {
 					{ key: "1", label: t("Course reports"), children: card(<CourseReport data={data} isLoading={isLoading} />) },
 					{ key: "2", label: t("Students progress"), children: card(<StudentProgress data={fullData} isLoading={isLoadingFull} />) },
 					{ key: "3", label: t("Test reports"), children: card(<TestReport data={fullData} isLoading={isLoadingFull} />) },
-					{ key: "4", label: t("Tests progress"), children: card(<TestProgress data={globalData} products={products} languages={languages} isLoading={isLoadingGlobal} />) },
+					{ key: "4", label: t("Products reports"), children: card(<TestProgress data={globalData} products={products} languages={languages} isLoading={isLoadingGlobal} />) },
 				]}
 			/>
 		</div>

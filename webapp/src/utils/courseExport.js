@@ -1,4 +1,5 @@
-import dayjs from "dayjs";
+import dayjs from "dayjs";
+import { progressPercent } from "./percent";
 
 const parseJson = (value, fallback) => {
   if (!value) return fallback;
@@ -96,7 +97,7 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
     const topicsDone = courseTopics.filter((x) => completed("topic", x.id)).length;
     const testsDone = courseTests.filter((x) => completed("test", x.id)).length;
     const totalItems = courseTopics.length + courseTests.length;
-    const progress = totalItems > 0 ? Math.round(((topicsDone + testsDone) * 100) / totalItems) : 0;
+    const progress = totalItems > 0 ? progressPercent(((topicsDone + testsDone) * 100) / totalItems) : 0;
     const lastActivity = userActivity.map((a) => a.created_at).sort().pop();
     const startedRaw = userActivity.map((a) => a.created_at).sort()[0];
     const endedRaw = userActivity.find((a) => a.activity_type === "course" && a.is_completed === 1)?.created_at;
