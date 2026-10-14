@@ -62,3 +62,15 @@ export async function uploadUserAvatar(file, user) {
   if (!res.data?.user) throw new Error("Invalid response");
   return { user: { ...res.data.user, avatar_version: Date.now() } };
 }
+
+/**
+ * @function removeUserAvatar
+ * @description Removes the user's avatar (user.img = null); the server deletes the file and its media row. The default avatar is shown again.
+ * @param {object} user - User whose avatar is removed (id).
+ * @returns {Promise<{user: object}>} Updated user from /user/update.
+ */
+export async function removeUserAvatar(user) {
+  const res = await axios.post(endpoints.user.update, { data: { id: user.id, img: null } });
+  if (!res.data?.user) throw new Error("Invalid response");
+  return { user: res.data.user };
+}

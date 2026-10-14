@@ -7,6 +7,7 @@ import {
   Empty,
   Form,
   Input,
+  Popconfirm,
   Select,
   Skeleton,
   Tag,
@@ -23,6 +24,7 @@ import {
   LuIdCard,
   LuMail,
   LuMapPin,
+  LuTrash2,
 } from "react-icons/lu";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -39,8 +41,8 @@ import {
   isCourseFailed,
   testDateState,
 } from "../../../utils/courseStatus";
-import { hasFullAccess } from "../../../utils/roles";
-import UserAvatar from "../../../utils/userAvatar";
+import { ADMIN_ROLE_ID, USER_ROLE_ID, hasFullAccess } from "../../../utils/roles";
+import UserAvatarEditor from "../../../components/userAvatarEditor";
 import CourseResult from "../../../components/admin/user/courseResult";
 import {
   emailFieldProps,
@@ -94,7 +96,7 @@ const SectionTitle = ({ icon, children }) => (
 
 // Detalhes de um utilizador no backoffice: resumo, resultados por curso e edição da conta
 export default function UserDetails() {
-  const { user, languages, toastApi } = useContext(Context);
+  const { user, setUser, languages, toastApi } = useContext(Context);
   const { t, i18n } = useTranslation();
   // /admin/perfil (sem id) é o perfil de quem está autenticado; /admin/users/:id é o de qualquer utilizador
   const { id: paramId } = useParams();
@@ -105,10 +107,14 @@ export default function UserDetails() {
   // Cada um edita a sua conta; editar as dos outros exige permissão
   const isOwnAccount = Number(id) === user.id;
   const canEdit = canUpdateUsers || isOwnAccount;
+  // O país só é alterado por um Admin (o servidor ignora-o nos restantes pedidos)
+  const canEditCountry = Number(user.id_role) === ADMIN_ROLE_ID;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [data, setData] = useState({});
+  // Avatar: o próprio muda/remove o seu; o Admin muda/remove o de outros utilizadores, mas só de alunos (o servidor também o exige)
+  const canEditAvatar = isOwnAccount || (Number(user.id_role) === ADMIN_ROLE_ID && Number(data.id_role) === USER_ROLE_ID);
   const [courseData, setCourseData] = useState([]);
   const [countries, setCountries] = useState([]);
   const [view, setView] = useState("results");
@@ -350,7 +356,7 @@ export default function UserDetails() {
       <div className="flex flex-wrap items-center justify-between gap-6 rounded-[16px] bg-white p-6 shadow md:p-8">
         {loadingUser ? (
           <div className="flex min-w-0 flex-1 items-center gap-5">
-            <Skeleton.Avatar active size={88} />
+            <Skeleton.Avatar active size={160} />
             <Skeleton
               active
               title={{ width: 220 }}
@@ -360,7 +366,17 @@ export default function UserDetails() {
           </div>
         ) : (
           <div className="flex min-w-0 items-center gap-5">
-            <UserAvatar user={data} size={88} className="shrink-0" />
+            {/* Avatar em destaque com as ações no próprio avatar (quem pode editar: o próprio ou com permissão em Utilizadores) */}
+            <UserAvatarEditor
+              user={{ ...data, id: Number(id) }}
+              canEdit={canEditAvatar}
+              isOwnAccount={isOwnAccount}
+              onChange={(updated) => {
+                setData((prev) => ({ ...prev, img: updated.img, avatar_version: updated.avatar_version }));
+                // A própria conta: o avatar do cabeçalho do backoffice também muda logo
+                if (isOwnAccount) setUser((prev) => ({ ...prev, img: updated.img, avatar_version: updated.avatar_version }));
+              }}
+            />
             <div className="min-w-0">
               <p className="mb-1! truncate text-[24px] font-bold">
                 {data.name}
@@ -574,6 +590,7 @@ export default function UserDetails() {
                   placeholder={t("Choose a country")}
                   showSearch={{ optionFilterProp: "label" }}
                   allowClear
+                  disabled={!canEditCountry}
                   options={countries.map((item) => ({
                     label: item.label,
                     value: item.value,
