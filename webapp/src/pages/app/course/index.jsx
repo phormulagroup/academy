@@ -23,7 +23,11 @@ import {
   AiOutlineCloudDownload,
   // AiOutlinePlayCircle
 } from "react-icons/ai";
-import { PiCalendarBlank, PiHourglassMedium, PiShieldCheck } from "react-icons/pi";
+import {
+  PiCalendarBlank,
+  PiHourglassMedium,
+  PiShieldCheck,
+} from "react-icons/pi";
 
 import i18n from "../../../utils/i18n";
 import { downloadCertificate } from "../../../utils/certificate";
@@ -39,7 +43,7 @@ import {
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
 import { progressPercent } from "../../../utils/percent";
 
 // Percentagem no card às unidades (só 100% quando o curso está mesmo completo)
@@ -56,7 +60,10 @@ export default function CourseDetails() {
   // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
   const isListView = viewType === "list" && windowDimension.width > 640;
   const isAdmin = hasFullAccess(user);
-  const [filters, setFilters] = useState({ hideExpired: false, hideUpcoming: false });
+  const [filters, setFilters] = useState({
+    hideExpired: false,
+    hideUpcoming: false,
+  });
 
   useEffect(() => {
     if (user) getData();
@@ -76,8 +83,12 @@ export default function CourseDetails() {
     }
   }
 
-  const expiredCount = data.filter((item) => item.dateState === "expired").length;
-  const upcomingCount = data.filter((item) => item.dateState === "upcoming").length;
+  const expiredCount = data.filter(
+    (item) => item.dateState === "expired",
+  ).length;
+  const upcomingCount = data.filter(
+    (item) => item.dateState === "upcoming",
+  ).length;
   const visibleData = data.filter(
     (item) =>
       !(filters.hideExpired && item.dateState === "expired") &&
@@ -256,9 +267,18 @@ export default function CourseDetails() {
 
   // "Iniciar" no card: inscreve logo o utilizador no curso (activity_type enroll, is_completed = 1),
   // para que o detalhe do curso já o mostre como inscrito, sem ter de voltar a carregar em Iniciar
+  function courseState(item) {
+    if (calcProgress(item.progress, item.modules) === 100) return "completed";
+    const started = (item.progress || []).some(
+      (p) =>
+        p.is_deleted !== 1 &&
+        ["enroll", "topic", "test", "module"].includes(p.activity_type),
+    );
+    return started ? "started" : "new";
+  }
+
   function startCourse(e, item) {
-    const isEnrolled = item.progress?.some((p) => p.activity_type === "enroll");
-    if (isEnrolled || calcProgress(item.progress, item.modules) !== 0) return;
+    if (courseState(item) !== "new") return;
     e.preventDefault();
     const enrollData = {
       id_course: item.course.id,
@@ -421,7 +441,11 @@ export default function CourseDetails() {
                 {/* Admin: esconder do catálogo os cursos expirados e os que ainda não abriram aos alunos */}
                 {isAdmin && expiredCount > 0 && (
                   <label className="course-catalogue-filter">
-                    <Switch size="small" checked={filters.hideExpired} onChange={() => toggleFilter("hideExpired")} />
+                    <Switch
+                      size="small"
+                      checked={filters.hideExpired}
+                      onChange={() => toggleFilter("hideExpired")}
+                    />
                     <span>
                       {t("Hide expired courses")} ({expiredCount})
                     </span>
@@ -429,7 +453,11 @@ export default function CourseDetails() {
                 )}
                 {isAdmin && upcomingCount > 0 && (
                   <label className="course-catalogue-filter">
-                    <Switch size="small" checked={filters.hideUpcoming} onChange={() => toggleFilter("hideUpcoming")} />
+                    <Switch
+                      size="small"
+                      checked={filters.hideUpcoming}
+                      onChange={() => toggleFilter("hideUpcoming")}
+                    />
                     <span>
                       {t("Hide coming soon courses")} ({upcomingCount})
                     </span>
@@ -506,79 +534,102 @@ export default function CourseDetails() {
                   </div>
                   {/* Expirado ou por abrir (só o admin vê): faixa por baixo da imagem (não a tapa) com a data e o selo
                       "só visível para administradores". Em lista o estado passa para o painel de informação */}
-                    {item.dateState === "upcoming" && !isListView && (
-                      <div className="course-card-expired-ribbon course-card-upcoming-ribbon">
-                        <PiCalendarBlank className="shrink-0 course-card-expired-icon" />
+                  {item.dateState === "upcoming" && !isListView && (
+                    <div className="course-card-expired-ribbon course-card-upcoming-ribbon">
+                      <PiCalendarBlank className="shrink-0 course-card-expired-icon" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-ryker font-bold uppercase leading-none">
+                          {t("Coming soon")}
+                        </span>
+                        <span className="course-card-expired-date font-semibold">
+                          {t("Opens to students in {{time}}", {
+                            time: timeUntil(
+                              item.course.settings
+                                ?.course_access_expiration_dates?.start_date,
+                            ),
+                          })}
+                          {" · "}
+                          {courseDate(item.course, "start_date")}
+                        </span>
+                      </div>
+                      <span className="course-card-admin-only course-card-admin-only-ribbon">
+                        <PiShieldCheck className="shrink-0" />
+                        <span>{t("Only visible to administrators")}</span>
+                      </span>
+                    </div>
+                  )}
+                  {item.dateState === "expired" && !isListView && (
+                    <>
+                      <div className="course-card-expired-ribbon">
+                        <PiHourglassMedium className="shrink-0 course-card-expired-icon" />
                         <div className="flex flex-col min-w-0">
-                          <span className="font-ryker font-bold uppercase leading-none">{t("Coming soon")}</span>
-                          <span className="course-card-expired-date font-semibold">
-                            {t("Opens to students in {{time}}", { time: timeUntil(item.course.settings?.course_access_expiration_dates?.start_date) })}
-                            {" · "}
-                            {courseDate(item.course, "start_date")}
+                          <span className="font-ryker font-bold uppercase leading-none">
+                            {t("Expired")}
                           </span>
+                          {courseDate(item.course, "end_date") && (
+                            <span className="course-card-expired-date font-semibold">
+                              {t("Ended on")}{" "}
+                              {courseDate(item.course, "end_date")}
+                            </span>
+                          )}
                         </div>
                         <span className="course-card-admin-only course-card-admin-only-ribbon">
                           <PiShieldCheck className="shrink-0" />
                           <span>{t("Only visible to administrators")}</span>
                         </span>
                       </div>
-                    )}
-                    {item.dateState === "expired" && !isListView && (
-                      <>
-                        <div className="course-card-expired-ribbon">
-                          <PiHourglassMedium className="shrink-0 course-card-expired-icon" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-ryker font-bold uppercase leading-none">
-                              {t("Expired")}
-                            </span>
-                            {courseDate(item.course, "end_date") && (
-                              <span className="course-card-expired-date font-semibold">
-                                {t("Ended on")}{" "}
-                                {courseDate(item.course, "end_date")}
-                              </span>
-                            )}
-                          </div>
-                          <span className="course-card-admin-only course-card-admin-only-ribbon">
-                            <PiShieldCheck className="shrink-0" />
-                            <span>{t("Only visible to administrators")}</span>
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    </>
+                  )}
                   <div
                     className={`w-full flex-1 ${viewType === "list" && windowDimension.width > 640 ? "grid grid-cols-5" : "flex flex-col"}`}>
                     <div
                       className={`course-card-info bg-[#C5CEE1] ${viewType === "list" && windowDimension.width > 640 ? "col-span-4 grid grid-cols-3 gap-6 lg:gap-10 px-5 py-3 lg:px-6 lg:py-3" : "col-span-1 p-4 sm:p-5 md:p-6 lg:p-6"}`}>
                       <div
                         className={`flex flex-col col-span-3 ${isListView ? "justify-center h-full" : ""}`}>
-                        {isListView && (item.dateState === "expired" || item.dateState === "upcoming") && (
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full mb-3">
-                            {item.dateState === "expired" ? (
-                              <span className="course-card-date-inline">
-                                <PiHourglassMedium className="shrink-0" />
-                                <span className="font-ryker font-bold uppercase">{t("Expired")}</span>
-                                {courseDate(item.course, "end_date") && (
-                                  <span>
-                                    · {t("Ended on")} {courseDate(item.course, "end_date")}
+                        {isListView &&
+                          (item.dateState === "expired" ||
+                            item.dateState === "upcoming") && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full mb-3">
+                              {item.dateState === "expired" ? (
+                                <span className="course-card-date-inline">
+                                  <PiHourglassMedium className="shrink-0" />
+                                  <span className="font-ryker font-bold uppercase">
+                                    {t("Expired")}
                                   </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="course-card-date-inline course-card-date-inline-upcoming">
-                                <PiCalendarBlank className="shrink-0" />
-                                <span className="font-ryker font-bold uppercase">{t("Coming soon")}</span>
+                                  {courseDate(item.course, "end_date") && (
+                                    <span>
+                                      · {t("Ended on")}{" "}
+                                      {courseDate(item.course, "end_date")}
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="course-card-date-inline course-card-date-inline-upcoming">
+                                  <PiCalendarBlank className="shrink-0" />
+                                  <span className="font-ryker font-bold uppercase">
+                                    {t("Coming soon")}
+                                  </span>
+                                  <span>
+                                    ·{" "}
+                                    {t("Opens to students in {{time}}", {
+                                      time: timeUntil(
+                                        item.course.settings
+                                          ?.course_access_expiration_dates
+                                          ?.start_date,
+                                      ),
+                                    })}{" "}
+                                    · {courseDate(item.course, "start_date")}
+                                  </span>
+                                </span>
+                              )}
+                              <span className="course-card-admin-only course-card-admin-only-inline">
+                                <PiShieldCheck className="shrink-0" />
                                 <span>
-                                  · {t("Opens to students in {{time}}", { time: timeUntil(item.course.settings?.course_access_expiration_dates?.start_date) })} ·{" "}
-                                  {courseDate(item.course, "start_date")}
+                                  {t("Only visible to administrators")}
                                 </span>
                               </span>
-                            )}
-                            <span className="course-card-admin-only course-card-admin-only-inline">
-                              <PiShieldCheck className="shrink-0" />
-                              <span>{t("Only visible to administrators")}</span>
-                            </span>
-                          </div>
-                        )}
+                            </div>
+                          )}
                         {/* 
                                                 {viewType === "list" && windowDimension.width > 640 && (
                           <div className="mb-4">
@@ -712,7 +763,10 @@ export default function CourseDetails() {
                                               : "inherit",
                                       }}>
                                       {formatPercent(
-                                        calcProgress(item.progress, item.modules),
+                                        calcProgress(
+                                          item.progress,
+                                          item.modules,
+                                        ),
                                       )}
                                       % {t("Completed").toLowerCase()}
                                     </p>
@@ -924,7 +978,7 @@ export default function CourseDetails() {
                         to={`/${i18n.language}/courses/${item.course.slug}`}
                         onClick={(e) => startCourse(e, item)}
                         className="w-full! block">
-                        {calcProgress(item.progress, item.modules) === 100 ? (
+                        {courseState(item) === "completed" ? (
                           <Button
                             size={
                               windowDimension.width < 640 ? "middle" : "large"
@@ -944,14 +998,14 @@ export default function CourseDetails() {
                               windowDimension.width < 640 ? "middle" : "large"
                             }
                             type="primary"
-                            className={`w-full! text-[8px] sm:text-[12px] lg:text-[13px] ${calcProgress(item.progress, item.modules) === 0 ? "main-cta-button" : "course-button-enter"}`}
+                            className={`w-full! text-[8px] sm:text-[12px] lg:text-[13px] ${courseState(item) === "new" ? "main-cta-button" : "course-button-enter"}`}
                             style={{
                               fontSize:
                                 windowDimension.width < 640
                                   ? "11px"
                                   : "inherit",
                             }}>
-                            {calcProgress(item.progress, item.modules) === 0
+                            {courseState(item) === "new"
                               ? t("Start")
                               : t("Enter")}
                           </Button>
