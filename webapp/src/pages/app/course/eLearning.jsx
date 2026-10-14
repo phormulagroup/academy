@@ -68,7 +68,8 @@ import {
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import CourseLoading from "../../../components/app/courseLoading";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+import { progressPercent } from "../../../utils/percent";
 
 const { confirm } = Modal;
 
@@ -554,7 +555,7 @@ const Learning = () => {
     ).length;
     const percentage = total > 0 ? Math.min(100, (100 * completed) / total) : 0;
     setProgressPercentage(
-      percentage === 100 ? 100 : Number(percentage.toFixed(2)),
+      progressPercent(percentage),
     );
   }
 

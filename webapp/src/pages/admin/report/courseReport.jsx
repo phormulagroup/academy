@@ -19,7 +19,8 @@ import { LuDownload } from "react-icons/lu";
 import {
   getCourseReportColumns,
   getExpandedStudentColumns,
-} from "../../../utils/columns";
+} from "../../../utils/columns";
+import { roundPercent } from "../../../utils/percent";
 
 // Cores da marca Bial para os gráficos (do mais claro ao mais escuro)
 const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
@@ -406,7 +407,8 @@ export default function CourseReport({ data, isLoading }) {
 
         aux.push({
           id: course.id,
-          course_name: course.name,
+          // Nos relatórios mostra-se o nome interno (o nome oficial repete-se entre idiomas); sem ele, o nome
+          course_name: course.internal_name || course.name,
           thumbnail: course.thumbnail, // só para mostrar na tabela; não faz parte das colunas do Excel
           start_date:
             course.settings.course_access_expiration &&
@@ -428,9 +430,7 @@ export default function CourseReport({ data, isLoading }) {
           approved: approved,
           repproved: repproved,
           percentage:
-            parseFloat(
-              students.length > 0 ? (approved * 100) / students.length : 0,
-            ).toFixed(2) + "%",
+            roundPercent(students.length > 0 ? (approved * 100) / students.length : 0) + "%",
           students: students.length,
           country: course.settings.country_limit
             ? course.settings.country.map((c) => t(c)).join(", ")
@@ -481,6 +481,9 @@ export default function CourseReport({ data, isLoading }) {
   function closeExport() {
     setIsOpenExport(false);
   }
+
+  // A coluna do curso mostra o nome interno: o mesmo título na tabela e nos exports
+  const withInternalName = (cols, field = "course_name") => cols.map((c) => ((c.dataIndex || c.key) === field ? { ...c, title: t("Internal name") } : c));
 
   // Monta o painel de um curso a partir do detalhe desse curso (pedido à API quando a linha se abre)
   const buildExpanded = (e, data) => {
@@ -535,7 +538,7 @@ export default function CourseReport({ data, isLoading }) {
           lang: languages
             .filter((l) => l.id === course.id_lang)[0]
             .code.toUpperCase(), // Para surgir a informação do idioma no Excel
-          course: course.name, // Para surgir a informação do curso no Excel
+          course: course.internal_name || course.name, // Para surgir a informação do curso no Excel (nome interno)
         });
       } else {
         // Verificar status de inscrição
@@ -685,7 +688,7 @@ export default function CourseReport({ data, isLoading }) {
           lang: languages
             .filter((l) => l.id === course.id_lang)[0]
             .code.toUpperCase(), // Para surgir a informação do idioma no Excel
-          course: course.name, // Para surgir a informação do curso no Excel
+          course: course.internal_name || course.name, // Para surgir a informação do curso no Excel (nome interno)
         });
       }
     }
@@ -693,7 +696,7 @@ export default function CourseReport({ data, isLoading }) {
     return <CourseExpandedPanel width={panelWidth} rows={dataExpanded} columns={columnsExpanded} onExport={() => {
       // Export detalhado do curso: estatísticas de cada aluno, dos testes e das respostas às perguntas
       const detailed = buildCourseStudentExport({ course, base: dataExpanded, data, languages, t });
-      openExport(detailed.rows, detailed.columns, "CourseStudentsReport");
+      openExport(detailed.rows, withInternalName(detailed.columns, "course"), "CourseStudentsReport");
     }} t={t} />;
   };
 
@@ -709,7 +712,7 @@ export default function CourseReport({ data, isLoading }) {
             <Button
               // Sem dados na tabela, o botão de exportar fica desativado
               disabled={tableData.length === 0}
-              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, getCourseReportColumns(t, false))}
+              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, withInternalName(getCourseReportColumns(t, false)))}
               icon={<LuDownload />}>
               <span className="hidden sm:inline">{t("Export excel")}</span>
             </Button>
@@ -719,7 +722,7 @@ export default function CourseReport({ data, isLoading }) {
                 className="w-full sm:w-[260px]!"
                 placeholder={t("Select course")}
                 showSearch={{ optionFilterProp: ["label"] }}
-                options={courses.map((c) => ({ label: c.name, value: c.id }))}
+                options={courses.map((c) => ({ label: c.internal_name || c.name, value: c.id }))}
               />
             </Form.Item>
             <Form.Item name="country" className="mb-0! w-full sm:w-auto">
@@ -752,7 +755,7 @@ export default function CourseReport({ data, isLoading }) {
             placement: ["none", "bottomCenter"], // paginação ao centro
             showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
           }}
-          columns={getCourseReportColumns(t).map((col) =>
+          columns={withInternalName(getCourseReportColumns(t)).map((col) =>
             col.key === "course_name"
               ? {
                   ...col,

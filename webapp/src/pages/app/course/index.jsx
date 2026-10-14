@@ -39,10 +39,11 @@ import {
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+import { progressPercent } from "../../../utils/percent";
 
-// Percentagem no card sem casas decimais a zero ("50.00" → "50", "33.33" → "33.3")
-const formatPercent = (value) => Number(Number(value).toFixed(1));
+// Percentagem no card às unidades (só 100% quando o curso está mesmo completo)
+const formatPercent = progressPercent;
 
 export default function CourseDetails() {
   const { t, user, windowDimension, selectedLanguage, isStaff } =
@@ -248,9 +249,7 @@ export default function CourseDetails() {
       let completed = completedItems.size;
 
       let progressPercentage = steps > 0 ? (100 * completed) / steps : 0;
-      return progressPercentage === 100
-        ? 100
-        : parseFloat(progressPercentage).toFixed(2);
+      return progressPercent(progressPercentage);
     }
     return 0;
   }

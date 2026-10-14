@@ -6,7 +6,8 @@ import { RxChevronUp, RxChevronDown, RxCheck } from "react-icons/rx";
 import { FaListCheck } from "react-icons/fa6";
 import { PiFileTextLight } from "react-icons/pi";
 import i18n from "../../../utils/i18n";
-import { Context } from "../../../utils/context";
+import { Context } from "../../../utils/context";
+import { progressPercent } from "../../../utils/percent";
 
 // compact: módulos mais baixos (usado nos Resultados), com as mesmas cores e o mesmo indicador de expandir
 export default function CourseContent({ modules, progress, data, courseSlug, compact = false }) {
@@ -90,15 +91,12 @@ export default function CourseContent({ modules, progress, data, courseSlug, com
         .reduce((acc, v) => acc + v, 0);
 
       let progressPercentage = (100 * completed) / items.length;
-      const isInteger = progressPercentage % 1 === 0;
 
       // Tamanho intermédio: entre o título do módulo e os itens (igual ao "Module content")
       return (
         <p className="font-ryker text-[#FFFFFF] text-[13px] sm:text-[14px] lg:text-[15px]">
           <span className="font-bold uppercase">
-            {!isInteger
-              ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-              : progressPercentage}
+            {progressPercent(progressPercentage)}
             % {t("Completed")}
           </span>{" "}
           | {completed}/{items.length} {t("Steps")}

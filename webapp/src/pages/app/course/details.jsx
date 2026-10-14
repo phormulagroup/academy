@@ -38,7 +38,8 @@ import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+import { progressPercent } from "../../../utils/percent";
 
 export default function CourseDetails() {
   const { user, languages, toastApi, windowDimension } = useContext(Context);
@@ -220,11 +221,7 @@ export default function CourseDetails() {
   }
 
   function calcCourseProgress(a, b, c) {
-    let progressPercentage = (100 * a) / (b + c);
-    const isInteger = progressPercentage % 1 === 0;
-    return !isInteger
-      ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-      : progressPercentage;
+    return progressPercent((100 * a) / (b + c));
   }
 
   function enroll() {

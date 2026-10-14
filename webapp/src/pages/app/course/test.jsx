@@ -28,7 +28,8 @@ import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+import { floorPercent } from "../../../utils/percent";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
 // Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
@@ -661,7 +662,7 @@ const Test = ({
                             </p>
                             <p className="mt-4">{t("Your percentage")}:</p>
                             <p className="mb-4 text-[24px] font-bold">
-                              {percentage.toFixed(2)}%
+                              {floorPercent(percentage)}%
                             </p>
                             {!isApproved && (
                               <p className="text-center text-[14px] text-[#666]">

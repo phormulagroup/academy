@@ -13,7 +13,8 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
 import { LuDownload, LuSearch } from "react-icons/lu";
-import { getTestReportColumns } from "../../../utils/columns";
+import { getTestReportColumns } from "../../../utils/columns";
+import { floorPercent, roundPercent } from "../../../utils/percent";
 
 export default function TestReport({ data, isLoading }) {
   const { user, selectedLanguage, languages } = useContext(Context);
@@ -201,7 +202,7 @@ export default function TestReport({ data, isLoading }) {
         }
 
         const avgScore = (totalScore / attemptCount).toFixed(2);
-        const avgPercentage = (totalPercentage / attemptCount).toFixed(2);
+        const avgPercentage = roundPercent(totalPercentage / attemptCount);
         const avgTimeInSeconds = Math.round(totalTimeInSeconds / attemptCount);
 
         const avgTime = formatAvgTime(avgTimeInSeconds);
@@ -374,7 +375,7 @@ export default function TestReport({ data, isLoading }) {
       const score = `${correctCount}/${totalItems}`;
       const percentage =
         totalItems > 0
-          ? `${((correctCount * 100) / totalItems).toFixed(2)}%`
+          ? `${floorPercent((correctCount * 100) / totalItems)}%`
           : "0%";
       const time = formatAvgTime(attempt.meta_data.time);
 

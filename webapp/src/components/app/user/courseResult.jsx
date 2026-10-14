@@ -8,7 +8,8 @@ import { useTranslation } from "react-i18next";
 import config from "../../../utils/config";
 import { courseStats } from "../../../utils/userResults";
 import { timeUntil } from "../../../utils/courseStatus";
-import CourseContent from "../../../pages/app/course/content";
+import CourseContent from "../../../pages/app/course/content";
+import { progressPercent } from "../../../utils/percent";
 
 // Estado do aluno no curso: aprovado (100%), reprovado (esgotou as tentativas de um teste), em curso ou por iniciar
 const STATUS = {
@@ -100,7 +101,7 @@ export default function CourseResult({ course, onDownloadCertificate }) {
           <p className="mb-2! text-[12px] text-[#707070]">{stats.lastActivity && statusKey !== "not_started" ? `${t("Last activity at")} ${dayjs(stats.lastActivity).format("DD/MM/YYYY HH:mm")}` : t("Not started")}</p>
           <div className="flex items-center gap-3">
             <Progress percent={stats.percent} showInfo={false} strokeColor={statusKey === "failed" ? "#DB0709" : "#2F8351"} railColor="#EAEAEA" className="max-w-[320px]!" size="small" />
-            <span className={`whitespace-nowrap text-[12px] font-bold ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{Number(stats.percent.toFixed(1))}%</span>
+            <span className={`whitespace-nowrap text-[12px] font-bold ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{progressPercent(stats.percent)}%</span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-3">
