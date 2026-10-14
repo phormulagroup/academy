@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { useState } from "react";
 
 import { Context } from "../../../utils/context";
@@ -18,6 +18,8 @@ import {
   Select,
   Switch,
   Tabs,
+  Tag,
+  Tooltip,
 } from "antd";
 import Media from "../../../components/admin/media/media";
 import MediaField from "../../../utils/mediaField";
@@ -60,6 +62,8 @@ export default function Settings({ course, isActive = true, onSaved }) {
   const [allGroups, setAllGroups] = useState([]);
   const [accessUserIds, setAccessUserIds] = useState([]);
   const [accessGroupIds, setAccessGroupIds] = useState([]);
+  // Com limite de países: só os grupos com pelo menos um membro desses países, com o nº de membros (total e desses países)
+  const [countryGroups, setCountryGroups] = useState([]);
   // Se os acessos atuais não carregaram, não se guardam (senão apagavam-se os que já existem)
   const [accessLoaded, setAccessLoaded] = useState(false);
   // Cursos do mesmo idioma: o nome e o nome interno não se podem repetir
@@ -69,6 +73,41 @@ export default function Settings({ course, isActive = true, onSaved }) {
   const { t } = useTranslation();
   // Banner image e Thumbnail só aceitam imagens; os materiais aceitam qualquer ficheiro
   const media = useMediaPicker(form, { img: "image", thumbnail: "image" }, t);
+
+  // Limite de países tal como está no formulário (ainda por guardar): filtra as pessoas e os grupos que se podem escolher no acesso.
+  // Um membro de um grupo que é de outro país nunca vê o curso (o limite de países aplica-se sempre).
+  const countryLimitOn = Form.useWatch(["settings", "country_limit"], { form, preserve: true });
+  const countryList = Form.useWatch(["settings", "country"], { form, preserve: true });
+  const limitCountriesKey = countryLimitOn && countryList?.length ? countryList.join("|") : "";
+  const limitCountries = useMemo(() => (limitCountriesKey ? limitCountriesKey.split("|") : null), [limitCountriesKey]);
+
+  useEffect(() => {
+    if (!limitCountries) {
+      setCountryGroups([]);
+      return;
+    }
+    let cancelled = false;
+    axios
+      .get(endpoints.userGroup.read, { params: { countries: limitCountries } })
+      .then((res) => !cancelled && setCountryGroups(res.data))
+      .catch((err) => console.log(err));
+    return () => {
+      cancelled = true;
+    };
+  }, [limitCountries]);
+
+  // Opções dos grupos: sem limite de países, todos; com limite, os que têm membros desses países e ainda os já escolhidos que não têm
+  // nenhum (ficam assinalados em vez de desaparecerem da seleção sem aviso)
+  const groupOptions = useMemo(() => {
+    if (!limitCountries) return allGroups.map((g) => ({ value: g.id, label: g.name }));
+    const options = countryGroups.map((g) => ({ value: g.id, label: g.name, members: Number(g.members), inCountries: Number(g.members_in_countries) }));
+    const listed = new Set(options.map((o) => o.value));
+    allGroups
+      .filter((g) => accessGroupIds.includes(g.id) && !listed.has(g.id))
+      .forEach((g) => options.push({ value: g.id, label: g.name, outside: true }));
+    return options;
+  }, [limitCountries, allGroups, countryGroups, accessGroupIds]);
+  const outsideGroupIds = groupOptions.filter((o) => o.outside).map((o) => o.value);
 
   useEffect(() => {
     if (course) {
@@ -415,6 +454,7 @@ export default function Settings({ course, isActive = true, onSaved }) {
                           placeholder={t("Select users...")}
                           known={accessUsers}
                           idLang={course.id_lang}
+                          countries={limitCountries}
                           value={accessUserIds}
                           onChange={(ids) => {
                             setAccessUserIds(ids);
@@ -436,13 +476,54 @@ export default function Settings({ course, isActive = true, onSaved }) {
                             setAccessGroupIds(ids);
                             setIsDirty(true);
                           }}
-                          options={allGroups.map((g) => ({ value: g.id, label: g.name }))}
-                          notFoundContent={t("No groups yet. Create them in User groups")}
+                          options={groupOptions}
+                          optionRender={(option) =>
+                            limitCountries && !option.data.outside ? (
+                              <div className="flex justify-between gap-3">
+                                <span className="truncate">{option.data.label}</span>
+                                <span className="text-[12px] text-[#8A8D98] shrink-0">
+                                  {t("{{count}} of {{total}} members in the allowed countries", { count: option.data.inCountries, total: option.data.members })}
+                                </span>
+                              </div>
+                            ) : (
+                              option.data.label
+                            )
+                          }
+                          tagRender={
+                            limitCountries
+                              ? ({ value: id, label: tagLabel, closable, onClose }) => {
+                                  const outside = outsideGroupIds.includes(id);
+                                  const tag = (
+                                    <Tag
+                                      color={outside ? "warning" : undefined}
+                                      closable={closable}
+                                      onClose={onClose}
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      className="my-0.5! me-1!">
+                                      {tagLabel}
+                                    </Tag>
+                                  );
+                                  return outside ? (
+                                    <Tooltip title={t("This group has no members from the countries of this course: none of its members will see it")}>{tag}</Tooltip>
+                                  ) : (
+                                    tag
+                                  );
+                                }
+                              : undefined
+                          }
+                          notFoundContent={
+                            limitCountries ? t("No groups with members from the countries of this course") : t("No groups yet. Create them in User groups")
+                          }
                         />
                       </div>
                       <p className="text-[12px] text-[#8A8D98] mb-0!">
                         {t("Only the selected users and the members of the selected groups can access this course")}
                       </p>
+                      {limitCountries && (
+                        <p className="text-[12px] text-[#8A8D98] mb-0!">
+                          {t("Only users from the countries of this course are listed. Group members from other countries will not see the course")}
+                        </p>
+                      )}
                     </div>
                   ) : null
                 }
