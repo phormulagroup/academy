@@ -77,7 +77,12 @@ router.post("/singleUpload", middleware, async (req, res) => {
     let fileName = null;
 
     if (data && data.id_user) {
-      if (Number(data.id_user) !== req.user.id && !(await hasPermission(req.user, "user", "update"))) return denied(res);
+      if (Number(data.id_user) !== req.user.id) {
+        // Avatar de outro utilizador: só quem pode editar utilizadores, e só de alunos (nunca de outro Admin)
+        if (!(await hasPermission(req.user, "user", "update"))) return denied(res);
+        const [target] = await util.promisify(db.query).bind(db)("SELECT id_role FROM user WHERE id = ?", [data.id_user]);
+        if (Number(target?.id_role) !== 2) return denied(res);
+      }
     } else if (!(await hasPermission(req.user, "media", "create"))) {
       return denied(res);
     }
@@ -131,5 +136,8 @@ router.post("/delete", middleware, requirePermission("media", "delete"), (req, r
     }
   });
 });
+
+// Também usado pelo filtro por tipo dos IECs (routes/iec.js)
+router.KIND_EXTENSIONS = KIND_EXTENSIONS;
 
 module.exports = router;
