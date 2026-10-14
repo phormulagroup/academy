@@ -96,7 +96,7 @@ export default function UserGroup() {
 
   return (
     <div className="p-2">
-      <UserGroupForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} />
+      <UserGroupForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} groups={tableData.map((r) => r.full_data)} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="userGroup" />
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>

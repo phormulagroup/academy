@@ -9,9 +9,35 @@ const { requirePermission, requireStaff } = require("../utils/permissions");
 
 const query = util.promisify(db.query).bind(db);
 
+// Lista de países vinda da query string (countries[]=A&countries[]=B ou countries=A)
+function toCountries(value) {
+  return (Array.isArray(value) ? value : value ? [value] : []).map((c) => String(c).trim()).filter(Boolean).slice(0, 300);
+}
+
+// Já existe outro grupo ativo com este nome? (sem distinguir maiúsculas nem espaços nas pontas; excludeId = o próprio grupo ao editar)
+async function nameTaken(name, excludeId = null) {
+  const rows = await query("SELECT id FROM user_group WHERE is_deleted = 0 AND LOWER(TRIM(name)) = LOWER(?) AND id <> ?", [name, excludeId || 0]);
+  return rows.length > 0;
+}
+
 // Grupos de utilizadores: lista global, reutilizável em vários cursos (acesso restrito a utilizadores e grupos)
+// ?countries[]=: opcional (definições do curso → Acesso, com limite de países). Só devolve os grupos com pelo menos um membro desses
+// países e, por grupo, quantos membros tem (members) e quantos são desses países (members_in_countries). Sem o parâmetro, todos os grupos.
 router.get("/read", middleware, requireStaff(), async (req, res) => {
   try {
+    const countries = toCountries(req.query.countries);
+    if (countries.length) {
+      const memberCount = (extra) =>
+        "(SELECT COUNT(*) FROM user_group_member ugm INNER JOIN user u ON u.id = ugm.id_user AND u.is_deleted = 0 " +
+        `WHERE ugm.id_group = user_group.id${extra})`;
+      return res.send(
+        await query(
+          `SELECT * FROM (SELECT user_group.*, ${memberCount("")} AS members, ${memberCount(" AND u.country IN (?)")} AS members_in_countries ` +
+            "FROM user_group WHERE is_deleted = 0) g WHERE g.members_in_countries > 0 ORDER BY g.name ASC",
+          [countries],
+        ),
+      );
+    }
     res.send(await query("SELECT * FROM user_group WHERE is_deleted = 0 ORDER BY name ASC"));
   } catch (e) {
     console.error(e);
@@ -23,6 +49,7 @@ router.post("/create", middleware, requirePermission("user_group", "create"), as
   try {
     const name = String(req.body.data?.name || "").trim();
     if (!name) return res.status(400).send({ message: "The name is required" });
+    if (await nameTaken(name)) return res.status(409).send({ message: "A group with this name already exists" });
     res.send(await query("INSERT INTO user_group SET ?", { name }));
   } catch (e) {
     console.error(e);
@@ -35,6 +62,7 @@ router.post("/update", middleware, requirePermission("user_group", "update"), as
     const { id } = req.body.data || {};
     const name = String(req.body.data?.name || "").trim();
     if (!id || !name) return res.status(400).send({ message: "The name is required" });
+    if (await nameTaken(name, id)) return res.status(409).send({ message: "A group with this name already exists" });
     res.send(await query("UPDATE user_group SET name = ? WHERE id = ?", [name, id]));
   } catch (e) {
     console.error(e);
