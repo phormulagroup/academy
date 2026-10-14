@@ -25,7 +25,7 @@ export default function CourseMaterial({ data }) {
               <div className="text-[#00B9D6] p-1 rounded mr-2 transition-colors">
                 <PiBookBookmark className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
-              <p className="font-ryker text-[#00B9D6] font-bold transition-colors text-sm sm:text-base md:text-lg">
+              <p className="font-ryker text-[#00B9D6] font-bold transition-colors text-[13px] leading-[1.35] sm:text-[14px] xl:text-[15px]">
                 {m.name || m.file}
               </p>
             </div>

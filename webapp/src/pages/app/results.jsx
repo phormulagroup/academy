@@ -218,7 +218,7 @@ export default function Result() {
   ];
 
   return (
-    <div className="flex-1 bg-[#F1F9FF] py-4 sm:py-8 lg:py-10">
+    <div className="flex-1 bg-[#F1F9FF] py-8 sm:py-12 lg:py-16">
       <div className="page-frame flex flex-col gap-4 sm:gap-6">
         <UserHero />
 

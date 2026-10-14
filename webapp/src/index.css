@@ -331,6 +331,120 @@ textarea::placeholder,
   color: #163986 !important;
 }
 
+/* FAQs e Livro de Objecções (front): hover no cabeçalho e abertura/fecho mais suaves.
+   O Livro de Objecções é o mesmo componente no detalhe do curso e no eLearning */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection) .ant-collapse-item {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header {
+  cursor: pointer;
+  align-items: center !important;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-expand-icon {
+  color: #163986;
+  transition: color 0.25s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-expand-icon
+  svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-item:hover {
+  border-color: #00b9d6 !important;
+  box-shadow: 0 2px 8px rgba(22, 57, 134, 0.08);
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header:hover {
+  background-color: rgba(0, 185, 214, 0.06) !important;
+  color: #00b9d6 !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header:hover
+  .ant-collapse-expand-icon {
+  color: #00b9d6;
+}
+
+/* Pergunta aberta: ligeiro destaque no cabeçalho */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-item-active
+  .ant-collapse-header {
+  background-color: rgba(22, 57, 134, 0.04) !important;
+}
+
+/* Animação da resposta (sobrepõe a duração por omissão do antd) */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection).ant-collapse
+  .ant-motion-collapse {
+  transition:
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease !important;
+}
+
+/* Ligações nas respostas (ex.: e-mail de suporte): azul CTA, sublinhado no hover */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-content-box
+  a {
+  color: #00b9d6 !important;
+  font-weight: 500;
+  text-decoration: none;
+  word-break: break-word;
+  transition: color 0.2s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-content-box
+  a:hover {
+  color: #163986 !important;
+  text-decoration: underline;
+}
+
+/* FAQs: resposta sempre mais pequena que a pergunta (título 14 / 15px sm+; resposta 13 / 13.5 / 14px).
+   O HTML vem da BD e pode trazer tamanhos próprios (inline / ql-size-*): forçamos o tamanho do contentor */
+.collapse-accordion.collapse-faqs .faq-answer {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.collapse-accordion.collapse-faqs .faq-answer * {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.collapse-accordion.collapse-faqs .faq-answer p {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+@media (min-width: 640px) {
+  /* Ecrãs acima de mobile: cabeçalho mais baixo */
+  .collapse-accordion.collapse-faqs .ant-collapse-header {
+    padding: 9px 16px !important;
+  }
+
+  .collapse-accordion.collapse-faqs .faq-answer {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .collapse-accordion.collapse-faqs .faq-answer {
+    font-size: 14px !important;
+  }
+}
+
 .elearning-column [class*="Section"]:not([class*="Section-inner"]) {
   padding-inline-start: 0 !important;
   padding-inline-end: 0 !important;
@@ -2049,23 +2163,8 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   border-color: #163986 !important;
 }
 
-/* Títulos dos materiais (aba "Materiais" do detalhe do curso): tamanho moderado */
-.course-tab-materials p.font-ryker {
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-@media (min-width: 640px) {
-  .course-tab-materials p.font-ryker {
-    font-size: 14px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .course-tab-materials p.font-ryker {
-    font-size: 15px;
-  }
-}
+/* Títulos dos materiais (aba "Materiais" do detalhe do curso e do eLearning): os tamanhos
+   (13px / 14px sm / 15px xl) estão agora no próprio componente (pages/app/course/material.jsx) */
 
 /* === Editor de texto rico (Quill, components/admin/richText) === */
 .rich-text-editor {
