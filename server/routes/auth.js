@@ -11,7 +11,6 @@ const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
 const { notifyUser, notifyTeam, appUrl, emailLanguage } = require("../utils/notify");
 const { mergeName } = require("../utils/userName");
-const { completeAllCoursesForAdmin } = require("../utils/adminProgress");
 
 const saltRounds = 10;
 
@@ -139,8 +138,6 @@ router.post("/verifyLoginCode", async (req, res, next) => {
     await query("UPDATE user SET login_code = NULL, login_code_expires = NULL WHERE id = ?", [user[0].id]);
     await loginCodeThrottle.reset(key);
     const token = await createToken(user[0]);
-    // Admin: todos os cursos concluídos por defeito (também um admin novo, no primeiro login)
-    await completeAllCoursesForAdmin(user[0]);
     res.send({ user: user[0], token, message: "Welcome " + user[0].name + "!" });
   } catch (err) {
     throw err;

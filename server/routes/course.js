@@ -9,7 +9,7 @@ const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission, hasFullAccess } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser, emailLanguage } = require("../utils/notify");
-const { completeAllCoursesForAdmin, approvedResult } = require("../utils/adminProgress");
+const { approvedResult } = require("../utils/testResult");
 const { courseSettings, visibleCourses } = require("../utils/courseAccess");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
@@ -135,8 +135,6 @@ router.get("/readProgress", async (req, res) => {
 router.get("/readByLang", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		// Admin: cursos concluídos por defeito (acrescenta o que faltar antes de ler o progresso)
-		await completeAllCoursesForAdmin(req.user);
 		const rows = await multi(query, 
 			`SELECT ${COURSE_COLUMNS} FROM course WHERE id_lang = ? AND is_deleted = 0; ` +
 				"SELECT course_module.* FROM course_module LEFT JOIN course ON course.id = course_module.id_course WHERE id_lang = ? AND course_module.is_deleted = 0; " +
@@ -206,8 +204,6 @@ router.get("/readById", async (req, res) => {
 router.get("/readBySlug", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		// Admin: cursos concluídos por defeito (acrescenta o que faltar antes de ler o progresso)
-		await completeAllCoursesForAdmin(req.user);
 		const isAdmin = hasFullAccess(req.user);
 
 		// O mesmo slug pode existir em vários idiomas: todas as queries filtram por slug + id_lang
@@ -383,7 +379,7 @@ router.get("/accessUsers", requirePermission("course", "update"), async (req, re
 	try {
 		res.send(
 			await query(
-				"SELECT user.id, user.name, user.email FROM course_user_access " +
+				"SELECT user.id, user.name, user.email, user.country FROM course_user_access " +
 					"INNER JOIN user ON user.id = course_user_access.id_user " +
 					"WHERE course_user_access.id_course = ? AND user.is_deleted = 0",
 				[req.query.id_course],
