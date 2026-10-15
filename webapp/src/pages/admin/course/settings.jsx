@@ -88,13 +88,13 @@ export default function Settings({ course, isActive = true, onSaved }) {
     }
     let cancelled = false;
     axios
-      .get(endpoints.userGroup.read, { params: { countries: limitCountries } })
+      .get(endpoints.userGroup.read, { params: { countries: limitCountries, id_lang: course?.id_lang } })
       .then((res) => !cancelled && setCountryGroups(res.data))
       .catch((err) => console.log(err));
     return () => {
       cancelled = true;
     };
-  }, [limitCountries]);
+  }, [limitCountries, course?.id_lang]);
 
   // Opções dos grupos: sem limite de países, todos; com limite, os que têm membros desses países e ainda os já escolhidos que não têm
   // nenhum (ficam assinalados em vez de desaparecerem da seleção sem aviso)
@@ -138,7 +138,8 @@ export default function Settings({ course, isActive = true, onSaved }) {
   function getAccess() {
     setAccessLoaded(false);
     Promise.all([
-      axios.get(endpoints.userGroup.read),
+      // Só os grupos do idioma do curso (um grupo de outro idioma daria acesso a utilizadores de outro idioma)
+      axios.get(endpoints.userGroup.read, { params: { id_lang: course.id_lang } }),
       axios.get(endpoints.course.accessUsers, { params: { id_course: course.id } }),
       axios.get(endpoints.course.accessGroups, { params: { id_course: course.id } }),
       axios.get(endpoints.course.options),

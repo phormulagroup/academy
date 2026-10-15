@@ -73,7 +73,7 @@ export default function UserGroupForm({ data, open, close, groups = [] }) {
     }
     setIsButtonLoading(true);
     try {
-      const res = isUpdate ? await update({ data: { ...values }, table: "userGroup" }) : await create({ data: { ...values }, table: "userGroup" });
+      const res = isUpdate ? await update({ data: { ...values }, table: "userGroup" }) : await create({ data: { ...values, id_lang: selectedLanguage?.id }, table: "userGroup" });
 
       // create()/update() já mostraram o seu toast se falharam: chegar aqui significa que o grupo ficou guardado,
       // por isso um erro a seguir (só nos membros) precisa de mensagem própria
