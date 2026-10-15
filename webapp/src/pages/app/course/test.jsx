@@ -99,6 +99,8 @@ const Test = ({
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
+  // Tentativa acabada de fazer, enquanto é gravada: conta logo no resultado (tentativas e se ainda pode repetir)
+  const [pendingAttempt, setPendingAttempt] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
   const [isCalculating, setIsCalculating] = useState(false);
@@ -333,7 +335,7 @@ const Test = ({
     setReview(false);
     setFinished(true);
 
-    const passingScore = data.settings?.passing_score ?? 80;
+    const passingScore = data.settings?.passing_score ?? 75;
     const percentage =
       items.length > 0
         ? (items.filter((r) => r.is_correct).length * 100) / items.length
@@ -428,7 +430,7 @@ const Test = ({
           clearInterval(interval);
           setIsCalculating(false);
 
-          let passingScore = data.settings?.passing_score ?? 80;
+          let passingScore = data.settings?.passing_score ?? 75;
 
           if (
             (auxResult.filter((r) => r.is_correct).length * 100) /
@@ -474,6 +476,7 @@ const Test = ({
       },
     ];
 
+    setPendingAttempt(auxData[0]);
     axios
       .post(endpoints.course.updateProgress, {
         data: auxData,
@@ -483,7 +486,8 @@ const Test = ({
       })
       .catch((err) => {
         console.log(err);
-      });
+      })
+      .finally(() => setPendingAttempt(null));
   }
 
   return (
@@ -587,13 +591,16 @@ const Test = ({
                       const totalQuestions = result.items?.length || 1;
                       const percentage =
                         (correctAnswers * 100) / totalQuestions;
-                      const passingScore = data.settings?.passing_score ?? 80;
+                      const passingScore = data.settings?.passing_score ?? 75;
                       const isApproved = percentage >= passingScore;
                       // Mesma regra dos relatórios (utils/courseStatus): só há limite de tentativas quando
                       // retries_allowed está definido; sem limite pode repetir sempre
+                      const attemptsProgress = pendingAttempt
+                        ? [...progress, pendingAttempt]
+                        : progress;
                       const canStillRetry =
                         !isApproved &&
-                        !isTestFailed(progress, selectedCourseItem);
+                        !isTestFailed(attemptsProgress, selectedCourseItem);
                       const statusLabel = isApproved
                         ? t("Approved")
                         : canStillRetry
@@ -648,7 +655,7 @@ const Test = ({
                               className={`text-[14px] sm:text-[16px] ${result.timeUp ? "mt-1" : "mt-4"}`}>
                               <b>{t("Your tries")}:</b>{" "}
                               {
-                                progress.filter(
+                                attemptsProgress.filter(
                                   (p) =>
                                     p.activity_type === "test" &&
                                     p.is_deleted !== 1 &&

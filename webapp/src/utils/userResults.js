@@ -81,7 +81,7 @@ export function testResult(c, test) {
     maxTries,
     questions: questionCount,
     time: settings?.time ?? null,
-    passingScore: settings?.passing_score ?? 80,
+    passingScore: settings?.passing_score ?? 75,
   };
 }
 

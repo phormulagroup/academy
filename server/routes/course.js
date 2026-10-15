@@ -9,8 +9,8 @@ const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission, hasFullAccess } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser, emailLanguage } = require("../utils/notify");
-const { approvedResult } = require("../utils/testResult");
-const { courseSettings, visibleCourses } = require("../utils/courseAccess");
+const { approvedResult, gradeAttempt } = require("../utils/testResult");
+const { courseSettings, visibleCourses, visibleTests } = require("../utils/courseAccess");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
 // lang: idioma escolhido na app, só quando é a própria pessoa a concluir (a equipa recebe nesse idioma; o aluno no da sua conta)
@@ -165,6 +165,8 @@ router.get("/readByLang", async (req, res) => {
 			rows[3] = rows[3].filter((ts) => moduleIds.has(ts.id_course_module));
 			rows[4] = rows[4].filter((p) => courseIds.has(p.id_course));
 		}
+		// Testes com limite de países: só os do país do utilizador
+		rows[3] = visibleTests(rows[3], req.user);
 
 		res.send({
 			courses,
@@ -238,11 +240,14 @@ router.get("/readBySlug", async (req, res) => {
 				req.query.id_lang,
 			],
 		);
-		// Curso restrito a que o utilizador não tem acesso: responde como se não existisse
+		// Curso restrito a que o utilizador não tem acesso, ou em rascunho (só a equipa o vê, como os testes): responde como se não existisse
 		const courses = await visibleCourses(query, rows[0], req.user);
-		if (courses.length === 0 && rows[0].length > 0) {
+		const isDraft = !isAdmin && rows[0][0]?.status === "draft";
+		if ((courses.length === 0 && rows[0].length > 0) || isDraft) {
 			return res.send({ course: [], modules: [], topics: [], tests: [], progress: [] });
 		}
+		// Testes com limite de países: só os do país do utilizador
+		rows[3] = visibleTests(rows[3], req.user);
 
 		res.send({
 			course: rows[0],
@@ -275,7 +280,8 @@ router.get("/readByTestId", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
-			"SELECT course_test.*, course.name as `course_name`, course_module.title as `course_module_title` FROM course_test " +
+			// course_settings e course_id_lang: países que as definições do teste podem oferecer (os do limite do curso ou os do idioma)
+			"SELECT course_test.*, course.name as `course_name`, course.settings as `course_settings`, course.id_lang as `course_id_lang`, course_module.title as `course_module_title` FROM course_test " +
 				"LEFT JOIN course_module ON course_test.id_course_module = course_module.id " +
 				"LEFT JOIN course ON course.id = course_module.id_course WHERE course_test.id = ?",
 			[req.query.idTest],
@@ -539,10 +545,75 @@ router.post("/updateTest", requirePermission("course", "update"), async (req, re
 	}
 });
 
+// Teste reprovado (mesma regra do front, utils/courseStatus.js isTestFailed): tem limite de tentativas, nenhuma aprovada
+// e as falhadas atingiram o limite
+function testFailed(test, activity) {
+	const retries = Number(courseSettings(test).retries_allowed);
+	if (!retries || retries <= 0) return false;
+	const attempts = activity.filter((a) => a.activity_type === "test" && a.id_course_test === test.id);
+	if (attempts.some((a) => Number(a.is_completed) === 1)) return false;
+	return attempts.filter((a) => Number(a.is_completed) === 0).length >= retries;
+}
+
+// Depois de reprovar no curso só se revê o que já se fez (como no eLearning): o servidor não grava conclusões novas
+// (tópicos, testes, módulos, curso) nem tentativas num teste reprovado, mesmo que o pedido seja feito fora do browser
+async function blockedAfterFailing(query, user, rows) {
+	const blocked = new Set();
+	for (const idCourse of [...new Set(rows.map((r) => Number(r.id_course)).filter(Boolean))]) {
+		const tests = visibleTests(
+			await query(
+				"SELECT course_test.id, course_test.settings FROM course_test INNER JOIN course_module ON course_module.id = course_test.id_course_module " +
+					"WHERE course_module.id_course = ? AND course_module.is_deleted = 0 AND course_test.is_deleted = 0 AND course_test.status = 'published'",
+				[idCourse],
+			),
+			user,
+		);
+		if (!tests.length) continue;
+		const activity = await query("SELECT activity_type, id_course_test, id_course_topic, id_course_module, is_completed FROM course_user_activity WHERE id_user = ? AND id_course = ? AND (is_deleted = 0 OR is_deleted IS NULL)", [user.id, idCourse]);
+		const failedTests = tests.filter((t) => testFailed(t, activity)).map((t) => t.id);
+		if (!failedTests.length) continue;
+		const done = (type, id) => activity.some((a) => a.activity_type === type && Number(a.is_completed) === 1 && (type === "course" || a[`id_course_${type}`] === Number(id)));
+		rows.forEach((r, i) => {
+			if (Number(r.id_course) !== idCourse) return;
+			const type = r.activity_type;
+			// Qualquer tentativa de teste (o reprovado ou outro ainda por fazer) e qualquer conclusão nova
+			if (type === "test") blocked.add(i);
+			else if (["topic", "module", "course"].includes(type) && Number(r.is_completed) === 1 && !done(type, r[`id_course_${type}`])) blocked.add(i);
+		});
+	}
+	return blocked;
+}
+
+// As tentativas de teste são corrigidas aqui com as respostas certas da BD (o resultado do browser não conta): is_completed e o
+// is_correct de cada pergunta saem desta correção. Um teste reprovado no pedido tira a conclusão de módulo/curso que vinha com ele
+// (o eLearning só as envia junto com um teste aprovado)
+async function gradeTestRows(query, rows) {
+	if (!rows.some((r) => r.activity_type === "test")) return rows;
+	const ids = [...new Set(rows.filter((r) => r.activity_type === "test").map((r) => Number(r.id_course_test)).filter(Boolean))];
+	const tests = ids.length
+		? await query("SELECT course_test.id, course_test.question, course_test.settings, course_module.id_course FROM course_test INNER JOIN course_module ON course_module.id = course_test.id_course_module WHERE course_test.id IN (?)", [ids])
+		: [];
+	const failedCourses = new Set();
+	for (const row of rows) {
+		if (row.activity_type !== "test") continue;
+		// Teste de outro curso (ou inexistente) fica sem perguntas → reprovado
+		const test = tests.find((t) => t.id === Number(row.id_course_test) && t.id_course === Number(row.id_course));
+		const { passed, meta_data } = gradeAttempt(test?.question, test?.settings, row.meta_data);
+		row.is_completed = passed ? 1 : 0;
+		row.meta_data = meta_data;
+		if (!passed) failedCourses.add(Number(row.id_course));
+	}
+	return rows.filter((r) => !(["module", "course"].includes(r.activity_type) && Number(r.is_completed) === 1 && failedCourses.has(Number(r.id_course))));
+}
+
 router.post("/updateProgress", async (req, res, next) => {
 	try {
-		let data = req.body.data;
 		const query = util.promisify(db.query).bind(db);
+		// O progresso é sempre de quem faz o pedido (a app só grava o próprio; o Admin usa /completeProgress para os alunos)
+		const sent = await gradeTestRows(query, (req.body.data || []).map((row) => ({ ...row, id_user: req.user.id })));
+		const blocked = await blockedAfterFailing(query, req.user, sent);
+		let data = sent.filter((_, i) => !blocked.has(i));
+		if (!data.length) return res.send({ affectedRows: 0, blocked: blocked.size });
 
 		const columns = Object.keys(data[0]);
 

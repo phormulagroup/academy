@@ -391,7 +391,13 @@ const Learning = () => {
   }
 
   function selectCourseItem(item) {
-    if (!isAccessibleWhenFailed(item)) return;
+    // Reprovado: um item que ainda não fez abre só o aviso de conteúdo indisponível (selectedBlocked), sem o conteúdo
+    if (!isAccessibleWhenFailed(item)) {
+      setForcedLockKey(null);
+      setSelectedCourseItem(item);
+      if (windowDimension.width < 1080) closeDrawer();
+      return;
+    }
     if (item.type) {
       const locked = isNextItemLocked(item);
       setForcedLockKey(locked ? itemKey(item) : null);
@@ -610,7 +616,7 @@ const Learning = () => {
     const blocked = !isAccessibleWhenFailed(item);
     return {
       expired,
-      rowClass: blocked ? "opacity-50 cursor-not-allowed!" : "",
+      rowClass: blocked ? "opacity-50" : "",
       textClass: expired ? "text-[#8B9CC3]" : "text-[#163986]",
       marker: expired ? (
         <Tooltip title={expired}>
