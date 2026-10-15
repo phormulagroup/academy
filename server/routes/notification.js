@@ -6,7 +6,7 @@ var router = express.Router();
 var db = require("../utils/database");
 const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
-const { scheduleReady, countAudience, deliver } = require("../utils/notifications");
+const { scheduleReady, groupsJson, countAudience, deliver } = require("../utils/notifications");
 
 router.get("/read", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
@@ -56,14 +56,14 @@ router.get("/readByLang", async (req, res) => {
   }
 });
 
-// Quantas pessoas recebem uma notificação para este idioma e países (para o ecrã mostrar antes de enviar)
+// Quantas pessoas recebem uma notificação para este idioma, países e grupos (para o ecrã mostrar antes de enviar)
 router.post("/audience", requirePermission("notification", "read"), async (req, res) => {
-  const { id_lang, country } = req.body.data || {};
-  res.send({ total: await countAudience({ id_lang, country }), scheduling: await scheduleReady() });
+  const { id_lang, country, user_groups } = req.body.data || {};
+  res.send({ total: await countAudience({ id_lang, country, user_groups: groupsJson(user_groups) }), scheduling: await scheduleReady() });
 });
 
-// Campos que o formulário pode gravar; o resto (envio, datas de envio) decide-o o servidor
-const FIELDS = ["title", "description", "id_lang", "country"];
+// Campos que o formulário pode gravar (só título e descrição são obrigatórios; países e grupos são opcionais); o resto decide-o o servidor
+const FIELDS = ["title", "description", "id_lang", "country", "user_groups"];
 
 // Aplica o modo escolhido: "draft" (guardar), "schedule" (agendar para scheduled_at) ou "now" (enviar já).
 // Devolve { error } com o código HTTP se o pedido não for válido.
@@ -88,9 +88,14 @@ async function applyMode(id, mode, scheduledAt) {
   return { error: [400, "Invalid mode"] };
 }
 
+// Países: lista JSON de nomes; grupos: [{ "id": 1 }, ...] como course_module.items (vazio = sem filtro = NULL)
 const pick = (data) => {
   const out = {};
-  for (const f of FIELDS) if (data[f] !== undefined) out[f] = f === "country" && Array.isArray(data[f]) ? (data[f].length ? JSON.stringify(data[f]) : null) : data[f];
+  for (const f of FIELDS) {
+    if (data[f] === undefined) continue;
+    if (f === "user_groups") out[f] = groupsJson(data[f]);
+    else out[f] = f === "country" && Array.isArray(data[f]) ? (data[f].length ? JSON.stringify(data[f]) : null) : data[f];
+  }
   return out;
 };
 
@@ -125,6 +130,7 @@ router.post("/update", requirePermission("notification", "update"), async (req, 
     // Depois de enviada, o público e o idioma já não mudam (já foi entregue a essas pessoas); o texto pode corrigir-se
     if (sentAlready) {
       delete fields.country;
+      delete fields.user_groups;
       delete fields.id_lang;
     }
     const columns = Object.keys(fields);

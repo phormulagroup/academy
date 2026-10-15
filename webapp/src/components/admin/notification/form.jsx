@@ -1,7 +1,7 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
-import { Alert, Button, DatePicker, Drawer, Form, Radio } from "antd";
+import { Alert, Button, DatePicker, Drawer, Form, Radio, Select, Tag, Tooltip } from "antd";
 import { LuClock, LuSend } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
@@ -31,12 +31,18 @@ export default function NotificationForm({ data, open, close }) {
   const [confirm, confirmHolder] = useConfirm();
   const [isSaving, setIsSaving] = useState(false);
   const [audience, setAudience] = useState({ total: null, scheduling: true });
+  // Todos os grupos (para mostrar os já escolhidos) e os que têm membros dos países escolhidos (ou, sem países, dos do idioma)
+  const [allGroups, setAllGroups] = useState([]);
+  const [countryGroups, setCountryGroups] = useState([]);
 
   const isEdit = !!data?.id;
   const sent = isEdit && (!!data.sent_at || data.recipients > 0);
   const languageCountries = parseList(selectedLanguage?.country);
   const mode = Form.useWatch("mode", form) ?? "draft";
   const countries = Form.useWatch("country", form) ?? [];
+  const groupIds = Form.useWatch("user_groups", { form, preserve: true }) ?? [];
+  const groupCountries = countries.length ? countries : languageCountries;
+  const groupCountriesKey = groupCountries.join("|");
 
   useEffect(() => {
     if (!open) return;
@@ -46,22 +52,64 @@ export default function NotificationForm({ data, open, close }) {
       title: data?.title || null,
       description: data?.description || null,
       country: parseList(data?.country),
+      // user_groups vem como [{ "id": 1 }, ...] (como course_module.items); o seletor trabalha com os ids
+      user_groups: parseList(data?.user_groups).map((g) => Number(g?.id)).filter(Boolean),
       mode: data?.scheduled_at && !sent ? "schedule" : "draft",
       scheduled_at: data?.scheduled_at && !sent ? dayjs(data.scheduled_at) : null,
     });
   }, [open, data?.id]);
 
-  // Quantas pessoas recebem com os países escolhidos
+  // Quantas pessoas recebem com os países e grupos escolhidos
   useEffect(() => {
     if (!open || !selectedLanguage?.id) return;
     const timer = setTimeout(() => {
       axios
-        .post(endpoints.notification.audience, { data: { id_lang: selectedLanguage.id, country: countries } })
+        .post(endpoints.notification.audience, { data: { id_lang: selectedLanguage.id, country: countries, user_groups: groupIds } })
         .then((res) => setAudience({ total: res.data.total, scheduling: res.data.scheduling }))
         .catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
-  }, [open, selectedLanguage?.id, JSON.stringify(countries)]);
+  }, [open, selectedLanguage?.id, JSON.stringify(countries), JSON.stringify(groupIds)]);
+
+  useEffect(() => {
+    if (!open) return;
+    axios
+      .get(endpoints.userGroup.read, { params: { id_lang: selectedLanguage?.id } })
+      .then((res) => {
+        setAllGroups(res.data);
+        // Só grupos ativos: um grupo entretanto removido (is_deleted = 1) sai do campo
+        const active = new Set(res.data.map((g) => g.id));
+        form.setFieldValue("user_groups", (form.getFieldValue("user_groups") || []).filter((id) => active.has(id)));
+      })
+      .catch((err) => console.log(err));
+  }, [open]);
+
+  // Grupos com membros dos países escolhidos (sem países, dos países do idioma), com o nº de membros (total e desses países)
+  useEffect(() => {
+    if (!open || !groupCountriesKey) {
+      setCountryGroups([]);
+      return;
+    }
+    let cancelled = false;
+    axios
+      .get(endpoints.userGroup.read, { params: { countries: groupCountriesKey.split("|"), id_lang: selectedLanguage?.id } })
+      .then((res) => !cancelled && setCountryGroups(res.data))
+      .catch((err) => console.log(err));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, groupCountriesKey]);
+
+  // Opções: os grupos com membros desses países e ainda os já escolhidos que não têm nenhum (ficam assinalados em vez de desaparecerem)
+  const groupOptions = useMemo(() => {
+    if (!groupCountriesKey) return allGroups.map((g) => ({ value: g.id, label: g.name }));
+    const options = countryGroups.map((g) => ({ value: g.id, label: g.name, members: Number(g.members), inCountries: Number(g.members_in_countries) }));
+    const listed = new Set(options.map((o) => o.value));
+    allGroups.filter((g) => groupIds.includes(g.id) && !listed.has(g.id)).forEach((g) => options.push({ value: g.id, label: g.name, outside: true }));
+    return options;
+  }, [groupCountriesKey, allGroups, countryGroups, JSON.stringify(groupIds)]);
+  const outsideGroupIds = groupOptions.filter((o) => o.outside).map((o) => o.value);
+  const groupName = (id) => allGroups.find((g) => g.id === id)?.name;
 
   function onClose() {
     form.resetFields();
@@ -77,6 +125,7 @@ export default function NotificationForm({ data, open, close }) {
         description: values.description,
         id_lang: data?.id_lang ?? selectedLanguage.id,
         country: values.country,
+        user_groups: values.user_groups,
         mode: sent ? "draft" : values.mode,
         scheduled_at: values.mode === "schedule" && values.scheduled_at ? values.scheduled_at.toISOString() : null,
       };
@@ -123,7 +172,7 @@ export default function NotificationForm({ data, open, close }) {
         </div>
       }>
       {confirmHolder}
-      <Form form={form} onFinish={submit} layout="vertical" initialValues={{ mode: "draft", country: [] }}>
+      <Form form={form} onFinish={submit} layout="vertical" initialValues={{ mode: "draft", country: [], user_groups: [] }}>
         <Form.Item name="id" hidden>
           <input />
         </Form.Item>
@@ -143,6 +192,56 @@ export default function NotificationForm({ data, open, close }) {
           <Form.Item name="country" label={t("Countries")} extra={audience.total === null ? t("Leave empty to reach every country of this language") : `${t("Leave empty to reach every country of this language")} · ${t("{{count}} people will receive it", { count: audience.total })}`}>
             <CountriesPicker options={languageCountries} maxHeight="max-h-52" />
           </Form.Item>
+        )}
+
+        {sent ? (
+          groupIds.length > 0 && (
+            <Form.Item label={t("User groups")}>
+              <p className="mb-0! text-[14px]">{groupIds.map(groupName).filter(Boolean).join(", ")}</p>
+            </Form.Item>
+          )
+        ) : (
+            <Form.Item
+              name="user_groups"
+              label={t("User groups")}
+              extra={
+                <>
+                  <p className="mb-0!">{t("Leave empty to reach everyone, in any group")}</p>
+                  {groupIds.length > 0 && <p className="mb-0!">{t("Only members of the selected groups from the selected countries will receive it")}</p>}
+                </>
+              }>
+              <Select
+                mode="multiple"
+                size="large"
+                className="w-full"
+                placeholder={t("Select groups...")}
+                allowClear
+                optionFilterProp="label"
+                options={groupOptions}
+                optionRender={(option) =>
+                  groupCountriesKey && !option.data.outside ? (
+                    <div className="flex justify-between gap-3">
+                      <span className="truncate">{option.data.label}</span>
+                      <span className="text-[12px] text-[#8A8D98] shrink-0">
+                        {t("{{count}} of {{total}} members in the selected countries", { count: option.data.inCountries, total: option.data.members })}
+                      </span>
+                    </div>
+                  ) : (
+                    option.data.label
+                  )
+                }
+                tagRender={({ value: id, label: tagLabel, closable, onClose }) => {
+                  const outside = outsideGroupIds.includes(id);
+                  const tag = (
+                    <Tag color={outside ? "warning" : undefined} closable={closable} onClose={onClose} onMouseDown={(e) => e.preventDefault()} className="my-0.5! me-1!">
+                      {tagLabel}
+                    </Tag>
+                  );
+                  return outside ? <Tooltip title={t("This group has no members from the selected countries: none of its members will receive it")}>{tag}</Tooltip> : tag;
+                }}
+                notFoundContent={groupCountriesKey ? t("No groups with members from the selected countries") : t("No groups yet. Create them in User groups")}
+              />
+            </Form.Item>
         )}
 
         {sent ? (
