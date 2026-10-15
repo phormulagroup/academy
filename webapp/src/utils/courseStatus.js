@@ -21,6 +21,24 @@ export function parseSettings(settings) {
 }
 
 /**
+ * @function testsForStudent
+ * @description Testes que o aluno vê: limite de países do teste (settings.country_limit + country), pelo país da conta.
+ * Mesma regra do servidor (server/utils/courseAccess.js visibleTests); o Admin vê todos. Um teste que o aluno não vê
+ * não conta para o progresso, a aprovação nem a reprovação dele (como nos relatórios do curso com limite de países).
+ * @param {Array} tests - Testes do curso.
+ * @param {object} user - Aluno (country, id_role).
+ * @returns {Array}
+ */
+export function testsForStudent(tests, user) {
+  if (!user || Number(user.id_role) === ADMIN_ROLE_ID) return tests || [];
+  return (tests || []).filter((test) => {
+    const { country_limit, country } = parseSettings(test?.settings);
+    const countries = country_limit && Array.isArray(country) && country.length > 0 ? country : null;
+    return !countries || countries.includes(user.country);
+  });
+}
+
+/**
  * @function isTestFailed
  * @description Teste reprovado: tem limite de tentativas (retries_allowed > 0), nenhuma tentativa aprovada
  * e as tentativas falhadas atingiram o limite.

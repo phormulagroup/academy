@@ -14,7 +14,7 @@ const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const crypto = require("crypto");
 const { notifyUser, emailLanguage } = require("../utils/notify");
-const { visibleCourses } = require("../utils/courseAccess");
+const { visibleCourses, visibleTests } = require("../utils/courseAccess");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -160,7 +160,8 @@ router.get("/readById", async (req, res) => {
 			let courses = await visibleCourses(query, rows[0], user);
 			let modules = rows[1];
 			let topics = rows[2];
-			let tests = rows[3];
+			// Testes com limite de países: pelo país do utilizador dos resultados
+			let tests = visibleTests(rows[3], user);
 			let progress = rows[4];
 
 			res.send({ user: userRow[0], courses, modules, topics, tests, progress });

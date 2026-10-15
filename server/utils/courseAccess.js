@@ -59,4 +59,14 @@ async function visibleCourses(query, courses, user) {
 	});
 }
 
-module.exports = { courseSettings, isRestrictedCourse, countryLimit, accessibleCourseIds, visibleCourses };
+// Testes que a pessoa pode ver: limite de países do teste (test.settings.country_limit + country), pelo país da sua conta.
+// Um teste fora do limite não chega ao aluno: não aparece, não conta para o progresso nem o pode reprovar. O Admin vê todos
+function visibleTests(tests, person) {
+	if (Number(person?.id_role) === ADMIN_ROLE_ID) return tests;
+	return tests.filter((t) => {
+		const countries = countryLimit(t);
+		return !countries || countries.includes(person?.country);
+	});
+}
+
+module.exports = { courseSettings, isRestrictedCourse, countryLimit, accessibleCourseIds, visibleCourses, visibleTests };

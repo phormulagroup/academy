@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { progressPercent } from "./percent";
+import { testsForStudent } from "./courseStatus";
 
 const parseJson = (value, fallback) => {
   if (!value) return fallback;
@@ -94,9 +95,11 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
   const rows = base.map((row) => {
     const userActivity = activity.filter((a) => a.id_user === row.ID);
     const completed = (type, id) => userActivity.some((a) => a.activity_type === type && a.is_completed === 1 && a[`id_course_${type}`] === id);
+    // Só os testes que o aluno vê (limite de países do teste); nos outros as colunas ficam vazias
+    const studentTests = testsForStudent(courseTests, { country: row.country, id_role: 2 });
     const topicsDone = courseTopics.filter((x) => completed("topic", x.id)).length;
-    const testsDone = courseTests.filter((x) => completed("test", x.id)).length;
-    const totalItems = courseTopics.length + courseTests.length;
+    const testsDone = studentTests.filter((x) => completed("test", x.id)).length;
+    const totalItems = courseTopics.length + studentTests.length;
     const progress = totalItems > 0 ? progressPercent(((topicsDone + testsDone) * 100) / totalItems) : 0;
     const lastActivity = userActivity.map((a) => a.created_at).sort().pop();
     const startedRaw = userActivity.map((a) => a.created_at).sort()[0];
@@ -116,6 +119,7 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
 
     testsWithQuestions.forEach(({ test, questions }, ti) => {
       const k = `t${ti}`;
+      if (!studentTests.includes(test)) return;
       const tries = allTries.filter((a) => a.id_course_test === test.id).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       const stats = testStats(test, tries);
       out[`${k}_status`] = statusLabel[stats.status];
@@ -124,7 +128,7 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
       out[`${k}_last`] = stats.last?.score ?? "";
       out[`${k}_correct`] = stats.last ? `${stats.last.correct}/${stats.last.total}` : "";
       out[`${k}_time`] = formatSeconds(stats.last?.seconds);
-      out[`${k}_passing`] = `${stats.settings?.passing_score ?? 80}%`;
+      out[`${k}_passing`] = `${stats.settings?.passing_score ?? 75}%`;
       out[`${k}_last_date`] = fmtDate(stats.last?.row.created_at);
       out[`${k}_passed_date`] = fmtDate(stats.firstPass?.created_at);
       questions.forEach((q, qi) => {

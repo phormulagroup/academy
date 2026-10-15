@@ -21,6 +21,7 @@ import {
   getExpandedStudentColumns,
 } from "../../../utils/columns";
 import { roundPercent } from "../../../utils/percent";
+import { testsForStudent } from "../../../utils/courseStatus";
 
 // Cores da marca Bial para os gráficos (do mais claro ao mais escuro)
 const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
@@ -384,7 +385,8 @@ export default function CourseReport({ data, isLoading }) {
           );
 
           if (
-            isStudentApproved(studentActivity, course, modules, topics, tests)
+            // Só os testes que o aluno vê (limite de países do teste)
+            isStudentApproved(studentActivity, course, modules, topics, testsForStudent(tests, student))
           ) {
             approvedUsers.add(student.id);
           }
@@ -399,7 +401,7 @@ export default function CourseReport({ data, isLoading }) {
             (a) => a.id_user === student.id && a.is_deleted === 0,
           );
 
-          if (isStudentRepproved(studentActivity, tests)) {
+          if (isStudentRepproved(studentActivity, testsForStudent(tests, student))) {
             repprovedUsers.add(student.id);
           }
         }
@@ -577,15 +579,17 @@ export default function CourseReport({ data, isLoading }) {
         let endDate = null; // Será definido apenas se o aluno for aprovado
 
         // Obter todos os testes para este curso (excluindo deletados)
-        let tests = data.tests.filter(
-          (t) => t.id_course === course.id && t.is_deleted === 0,
+        // Só os testes que este aluno vê (limite de países do teste): os outros não contam para ele
+        let tests = testsForStudent(
+          data.tests.filter((t) => t.id_course === course.id && t.is_deleted === 0),
+          student,
         );
 
         // Verificar se aprovado: deve concluir curso + todos os módulos + todos os tópicos + todos os testes
         const tempCourse = { id: course.id };
         const tempModules = Array(e.nr_modules).fill({});
         const tempTopics = Array(e.nr_topics).fill({});
-        const tempTests = Array(e.nr_tests).fill({});
+        const tempTests = Array(tests.length).fill({});
 
         let approved = isStudentApproved(
           studentActivity,
@@ -615,7 +619,8 @@ export default function CourseReport({ data, isLoading }) {
             a.activity_type === "test" &&
             a.id_course === course.id &&
             a.is_completed === 1 &&
-            a.is_deleted === 0,
+            a.is_deleted === 0 &&
+            tests.some((x) => x.id === a.id_course_test),
         ).length;
 
         // Apenas verifica módulos, tópicos e testes se eles existirem no curso
@@ -624,9 +629,7 @@ export default function CourseReport({ data, isLoading }) {
         const displayTopics =
           e.nr_topics > 0 ? `${completedTopics}/${e.nr_topics}` : "—";
         const displayTests =
-          e.nr_tests > 0
-            ? `${studentActivity.filter((a) => a.activity_type === "test" && a.is_completed === 1 && a.is_deleted === 0).length}/${e.nr_tests}`
-            : "—";
+          tests.length > 0 ? `${completedTests}/${tests.length}` : "—";
 
         // Defina endDate apenas se o aluno for aprovado (concluiu tudo)
         if (approved) {

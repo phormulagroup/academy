@@ -19,6 +19,7 @@ import { RxSwitch } from "react-icons/rx";
 import Status from "../../components/admin/user/status";
 import UserCell from "../../components/admin/userCell";
 import { StackedBar, HorizontalBars, emptyProgressBuckets, progressBucketKey } from "../../components/admin/charts";
+import { testsForStudent } from "../../utils/courseStatus";
 
 // Cores da marca Bial para os gráficos (do mais claro ao mais escuro), as mesmas dos relatórios
 const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
@@ -130,8 +131,10 @@ export default function Main() {
       let topics = obj.topics.filter(
         (t) => t.id_course === obj.activity[i].id_course,
       );
-      let tests = obj.tests.filter(
-        (t) => t.id_course === obj.activity[i].id_course,
+      // Só os testes que o aluno vê (limite de países do teste)
+      let tests = testsForStudent(
+        obj.tests.filter((t) => t.id_course === obj.activity[i].id_course),
+        obj.users.find((x) => x.id === obj.activity[i].id_user),
       );
 
       // Progresso do aluno neste curso depois desta atividade: tópicos e testes distintos concluídos até esta data, sobre o total do curso
