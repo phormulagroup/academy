@@ -286,7 +286,7 @@ const Main = () => {
                         active={currentSection === "tickets"}
                         badge={unreadTicketsCount}
                         onClick={closeDrawer}>
-                        {t("Tickets")}
+                        {t("Support tickets")}
                       </DrawerLink>
                     </div>
                   </>
@@ -438,7 +438,7 @@ const Main = () => {
                                       <MdOutlineConfirmationNumber className="text-[16px]" />
                                     )}
                                   </div>
-                                  <p>{t("Tickets")}</p>
+                                  <p>{t("Support tickets")}</p>
                                 </div>
                               </Link>
                             ),
