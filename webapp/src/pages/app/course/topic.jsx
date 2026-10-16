@@ -8,6 +8,7 @@ import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
 import { Context } from "../../../utils/context";
 import { hasFullAccess } from "../../../utils/roles";
+import { lockedDescription } from "../../../utils/courseStatus";
 
 const Topic = ({
   course,
@@ -16,6 +17,8 @@ const Topic = ({
   setAllowNext,
   allItems,
   forceLocked,
+  // Navegação livre: o que falta concluir ("topic", "test" ou "steps"), para o texto do bloqueio
+  lockedBy,
 }) => {
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const [seo, setSeo] = useState({});
@@ -48,7 +51,7 @@ const Topic = ({
 
     // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (sem o conteúdo)
     if (forceLocked) {
-      setIsTopicLocked(true);
+      setIsTopicLocked(lockedBy || "topic");
       return;
     }
 
@@ -70,7 +73,8 @@ const Topic = ({
             p[`id_course_${previousItem.type}`] === previousItem.id,
         );
         if (!previousCompleted) {
-          setIsTopicLocked(true);
+          // Guarda o tipo do item anterior, para o texto do bloqueio (tópico ou teste anterior)
+          setIsTopicLocked(previousItem.type);
           return;
         }
       }
@@ -155,7 +159,7 @@ const Topic = ({
         player.off("ended");
       });
     };
-  }, [selectedCourseItem, forceLocked]);
+  }, [selectedCourseItem, forceLocked, lockedBy]);
 
   const parsedContent = useMemo(() => {
     const resp = selectedCourseItem.content
@@ -200,9 +204,7 @@ const Topic = ({
           {isTopicLocked ? (
             <LockedMessage
               title={t("This topic is locked")}
-              description={t(
-                "You'll need to complete the previous topic first",
-              )}
+              description={lockedDescription(t, isTopicLocked)}
             />
           ) : (
             <PuckRender config={configRender} data={parsedContent} />

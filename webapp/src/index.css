@@ -1312,12 +1312,12 @@ select {
   background-color: white !important;
   color: #163986 !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -1328,12 +1328,12 @@ select {
   background-color: transparent !important;
   color: #ffffff !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -1344,15 +1344,63 @@ select {
   background-color: #163986 !important;
   color: #ffffff !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
+}
+
+/* Barra inferior do eLearning: botões Anterior/Próximo maiores e a barra acompanha a altura
+   (respeita a zona segura do fundo nos telemóveis com barra de gestos) */
+.learning-footer {
+  min-height: 50px;
+  padding-top: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+.course-button-previous .anticon,
+.course-button-previous-mobile .anticon,
+.course-button-next .anticon,
+.course-button-previous svg,
+.course-button-previous-mobile svg,
+.course-button-next svg {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .learning-footer {
+    min-height: 60px;
+    padding-top: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .course-button-previous,
+  .course-button-previous-mobile,
+  .course-button-next {
+    height: 40px !important;
+    padding: 0 18px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* Telemóvel/tablet na horizontal (pouca altura): barra e botões mais compactos para o conteúdo ter espaço */
+@media (max-height: 500px) and (orientation: landscape) {
+  .learning-footer {
+    min-height: 48px;
+    padding-top: 7px;
+    padding-bottom: calc(7px + env(safe-area-inset-bottom));
+  }
+  .course-button-previous,
+  .course-button-previous-mobile,
+  .course-button-next {
+    height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 15px !important;
+  }
 }
 
 /* Hover só em dispositivos com rato: em ecrãs táteis o hover ficava "preso" depois do toque
@@ -2004,7 +2052,29 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 16px;
   padding-top: 10px;
+}
+
+/* Descarregar o PDF (à esquerda; o ecrã inteiro fica à direita) */
+.doc-viewer-download {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-end: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: #163986 !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.doc-viewer-download:hover {
+  color: #00b9d6 !important;
+}
+
+.doc-viewer-download svg {
+  font-size: 20px;
 }
 
 .doc-viewer-fullscreen {
@@ -2073,6 +2143,7 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   flex: 1;
   min-height: 0;
   display: flex;
+  position: relative;
   padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
@@ -2103,39 +2174,6 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   max-width: 100%;
   max-height: 100%;
   width: 100%;
-}
-
-.doc-viewer-arrow {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  border: 1px solid #163986;
-  background: rgba(255, 255, 255, 0.9);
-  color: #163986;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 14px;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    opacity 0.2s ease;
-}
-
-@media (hover: hover) {
-  .doc-viewer-arrow:hover:not(:disabled) {
-    background: #00b9d6;
-    border-color: #00b9d6;
-    color: #ffffff;
-  }
-}
-
-.doc-viewer-arrow:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 
 .doc-viewer-counter {
@@ -3026,4 +3064,144 @@ deles invalida a regra inteira. */
 .auth-retry-notice svg {
   color: #ff7d5a;
   font-size: 16px;
+}
+
+/* Ecrã inteiro (slides do eLearning e documentos): setas nas laterais, circulares e semitransparentes,
+   a meio do slide (como nos carrosséis das redes sociais) */
+.fs-side-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(13, 27, 62, 0.45);
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fs-side-arrow.prev {
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.fs-side-arrow.next {
+  right: max(12px, env(safe-area-inset-right));
+}
+
+.fs-side-arrow:focus-visible {
+  outline: 2px solid #00b9d6;
+  outline-offset: 2px;
+}
+
+/* No início/fim não há para onde ir: a seta desaparece */
+.fs-side-arrow:disabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Com rato: aparecem ao passar o rato pelo ecrã inteiro ou com foco (teclado); em ecrãs táteis ficam sempre visíveis */
+@media (hover: hover) and (pointer: fine) {
+  .fs-side-arrow {
+    opacity: 0;
+  }
+  .is-fullscreen:hover .fs-side-arrow,
+  .is-fullscreen:focus-within .fs-side-arrow {
+    opacity: 1;
+  }
+  .fs-side-arrow:hover {
+    background: #00b9d6;
+    border-color: #00b9d6;
+    transform: translateY(-50%) scale(1.06);
+  }
+}
+
+@media (min-width: 1024px) {
+  .fs-side-arrow {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+  .fs-side-arrow.prev {
+    left: 24px;
+  }
+  .fs-side-arrow.next {
+    right: 24px;
+  }
+}
+
+/* Nota "rode o telemóvel" no ecrã inteiro (telemóvel na vertical sem bloqueio de orientação, ex.: iPhone) */
+.fs-rotate-note {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #163986;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.fs-rotate-note-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  animation: fs-rotate-hint 2.4s ease-in-out infinite;
+}
+
+.fs-rotate-note-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 0;
+  background: transparent;
+  color: #163986;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+@keyframes fs-rotate-hint {
+  0%,
+  30% {
+    transform: rotate(0deg);
+  }
+  50%,
+  80% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-rotate-note-icon {
+    animation: none;
+  }
 }

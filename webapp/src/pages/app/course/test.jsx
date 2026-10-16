@@ -23,12 +23,13 @@ import {
   isTestFailed,
   parseSettings,
   testDateState,
+  lockedDescription,
 } from "../../../utils/courseStatus";
 import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
 import { floorPercent } from "../../../utils/percent";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
@@ -92,6 +93,8 @@ const Test = ({
   footerSlot,
   // Navegação livre: item a seguir a um ainda por concluir (mostra só o bloqueado)
   forceLocked,
+  // Navegação livre: o que falta concluir ("topic", "test" ou "steps"), para o texto do bloqueio
+  lockedBy,
 }) => {
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
@@ -230,7 +233,8 @@ const Test = ({
     }
 
     // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (teste já aprovado não fica bloqueado)
-    if (forceLocked && !hasFullAccess(user) && completedTest.length === 0) setIsTopicLocked(true);
+    if (forceLocked && !hasFullAccess(user) && completedTest.length === 0)
+      setIsTopicLocked(lockedBy || "topic");
 
     // Teste já aprovado (com o visto) nunca fica bloqueado
     if (course.settings && course.settings.progression_type === "linear" && completedTest.length === 0) {
@@ -244,20 +248,20 @@ const Test = ({
           (p) =>
             p.is_completed === 1 &&
             p.is_deleted !== 1 &&
-            ((p.activity_type === "topic" &&
-              p.id_course_topic === previousItem.id) ||
-              (p.activity_type === "test" &&
-                p.id_course_test === previousItem.id)),
+            // Mesmo tipo que o item anterior: tópicos e testes são tabelas diferentes e os ids podem coincidir
+            p.activity_type === previousItem.type &&
+            p[`id_course_${previousItem.type}`] === previousItem.id,
         ).length;
 
         if (previousCompleted > 0) {
           setIsTopicLocked(false);
         } else {
-          setIsTopicLocked(true);
+          // Guarda o tipo do item anterior, para o texto do bloqueio (tópico ou teste anterior)
+          setIsTopicLocked(previousItem.type);
         }
       }
     }
-  }, [selectedCourseItem, forceLocked]);
+  }, [selectedCourseItem, forceLocked, lockedBy]);
 
   function prepareData() {
     let aux = Object.assign({}, selectedCourseItem);
@@ -519,9 +523,7 @@ const Test = ({
           {isTopicLocked ? (
             <LockedMessage
               title={t("This test is locked")}
-              description={t(
-                "You'll need to complete the previous topic first",
-              )}
+              description={lockedDescription(t, isTopicLocked)}
             />
           ) : (
             Object.keys(data).length > 0 && (
@@ -600,7 +602,8 @@ const Test = ({
                         : progress;
                       const canStillRetry =
                         !isApproved &&
-                        !isTestFailed(attemptsProgress, selectedCourseItem);
+                        // A equipa (Admin) pode sempre repetir o teste
+                        (isAdmin || !isTestFailed(attemptsProgress, selectedCourseItem));
                       const statusLabel = isApproved
                         ? t("Approved")
                         : canStillRetry
