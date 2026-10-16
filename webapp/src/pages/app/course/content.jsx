@@ -7,10 +7,11 @@ import { FaListCheck } from "react-icons/fa6";
 import { PiFileTextLight } from "react-icons/pi";
 import i18n from "../../../utils/i18n";
 import { Context } from "../../../utils/context";
-import { progressPercent } from "../../../utils/percent";
+import { itemsProgress } from "../../../utils/percent";
+import { itemCountsLabel } from "../../../utils/courseStatus";
 
 // compact: módulos mais baixos (usado nos Resultados), com as mesmas cores e o mesmo indicador de expandir
-export default function CourseContent({ modules, progress, data, courseSlug, compact = false }) {
+export default function CourseContent({ modules, progress, courseSlug, compact = false }) {
   const { t } = useTranslation();
   const { windowDimension } = useContext(Context);
 
@@ -76,30 +77,17 @@ export default function CourseContent({ modules, progress, data, courseSlug, com
 
   function calcProgress(items) {
     if (items && items.length > 0) {
-      let completed = items
-        .map(
-          (item) =>
-            progress.filter(
-              (p) =>
-                p.is_completed === 1 &&
-                p.is_deleted !== 1 &&
-                p.id_course_module === item.id_course_module &&
-                p.activity_type === item.type &&
-                (item.id === p.id_course_topic || item.id === p.id_course_test),
-            ).length,
-        )
-        .reduce((acc, v) => acc + v, 0);
-
-      let progressPercentage = (100 * completed) / items.length;
+      // Cada item conta uma só vez: somar os registos (repetidos) dava mais de 100% (ex.: 8/7 passos = 114%)
+      const { done, total, percent } = itemsProgress(items, progress);
 
       // Tamanho intermédio: entre o título do módulo e os itens (igual ao "Module content")
       return (
         <p className="font-ryker text-[#FFFFFF] text-[13px] sm:text-[14px] lg:text-[15px]">
           <span className="font-bold uppercase">
-            {progressPercent(progressPercentage)}
+            {percent}
             % {t("Completed")}
           </span>{" "}
-          | {completed}/{items.length} {t("Steps")}
+          | {done}/{total} {t("Steps")}
         </p>
       );
     }
@@ -113,6 +101,7 @@ export default function CourseContent({ modules, progress, data, courseSlug, com
           className={`collapse-course ${compact ? "collapse-course-compact" : ""}`}
           size={compact ? "small" : "large"}
           bordered={false}
+          accordion
           items={modules
             ?.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
             .map((item) => ({
@@ -138,13 +127,8 @@ export default function CourseContent({ modules, progress, data, courseSlug, com
                         {item.title}
                       </p>
                       <p className={`${compact ? "mt-0.5 mb-0! text-[12px]" : "mt-1 text-[12px] lg:text-[13px]"} text-[#163986] line-clamp-2`}>
-                        {data?.topics &&
-                        data.topics.filter(
-                          (_t) => _t.id_course_module === item.id,
-                        ).length > 0
-                          ? `${data.topics.filter((_t) => _t.id_course_module === item.id).length} ${t("topic")} ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? " | " : ""}`
-                          : ""}{" "}
-                        {` ${data?.tests.length > 0 && data.tests.filter((_t) => _t.id_course_module === item.id).length > 0 ? `${data.tests.filter((_t) => _t.id_course_module === item.id).length} ${t("test")}` : ""}`}
+                        {/* N.º de tópicos/testes pelos itens visíveis do módulo (os mesmos dos passos) */}
+                        {itemCountsLabel(item.items, t)}
                       </p>
                     </div>
                   </div>)}

@@ -34,3 +34,24 @@ export const progressPercent = (value) => {
  * @returns {number} The rounded down percentage value.
  */
 export const floorPercent = (value) => Math.floor(Number(value) || 0);
+
+// Progresso de uma lista de tópicos/testes visíveis (itens dos módulos que existem e o aluno vê): cada item conta uma só vez,
+// mesmo com registos de conclusão repetidos, e só contam conclusões de itens da lista (não de itens apagados, retirados do
+// módulo, em rascunho ou escondidos pelo país), por isso nunca passa de 100% nem de n/n passos
+/**
+ * @function itemsProgress
+ * @description Counts the distinct completed items of a list of visible topics/tests.
+ * @param {Array} items - Visible items ({ type: "topic" | "test", id }).
+ * @param {Array} progress - User activity (course_user_activity rows).
+ * @returns {{done: number, total: number, percent: number}} Distinct completed items, distinct items and the progress percentage (progressPercent).
+ */
+export function itemsProgress(items, progress) {
+  const keys = new Set((items || []).filter((i) => i.type === "topic" || i.type === "test").map((i) => `${i.type}_${i.id}`));
+  const done = new Set(
+    (progress || [])
+      .filter((p) => p.is_completed === 1 && p.is_deleted !== 1 && (p.activity_type === "topic" || p.activity_type === "test"))
+      .map((p) => `${p.activity_type}_${p[`id_course_${p.activity_type}`]}`)
+      .filter((key) => keys.has(key)),
+  );
+  return { done: done.size, total: keys.size, percent: keys.size > 0 ? progressPercent((100 * done.size) / keys.size) : 0 };
+}

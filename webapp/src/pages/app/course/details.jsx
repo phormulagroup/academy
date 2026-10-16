@@ -39,7 +39,7 @@ import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 import { hasFullAccess } from "../../../utils/roles";
-import { progressPercent } from "../../../utils/percent";
+import { itemsProgress } from "../../../utils/percent";
 
 export default function CourseDetails() {
   const { user, languages, toastApi, windowDimension } = useContext(Context);
@@ -194,35 +194,12 @@ export default function CourseDetails() {
     getData();
   }, [slug, user, languages, navigate, t, toastApi, accessDeniedMessage]);
 
-  // Nº de tópicos/testes (não apagados) concluídos; cada item conta uma só vez, mesmo com registos repetidos
-  function countCompletedItems() {
-    const completed = new Set(
-      progress
-        .filter(
-          (p) =>
-            p.is_completed === 1 &&
-            p.is_deleted !== 1 &&
-            ((p.activity_type === "topic" &&
-              data?.topics?.some(
-                (t) => t.id === p.id_course_topic && t.is_deleted !== 1,
-              )) ||
-              (p.activity_type === "test" &&
-                data?.tests?.some(
-                  (t) => t.id === p.id_course_test && t.is_deleted !== 1,
-                ))),
-        )
-        .map((p) =>
-          p.activity_type === "topic"
-            ? `topic_${p.id_course_topic}`
-            : `test_${p.id_course_test}`,
-        ),
-    );
-    return completed.size;
-  }
-
-  function calcCourseProgress(a, b, c) {
-    return progressPercent((100 * a) / (b + c));
-  }
+  // Progresso pelos itens visíveis dos módulos (como no catálogo, no eLearning e nos resultados): cada item conta uma só vez,
+  // mesmo com registos repetidos, e não contam tópicos/testes retirados dos módulos, em rascunho ou escondidos pelo país
+  const courseProgress = itemsProgress(
+    modules.flatMap((m) => m.items || []),
+    progress,
+  );
 
   function enroll() {
     let auxData = [
@@ -304,11 +281,7 @@ export default function CourseDetails() {
   // Estado do aluno no curso: Aprovado (curso concluído) ou Reprovado (mesma regra do relatório do backoffice)
   const courseStatus = !data.course
     ? null
-    : calcCourseProgress(
-          countCompletedItems(),
-          data.topics?.filter((t) => t.is_deleted !== 1)?.length || 0,
-          data.tests?.filter((t) => t.is_deleted !== 1)?.length || 0,
-        ) === 100
+    : courseProgress.percent === 100
       ? "approved"
       : isCourseFailed(progress, data.allTests)
         ? "failed"
@@ -398,13 +371,7 @@ export default function CourseDetails() {
                         <div className="flex-1 flex flex-col w-full">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start mb-3 gap-2 sm:gap-4">
                             <p className="text-[#163986] font-bold uppercase whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-xl">
-                              {calcCourseProgress(
-                                countCompletedItems(),
-                                data?.topics?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0,
-                                data?.tests?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0,
-                              )}
+                              {courseProgress.percent}
                               % {t("Completed")}
                             </p>
                             {courseStatus && (
@@ -434,24 +401,12 @@ export default function CourseDetails() {
                           <Progress
                             strokeColor={"#2F8351"}
                             railColor={"#FFF"}
-                            percent={
-                              (100 * countCompletedItems()) /
-                              ((data?.topics?.filter((t) => t.is_deleted !== 1)
-                                ?.length || 0) +
-                                (data?.tests?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0))
-                            }
+                            percent={courseProgress.percent}
                             className="w-full!"
                             showInfo={false}
                           />
                         </div>
-                        {calcCourseProgress(
-                          countCompletedItems(),
-                          data?.topics?.filter((t) => t.is_deleted !== 1)
-                            ?.length || 0,
-                          data?.tests?.filter((t) => t.is_deleted !== 1)
-                            ?.length || 0,
-                        ) === 100 ? (
+                        {courseProgress.percent === 100 ? (
                           <Button
                             className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                             color="#163986"
@@ -539,7 +494,6 @@ export default function CourseDetails() {
                                 <CourseContent
                                   modules={modules}
                                   progress={progress}
-                                  data={data}
                                   compact
                                 />
                               </div>

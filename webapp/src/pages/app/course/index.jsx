@@ -44,7 +44,7 @@ import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
 import { hasFullAccess } from "../../../utils/roles";
-import { progressPercent } from "../../../utils/percent";
+import { itemsProgress, progressPercent } from "../../../utils/percent";
 
 // Percentagem no card às unidades (só 100% quando o curso está mesmo completo)
 const formatPercent = progressPercent;
@@ -226,43 +226,12 @@ export default function CourseDetails() {
     return date ? dayjs(date).format("DD/MM/YYYY") : "";
   }
 
+  // Progresso pelos itens visíveis dos módulos já filtrados: cada item conta uma só vez (mesma regra do detalhe, eLearning e resultados)
   function calcProgress(items, modules) {
-    if (items && items.length > 0) {
-      // Build a set of visible item references from already-filtered modules
-      const visibleItems = new Set();
-      (modules || []).forEach((m) => {
-        if (m.items && m.items.length > 0) {
-          m.items.forEach((item) => {
-            const key =
-              item.type === "topic" ? `topic_${item.id}` : `test_${item.id}`;
-            visibleItems.add(key);
-          });
-        }
-      });
-
-      let steps = visibleItems.size;
-      // Conta cada item uma só vez (podem existir registos de conclusão repetidos do mesmo item)
-      const completedItems = new Set(
-        items
-          .filter(
-            (p) =>
-              p.is_completed === 1 &&
-              p.is_deleted !== 1 &&
-              (p.activity_type === "topic" || p.activity_type === "test"),
-          )
-          .map((p) =>
-            p.activity_type === "topic"
-              ? `topic_${p.id_course_topic}`
-              : `test_${p.id_course_test}`,
-          )
-          .filter((key) => visibleItems.has(key)),
-      );
-      let completed = completedItems.size;
-
-      let progressPercentage = steps > 0 ? (100 * completed) / steps : 0;
-      return progressPercent(progressPercentage);
-    }
-    return 0;
+    return itemsProgress(
+      (modules || []).flatMap((m) => m.items || []),
+      items,
+    ).percent;
   }
 
   // "Iniciar" no card: inscreve logo o utilizador no curso (activity_type enroll, is_completed = 1),
