@@ -106,6 +106,10 @@ export default function Account() {
       })
       .catch((err) => {
         console.log(err);
+        if (err.response?.data?.code === "same_password") {
+          form.setFields([{ name: "password", errors: [t("The new password must be different from the current one")] }]);
+          return;
+        }
         if (err.response?.data?.code === "invalid_current_password") {
           form.setFields([
             {
@@ -286,7 +290,17 @@ export default function Account() {
               <Form.Item
                 label={t("New password")}
                 name="password"
-                rules={[passwordRule]}
+                dependencies={["current_password"]}
+                rules={[
+                  passwordRule,
+                  ({ getFieldValue }) => ({
+                    // A nova tem de ser diferente da atual (a API também o verifica)
+                    validator: (_, value) =>
+                      value && value === getFieldValue("current_password")
+                        ? Promise.reject(new Error(t("The new password must be different from the current one")))
+                        : Promise.resolve(),
+                  }),
+                ]}
                 className="mb-0!">
                 <Input.Password
                   size="large"

@@ -277,6 +277,8 @@ router.post("/update", async (req, res, next) => {
 			if (account?.password) {
 				const valid = typeof currentPassword === "string" && currentPassword !== "" && (await bcrypt.compare(currentPassword, account.password));
 				if (!valid) return res.status(400).send({ message: "The current password is incorrect", code: "invalid_current_password" });
+				// A nova tem de ser diferente da atual
+				if (await bcrypt.compare(data.new_password, account.password)) return res.status(400).send({ message: "The new password must be different from the current one", code: "same_password" });
 			}
 			data.password = await bcrypt.hash(data.new_password, saltRounds);
 			delete data.new_password;

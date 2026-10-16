@@ -12,6 +12,7 @@ import {
   requiredSelectRule,
   userEmailRule,
 } from "../../../utils/formFieldError";
+import { academicBackgroundOptions } from "../../../utils/userFields";
 
 export default function Create({ open, close }) {
   const { create, roles, languages, selectedLanguage } = useContext(Context);
@@ -109,17 +110,8 @@ export default function Create({ open, close }) {
               placeholder={t("Academic background")}
               showSearch={{ optionFilterProp: "label" }}
               allowClear
-              options={[
-                {
-                  label: t("Secondary School"),
-                  value: "Secondary School",
-                },
-                {
-                  label: t("University Degree"),
-                  value: "University Degree",
-                },
-                { label: t("PhD"), value: "PhD" },
-              ]}
+              // As mesmas opções do registo e da conta (inclui "Mestrado" e "Outra")
+              options={academicBackgroundOptions(t)}
             />
           </Form.Item>
           <Form.Item

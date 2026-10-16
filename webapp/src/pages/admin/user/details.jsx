@@ -119,6 +119,7 @@ export default function UserDetails() {
   const [countries, setCountries] = useState([]);
   const [view, setView] = useState("results");
   const [courseSearch, setCourseSearch] = useState("");
+  const [openCourse, setOpenCourse] = useState(null);
 
   // Exemplos de Nome e Apelido no idioma atual
   const placeholders = namePlaceholders(i18n.language);
@@ -275,6 +276,8 @@ export default function UserDetails() {
       })
       .catch((err) => {
         console.log(err);
+        if (err.response?.data?.code === "same_password")
+          return form.setFields([{ name: "password", errors: [t("The new password must be different from the current one")] }]);
         if (err.response?.data?.code === "invalid_current_password")
           return form.setFields([
             {
@@ -497,6 +500,8 @@ export default function UserDetails() {
                   key={c.course.id}
                   course={c}
                   student={data}
+                  open={openCourse === c.course.id}
+                  onToggle={(isOpen) => setOpenCourse(isOpen ? c.course.id : null)}
                   onChange={getData}
                   onDownloadCertificate={handleDownloadCertificate}
                 />
@@ -651,7 +656,17 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("New password")}
                     name="password"
-                    rules={[passwordRule]}
+                    dependencies={["current_password"]}
+                    rules={[
+                      passwordRule,
+                      ({ getFieldValue }) => ({
+                    // A nova tem de ser diferente da atual (a API também o verifica)
+                    validator: (_, value) =>
+                      value && value === getFieldValue("current_password")
+                        ? Promise.reject(new Error(t("The new password must be different from the current one")))
+                        : Promise.resolve(),
+                  }),
+                    ]}
                     className="mb-0!">
                     <Input.Password placeholder={t("Enter a new password")} />
                   </Form.Item>
