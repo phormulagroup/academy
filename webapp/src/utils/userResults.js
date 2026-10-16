@@ -14,10 +14,12 @@ const parseJson = (value, fallback) => {
 
 // Percentagem de itens (tópicos e testes) concluídos de um curso
 export function courseStats(c) {
-  const topics = c.allItems.filter((i) => i.type === "topic");
-  const tests = c.allItems.filter((i) => i.type === "test");
+  // Cada item uma só vez, mesmo que esteja em dois módulos (como no catálogo, no detalhe e no eLearning)
+  const items = [...new Map(c.allItems.map((i) => [`${i.type}_${i.id}`, i])).values()];
+  const topics = items.filter((i) => i.type === "topic");
+  const tests = items.filter((i) => i.type === "test");
   // Conta cada item uma só vez (há registos repetidos) e só os que ainda existem no curso
-  const itemDone = (item) => c.progress.some((p) => p.is_completed === 1 && p.activity_type === item.type && p[`id_course_${item.type}`] === item.id);
+  const itemDone = (item) => c.progress.some((p) => p.is_completed === 1 && p.is_deleted !== 1 && p.activity_type === item.type && p[`id_course_${item.type}`] === item.id);
   const topicsDone = topics.filter(itemDone).length;
   const testsDone = tests.filter(itemDone).length;
   const totalItems = topics.length + tests.length;
