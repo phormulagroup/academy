@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Collapse, Empty, Tooltip } from "antd";
 import dayjs from "dayjs";
 import { LuCheck, LuCircleCheck, LuRotateCcw } from "react-icons/lu";
@@ -38,6 +38,8 @@ export default function ModuleProgress({ course, student, onChange }) {
   const { t } = useTranslation();
   const { canUpdate } = usePermission("course");
   const [confirm, confirmHolder] = useConfirm();
+  // Acordeão como nas FAQs: só um módulo aberto de cada vez
+  const [openModule, setOpenModule] = useState(null);
 
   const isDone = (type, id) => course.progress.some((p) => p.is_completed === 1 && p.activity_type === type && p[`id_course_${type}`] === id);
   // Quando foi concluído: a atividade mais recente (concluída) do item; no módulo, a do módulo ou a do último item
@@ -127,6 +129,8 @@ export default function ModuleProgress({ course, student, onChange }) {
           <Collapse
             key={module.id}
             className="user-module-collapse"
+            activeKey={openModule === module.id ? [module.id] : []}
+            onChange={(keys) => setOpenModule(keys.length ? module.id : null)}
             expandIconPlacement="end"
             items={[
               {

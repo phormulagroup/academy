@@ -39,9 +39,12 @@ const Tile = ({ icon, label, value }) => (
 );
 
 // Resultado de um aluno num curso: cabeçalho com estado e progresso e, ao abrir, resumo, progresso por módulo e testes
-export default function CourseResult({ course, student, onChange, onDownloadCertificate }) {
+export default function CourseResult({ course, student, onChange, onDownloadCertificate, open: openProp, onToggle }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  // Controlado pela lista (acordeão: abrir um resultado fecha os outros); sem props, estado próprio
+  const [openLocal, setOpenLocal] = useState(false);
+  const open = openProp ?? openLocal;
+  const toggle = () => (onToggle ? onToggle(!open) : setOpenLocal((v) => !v));
   const stats = courseStats(course);
   const statusKey = stats.status !== "completed" && course.isFailed ? "failed" : stats.status;
   const status = STATUS[statusKey];
@@ -71,7 +74,7 @@ export default function CourseResult({ course, student, onChange, onDownloadCert
 
   return (
     <div className={`overflow-hidden rounded-[16px] border border-solid ${border}`}>
-      <div role="button" tabIndex={0} onClick={() => setOpen((v) => !v)} onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)} className="flex cursor-pointer flex-wrap items-center gap-4 p-4 hover:bg-black/[0.02]">
+      <div role="button" tabIndex={0} onClick={toggle} onKeyDown={(e) => e.key === "Enter" && toggle()} className="flex cursor-pointer flex-wrap items-center gap-4 p-4 hover:bg-black/[0.02]">
         {/* Miniaturas 800x600: caixa 4:3, a imagem não é cortada; expirado a cinzento como no catálogo */}
         <div className="aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC]">
           {course.course.thumbnail && <img src={`${config.server_ip}/media/${course.course.thumbnail}`} alt="" className={`h-full w-full object-cover ${course.dateState === "expired" ? "grayscale" : ""}`} />}

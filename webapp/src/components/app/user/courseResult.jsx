@@ -38,9 +38,12 @@ const Tile = ({ icon, label, value }) => (
 );
 
 // Resultado do próprio utilizador num curso: estado e progresso no cabeçalho e, ao abrir, resumo e conteúdo (módulos e itens)
-export default function CourseResult({ course, onDownloadCertificate }) {
+export default function CourseResult({ course, onDownloadCertificate, open: openProp, onToggle }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  // Controlado pela lista (acordeão: abrir um resultado fecha os outros); sem props, estado próprio
+  const [openLocal, setOpenLocal] = useState(false);
+  const open = openProp ?? openLocal;
+  const toggle = () => (onToggle ? onToggle(!open) : setOpenLocal((v) => !v));
   const stats = courseStats(course);
   const statusKey = stats.status !== "completed" && course.isFailed ? "failed" : stats.status;
   const status = STATUS[statusKey];
@@ -54,8 +57,8 @@ export default function CourseResult({ course, onDownloadCertificate }) {
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)}
+        onClick={toggle}
+        onKeyDown={(e) => e.key === "Enter" && toggle()}
         className="flex cursor-pointer flex-wrap items-center gap-3 p-3 hover:bg-black/[0.02] sm:gap-4 sm:p-4">
         {/* Miniaturas 800x600: caixa 4:3, a imagem não é cortada; expirado a cinzento como no catálogo */}
         <div className="hidden aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC] sm:block">
@@ -135,7 +138,6 @@ export default function CourseResult({ course, onDownloadCertificate }) {
           <CourseContent
             modules={course.modules}
             progress={course.progress}
-            data={{ topics: course.allItems.filter((i) => i.type === "topic"), tests: course.allItems.filter((i) => i.type === "test") }}
             courseSlug={course.course.slug}
             compact
           />

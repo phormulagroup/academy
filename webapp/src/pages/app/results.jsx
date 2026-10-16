@@ -25,6 +25,7 @@ import { hasFullAccess } from "../../utils/roles";
 export default function Result() {
   const { user, selectedLanguage, isStaff } = useContext(Context);
   const [coursesData, setCoursesData] = useState([]);
+  const [openCourse, setOpenCourse] = useState(null);
   // Admin: as mesmas opções do catálogo para esconder expirados / por abrir (a preferência é partilhada com o catálogo)
   const [filters, setFilters] = useState({ hideExpired: false, hideUpcoming: false });
   const isAdmin = hasFullAccess(user);
@@ -261,7 +262,13 @@ export default function Result() {
           {visibleCourses.length > 0 ? (
             <div className="flex flex-col gap-4">
               {visibleCourses.map((c) => (
-                <CourseResult key={c.course.id} course={c} onDownloadCertificate={handleDownloadCertificate} />
+                <CourseResult
+                  key={c.course.id}
+                  course={c}
+                  open={openCourse === c.course.id}
+                  onToggle={(isOpen) => setOpenCourse(isOpen ? c.course.id : null)}
+                  onDownloadCertificate={handleDownloadCertificate}
+                />
               ))}
             </div>
           ) : (

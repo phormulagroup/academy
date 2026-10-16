@@ -149,7 +149,7 @@ router.get("/readByLang", async (req, res) => {
 				req.query.id_lang,
 				req.query.id_lang,
 				req.query.id_lang,
-				req.query.id_user,
+				req.user.id, // progresso de quem faz o pedido (nunca de outro utilizador)
 				req.query.id_lang,
 			],
 		);
@@ -235,7 +235,7 @@ router.get("/readBySlug", async (req, res) => {
 				req.query.id_lang,
 				req.query.slug,
 				req.query.id_lang,
-				req.query.id_user,
+				req.user.id, // progresso de quem faz o pedido (nunca de outro utilizador)
 				req.query.slug,
 				req.query.id_lang,
 			],
@@ -559,6 +559,8 @@ function testFailed(test, activity) {
 // (tópicos, testes, módulos, curso) nem tentativas num teste reprovado, mesmo que o pedido seja feito fora do browser
 async function blockedAfterFailing(query, user, rows) {
 	const blocked = new Set();
+	// A equipa (Admin) não fica bloqueada por reprovar (navega livremente no eLearning)
+	if (hasFullAccess(user)) return blocked;
 	for (const idCourse of [...new Set(rows.map((r) => Number(r.id_course)).filter(Boolean))]) {
 		const tests = visibleTests(
 			await query(
