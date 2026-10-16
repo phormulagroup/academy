@@ -133,3 +133,22 @@ export function readCatalogueFilters(userId) {
     return { hideExpired: false, hideUpcoming: false };
   }
 }
+
+// Texto do ecrã de bloqueado conforme o que falta concluir: o tópico anterior, o teste anterior ou vários passos anteriores
+export function lockedDescription(t, lockedBy) {
+  if (lockedBy === "test") return t("You'll need to complete the previous test first");
+  if (lockedBy === "steps") return t("You'll need to complete all the previous steps first");
+  return t("You'll need to complete the previous topic first");
+}
+
+// N.º de tópicos e testes de um módulo, com singular/plural (ex.: "1 tópico | 2 testes")
+export function itemCountsLabel(items, t) {
+  const topics = (items || []).filter((i) => i.type === "topic").length;
+  const tests = (items || []).filter((i) => i.type === "test").length;
+  return [
+    topics > 0 && `${topics} ${topics === 1 ? t("topic") : t("topics")}`,
+    tests > 0 && `${tests} ${tests === 1 ? t("test") : t("tests")}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
