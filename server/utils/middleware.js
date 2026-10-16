@@ -1,12 +1,13 @@
 const util = require("util");
-const { verifyToken } = require("./token");
+const { verifyToken, passwordFingerprint } = require("./token");
 const db = require("./database");
 const { cached } = require("./authCache");
 
 const query = util.promisify(db.query).bind(db);
 
 // Valida o token e identifica quem faz o pedido: req.user = { id, id_role, ... }, lido da base de dados (o papel nunca vem
-// do cliente). Um token válido de um utilizador apagado ou que já não existe é recusado.
+// do cliente). Um token válido de um utilizador apagado ou que já não existe é recusado, e também um token emitido antes da última
+// mudança de password (pv diferente): mudar a password termina as outras sessões.
 const middleware = async (req, res, next) => {
   const token = req.headers.authorization;
   if (!token) return res.status(403).send("A token is required for authentication");
@@ -17,10 +18,11 @@ const middleware = async (req, res, next) => {
 
     // Cache de 20 s (utils/authCache.js): a maior parte dos pedidos repete o mesmo utilizador
     const row = await cached("user", result.token_decoded.id, async () => {
-      const rows = await query("SELECT id, id_role, id_lang, country, is_deleted FROM user WHERE id = ?", [result.token_decoded.id]);
+      const rows = await query("SELECT id, id_role, id_lang, country, is_deleted, password FROM user WHERE id = ?", [result.token_decoded.id]);
       return rows[0] ?? null;
     });
     if (!row || row.is_deleted) return res.status(401).send("Invalid Token");
+    if (result.token_decoded.pv !== undefined && result.token_decoded.pv !== passwordFingerprint(row.password)) return res.status(401).send("Invalid Token");
 
     req.user = { id: row.id, id_role: row.id_role, id_lang: row.id_lang, country: row.country };
     return next();

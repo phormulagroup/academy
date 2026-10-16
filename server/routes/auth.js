@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 
 var db = require("../utils/database");
 const crypto = require("crypto");
-const { verifyToken, createToken, passwordFingerprint } = require("../utils/token");
+const { verifyToken, createToken, passwordFingerprint, createDeviceToken, isTrustedDevice } = require("../utils/token");
 const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
 const { notifyUser, notifyTeam, appUrl, emailLanguage } = require("../utils/notify");
@@ -91,6 +91,10 @@ router.post("/login", async (req, res, next) => {
       await loginThrottle.reset(key);
       // Contas aprovadas e ativas: 2FA, a sessão só é entregue depois de confirmar o código enviado por e-mail (/verifyLoginCode)
       if (user[0].status === "approved" && user[0].is_deleted === 0) {
+        // Dispositivo de confiança (código confirmado neste browser há menos de 30 dias): entra sem novo código
+        if (isTrustedDevice(data.device_token, user[0])) {
+          return res.send({ user: user[0], token: await createToken(user[0]), message: "Welcome " + user[0].name + "!" });
+        }
         // Cada login com sucesso envia um código: conta para o mesmo limite de pedidos do Reenviar
         const sendWait = await loginCodeRequests.blocked(key, clientIp(req));
         if (sendWait) return res.status(429).send({ user: null, message: TOO_MANY_REQUESTS, limit: "otp_send", retry_after: sendWait });
@@ -138,7 +142,8 @@ router.post("/verifyLoginCode", async (req, res, next) => {
     await query("UPDATE user SET login_code = NULL, login_code_expires = NULL WHERE id = ?", [user[0].id]);
     await loginCodeThrottle.reset(key);
     const token = await createToken(user[0]);
-    res.send({ user: user[0], token, message: "Welcome " + user[0].name + "!" });
+    // device_token: o browser guarda-o e só volta a ser pedido código no login daqui a 30 dias
+    res.send({ user: user[0], token, device_token: await createDeviceToken(user[0]), message: "Welcome " + user[0].name + "!" });
   } catch (err) {
     throw err;
   }
@@ -169,7 +174,7 @@ router.post("/resendLoginCode", async (req, res, next) => {
 const REGISTER_FIELDS =["name", "email", "password", "country", "gender", "birth_date", "bial_starting_date", "academic_background", "id_lang"];
 // Opções do formulário de registo (webapp/src/utils/userFields.js)
 const GENDERS = ["Male", "Female", "Prefer not to say"];
-const ACADEMIC_BACKGROUNDS = ["Secondary School", "University Degree", "PhD", "Other"];
+const ACADEMIC_BACKGROUNDS = ["Secondary School", "University Degree", "Master's Degree", "PhD", "Other"];
 
 // Todos os campos do registo são obrigatórios: devolve os que faltam ou são inválidos (vazio = pode criar o utilizador)
 async function invalidRegisterFields(query, raw, data) {

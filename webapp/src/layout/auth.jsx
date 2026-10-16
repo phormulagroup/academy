@@ -1,5 +1,6 @@
 import { useContext } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
+import { Helmet } from "react-helmet";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 
@@ -28,6 +29,13 @@ export default function AuthLayout({
   const { languages } = useContext(Context);
   const { t, i18n } = useTranslation();
   const changeLanguage = useChangeLanguage();
+  // Título da tab do browser pela página (sem isto ficava o da página anterior, ex.: «Downloads»)
+  const { pathname } = useLocation();
+  const pageTitle = /\/register/.test(pathname)
+    ? t("Register")
+    : /\/recover/.test(pathname)
+      ? t("Recover password")
+      : t("Login");
 
   const footerLink =
     "text-[12.5px] sm:text-[13px] md:text-[14px] text-center text-[#163986] hover:text-[#00B9D6]";
@@ -36,6 +44,9 @@ export default function AuthLayout({
     <div
       className="flex flex-col justify-between w-full min-h-full bg-[#F7F7F7] bg-contain bg-right bg-no-repeat"
       style={{ backgroundImage: `url(${bgLogin})` }}>
+      <Helmet>
+        <title>{pageTitle} - Bial Regional Academy</title>
+      </Helmet>
       <div className="flex flex-col justify-center items-center min-h-125 w-full h-full p-4 sm:p-6">
         <div className={`relative w-full ${cardClassName} sm:mt-15`}>
           {/* Mobile: acima do cartão (não tapa o logo); a partir de sm: no canto superior do cartão */}

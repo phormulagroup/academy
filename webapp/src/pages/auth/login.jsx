@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
 import LoginCode from "../../components/auth/loginCode";
+import { getDeviceToken } from "../../utils/trustedDevice";
 import { LuArrowLeft, LuHourglass, LuUserX } from "react-icons/lu";
 import { AuthStepHeader, AuthStepLoading, authLinkClass } from "../../components/auth/authStep";
 import { RetryNotice, RetryTooltip } from "../../components/auth/retryLock";
@@ -91,12 +92,17 @@ export default function Login() {
     setStep("credentials");
   }
 
-  function submit(values) {
+  async function submit(values) {
     setIsButtonLoading(true);
     axios
       // lang: idioma dos e-mails para a equipa (o aluno recebe sempre no idioma da sua conta)
-      .post(endpoints.auth.login, { data: { ...values, lang: i18n.language } })
+      // device_token: código já confirmado neste browser há menos de 30 dias → a API entra sem pedir novo código
+      .post(endpoints.auth.login, { data: { ...values, lang: i18n.language, device_token: await getDeviceToken(values.email) } })
       .then((res) => {
+        if (res.data.user && res.data.token) {
+          startSession({ user: res.data.user, token: res.data.token });
+          return;
+        }
         if (res.data.otp_required) {
           savePending2fa({ email: res.data.email, sentAt: Date.now() });
           // Último pedido de código permitido: o Reenviar do passo do código já aparece bloqueado
