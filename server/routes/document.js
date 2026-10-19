@@ -13,7 +13,7 @@ const { requirePermission } = require("../utils/permissions");
 router.get("/read", async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
-		const rows = await query("SELECT * FROM document WHERE is_deleted = 0");
+		const rows = await query("SELECT * FROM document WHERE is_deleted = 0 ORDER BY id_lang ASC, position ASC, id ASC");
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -25,7 +25,7 @@ router.get("/readByLang", async (req, res) => {
 	try {
 		// A app só vê documentos ativos; o backoffice pede também os inativos (include_deleted=1) para os mostrar como "Inativo"
 		const includeDeleted = req.query.include_deleted === "1";
-		const rows = await query(`SELECT * FROM document WHERE id_lang = ?${includeDeleted ? "" : " AND is_deleted = 0"}`, [req.query.id_lang]);
+		const rows = await query(`SELECT * FROM document WHERE id_lang = ?${includeDeleted ? "" : " AND is_deleted = 0"} ORDER BY position ASC, id ASC`, [req.query.id_lang]);
 		res.send(rows);
 	} catch (e) {
 		throw e;
@@ -68,6 +68,9 @@ router.post("/create", requirePermission("document", "create"), async (req, res,
 		const data = req.body.data;
 		data.country = data.country && data.country.length > 0 ? JSON.stringify(data.country) : null;
 		data.slug = slugify(data.name, { lower: true, strict: true });
+		// Um documento novo fica no início da lista do seu idioma (position = índice 0); os restantes descem uma posição
+		await query("UPDATE document SET position = position + 1 WHERE id_lang = ?", [data.id_lang]);
+		data.position = 0;
 		const insertedRow = await query("INSERT INTO document SET ?", data);
 		res.send(insertedRow);
 	} catch (err) {
