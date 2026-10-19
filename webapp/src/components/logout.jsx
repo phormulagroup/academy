@@ -24,22 +24,36 @@ function Logout({ open, close, submit }) {
       title={t("Are you sure you want to log out?")}
       description={t("You will need to sign in again to access your account.")}
       okText={t("Yes, log me out")}
-      cancelText={t("Stay signed in")}>
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-[12px] bg-[#F6F7F9] p-3">
-          <UserAvatar user={user} size={44} className="shrink-0" />
+      cancelText={t("Stay signed in")}
+      okClassName="main-cta-button [&&]:font-normal!"
+      cancelClassName="main-secondary-cta-button [&&]:font-normal!">
+      <div className="flex flex-col gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-3 rounded-[12px] bg-[#F6F7F9] p-2.5 sm:p-3">
+          <UserAvatar user={user} size={40} className="shrink-0" />
           <div className="min-w-0">
-            <p className="mb-0! truncate text-[14px] font-bold">{user?.name}</p>
-            <p className="mb-0! truncate text-[12px] text-[#8A8D98]">{user?.email}</p>
+            <p className="mb-0! truncate text-[13px] font-bold sm:text-[14px]">
+              {user?.name}
+            </p>
+            <p className="mb-0! truncate text-[12px] text-[#8A8D98]">
+              {user?.email}
+            </p>
           </div>
         </div>
-        <div className="flex items-start gap-2 text-[13px] text-[#5B5F6B]">
+        <div className="flex items-start gap-2 text-[12px] leading-relaxed text-[#5B5F6B] sm:text-[13px]">
           <LuSave className="mt-0.5 shrink-0 text-[#2F8351]" />
-          <span>{isStaff ? t("Unsaved changes on the page you are on will be lost.") : t("Your progress in the courses is saved.")}</span>
+          <span>
+            {isStaff
+              ? t("Unsaved changes on the page you are on will be lost.")
+              : t("Your progress in the courses is saved.")}
+          </span>
         </div>
-        <div className="flex items-start gap-2 text-[13px] text-[#5B5F6B]">
+        <div className="flex items-start gap-2 text-[12px] leading-relaxed text-[#5B5F6B] sm:text-[13px]">
           <LuShieldCheck className="mt-0.5 shrink-0 text-[#163986]" />
-          <span>{t("For your security, log out if you are using a shared computer.")}</span>
+          <span>
+            {t(
+              "For your security, log out if you are using a shared computer.",
+            )}
+          </span>
         </div>
       </div>
     </ConfirmModal>
