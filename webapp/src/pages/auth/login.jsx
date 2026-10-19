@@ -161,7 +161,8 @@ export default function Login() {
   const isPending = accountStatus === "pending";
 
   return (
-    <AuthLayout>
+    // Escolha do idioma em destaque (carrossel) no formulário; nos outros passos (código, estado da conta) o seletor do topo
+    <AuthLayout languagePicker={step === "credentials" ? "carousel" : "dropdown"}>
       {step === "checking" ? (
         <AuthStepLoading title={t("Checking your account")} subtitle={t("Just a moment")} />
       ) : step === "status" ? (
