@@ -240,7 +240,8 @@ export default function DocumentDetails({ themePreference = "light" }) {
   }, [hasLanguages]);
 
   return (
-    <div className="page-frame py-6">
+    // Mais espaço entre o cabeçalho e o rodapé (em cima e em baixo), em desktop e telemóvel
+    <div className="page-frame pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-14 lg:pb-20">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
           <BialSpin />
@@ -263,7 +264,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
               content={`${data.name} - Bial Regional Academy`}
             />
           </Helmet>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 mb-5 sm:mb-8">
             <p className="font-ryker text-[20px] sm:text-[24px] font-bold text-[#163986] break-words min-w-0">
               {data?.name}
             </p>

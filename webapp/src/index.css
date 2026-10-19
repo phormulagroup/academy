@@ -596,6 +596,16 @@ ul {
   color: #00b9d6 !important;
 }
 
+/* Menu de idiomas com seleção pelo teclado (formulários de autenticação: recuperar password, código...): o idioma atual fica como
+   no seletor do header (sem o fundo cinzento do antd, só o texto a #00B9D6); hover e item com o foco do teclado com o fundo suave do hover do header */
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-selected:has(.dropdown-language-item) {
+  background-color: transparent;
+}
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-selected:has(.dropdown-language-item):hover,
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-active:has(.dropdown-language-item) {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
 /* USER DROPDOWN MENU BASE STATE */
 .dropdown-user-menu-item {
   color: #163f90 !important;
@@ -2053,28 +2063,44 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   justify-content: flex-end;
   align-items: center;
   gap: 16px;
-  padding-top: 10px;
+  padding-top: 16px;
 }
 
-/* Descarregar o PDF (à esquerda; o ecrã inteiro fica à direita) */
+/* Descarregar o PDF (à esquerda; o ecrã inteiro fica à direita): botão principal (cores do .main-cta-button), bem visível */
 .doc-viewer-download {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin-inline-end: auto;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #00b9d6;
+  border-radius: 8px;
+  background-color: #00b9d6;
   font-size: 14px;
   font-weight: 600;
-  color: #163986 !important;
+  color: #ffffff !important;
   text-decoration: none;
-  transition: color 0.2s ease;
+  box-shadow: 0px 3px 6px #00000029;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .doc-viewer-download:hover {
+  background-color: #ffffff;
   color: #00b9d6 !important;
 }
 
 .doc-viewer-download svg {
-  font-size: 20px;
+  font-size: 18px;
+}
+
+@media (max-width: 639px) {
+  .doc-viewer-download {
+    min-height: 40px;
+  }
 }
 
 .doc-viewer-fullscreen {
@@ -3203,5 +3229,31 @@ deles invalida a regra inteira. */
 @media (prefers-reduced-motion: reduce) {
   .fs-rotate-note-icon {
     animation: none;
+  }
+}
+
+/* ===== Escolha do idioma nos formulários de login e registo (components/auth/languageCarousel.jsx) ===== */
+/* Carrossel: 3 idiomas visíveis (2 nos ecrãs muito estreitos), cada um com a mesma largura; com menos idiomas ocupam o espaço todo */
+.auth-lang-track {
+  --auth-lang-visible: min(var(--auth-lang-count, 3), 3);
+  scrollbar-width: none;
+  scroll-padding-inline: 0.25rem;
+}
+.auth-lang-track::-webkit-scrollbar {
+  display: none;
+}
+.auth-lang-item {
+  flex: 0 0 calc((100% - (var(--auth-lang-visible) - 1) * 0.5rem) / var(--auth-lang-visible));
+  min-width: 0;
+}
+@media (max-width: 359px) {
+  .auth-lang-track {
+    --auth-lang-visible: min(var(--auth-lang-count, 2), 2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-lang-item,
+  .auth-lang-item * {
+    transition: none !important;
   }
 }
