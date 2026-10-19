@@ -96,7 +96,7 @@ const SectionTitle = ({ icon, children }) => (
 
 // Detalhes de um utilizador no backoffice: resumo, resultados por curso e edição da conta
 export default function UserDetails() {
-  const { user, setUser, languages, toastApi } = useContext(Context);
+  const { user, setUser, languages, toastApi, selectedLanguage } = useContext(Context);
   const { t, i18n } = useTranslation();
   // /admin/perfil (sem id) é o perfil de quem está autenticado; /admin/users/:id é o de qualquer utilizador
   const { id: paramId } = useParams();
@@ -127,12 +127,15 @@ export default function UserDetails() {
 
   useEffect(() => {
     getData();
-  }, [id]);
+  }, [id, selectedLanguage?.id]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.user.readById, { params: { id } })
+      .get(endpoints.user.readById, {
+        // Região escolhida no backoffice: a API só a usa no perfil de quem é da equipa (Admin); um aluno vê sempre os cursos da sua língua
+        params: { id, id_lang: selectedLanguage?.id },
+      })
       .then((res) => {
         setData(res.data.user ?? {});
         if (res.data.user) {

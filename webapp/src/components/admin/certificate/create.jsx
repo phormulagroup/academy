@@ -2,12 +2,11 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Form, Input, Modal } from "antd";
 
 import { Context } from "../../../utils/context";
-import i18n from "../../../utils/i18n";
 import { useNavigate } from "react-router-dom";
 import { requiredRule } from "../../../utils/formFieldError";
 
 export default function Create({ data, open, close, nameRule }) {
-  const { create, languages, t } = useContext(Context);
+  const { create, selectedLanguage, t } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -28,7 +27,8 @@ export default function Create({ data, open, close, nameRule }) {
 
   async function onSubmit(values) {
     setIsButtonLoading(true);
-    values.id_lang = languages.filter((l) => l.code === i18n.language)[0].id;
+    // Região escolhida no seletor do backoffice (o i18n fica no idioma da conta)
+    values.id_lang = selectedLanguage.id;
     try {
       const inserted = await create({
         data: values,
