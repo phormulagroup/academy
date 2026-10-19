@@ -12,9 +12,13 @@ const CRC_TABLE = new Uint32Array(256).map((_, n) => {
   return c >>> 0;
 });
 
-async function crc32File(file) {
+// Conteúdo de uma entrada: o ficheiro em disco (path) ou um buffer já em memória (data, ex.: o PNG do QRCode)
+const chunksOf = (entry) => (entry.data ? [entry.data] : fs.createReadStream(entry.path));
+const sizeOf = (entry) => (entry.data ? entry.data.length : fs.statSync(entry.path).size);
+
+async function crc32Entry(entry) {
   let crc = 0xffffffff;
-  for await (const chunk of fs.createReadStream(file)) {
+  for await (const chunk of chunksOf(entry)) {
     for (let i = 0; i < chunk.length; i++) crc = CRC_TABLE[(crc ^ chunk[i]) & 0xff] ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
@@ -27,10 +31,10 @@ function dosDateTime(date) {
   return { time, day };
 }
 
-// entries: [{ name, path }]. Valida os limites antes de escrever: devolve uma mensagem de erro ou null
+// entries: [{ name, path }] ou [{ name, data, mtime? }]; o nome pode ter pastas ("IEC_X/IEC_X.pdf"). Valida os limites antes de escrever: devolve uma mensagem de erro ou null
 function zipLimitsError(entries) {
   if (entries.length > MAX_ENTRIES) return `Too many files for one ZIP (max ${MAX_ENTRIES})`;
-  const total = entries.reduce((sum, e) => sum + fs.statSync(e.path).size + 30 + 46 + Buffer.byteLength(e.name) * 2, 22);
+  const total = entries.reduce((sum, e) => sum + sizeOf(e) + 30 + 46 + Buffer.byteLength(e.name) * 2, 22);
   if (total > MAX_SIZE) return "The selected files exceed 4 GB, select fewer files";
   return null;
 }
@@ -43,8 +47,9 @@ async function writeZip(res, entries) {
   let offset = 0;
   for (const entry of entries) {
     const name = Buffer.from(entry.name, "utf8");
-    const { size, mtime } = fs.statSync(entry.path);
-    const crc = await crc32File(entry.path);
+    const size = sizeOf(entry);
+    const mtime = entry.data ? entry.mtime || new Date() : fs.statSync(entry.path).mtime;
+    const crc = await crc32Entry(entry);
     const { time, day } = dosDateTime(mtime);
 
     const local = Buffer.alloc(30);
@@ -61,7 +66,7 @@ async function writeZip(res, entries) {
     local.writeUInt16LE(0, 28);
     await write(local);
     await write(name);
-    for await (const chunk of fs.createReadStream(entry.path)) await write(chunk);
+    for await (const chunk of chunksOf(entry)) await write(chunk);
 
     const cd = Buffer.alloc(46);
     cd.writeUInt32LE(0x02014b50, 0); // assinatura do diretório central

@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import useDebounced from "../../utils/useDebounced";
 import { usePermission } from "../../utils/usePermission";
 import {
@@ -63,7 +64,16 @@ function saveBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// QRCode de um IEC: o mesmo no modal "QR code" e no ZIP (mesmas cores do tema, tamanho e opções)
+const IecQrCode = ({ item }) => (
+  <QRCode value={fileUrl(item)} size={280} errorLevel="H" bordered={false} />
+);
+// PNG (data URL) do QRCode desenhado dentro de um elemento, e o nome com que é descarregado
+const qrPngOf = (container) =>
+  container?.querySelector("canvas")?.toDataURL("image/png") || null;
+const qrFileName = (name) => `${name.replace(/\.[^.]+$/, "")}-qrcode.png`;
+// Quantos QRCodes se desenham de cada vez (escondidos) para o ZIP
+const QR_CHUNK = 50;
 
 const formatSize = (bytes) =>
   bytes > 1024 * 1024
@@ -216,6 +226,9 @@ function Iec() {
   const [selected, setSelected] = useState(null);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [qrItem, setQrItem] = useState(null);
+  // IECs cujo QRCode está a ser desenhado (escondido) para ir no ZIP
+  const [zipQrItems, setZipQrItems] = useState([]);
+  const zipQrRef = useRef(null);
   const [replaceDialog, setReplaceDialog] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -487,14 +500,33 @@ function Iec() {
   }
 
   function handleDownloadQr() {
-    const canvas = document
-      .getElementById("iec-qrcode")
-      ?.querySelector("canvas");
-    if (!canvas) return;
+    const png = qrPngOf(document.getElementById("iec-qrcode"));
+    if (!png) return;
     const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = `${qrItem.name.replace(/\.[^.]+$/, "")}-qrcode.png`;
+    a.href = png;
+    a.download = qrFileName(qrItem.name);
     a.click();
+  }
+
+  // PNG de cada QRCode, igual ao do botão "Download QR code" do modal: desenha os mesmos componentes
+  // escondidos nesta página (com o mesmo tema), aos poucos, e lê cada canvas
+  async function zipQrPngs(items) {
+    const qrs = {};
+    try {
+      for (let i = 0; i < items.length; i += QR_CHUNK) {
+        const chunk = items.slice(i, i + QR_CHUNK);
+        flushSync(() => setZipQrItems(chunk));
+        // o canvas é desenhado num efeito: espera um ciclo para garantir que já está pintado
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        zipQrRef.current?.querySelectorAll("[data-qr-index]").forEach((el) => {
+          const png = qrPngOf(el);
+          if (png) qrs[chunk[Number(el.dataset.qrIndex)].name] = png;
+        });
+      }
+    } finally {
+      setZipQrItems([]);
+    }
+    return qrs;
   }
 
   function handleOpenDelete(item) {
@@ -527,8 +559,11 @@ function Iec() {
     });
   }
 
-  // Vários IECs: um só ZIP gerado no servidor (AAAA-MM-DD_HHmmss_Bial_Regional_Academy_IECs.zip); um só IEC: o próprio ficheiro
-  async function downloadZip(items) {
+  // Um ou mais IECs: sempre um ZIP gerado no servidor (AAAA-MM-DD_HHmmss_Bial_Regional_Academy_IECs.zip),
+  // com uma pasta por IEC (o ficheiro e o PNG do QRCode, gerado aqui com o endereço público de cada IEC)
+  async function handleBulkDownload() {
+    const items = selection.items;
+    if (!items.length) return;
     setIsDownloading(true);
     toastApi.open({
       key: "iec-download",
@@ -539,9 +574,10 @@ function Iec() {
       }),
     });
     try {
+      const qrs = await zipQrPngs(items);
       const res = await axios.post(
         endpoints.iec.zip,
-        { data: { names: items.map((i) => i.name) } },
+        { data: { names: items.map((i) => i.name), qrs } },
         { responseType: "blob" },
       );
       const fromHeader = /filename="([^"]+)"/.exec(
@@ -574,62 +610,6 @@ function Iec() {
       });
     } finally {
       setIsDownloading(false);
-    }
-  }
-
-  async function handleBulkDownload() {
-    const items = selection.items;
-    if (items.length > 1) return downloadZip(items);
-    const failed = [];
-    setIsDownloading(true);
-    for (let i = 0; i < items.length; i++) {
-      toastApi.open({
-        key: "iec-download",
-        type: "info",
-        duration: 0,
-        content: t("Downloading {{current}} of {{total}}", {
-          current: i + 1,
-          total: items.length,
-        }),
-      });
-      try {
-        const res = await axios.get(endpoints.iec.file, {
-          params: { name: items[i].name },
-          responseType: "blob",
-        });
-        saveBlob(res.data, items[i].name);
-        // pequena pausa: o browser ignora downloads seguidos demasiado depressa
-        await wait(400);
-      } catch (err) {
-        console.log(err);
-        failed.push(items[i].name);
-      }
-    }
-    setIsDownloading(false);
-    toastApi.open({
-      key: "iec-download",
-      type: failed.length ? "warning" : "success",
-      content: t("{{succeeded}} of {{total}} files downloaded", {
-        succeeded: items.length - failed.length,
-        total: items.length,
-      }),
-    });
-    if (failed.length) {
-      confirm({
-        title: t("Some files could not be downloaded"),
-        tone: "danger",
-        icon: <LuTriangleAlert />,
-        hideCancel: true,
-        danger: false,
-        okText: t("Close"),
-        children: (
-          <ul className="list-disc pl-5 mt-2">
-            {failed.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
-        ),
-      });
     }
   }
 
@@ -696,18 +676,25 @@ function Iec() {
           <div
             id="iec-qrcode"
             className="flex flex-col items-center gap-3 py-2">
-            <QRCode
-              value={fileUrl(qrItem)}
-              size={280}
-              errorLevel="H"
-              bordered={false}
-            />
+            <IecQrCode item={qrItem} />
             <p className="text-[12px] text-gray-500 break-all text-center">
               {fileUrl(qrItem)}
             </p>
           </div>
         )}
       </Modal>
+      {zipQrItems.length > 0 && (
+        <div
+          ref={zipQrRef}
+          aria-hidden
+          className="fixed top-0 -left-2500 pointer-events-none">
+          {zipQrItems.map((item, index) => (
+            <div key={item.name} data-qr-index={index}>
+              <IecQrCode item={item} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
@@ -812,7 +799,7 @@ function Iec() {
         showIcon
         closable
         className="mb-4! border-[#00b9d6]/30! bg-[#E6F9FC]!"
-        title={t("To download one or more IECs, use {{action}}. When more than one IEC is downloaded, they come in a single ZIP file.", { action: `"${t("Bulk selection")}"` })}
+        title={t("To download one or more IECs, use {{action}}. They are downloaded in a ZIP file, with a folder per IEC containing the file and its QR code.", { action: `"${t("Bulk selection")}"` })}
       />
       {perm.canCreate && (
         <Dragger

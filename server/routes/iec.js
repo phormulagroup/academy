@@ -186,13 +186,29 @@ router.get("/file", middleware, requirePermission("iec", "read"), (req, res) => 
   res.download(file, name, (err) => err && !res.headersSent && res.status(500).send("Error"));
 });
 
-// Vários IECs num só ZIP (descarga em massa): AAAA-MM-DD_HHmmss_Bial_Regional_Academy_IECs.zip (como os exports Excel). Nome do ZIP em ASCII (sem acentos
+// Um ou mais IECs num só ZIP. Nome do ZIP em ASCII (sem acentos
 // nem espaços) para abrir bem em qualquer sistema e anexo de e-mail; os nomes dos IECs lá dentro mantêm-se (UTF-8)
+// Uma pasta por IEC com o nome do ficheiro sem extensão: IEC_X/IEC_X.pdf e IEC_X/IEC_X-qrcode.png
+const MAX_QR_SIZE = 1024 * 1024;
+const qrPng = (value) => {
+  const data = Buffer.from(String(value || "").replace(/^data:image\/png;base64,/, ""), "base64");
+  return data.length && data.length <= MAX_QR_SIZE && TYPES.png(data) ? data : null;
+};
 router.post("/zip", middleware, requirePermission("iec", "read"), async (req, res) => {
   try {
-    const names = [...new Set((req.body.data?.names || []).filter(isValidName))];
-    const entries = names.map((name) => ({ name, path: path.join(IEC_DIR, name) })).filter((e) => fs.existsSync(e.path));
-    if (!entries.length) return res.status(404).send({ message: "Not found" });
+    const names = [...new Set((req.body.data?.names || []).filter(isValidName))].filter((name) => fs.existsSync(path.join(IEC_DIR, name)));
+    if (!names.length) return res.status(404).send({ message: "Not found" });
+    const qrs = req.body.data?.qrs || {};
+    const baseOf = (name) => path.basename(name, path.extname(name));
+    const entries = [];
+    const now = new Date();
+    names.forEach((name) => {
+      // Dois IECs com o mesmo nome e extensões diferentes (IEC_X.pdf e IEC_X.png) não partilham a pasta
+      const folder = names.some((n) => n !== name && baseOf(n) === baseOf(name)) ? name.replace(/\.([^.]+)$/, "_$1") : baseOf(name);
+      entries.push({ name: `${folder}/${name}`, path: path.join(IEC_DIR, name) });
+      const qr = Object.prototype.hasOwnProperty.call(qrs, name) ? qrPng(qrs[name]) : null;
+      if (qr) entries.push({ name: `${folder}/${baseOf(name)}-qrcode.png`, data: qr, mtime: now });
+    });
     const limitError = zipLimitsError(entries);
     if (limitError) return res.status(400).send({ message: limitError });
     const fileName = `${dayjs().format("YYYY-MM-DD_HHmmss")}_Bial_Regional_Academy_IECs.zip`;
