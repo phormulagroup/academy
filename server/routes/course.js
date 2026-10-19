@@ -6,7 +6,7 @@ var slugify = require("slugify");
 
 var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
-const { requirePermission, hasFullAccess } = require("../utils/permissions");
+const { requirePermission, hasFullAccess, ADMIN_ROLE_ID } = require("../utils/permissions");
 const { read } = require("fs");
 const { notifyUser, emailLanguage } = require("../utils/notify");
 const { approvedResult, gradeAttempt } = require("../utils/testResult");
@@ -945,6 +945,7 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 			let course = await query("SELECT * FROM course WHERE id = ?", data.id);
 			course = course[0];
 			delete course.id;
+			const sourceLang = course.id_lang;
 			course.name = data.new_name || course.name + " (copy)";
 			course.internal_name =
 				data.new_internal_name || course.internal_name + " (copy)";
@@ -953,7 +954,21 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 			course.status = "draft";
 			course.slug = courseSlug(data.new_name || course.name + " (copy)");
 
+			// Países da cópia: só os do idioma selecionado. Nenhum ou todos os países do idioma = sem limite de país
+			const [language] = await query("SELECT country FROM language WHERE id = ?", [course.id_lang]);
+			const languageCountries = JSON.parse(language?.country || "[]");
+			const countries = Array.isArray(data.country) ? data.country.filter((c) => languageCountries.includes(c)) : [];
+			const settings = courseSettings(course);
+			settings.country_limit = countries.length > 0 && countries.length < languageCountries.length;
+			settings.country = settings.country_limit ? countries : [];
+			course.settings = JSON.stringify(settings);
+
 			const insertedCourse = await query("INSERT INTO course SET ?", course);
+
+			// Ids antigos → novos (para o progresso) e testes publicados de cada módulo novo
+			const topicMap = new Map();
+			const moduleMap = new Map();
+			const moduleTests = new Map();
 
 			let modules = await query(
 				"SELECT * FROM course_module WHERE id_course = ? AND is_deleted = 0",
@@ -961,6 +976,7 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 			);
 			for (let i = 0; i < modules.length; i++) {
 				let module = modules[i];
+				const oldModuleId = module.id;
 				delete module.id;
 				module.id_course = insertedCourse.insertId;
 				
@@ -976,6 +992,8 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 					"INSERT INTO course_module SET ?",
 					module,
 				);
+				moduleMap.set(oldModuleId, insertedModule.insertId);
+				moduleTests.set(insertedModule.insertId, []);
 				if (moduleItems && moduleItems.length > 0) {
 					let newItems = [];
 
@@ -1000,6 +1018,9 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 							`INSERT INTO ${item.type === "test" ? "course_test" : "course_topic"} SET ?`,
 							rowItemData,
 						);
+						if (item.type !== "test") topicMap.set(Number(item.id), { id: insertedItem.insertId, module: insertedModule.insertId });
+						else if (rowItemData.status === "published" && !Number(rowItemData.is_deleted))
+							moduleTests.get(insertedModule.insertId).push({ id: insertedItem.insertId, settings: rowItemData.settings });
 
 						newItems.push({
 							id: insertedItem.insertId,
@@ -1014,9 +1035,48 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 				}
 			}
 
+			// Transferir o progresso dos alunos (sem o Admin) dos países escolhidos: só numa cópia no mesmo idioma, porque os alunos
+			// do idioma de origem não existem noutro idioma. Sem testes: as tentativas não passam e o módulo/curso com testes
+			// (visíveis ao aluno) fica por concluir na cópia. Mantém as datas dos registos originais
+			let transferred = 0;
+			if (data.transfer_progress && Number(course.id_lang) === Number(sourceLang)) {
+				// Sem países escolhidos: todos os alunos do idioma
+				const activity = await query(
+					"SELECT course_user_activity.*, user.country, user.id_role FROM course_user_activity " +
+						"INNER JOIN user ON user.id = course_user_activity.id_user " +
+						"WHERE course_user_activity.id_course = ? AND course_user_activity.is_deleted = 0 " +
+						"AND course_user_activity.activity_type IN ('enroll', 'topic', 'module', 'course') " +
+						"AND user.is_deleted = 0 AND user.id_role <> ? AND user.id_lang = ?" +
+						(countries.length > 0 ? " AND user.country IN (?)" : ""),
+					[data.id, ADMIN_ROLE_ID, sourceLang, ...(countries.length > 0 ? [countries] : [])],
+				);
+				const allTests = [...moduleTests.values()].flat();
+				const rows = [];
+				for (const a of activity) {
+					const row = { topic: null, module: null };
+					if (a.activity_type === "topic") {
+						const topic = topicMap.get(a.id_course_topic);
+						if (!topic) continue;
+						row.topic = topic.id;
+						row.module = topic.module;
+					} else if (a.activity_type === "module") {
+						row.module = moduleMap.get(a.id_course_module);
+						if (!row.module || visibleTests(moduleTests.get(row.module), a).length > 0) continue;
+					} else if (a.activity_type === "course" && visibleTests(allTests, a).length > 0) continue;
+					rows.push([insertedCourse.insertId, a.id_user, a.activity_type, null, row.topic, row.module, a.is_completed, a.meta_data, 0, a.created_at, a.modified_at]);
+				}
+				if (rows.length > 0) {
+					await query(
+						"INSERT INTO course_user_activity (id_course, id_user, activity_type, id_course_test, id_course_topic, id_course_module, is_completed, meta_data, is_deleted, created_at, modified_at) VALUES ?",
+						[rows],
+					);
+				}
+				transferred = rows.length;
+			}
+
 			await commit();
 			conn.release();
-			res.send({ insertId: insertedCourse.insertId });
+			res.send({ insertId: insertedCourse.insertId, transferred });
 		} catch (err) {
 			console.error(err);
 			await rollback();
