@@ -1,517 +1,743 @@
-import axios from "axios";
-import { useContext, useEffect } from "react";
-import { useState } from "react";
-import { Button, Dropdown, Form, Select, Table, Tag } from "antd";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Avatar,
+  Button,
+  ConfigProvider,
+  Form,
+  Input,
+  Segmented,
+  Select,
+  Table,
+  Tag,
+  Tooltip,
+} from "antd";
 import { IoSearch } from "react-icons/io5";
-import { IoMdMore } from "react-icons/io";
-import { FaRegEdit, FaRegFile, FaRegTrashAlt } from "react-icons/fa";
-
-
-import { Context } from "../../../utils/context";
-
+import { CiCalendar } from "react-icons/ci";
+import config from "../../../utils/config";
+import { LuDownload, LuInfo } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
+
+import { Context } from "../../../utils/context";
 import ExportTable from "../../../components/admin/export/export";
-import { LuDownload, LuSearch } from "react-icons/lu";
-import { getTestReportColumns } from "../../../utils/columns";
+import UserCell from "../../../components/admin/userCell";
+import {
+  StackedBar,
+  HorizontalBars,
+} from "../../../components/admin/charts";
+import { Kpi, FilterLabel } from "../../../components/admin/reportPanel";
+import {
+  getTestReportColumns,
+  getTestStudentColumns,
+  getTestAttemptColumns,
+  getTestQuestionColumns,
+} from "../../../utils/columns";
 import { floorPercent, roundPercent } from "../../../utils/percent";
+import {
+  isTestFailed,
+  parseSettings,
+  testsForStudent,
+} from "../../../utils/courseStatus";
+
+// Cores da marca Bial para os gráficos (do mais claro ao mais escuro), as mesmas do relatório de cursos
+const PALETTE = {
+  lighter: "#B8E9F1",
+  light: "#66D4E6",
+  base: "#00b9d6",
+  darker: "#163986",
+};
+
+// Escalões do resultado (melhor tentativa de cada aluno): intervalos que acompanham a nota mínima de 75%, para a última barra
+// ser exatamente quem atingiu a aprovação (o relatório de cursos usa os seus próprios escalões de progresso)
+const RESULT_BUCKETS = [
+  { min: 0, max: 24 },
+  { min: 25, max: 49 },
+  { min: 50, max: 74 },
+  { min: 75, max: 100 },
+];
+const resultBuckets = () => {
+  const colors = [PALETTE.lighter, PALETTE.light, PALETTE.base, PALETTE.darker];
+  return RESULT_BUCKETS.map((b, i) => ({ ...b, label: `${b.min}–${b.max}%`, value: 0, color: colors[i] }));
+};
+
+const parseJson = (value, fallback) => {
+  if (!value) return fallback;
+  try {
+    return (typeof value === "string" ? JSON.parse(value) : value) || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const fmtDay = (value) => (value ? dayjs(value).format("DD MMM, YYYY") : "—");
+const average = (list) =>
+  list.length ? list.reduce((sum, v) => sum + v, 0) / list.length : null;
+const oneDecimal = (value) => Math.round(value * 10) / 10;
+
+// Duração em segundos: "1 h 5 min", "3 min 20 s" ou "45 s"
+function formatTime(seconds) {
+  const s = Math.round(seconds);
+  const hours = Math.floor(s / 3600);
+  if (hours > 0) return `${hours} h ${Math.round((s % 3600) / 60)} min`;
+  const minutes = Math.floor(s / 60);
+  return minutes > 0 ? `${minutes} min ${s % 60} s` : `${s} s`;
+}
+
+// Sem tempo limite o eLearning não mede o tempo (fica 0 s): mostra-se a indicação em vez de "0 s"
+const timeLabel = (seconds, timeLimit, t) =>
+  !timeLimit ? t("No time limit") : seconds == null ? "—" : formatTime(seconds);
+
+// Estados do aluno no teste (chaves de tradução) e cores das etiquetas, como no relatório de cursos
+const STATUS = {
+  not_started: "Not started",
+  in_progress: "In progress",
+  approved: "Approved",
+  failed: "Failed",
+};
+const STATUS_COLORS = { approved: "green", failed: "red", in_progress: "blue" };
+
+// Resultado de um aluno num teste: tentativas por ordem de data, médias e estado
+// (aprovado: alguma tentativa aprovada; reprovado: esgotou as tentativas permitidas; em curso: tentou mas ainda não acabou)
+function studentResult(test, tries) {
+  const attempts = [...tries]
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .map((a, i) => {
+      const meta = parseJson(a.meta_data, {});
+      const items = Array.isArray(meta.items) ? meta.items : [];
+      const correct = items.filter((q) => q.is_correct).length;
+      return {
+        key: a.id,
+        number: i + 1,
+        created_at: a.created_at,
+        items,
+        correct,
+        total: items.length,
+        percent: items.length ? (correct * 100) / items.length : 0,
+        passed: a.is_completed === 1,
+        // Concluído pelo Admin: sem tempo de resposta (não foi feito pelo aluno)
+        seconds: meta.completed_by_admin ? null : Number(meta.time) || 0,
+      };
+    });
+  const approvedAttempt = attempts.find((a) => a.passed);
+  const status = !attempts.length
+    ? "not_started"
+    : approvedAttempt
+      ? "approved"
+      : isTestFailed(tries, test)
+        ? "failed"
+        : "in_progress";
+  return {
+    attempts,
+    status,
+    startedAt: attempts[0]?.created_at ?? null,
+    approvedAt: approvedAttempt?.created_at ?? null,
+    avgCorrect: average(attempts.map((a) => a.correct)),
+    total: attempts[attempts.length - 1]?.total ?? 0,
+    avgPercent: average(attempts.map((a) => a.percent)),
+    bestPercent: attempts.length
+      ? Math.max(...attempts.map((a) => a.percent))
+      : null,
+    avgSeconds: average(
+      attempts.filter((a) => a.seconds !== null).map((a) => a.seconds),
+    ),
+  };
+}
+
+// Uma linha por teste (sem repetidos), com os alunos que o podem fazer: o público do curso (países do curso ou, sem limite,
+// o idioma do curso) e o limite de países do teste.
+// O filtro de países filtra TESTES (não alunos): fica o teste cujo limite de países inclui um dos escolhidos; sem limite próprio,
+// vale o público do curso (o limite de países do curso ou, sem ele, todos os países do idioma, ou seja, aparece sempre).
+function buildRows(data, filters, languages, t) {
+  if (!data?.tests) return [];
+  const courses = new Map(
+    (data.courses || [])
+      .filter((c) => c.is_deleted !== 1)
+      .map((c) => [c.id, c]),
+  );
+  const students = (data.users || []).filter(
+    (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
+  );
+  const studentIds = new Set(students.map((u) => u.id));
+  const countries = filters.country?.length ? filters.country : null;
+
+  // Tentativas por teste e aluno (sem registos apagados nem de admins)
+  const tries = new Map();
+  (data.activity || []).forEach((a) => {
+    if (
+      a.activity_type !== "test" ||
+      a.is_deleted === 1 ||
+      !studentIds.has(a.id_user)
+    )
+      return;
+    const key = `${a.id_course_test}_${a.id_user}`;
+    if (!tries.has(key)) tries.set(key, []);
+    tries.get(key).push(a);
+  });
+
+  const seen = new Set();
+  const rows = [];
+  (data.tests || []).forEach((test) => {
+    if (test.is_deleted === 1 || seen.has(test.id)) return;
+    seen.add(test.id);
+    const course = courses.get(test.id_course);
+    if (!course || (filters.course && course.id !== filters.course)) return;
+    const ts = parseSettings(test.settings);
+    const cs = parseSettings(course.settings);
+    const limit =
+      ts.country_limit && Array.isArray(ts.country) && ts.country.length
+        ? ts.country
+        : null;
+    const courseLimit = cs.country_limit ? cs.country || [] : null;
+    // Países em que o teste está disponível: os do teste ou, sem limite próprio, os do curso (settings.country; null = todos).
+    // Filtro de país: só os testes desse(s) país(es) — com limite (do teste ou do curso) que o inclua; os testes para todos ficam de fora
+    const available = limit || courseLimit;
+    if (countries && !(available && available.some((c) => countries.includes(c)))) return;
+
+    const audience = students.filter(
+      (u) =>
+        (courseLimit
+          ? courseLimit.includes(u.country)
+          : u.id_lang === course.id_lang) &&
+        testsForStudent([test], u).length > 0,
+    );
+    const results = audience.map((u) => ({
+      user: u,
+      ...studentResult(test, tries.get(`${test.id}_${u.id}`) || []),
+    }));
+    const count = (status) => results.filter((r) => r.status === status).length;
+    const avgResult = average(
+      results.filter((r) => r.attempts.length).map((r) => r.avgPercent),
+    );
+    const timeLimit = Number(ts.time) > 0 ? Number(ts.time) : 0;
+    const retries =
+      Number(ts.retries_allowed) > 0 ? Number(ts.retries_allowed) : 0;
+
+    rows.push({
+      id: test.id,
+      test,
+      results,
+      timeLimit,
+      retriesAllowed: retries,
+      test_name: test.title,
+      start_date: fmtDay(ts.start_date),
+      end_date: fmtDay(ts.end_date),
+      // Na tabela o nome do curso; no Excel o nome interno (o nome oficial repete-se entre idiomas e versões)
+      course_name: course.name,
+      internal_name: course.internal_name || course.name,
+      thumbnail: course.thumbnail, // só para mostrar na tabela; não faz parte das colunas do Excel
+      approved: count("approved"),
+      failed: count("failed"),
+      in_progress: count("in_progress"),
+      not_started: count("not_started"),
+      percentage: `${roundPercent(audience.length ? (count("approved") * 100) / audience.length : 0)}%`,
+      students: audience.length,
+      country: limit ? limit.map((c) => t(c)).join(", ") : t("All"),
+      // Teste sem limite próprio num curso com limite: "Todos", mas só os alunos dos países do curso o podem fazer (e só esses contam)
+      country_note:
+        !limit && courseLimit
+          ? t("Test without its own limit: available to the course's countries ({{countries}})", {
+              countries: courseLimit.map((c) => t(c)).join(", "),
+            })
+          : null,
+      country_export:
+        !limit && courseLimit
+          ? `${t("All")} (${courseLimit.map((c) => t(c)).join(", ")})`
+          : null,
+      lang:
+        languages?.find((l) => l.id === course.id_lang)?.code?.toUpperCase() ??
+        "",
+      avg_result: avgResult === null ? "—" : `${roundPercent(avgResult)}%`,
+      passing_score: `${ts.passing_score ?? 75}%`,
+      time_limit: timeLimit ? `${timeLimit} min` : t("No time limit"),
+      retries: retries || t("Unlimited"),
+    });
+  });
+  return rows.sort(
+    (a, b) =>
+      a.course_name.localeCompare(b.course_name) ||
+      a.test_name.localeCompare(b.test_name),
+  );
+}
+
+// Linha de um aluno na lista do teste (as mesmas colunas no ecrã e no Excel)
+function studentRow(r, row, t) {
+  return {
+    ID: r.user.id,
+    name: r.user.name,
+    email: r.user.email,
+    country: r.user.country ? t(r.user.country) : "—",
+    start_date: fmtDay(r.startedAt),
+    end_date: fmtDay(r.approvedAt),
+    attempts: row.retriesAllowed
+      ? `${r.attempts.length}/${row.retriesAllowed}`
+      : r.attempts.length,
+    avg_score:
+      r.avgCorrect === null ? "—" : `${oneDecimal(r.avgCorrect)}/${r.total}`,
+    avg_percentage:
+      r.avgPercent === null ? "—" : `${roundPercent(r.avgPercent)}%`,
+    best_percentage: r.bestPercent === null ? "—" : floorPercent(r.bestPercent),
+    avg_time: r.attempts.length
+      ? timeLabel(r.avgSeconds, row.timeLimit, t)
+      : "—",
+    status: t(STATUS[r.status]),
+    statusKey: r.status,
+    test_name: row.test_name,
+    course: row.internal_name,
+    lang: row.lang,
+    result: r,
+  };
+}
+
+const dash = (v) =>
+  v !== null && v !== undefined && v !== "" && v !== "—" ? (
+    v
+  ) : (
+    <span className="text-[#C0C3CC]">—</span>
+  );
+
+// Perguntas de uma tentativa (resposta do aluno e se acertou)
+function QuestionsTable({ attempt, onExport, t }) {
+  const columns = getTestQuestionColumns(t).map((c) =>
+    c.key === "result"
+      ? {
+          ...c,
+          render: (v, rec) => <Tag color={rec.correct ? "green" : "red"}>{v}</Tag>,
+        }
+      : c,
+  );
+  const rows = attempt.items.map((q, i) => ({
+    key: i,
+    question: q.title,
+    answer: Array.isArray(q.myAnswer)
+      ? q.myAnswer.join(" | ")
+      : (q.myAnswer ?? "—"),
+    result: q.is_correct ? t("Correct") : t("Incorrect"),
+    correct: !!q.is_correct,
+    // Para o Excel: o aluno, a tentativa, o teste e o curso
+    user_name: attempt.user_name,
+    user_email: attempt.user_email,
+    user_country: attempt.user_country,
+    date: attempt.date,
+    test_name: attempt.test_name,
+    course: attempt.course,
+    lang: attempt.lang,
+  }));
+  return (
+    <div className="flex flex-col gap-3 py-2">
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <p className="font-bold font-ryker text-[13px] mb-0!">
+          {t("Questions")}{" "}
+          <span className="font-normal text-[#8A8D98]">({rows.length})</span>
+        </p>
+        <Button
+          size="small"
+          disabled={rows.length === 0}
+          onClick={() =>
+            onExport(rows, getTestQuestionColumns(t, true), "TestQuestionsReport")
+          }
+          icon={<LuDownload />}>
+          {t("Export excel")}
+        </Button>
+      </div>
+      <Table
+        className="expanded_table"
+        size="small"
+        columns={columns}
+        dataSource={rows}
+        pagination={
+          rows.length > 5
+            ? { pageSize: 5, placement: ["none", "bottomCenter"] }
+            : false
+        }
+      />
+    </div>
+  );
+}
+
+// Tentativas de um aluno num teste (linha aberta na lista de alunos)
+function AttemptsTable({ width, row, student, onExport, t }) {
+  const rows = student.result.attempts.map((a) => ({
+    key: a.key,
+    attempt_number: a.number,
+    date: dayjs(a.created_at).format("DD/MM/YYYY HH:mm"),
+    score: `${a.correct}/${a.total}`,
+    percentage: `${floorPercent(a.percent)}%`,
+    time: timeLabel(a.seconds, row.timeLimit, t),
+    status: t(a.passed ? "Approved" : "Failed"),
+    passed: a.passed,
+    items: a.items,
+    // Para o Excel
+    user_name: student.name,
+    user_email: student.email,
+    user_country: student.country,
+    test_name: row.test_name,
+    course: row.internal_name,
+    lang: row.lang,
+  }));
+  const columns = getTestAttemptColumns(t).map((c) => {
+    if (c.key === "status")
+      return {
+        ...c,
+        render: (v, rec) => <Tag color={rec.passed ? "green" : "red"}>{v}</Tag>,
+      };
+    if (c.key === "time")
+      return {
+        ...c,
+        render: (v) =>
+          row.timeLimit ? v : <span className="text-[#8A8D98]">{v}</span>,
+      };
+    return c;
+  });
+  return (
+    // A lista de alunos tem scroll horizontal: as tentativas ficam presas à largura visível (como o painel do teste)
+    <div
+      className="flex flex-col gap-3 p-3 md:p-4 bg-[#F7F8FA] rounded-[12px]"
+      style={width ? { width: Math.max(width - 140, 280), position: "sticky", left: 0 } : undefined}>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <p className="font-bold font-ryker text-[14px] mb-0!">
+          {t("Attempts")}{" "}
+          <span className="font-normal text-[#8A8D98]">({rows.length})</span>
+        </p>
+        <Button
+          disabled={rows.length === 0}
+          onClick={() =>
+            onExport(rows, getTestAttemptColumns(t, true), "TestAttemptsReport")
+          }
+          icon={<LuDownload />}>
+          {t("Export excel")}
+        </Button>
+      </div>
+      <Table
+        className="expanded_table"
+        columns={columns}
+        dataSource={rows}
+        scroll={{ x: "max-content" }}
+        expandable={{
+          expandedRowRender: (rec) => (
+            <QuestionsTable attempt={rec} onExport={onExport} t={t} />
+          ),
+          rowExpandable: (rec) => rec.items.length > 0,
+        }}
+        pagination={
+          rows.length > 5
+            ? { pageSize: 5, placement: ["none", "bottomCenter"] }
+            : false
+        }
+      />
+    </div>
+  );
+}
+
+// Painel da linha expandida de um teste: resumo, gráficos e a lista de alunos (com separadores por estado e pesquisa)
+function TestExpandedPanel({ width, row, onExport, t }) {
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+
+  // Primeiro quem já fez o teste (aprovados, reprovados, em progresso) e no fim quem ainda não começou; dentro de cada estado, por nome
+  const students = useMemo(() => {
+    const order = { approved: 0, failed: 1, in_progress: 2, not_started: 3 };
+    return row.results
+      .map((r) => studentRow(r, row, t))
+      .sort((a, b) => order[a.statusKey] - order[b.statusKey] || (a.name || "").localeCompare(b.name || ""));
+  }, [row, t]);
+
+  const counts = useMemo(() => {
+    const c = {
+      all: students.length,
+      not_started: 0,
+      in_progress: 0,
+      approved: 0,
+      failed: 0,
+    };
+    students.forEach((s) => (c[s.statusKey] += 1));
+    // Concluído: só quem foi aprovado (os reprovados ficam à parte, no separador e na barra "Reprovado")
+    c.completed = c.approved;
+    return c;
+  }, [students]);
+
+  const summary = useMemo(() => {
+    const tried = row.results.filter((r) => r.attempts.length);
+    const avgPercent = average(tried.map((r) => r.avgPercent));
+    // Nº de perguntas: o do teste atual (as tentativas antigas podem ter outro nº); as respostas certas saem da percentagem média,
+    // para o x/N bater sempre certo com a %
+    const questions = parseJson(row.test?.question, []);
+    const total = Array.isArray(questions) && questions.length ? questions.length : Math.max(0, ...tried.map((r) => r.total));
+    const avgCorrect = avgPercent === null ? null : (avgPercent * total) / 100;
+    const buckets = resultBuckets();
+    // Melhor resultado de cada aluno que já tentou o teste
+    tried.forEach(
+      (r) =>
+        (buckets.find((b) => floorPercent(r.bestPercent) <= b.max).value += 1),
+    );
+    return {
+      avgResult: avgPercent === null ? "—" : `${roundPercent(avgPercent)}%`,
+      avgScore:
+        avgCorrect === null
+          ? null
+          : `${oneDecimal(avgCorrect)}/${total} ${t("correct answers")}`,
+      buckets,
+    };
+  }, [row, t]);
+
+  const distribution = [
+    {
+      value: counts.not_started,
+      label: t("Not started"),
+      color: PALETTE.lighter,
+    },
+    {
+      value: counts.in_progress,
+      label: t("In progress"),
+      color: PALETTE.light,
+    },
+    { value: counts.completed, label: t("Approved"), color: PALETTE.base },
+    { value: counts.failed, label: t("Failed"), color: PALETTE.darker },
+  ];
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matches = (s) =>
+      status === "all" ||
+      (status === "completed" ? s.statusKey === "approved" : s.statusKey === status);
+    return students.filter(
+      (s) =>
+        matches(s) && (!q || `${s.name} ${s.email}`.toLowerCase().includes(q)),
+    );
+  }, [students, search, status]);
+
+  const columns = getTestStudentColumns(t).map((c) => {
+    if (c.key === "name")
+      return {
+        ...c,
+        width: 260,
+        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+        render: (_, s) => <UserCell id={s.ID} name={s.name} email={s.email} />,
+      };
+    if (c.key === "status")
+      return {
+        ...c,
+        width: 130,
+        render: (v, s) => (
+          <Tag color={STATUS_COLORS[s.statusKey] || "default"}>{v}</Tag>
+        ),
+      };
+    if (c.key === "avg_time")
+      return {
+        ...c,
+        render: (v) =>
+          row.timeLimit || v === "—" ? (
+            dash(v)
+          ) : (
+            <span className="text-[#8A8D98]">{v}</span>
+          ),
+      };
+    return { ...c, render: dash };
+  });
+
+  const tabs = [
+    { key: "all", text: t("All"), count: counts.all },
+    { key: "in_progress", text: t("In progress"), count: counts.in_progress },
+    { key: "completed", text: t("Approved"), count: counts.completed },
+    { key: "not_started", text: t("Not started"), count: counts.not_started },
+    { key: "failed", text: t("Failed"), count: counts.failed },
+  ];
+
+  return (
+    <div
+      className="flex flex-col gap-5 p-4 md:p-5 bg-[#F7F8FA] rounded-[14px]"
+      style={
+        width
+          ? { width: Math.max(width - 32, 320), position: "sticky", left: 0 }
+          : undefined
+      }>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        <Kpi label={t("Students")} value={counts.all} hint={row.country_note} />
+        <Kpi label={t("In progress")} value={counts.in_progress} />
+        {/* Concluído = aprovados; os reprovados têm cartão próprio */}
+        <Kpi label={t("Approved")} value={counts.completed} />
+        <Kpi label={t("Failed")} value={counts.failed} />
+        <Kpi label={t("Not started")} value={counts.not_started} />
+        <Kpi
+          label={t("Average result (all attempts)")}
+          value={summary.avgResult}
+          hint={summary.avgScore}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+          <p className="font-bold font-ryker text-[14px] mb-4!">
+            {t("Progress distribution")}
+          </p>
+          <StackedBar segments={distribution} />
+        </div>
+        <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+          <p className="font-bold font-ryker text-[14px] mb-1!">
+            {t("Result percentage")}
+          </p>
+          <p className="text-[11px] text-[#8A8D98] mb-4!">
+            {t("Best attempt of each student")}
+          </p>
+          <HorizontalBars rows={Object.values(summary.buckets)} />
+        </div>
+      </div>
+
+      <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <p className="font-bold font-ryker text-[14px] mb-0!">
+            {t("Students")}{" "}
+            <span className="font-normal text-[#8A8D98]">
+              ({filtered.length}
+              {filtered.length !== students.length
+                ? ` ${t("of")} ${students.length}`
+                : ""}
+              )
+            </span>
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Mesma altura (40px) da pesquisa e do botão: o Segmented usa a altura de controlo global (32) */}
+            <ConfigProvider
+              theme={{
+                components: {
+                  Segmented: {
+                    controlHeight: 40,
+                    itemSelectedColor: "#163986",
+                  },
+                },
+              }}>
+              <Segmented
+                value={status}
+                onChange={setStatus}
+                options={tabs.map((tab) => ({
+                  label: (
+                    <FilterLabel
+                      text={tab.text}
+                      count={tab.count}
+                      active={status === tab.key}
+                    />
+                  ),
+                  value: tab.key,
+                }))}
+              />
+            </ConfigProvider>
+            <Input
+              allowClear
+              placeholder={t("Search student...")}
+              prefix={<IoSearch className="text-[#8A8D98]" />}
+              className="w-56!"
+              value={search}
+              onChange={(ev) => setSearch(ev.target.value)}
+            />
+            <Button
+              onClick={() =>
+                onExport(
+                  filtered,
+                  getTestStudentColumns(t, true),
+                  "TestStudentsReport",
+                )
+              }
+              disabled={filtered.length === 0}
+              icon={<LuDownload />}>
+              {t("Export excel")}
+            </Button>
+          </div>
+        </div>
+        <Table
+          className="expanded_table"
+          rowKey="ID"
+          columns={columns}
+          dataSource={filtered}
+          expandable={{
+            expandedRowRender: (s) => (
+              <AttemptsTable width={width} row={row} student={s} onExport={onExport} t={t} />
+            ),
+            rowExpandable: (s) => s.result.attempts.length > 0,
+          }}
+          pagination={
+            filtered.length > 10
+              ? { pageSize: 10, placement: ["none", "bottomCenter"] }
+              : false
+          }
+          scroll={{ x: "max-content" }}
+          locale={{
+            emptyText:
+              students.length === 0
+                ? t("No students yet")
+                : t("No student matches the filters"),
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function TestReport({ data, isLoading }) {
-  const { user, selectedLanguage, languages } = useContext(Context);
-  const [tableData, setTableData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
-  const [dataToExport, setDataToExport] = useState([]);
-  const [columnsToExport, setColumnsToExport] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [activity, setActivity] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [isOpenExport, setIsOpenExport] = useState(false);
-
+  const { selectedLanguage, languages } = useContext(Context);
   const { t } = useTranslation();
-
   const [form] = Form.useForm();
+  const [filters, setFilters] = useState({});
+  const [exportState, setExportState] = useState({
+    open: false,
+    data: [],
+    columns: [],
+    table: "TestReport",
+  });
 
+  // O painel expandido acompanha a largura visível da tabela (que tem scroll horizontal), como no relatório de cursos
+  const tableWrapRef = useRef(null);
+  const [panelWidth, setPanelWidth] = useState(null);
   useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      prepareData(data);
-      setCourses(data.courses);
-      setActivity(data.activity);
-    }
-  }, [data]);
+    const el = tableWrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) =>
+      setPanelWidth(Math.floor(entry.contentRect.width)),
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  useEffect(() => {
-    setCountries(
-      JSON.parse(
-        languages.filter((l) => l.id === selectedLanguage.id)[0].country,
+  const countries = useMemo(
+    () =>
+      parseJson(
+        languages?.find((l) => l.id === selectedLanguage?.id)?.country,
+        [],
       ),
-    );
-  }, [selectedLanguage]);
+    [languages, selectedLanguage],
+  );
+  const courses = useMemo(
+    () => (data?.courses || []).filter((c) => c.is_deleted !== 1),
+    [data],
+  );
+  const rows = useMemo(
+    () => buildRows(data, filters, languages, t),
+    [data, filters, languages, t],
+  );
 
-  function formatAvgTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-
-    if (hours > 0) {
-      // Para horas, arredonda os minutos e descarta os segundos
-      const remainingSeconds = seconds % 3600;
-      const minutes = Math.round(remainingSeconds / 60);
-      return `${hours} h ${minutes} min`;
-    } else {
-      const minutes = Math.floor(seconds / 60);
-      if (minutes > 0) {
-        // Para minutos, mostra minutos e segundos
-        const secs = seconds % 60;
-        return `${minutes} min ${secs} s`;
-      } else {
-        // Para segundos, mostra apenas os segundos
-        return `${seconds} s`;
-      }
-    }
-  }
-
-  // Função auxiliar para verificar se o aluno é reprovado num teste
-  const isTestRepproved = (testAttempts, test) => {
-    // Não é reprovado se não houver tentativas limite
-    if (!test || !test.settings) {
-      return false;
-    }
-
-    let testSettings =
-      typeof test.settings === "string"
-        ? JSON.parse(test.settings)
-        : test.settings;
-
-    // Apenas marca como reprovado se retries_allowed for um número válido
-    if (
-      !testSettings ||
-      !testSettings.retries_allowed ||
-      testSettings.retries_allowed <= 0
-    ) {
-      return false;
-    }
-
-    // Verificar se o aluno passou no teste
-    const testPassed = testAttempts.some((a) => a.is_completed === 1);
-    if (testPassed) {
-      return false; // Se passou, não é reprovado
-    }
-
-    // Contar tentativas falhadas
-    const failedAttempts = testAttempts.filter(
-      (a) => a.is_completed === 0,
-    ).length;
-
-    // Apenas reprovado se tiver tentativas falhadas e se o número de tentativas falhadas for >= permitido
-    return failedAttempts > 0 && failedAttempts >= testSettings.retries_allowed;
-  };
-
-  function prepareData(obj) {
-    let aux = [];
-    if (obj.users && obj.activity && obj.activity.length > 0) {
-      // Filtra apenas os utilizadores regulares (id_role = 2) com status aprovado e as suas atividades de teste não eliminadas
-      // Exclui testes de cursos em draft - que só devem ser vistos pelo admin
-      let regularUsers = obj.users.filter(
-        (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
-      );
-      let testsActivity = obj.activity.filter(
-        (a) =>
-          a.activity_type === "test" &&
-          a.is_deleted === 0 &&
-          regularUsers.some((u) => u.id === a.id_user),
-      );
-
-      // Agrupa as atividades por utilizador e teste, para calcular médias e outras métricas
-      const groupedByUserTest = {};
-
-      for (let i = 0; i < testsActivity.length; i++) {
-        let item = testsActivity[i];
-
-        item.meta_data =
-          item.meta_data && typeof item.meta_data === "string"
-            ? JSON.parse(item.meta_data)
-            : item.meta_data;
-
-        let test = obj.tests.filter((t) => t.id === item.id_course_test)[0];
-        let testQuestions =
-          test.question && typeof test.question === "string"
-            ? JSON.parse(test.question)
-            : test.question;
-        const titlesOrder = testQuestions.map((item) => item.title);
-
-        let resTestOrdered = item.meta_data.items.sort(function (a, b) {
-          return titlesOrder.indexOf(a.title) - titlesOrder.indexOf(b.title);
-        });
-
-        item.meta_data.items = resTestOrdered;
-
-        const groupKey = `${item.id_user}_${item.id_course_test}`;
-
-        // Inicializa o array para cada grupo se ainda não existir
-        if (!groupedByUserTest[groupKey]) {
-          groupedByUserTest[groupKey] = [];
-        }
-
-        // Armazena cada tentativa no grupo correspondente
-        groupedByUserTest[groupKey].push(item);
-      }
-
-      for (const groupKey in groupedByUserTest) {
-        // Itera sobre cada grupo de utilizador-teste
-        const activityAttempts = groupedByUserTest[groupKey];
-        if (activityAttempts.length === 0) continue;
-
-        const attemptSample = activityAttempts[0]; // Pega a primeira tentativa como amostra para obter informações do teste e do utilizador
-        const test = obj.tests.filter(
-          (t) => t.id === attemptSample.id_course_test,
-        )[0];
-
-        // Não mostra testes de cursos deletados - admins veem draft e published courses/tests
-        const module = obj.modules.find((m) => m.id === test?.id_course_module);
-        const course = obj.courses.find((c) => c.id === module?.id_course);
-        if (course?.is_deleted === 1) continue;
-
-        const testSettings =
-          test.settings && typeof test.settings === "string"
-            ? JSON.parse(test.settings)
-            : test.settings;
-
-        const start_date = testSettings?.start_date
-          ? dayjs(testSettings.start_date).format("DD MMM, YYYY")
-          : null;
-
-        const end_date = testSettings?.end_date
-          ? dayjs(testSettings.end_date).format("DD MMM, YYYY")
-          : null;
-
-        // Calcula a pontuação média, percentagem média e tempo médio para cada grupo de tentativas
-        let totalScore = 0;
-        let totalPercentage = 0;
-        let totalTimeInSeconds = 0;
-        let attemptCount = activityAttempts.length;
-
-        for (let attempt of activityAttempts) {
-          const correctCount = attempt.meta_data.items.filter(
-            (q) => q.is_correct,
-          ).length;
-          const totalItems = attempt.meta_data.items.length;
-          const percentage =
-            totalItems > 0 ? (correctCount * 100) / totalItems : 0;
-
-          totalScore += correctCount;
-          totalPercentage += percentage;
-          totalTimeInSeconds += attempt.meta_data.time;
-        }
-
-        const avgScore = (totalScore / attemptCount).toFixed(2);
-        const avgPercentage = roundPercent(totalPercentage / attemptCount);
-        const avgTimeInSeconds = Math.round(totalTimeInSeconds / attemptCount);
-
-        const avgTime = formatAvgTime(avgTimeInSeconds);
-
-        // Debug status: Approved se passou na última tentativa, Repproved se esgotou as tentativas permitidas
-        const sortedAttempts = [...activityAttempts].sort(
-          (a, b) => new Date(a.created_at) - new Date(b.created_at),
-        );
-        const lastAttempt = sortedAttempts[sortedAttempts.length - 1];
-        let Status;
-
-        if (lastAttempt.is_completed === 1) {
-          Status = "Approved";
-        } else if (isTestRepproved(activityAttempts, test)) {
-          Status = "Repproved";
-        } else {
-          Status = "In progress";
-        }
-
-        aux.push({
-          id: `${attemptSample.id_user}_${attemptSample.id_course_test}`, // Chave única para cada combinação de utilizador-teste
-          test_name: attemptSample.test_title,
-          start_date: start_date,
-          end_date: end_date,
-          user_name: obj.users.filter((u) => u.id === attemptSample.id_user)[0]
-            .name,
-          user_email: obj.users.filter((u) => u.id === attemptSample.id_user)[0]
-            .email,
-          course_name: obj.courses.filter(
-            (c) => c.id === attemptSample.id_course,
-          )[0].name,
-          attempts: attemptCount,
-          avg_score: avgScore + "/" + attemptSample.meta_data.items.length,
-          avg_percentage: avgPercentage + "%",
-          avg_time: avgTime,
-          status: Status,
-          lang: languages
-            .filter(
-              (l) =>
-                l.id ===
-                obj.courses.filter((c) => c.id === attemptSample.id_course)[0]
-                  .id_lang,
-            )[0]
-            .code.toUpperCase(),
-          id_course_test: attemptSample.id_course_test,
-          id_user: attemptSample.id_user,
-          id_course: attemptSample.id_course,
-        });
-      }
-    }
-    setTableData(aux);
-    setFilteredData(aux);
-  }
-
-  function filterData(values) {
-    // Começar com as atividades de teste (ignorar outros tipos de atividade)
-    let testsActivity = activity.filter(
-      (a) => a.activity_type === "test" && a.is_deleted === 0,
-    );
-
-    // Filtrar por curso se selecionado
-    if (values.course) {
-      testsActivity = testsActivity.filter(
-        (a) => a.id_course === values.course,
-      );
-    }
-
-    // Filtrar por país se selecionado
-    if (values.country && values.country.length > 0) {
-      testsActivity = testsActivity.filter((a) => {
-        // Encontrar o curso associado a este teste
-        const course = data.courses.find((c) => c.id === a.id_course);
-        if (!course) return false;
-
-        // Se country_limit é true, apenas incluir se o país corresponder
-        if (course.settings.country_limit) {
-          return (
-            course.settings.country &&
-            Array.isArray(course.settings.country) &&
-            course.settings.country.some((item) =>
-              values.country.includes(item),
-            )
-          );
-        }
-        return false;
-      });
-    }
-
-    prepareData({ ...data, activity: testsActivity });
-  }
-
-  function onChange(pagination, filters, sorter, extra) {
-    setFilteredData(extra.currentDataSource);
-  }
-
-  function openExport(data, columns = []) {
-    setDataToExport(data);
-    setColumnsToExport(columns);
-    setIsOpenExport(true);
-  }
-
-  function closeExport() {
-    setIsOpenExport(false);
-  }
-
-  const expandedAttemptRowRender = (e) => {
-    const columnsExpanded = [
-      {
-        title: t("Nº"),
-        dataIndex: "attempt_number",
-        key: "attempt_number",
-      },
-      {
-        title: t("Date"),
-        dataIndex: "date",
-        key: "date",
-      },
-      {
-        title: t("Score"),
-        dataIndex: "score",
-        key: "score",
-      },
-      {
-        title: t("Percentage"),
-        dataIndex: "percentage",
-        key: "percentage",
-      },
-      {
-        title: t("Time"),
-        dataIndex: "time",
-        key: "time",
-      },
-      {
-        title: t("Approved"),
-        dataIndex: "approved",
-        key: "approved",
-      },
-    ];
-
-    // Filtra as atividades para o utilizador e teste específicos, excluindo admins
-    const regularUsers = data.users.filter((u) => u.id_role === 2);
-    const testsActivity = data.activity.filter(
-      (a) =>
-        a.activity_type === "test" &&
-        a.id_user === e.id_user &&
-        a.id_course_test === e.id_course_test &&
-        a.is_deleted === 0 &&
-        regularUsers.some((u) => u.id === a.id_user),
-    );
-
-    //Ordena as tentativas por data
-    testsActivity.sort(
-      (a, b) => new Date(a.created_at) - new Date(b.created_at),
-    );
-
-    const dataExpanded = [];
-
-    for (let i = 0; i < testsActivity.length; i++) {
-      let attempt = testsActivity[i];
-
-      attempt.meta_data =
-        attempt.meta_data && typeof attempt.meta_data === "string"
-          ? JSON.parse(attempt.meta_data)
-          : attempt.meta_data;
-
-      const correctCount = attempt.meta_data.items.filter(
-        (q) => q.is_correct,
-      ).length;
-      const totalItems = attempt.meta_data.items.length;
-      const score = `${correctCount}/${totalItems}`;
-      const percentage =
-        totalItems > 0
-          ? `${floorPercent((correctCount * 100) / totalItems)}%`
-          : "0%";
-      const time = formatAvgTime(attempt.meta_data.time);
-
-      dataExpanded.push({
-        key: i, // Chave única para cada tentativa
-        attempt_number: i + 1,
-        date: attempt.created_at
-          ? dayjs(attempt.created_at).format("DD/MM/YYYY")
-          : attempt.created_at,
-        score: score,
-        percentage: percentage,
-        time: time,
-        approved: attempt.is_completed ? "yes" : "no",
-        // Adiciona informações adicionais para exportação
-        user_name: data.users.filter((u) => u.id === attempt.id_user)[0].name,
-        user_email: data.users.filter((u) => u.id === attempt.id_user)[0].email,
-        test_name: attempt.test_title,
-        lang: languages
-          .filter(
-            (l) =>
-              l.id ===
-              data.courses.filter((c) => c.id === attempt.id_course)[0].id_lang,
-          )[0]
-          .code.toUpperCase(),
-        course: data.courses.filter((c) => c.id === attempt.id_course)[0].name,
-        meta_data: attempt.meta_data, // Armazena meta_data para acesso no expandedQuestionRowRender
-      });
-    }
-
-    return (
-      <div className="flex flex-col gap-3 p-4 md:p-5 bg-[#F7F8FA] rounded-[14px]">
-        <div className="flex flex-wrap justify-between items-center gap-3">
-          <p className="font-bold text-[14px] mb-0!">
-            {t("Attempts")} <span className="font-normal text-[#8A8D98]">({dataExpanded.length})</span>
-          </p>
-          <Button disabled={dataExpanded.length === 0} onClick={() => openExport(dataExpanded, columnsExpanded)} icon={<LuDownload />}>
-            {t("Export excel")}
-          </Button>
-        </div>
-        <Table
-          className="expanded_table"
-          columns={columnsExpanded}
-          dataSource={dataExpanded}
-          expandable={{
-            expandedRowRender: expandedQuestionRowRender,
-            rowExpandable: (record) =>
-              record.meta_data &&
-              record.meta_data.items &&
-              record.meta_data.items.length > 0,
-          }}
-          pagination={dataExpanded.length > 5 ? { pageSize: 5, placement: ["none", "bottomCenter"] } : false}
-        />
-      </div>
-    );
-  };
-
-  const expandedQuestionRowRender = (e) => {
-    const columnsExpanded = [
-      {
-        title: t("Question"),
-        dataIndex: "question",
-        key: "question",
-        width: 200,
-      },
-      {
-        title: t("Answer"),
-        dataIndex: "answer",
-        key: "answer",
-        width: 200,
-      },
-      {
-        title: t("Result"),
-        dataIndex: "result",
-        key: "result",
-        width: 100,
-      },
-    ];
-
-    const dataExpanded = [];
-    // safeguard para garantir que meta_data e items existem antes de tentar acessá-los
-    if (e.meta_data && e.meta_data.items && e.meta_data.items.length > 0) {
-      for (let i = 0; i < e.meta_data.items.length; i++) {
-        let question = e.meta_data.items[i];
-        dataExpanded.push({
-          key: i,
-          question: question.title,
-          answer: question.myAnswer,
-          result: question.is_correct ? t("Correct") : t("Incorrect"),
-          // Adiciona informações adicionais para exportação no Excel
-          user_name: e.user_name,
-          user_email: e.user_email,
-          course: e.course,
-          test_name: e.test_name,
-          lang: e.lang,
-        });
-      }
-    }
-
-    return (
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <p className="font-bold mb-2 mt-4">{t("Questions")}</p>
-          <Button
-            className="min-w-50"
-            size="large"
-            variant="solid"
-            color="blue"
-            disabled={dataExpanded.length === 0}
-            onClick={() => openExport(dataExpanded, columnsExpanded)}
-            icon={<LuDownload className="text-[18px]" />}>
-            {t("Export excel")}
-          </Button>
-        </div>
-        <Table
-          className="expanded_table"
-          columns={columnsExpanded}
-          dataSource={dataExpanded}
-          pagination={{
-            pageSize: 5,
-            position: ["bottomCenter"],
-          }}
-        />
-      </div>
-    );
-  };
+  const openExport = (exportData, columns, table) =>
+    setExportState({ open: true, data: exportData, columns, table });
 
   return (
     <div>
-      <ExportTable open={isOpenExport} close={closeExport} data={dataToExport} table={"TestReport"} columns={columnsToExport} />
+      <ExportTable
+        open={exportState.open}
+        close={() => setExportState((s) => ({ ...s, open: false }))}
+        data={exportState.data}
+        table={exportState.table}
+        columns={exportState.columns}
+      />
       <div className="flex justify-end items-center w-full">
-        <Form form={form} layout="vertical" onFinish={filterData} className="w-full">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={(values) => setFilters(values)}
+          className="w-full">
           <div className="flex flex-wrap justify-end items-center gap-4 mb-4 mt-4 [&_.ant-btn]:min-w-[150px]">
             <Button
               // Sem dados na tabela, o botão de exportar fica desativado
-              disabled={tableData.length === 0}
-              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, getTestReportColumns(t))}
+              disabled={rows.length === 0}
+              onClick={() =>
+                openExport(rows, getTestReportColumns(t, true), "TestReport")
+              }
               icon={<LuDownload />}>
               <span className="hidden sm:inline">{t("Export excel")}</span>
             </Button>
@@ -521,7 +747,11 @@ export default function TestReport({ data, isLoading }) {
                 className="w-full sm:w-[260px]!"
                 placeholder={t("Select course")}
                 showSearch={{ optionFilterProp: ["label"] }}
-                options={courses.map((c) => ({ label: c.name, value: c.id }))}
+                // O nome do curso, como na coluna "Curso" da tabela
+                options={courses.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
               />
             </Form.Item>
             <Form.Item name="country" className="mb-0! w-full sm:w-auto">
@@ -541,23 +771,72 @@ export default function TestReport({ data, isLoading }) {
           </div>
         </Form>
       </div>
-      <Table
-        rowKey="id"
-        onChange={onChange}
-        loading={isLoading}
-        expandable={{
-          expandedRowRender: expandedAttemptRowRender,
-          rowExpandable: (record) => record.attempts > 0,
-        }}
-        dataSource={tableData}
-        scroll={{ x: "max-content" }}
-        pagination={{
-          pageSize: 5, // máximo 5 por página
-          placement: ["none", "bottomCenter"], // paginação ao centro
-          showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
-        }}
-        columns={getTestReportColumns(t)}
-      />
+      <div ref={tableWrapRef}>
+        <Table
+          rowKey="id"
+          loading={isLoading}
+          expandable={{
+            expandedRowRender: (rec) => (
+              <TestExpandedPanel
+                key={rec.id}
+                width={panelWidth}
+                row={rec}
+                onExport={openExport}
+                t={t}
+              />
+            ),
+          }}
+          dataSource={rows}
+          scroll={{ x: "max-content" }}
+          pagination={{
+            pageSize: 5, // máximo 5 por página
+            placement: ["none", "bottomCenter"], // paginação ao centro
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} ${t("of")} ${total}`,
+          }}
+          columns={getTestReportColumns(t).map((col) =>
+            col.key === "test_name"
+              ? { ...col, render: (v) => <p className="mb-0!">{v}</p> }
+              : col.key === "course_name"
+                ? {
+                    ...col,
+                    // Miniatura do curso ao lado do nome, como no relatório de cursos (só na tabela: o Excel não muda)
+                    render: (name, record) => (
+                      <div className="flex items-center">
+                        <Avatar
+                          shape="square"
+                          size={40}
+                          style={{ backgroundColor: "#163986" }}
+                          src={record.thumbnail ? `${config.server_ip}/media/${record.thumbnail}` : undefined}
+                          icon={<CiCalendar className="text-white/60" />}
+                          className="mr-2! min-w-[40px]!"
+                        />
+                        <p className="mb-0!">{name}</p>
+                      </div>
+                    ),
+                  }
+              : col.key === "approved" || col.key === "failed"
+                ? { ...col, align: "center" }
+                : col.key === "country"
+                  ? {
+                      ...col,
+                      // Teste sem limite próprio num curso com limite de países: nota com os países do curso
+                      render: (v, rec) =>
+                        rec.country_note ? (
+                          <Tooltip title={rec.country_note}>
+                            <span className="inline-flex items-center gap-1 cursor-help" aria-label={rec.country_note}>
+                              {v}
+                              <LuInfo className="text-[#00b9d6] shrink-0" />
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          v
+                        ),
+                    }
+                  : col,
+          )}
+        />
+      </div>
     </div>
   );
 }
