@@ -1,10 +1,11 @@
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useState } from "react";
 import {
   Button,
   Empty,
   Form,
   Input,
+  Pagination,
   Progress,
   Select,
   Spin,
@@ -32,11 +33,15 @@ import {
   reportCourseState,
 } from "../../../utils/userResults";
 
+const PAGE_SIZE = 10;
+
 export default function StudentProgress({ data, isLoading }) {
   const { languages, selectedLanguage } = useContext(Context);
   const [countries, setCountries] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const listRef = useRef(null);
 
   const [form] = Form.useForm();
 
@@ -49,6 +54,7 @@ export default function StudentProgress({ data, isLoading }) {
         (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",
       );
       setFilteredData(approvedStudents);
+      setCurrentPage(1);
     }
   }, [data]);
 
@@ -67,7 +73,9 @@ export default function StudentProgress({ data, isLoading }) {
     if (!data?.users) return new Map();
     const items = reportCourseItems(data);
     const courseIds = new Set(
-      (data.courses || []).filter((c) => c.status !== "draft" && courseDateState(c) === "active").map((c) => c.id),
+      (data.courses || [])
+        .filter((c) => c.status !== "draft" && courseDateState(c) === "active")
+        .map((c) => c.id),
     );
     const { map } = activityByStudentCourse(data);
     const result = new Map();
@@ -118,6 +126,7 @@ export default function StudentProgress({ data, isLoading }) {
       );
 
     setFilteredData(newData);
+    setCurrentPage(1);
     setIsSearching(false);
   }
 
@@ -148,104 +157,108 @@ export default function StudentProgress({ data, isLoading }) {
           </Button>
         </div>
       </Form>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 bg-white rounded-[16px] p-4">
+      <div
+        ref={listRef}
+        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 bg-white rounded-[16px] p-4 scroll-mt-4">
         {isLoading ? (
           <div className="col-span-full flex justify-center py-10">
             <Spin spinning={true} />
           </div>
         ) : filteredData.length > 0 ? (
-          filteredData.map((u) => {
-            const st = statsByUser.get(u.id);
-            return (
-              <Link
-                key={u.id}
-                to={`/admin/users/${u.id}`}
-                className="group block">
-                <div className="flex h-full flex-col gap-4 rounded-[16px] border border-solid border-[#E5E7EB] bg-white p-4 transition-all group-hover:border-[#163986]/40 group-hover:shadow-[0px_6px_18px_#16398614]">
-                  <div className="flex items-start justify-between gap-2">
-                    <UserCell
-                      id={u.id}
-                      name={u.name}
-                      email={u.email}
-                      img={u.img}
-                      linkToProfile={false}
-                    />
-                    <LuArrowUpRight className="mt-1 shrink-0 text-[18px] text-[#C0C3CC] transition-colors group-hover:text-[#163986]" />
-                  </div>
-
-                  {u.country && (
-                    <span className="flex items-center gap-1.5 text-[12px] text-[#5B5F6B]">
-                      <LuMapPin className="shrink-0 text-[#8A8D98]" />{" "}
-                      {t(u.country)}
-                    </span>
-                  )}
-
-                  {st ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Tooltip title={t("Courses with activity")}>
-                          <div className="flex flex-col items-center rounded-[10px] bg-[#F6F7F9] px-2 py-2">
-                            <LuBookOpen className="text-[#163986]" />
-                            <span className="text-[16px] font-bold leading-tight">
-                              {st.courses}
-                            </span>
-                            <span className="text-[10px] text-[#8A8D98]">
-                              {t("Course(s)")}
-                            </span>
-                          </div>
-                        </Tooltip>
-                        <Tooltip title={t("Courses in progress")}>
-                          <div className="flex flex-col items-center rounded-[10px] bg-[#E6F9FC] px-2 py-2">
-                            <LuPlay className="text-[#00b9d6]" />
-                            <span className="text-[16px] font-bold leading-tight">
-                              {st.inProgress}
-                            </span>
-                            <span className="text-[10px] text-[#8A8D98]">
-                              {t("In progress")}
-                            </span>
-                          </div>
-                        </Tooltip>
-                        <Tooltip title={t("Completed courses")}>
-                          <div className="flex flex-col items-center rounded-[10px] bg-[#EEF7F1] px-2 py-2">
-                            <LuCircleCheck className="text-[#2F8351]" />
-                            <span className="text-[16px] font-bold leading-tight">
-                              {st.completed}
-                            </span>
-                            <span className="text-[10px] text-[#8A8D98]">
-                              {t("Completed")}
-                            </span>
-                          </div>
-                        </Tooltip>
-                      </div>
-                      <div>
-                        <div className="mb-1 flex items-center justify-between text-[12px]">
-                          <span className="text-[#8A8D98]">
-                            {t("Average progress")}
-                          </span>
-                          <span className="font-bold">{st.average}%</span>
-                        </div>
-                        <Progress
-                          percent={st.average}
-                          showInfo={false}
-                          size="small"
-                          strokeColor="#2F8351"
-                          railColor="#EAEAEA"
-                        />
-                      </div>
-                      <p className="mb-0! mt-auto text-[11px] text-[#8A8D98]">
-                        {t("Last activity")}:{" "}
-                        {dayjs(st.last).format("DD/MM/YYYY HH:mm")}
-                      </p>
-                    </>
-                  ) : (
-                    <div className="mt-auto rounded-[10px] bg-[#F6F7F9] px-3 py-3 text-center text-[12px] text-[#8A8D98]">
-                      {t("No activity yet")}
+          filteredData
+            .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+            .map((u) => {
+              const st = statsByUser.get(u.id);
+              return (
+                <Link
+                  key={u.id}
+                  to={`/admin/users/${u.id}`}
+                  className="group block">
+                  <div className="flex h-full flex-col gap-4 rounded-[16px] border border-solid border-[#E5E7EB] bg-white p-4 transition-all group-hover:border-[#163986]/40 group-hover:shadow-[0px_6px_18px_#16398614]">
+                    <div className="flex items-start justify-between gap-2">
+                      <UserCell
+                        id={u.id}
+                        name={u.name}
+                        email={u.email}
+                        img={u.img}
+                        linkToProfile={false}
+                      />
+                      <LuArrowUpRight className="mt-1 shrink-0 text-[18px] text-[#C0C3CC] transition-colors group-hover:text-[#163986]" />
                     </div>
-                  )}
-                </div>
-              </Link>
-            );
-          })
+
+                    {u.country && (
+                      <span className="flex items-center gap-1.5 text-[12px] text-[#5B5F6B]">
+                        <LuMapPin className="shrink-0 text-[#8A8D98]" />{" "}
+                        {t(u.country)}
+                      </span>
+                    )}
+
+                    {st ? (
+                      <>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Tooltip title={t("Courses with activity")}>
+                            <div className="flex flex-col items-center rounded-[10px] bg-[#F6F7F9] px-2 py-2">
+                              <LuBookOpen className="text-[#163986]" />
+                              <span className="text-[16px] font-bold leading-tight">
+                                {st.courses}
+                              </span>
+                              <span className="text-[10px] text-[#8A8D98]">
+                                {t("Course(s)")}
+                              </span>
+                            </div>
+                          </Tooltip>
+                          <Tooltip title={t("Courses in progress")}>
+                            <div className="flex flex-col items-center rounded-[10px] bg-[#E6F9FC] px-2 py-2">
+                              <LuPlay className="text-[#00b9d6]" />
+                              <span className="text-[16px] font-bold leading-tight">
+                                {st.inProgress}
+                              </span>
+                              <span className="text-[10px] text-[#8A8D98]">
+                                {t("In progress")}
+                              </span>
+                            </div>
+                          </Tooltip>
+                          <Tooltip title={t("Completed courses")}>
+                            <div className="flex flex-col items-center rounded-[10px] bg-[#EEF7F1] px-2 py-2">
+                              <LuCircleCheck className="text-[#2F8351]" />
+                              <span className="text-[16px] font-bold leading-tight">
+                                {st.completed}
+                              </span>
+                              <span className="text-[10px] text-[#8A8D98]">
+                                {t("Completed")}
+                              </span>
+                            </div>
+                          </Tooltip>
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-[12px]">
+                            <span className="text-[#8A8D98]">
+                              {t("Average progress")}
+                            </span>
+                            <span className="font-bold">{st.average}%</span>
+                          </div>
+                          <Progress
+                            percent={st.average}
+                            showInfo={false}
+                            size="small"
+                            strokeColor="#2F8351"
+                            railColor="#EAEAEA"
+                          />
+                        </div>
+                        <p className="mb-0! mt-auto text-[11px] text-[#8A8D98]">
+                          {t("Last activity")}:{" "}
+                          {dayjs(st.last).format("DD/MM/YYYY HH:mm")}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-auto rounded-[10px] bg-[#F6F7F9] px-3 py-3 text-center text-[12px] text-[#8A8D98]">
+                        {t("No activity yet")}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })
         ) : (
           <div className="col-span-full">
             {isSearching ? (
@@ -262,6 +275,27 @@ export default function StudentProgress({ data, isLoading }) {
           </div>
         )}
       </div>
+      {!isLoading && filteredData.length > PAGE_SIZE && (
+        <Pagination
+          // No telemóvel o total vai para uma linha própria, sem partir ("1-10 de 44")
+          className="mt-4! flex flex-wrap justify-center gap-y-2 [&_.ant-pagination-total-text]:whitespace-nowrap max-sm:[&_.ant-pagination-total-text]:basis-full max-sm:[&_.ant-pagination-total-text]:text-center"
+          total={filteredData.length}
+          current={currentPage}
+          pageSize={PAGE_SIZE}
+          showSizeChanger={false}
+          showTotal={(total, range) =>
+            `${range[0]}-${range[1]} ${t("of")} ${total}`
+          }
+          onChange={(page) => {
+            setCurrentPage(page);
+            // Volta ao início da lista ao mudar de página
+            listRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
