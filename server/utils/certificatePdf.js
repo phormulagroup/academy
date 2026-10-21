@@ -152,8 +152,9 @@ function layoutBlocks(doc, blocks, width, lineGap, baseSize) {
   return { laid, height };
 }
 
+const BIAL_BLUE = "#163F90";
 function drawBlock(doc, block, x, y, width, align) {
-  doc.fontSize(block.size).fillColor("#fff");
+  doc.fontSize(block.size).fillColor(BIAL_BLUE);
   block.lines.forEach((line, index) => {
     let cursorX = align === "center" ? x + (width - line.width) / 2 : align === "right" ? x + width - line.width : x;
     const lineY = y + index * block.lineHeight;
