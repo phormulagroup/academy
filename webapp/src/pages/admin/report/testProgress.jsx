@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Button, Empty, Select, Skeleton, Switch, Tag } from "antd";
 import { LuBookOpen, LuChevronDown, LuCircleCheck, LuPill, LuUsers } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 
 import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
 import { roundPercent } from "../../../utils/percent";
@@ -19,6 +20,9 @@ const SCORE_BUCKETS = [
   { key: "< 20%", color: "#C7F1F8" },
 ];
 const NO_PRODUCT = "none";
+
+// Singular ou plural pela regra do idioma da interface (em francês o 0 também é singular: "0 cours · 0 apprenant évalué")
+const isOne = (count) => new Intl.PluralRules(i18n.language?.startsWith("pt") ? "pt-PT" : i18n.language || "en").select(count) === "one";
 
 const parseJson = (value, fallback) => {
   if (!value) return fallback;
@@ -259,8 +263,8 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, onGroupByCo
         <div className="min-w-[180px] flex-1">
           <p className="mb-0! text-[16px] font-bold">{title}</p>
           <p className="mb-0! text-[12px] text-[#8A8D98]">
-            {t(stats.courses === 1 ? "{{count}} course" : "{{count}} courses", { count: stats.courses })} ·{" "}
-            {t(stats.students === 1 ? "{{count}} student evaluated" : "{{count}} students evaluated", { count: stats.students })}
+            {t(isOne(stats.courses) ? "{{count}} course" : "{{count}} courses", { count: stats.courses })} ·{" "}
+            {t(isOne(stats.students) ? "{{count}} student evaluated" : "{{count}} students evaluated", { count: stats.students })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
