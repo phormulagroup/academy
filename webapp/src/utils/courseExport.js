@@ -1,5 +1,7 @@
-import dayjs from "dayjs";
+import dayjs from "dayjs";
+
 import { testsForStudent } from "./courseStatus";
+import { floorPercent } from "./percent";
 
 const parseJson = (value, fallback) => {
   if (!value) return fallback;
@@ -22,7 +24,7 @@ function testStats(test, tries) {
     const meta = parseJson(p.meta_data, {});
     const items = meta?.items ?? [];
     const correct = items.filter((i) => i.is_correct).length;
-    return { row: p, items, correct, total: items.length, score: items.length ? Math.round((correct / items.length) * 100) : null, seconds: meta?.time ?? null };
+    return { row: p, items, correct, total: items.length, score: items.length ? floorPercent((correct * 100) / items.length) : null, seconds: meta?.time ?? null };
   });
   const passed = tries.some((p) => p.is_completed === 1);
   const failed = tries.filter((p) => p.is_completed === 0).length;
@@ -112,6 +114,8 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
     const allTries = userActivity.filter((a) => a.activity_type === "test");
     const out = {
       ...row,
+      // País traduzido
+      country: row.country ? t(row.country) : "",
       last_activity: fmtDate(lastActivity),
       days,
       progress,
