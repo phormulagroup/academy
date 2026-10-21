@@ -25,8 +25,8 @@ function Logout({ open, close, submit }) {
       description={t("You will need to sign in again to access your account.")}
       okText={t("Yes, log me out")}
       cancelText={t("Stay signed in")}
-      okClassName="main-cta-button [&&]:font-normal!"
-      cancelClassName="main-secondary-cta-button [&&]:font-normal!">
+      okClassName="main-cta-button [&&]:font-bold!"
+      cancelClassName="main-secondary-cta-button [&&]:font-bold!">
       <div className="flex flex-col gap-2.5 sm:gap-3">
         <div className="flex items-center gap-3 rounded-[12px] bg-[#F6F7F9] p-2.5 sm:p-3">
           <UserAvatar user={user} size={40} className="shrink-0" />

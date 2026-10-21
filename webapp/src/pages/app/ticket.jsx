@@ -57,7 +57,7 @@ export default function Ticket() {
   }
 
   return (
-    <div className="p-10 bg-[#EAEAEA] min-h-full">
+    <div className="flex-1 py-4 sm:py-8 lg:py-10 bg-[#EAEAEA]">
       <Drawer
         size={700}
         open={!!selectedId}
@@ -78,7 +78,10 @@ export default function Ticket() {
               {t("Support tickets")}
             </p>
             <div className="flex justify-center sm:justify-end items-center w-full">
-              <Button size="large" onClick={() => setIsOpenCreate(true)}>
+              <Button
+                size="large"
+                className="main-cta-button [&&]:font-bold!"
+                onClick={() => setIsOpenCreate(true)}>
                 {t("New ticket")}
               </Button>
             </div>

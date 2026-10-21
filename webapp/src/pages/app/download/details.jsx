@@ -17,6 +17,7 @@ import {
 import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
+import { MdFileDownload, MdOutlineVisibility } from "react-icons/md";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -255,6 +256,7 @@ export default function DownloadDetails() {
                           size="large"
                           type="primary"
                           loading={downloadingId === item.id}
+                          icon={<MdFileDownload aria-hidden="true" />}
                           disabled={
                             downloadingId !== null && downloadingId !== item.id
                           }
@@ -265,6 +267,7 @@ export default function DownloadDetails() {
                           <Button
                             size="large"
                             className="main-secondary-cta-button"
+                            icon={<MdOutlineVisibility aria-hidden="true" />}
                             onClick={() => preview(item)}>
                             {t("Preview")}
                           </Button>

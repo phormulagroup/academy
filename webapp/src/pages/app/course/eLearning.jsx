@@ -676,6 +676,24 @@ const Learning = () => {
     return `${t("Expired test")} · ${dayjs(end_date).format("DD/MM/YYYY HH:mm")}`;
   }
 
+  // Cadeados da lista de módulos: dentro do círculo de estado. Linear: bloqueado até o anterior estar concluído.
+  const isCompletedActivity = (type, id) =>
+    progress.some((p) => p.activity_type === type && p[`id_course_${type}`] === id && p.is_completed === 1 && p.is_deleted !== 1);
+  function isModuleLocked(item, mInd) {
+    return !isModuleCompleted(item) && data?.course?.settings.progression_type === "linear" && mInd > 0 && !isCompletedActivity("module", modules[mInd - 1].id);
+  }
+  function isListItemLocked(item, i, mInd) {
+    if (freeLock(item)) return true;
+    if (isItemCompleted(item) || data?.course?.settings.progression_type !== "linear" || (mInd === 0 && i === 0)) return false;
+    const previous = i === 0 ? modules[mInd - 1].items[modules[mInd - 1].items.length - 1] : modules[mInd].items[i - 1];
+    return !previous || !isCompletedActivity(previous.type, previous.id);
+  }
+  const statusCircle = (locked, extra = "") => (
+    <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] flex justify-center items-center ${extra}`}>
+      {locked && <RxLockClosed className="w-3.25 h-3.25 text-[#163986]" />}
+    </div>
+  );
+
   // Item da lista de módulos (Sider/Drawer): marcador de expirado e estado bloqueado após reprovar
   function itemListExtras(item) {
     const expired = expiredInfo(item);
@@ -1081,35 +1099,18 @@ const Learning = () => {
                           key: item.id,
                           label: (
                             <div className="flex flex-col">
-                              <div className="p-2 cursor-pointer flex items-center">
+                              <div className={`p-2 cursor-pointer flex items-center ${isModuleLocked(item, mInd) ? "opacity-50" : ""}`}>
                                 {isModuleCompleted(item) ? (
                                   <div
                                     className={`w-6.25 h-6.25  min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center`}>
                                     <AiOutlineCheck className="text-white" />
                                   </div>
-                                ) : (
-                                  <div
-                                    className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351]`}></div>
-                                )}
+                                ) : statusCircle(isModuleLocked(item, mInd))}
                                 <p
                                   className={`font-ryker text-sm text-[#163986] ml-2 ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
                                   onClick={() => selectCourseItem(item)}>
                                   {item.title}
                                 </p>
-                                {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
-                                "linear"
-                                  ? mInd > 0 &&
-                                    progress.filter(
-                                      (p) =>
-                                        p.activity_type === "module" &&
-                                        p.id_course_module ===
-                                          modules[mInd - 1].id,
-                                    ).length === 0 && (
-                                      <div className="flex justify-center items-center ml-4">
-                                        <RxLockClosed className="w-3.75 h-3.75" />
-                                      </div>
-                                    )
-                                  : null}
                               </div>
                             </div>
                           ),
@@ -1118,7 +1119,7 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
+                                  className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass} ${isListItemLocked(_t, _i, mInd) && !itemListExtras(_t).rowClass.includes("opacity-50") ? "opacity-50" : ""}`}>
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -1130,10 +1131,7 @@ const Learning = () => {
                                       className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
-                                  ) : (
-                                    <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
-                                  )}
+                                  ) : statusCircle(isListItemLocked(_t, _i, mInd), "shrink-0")}
                                   {_t.type === "test" && (
                                     <FaListCheck
                                       className={`${itemListExtras(_t).textClass} shrink-0 w-4 h-4 sm:w-5 sm:h-5`}
@@ -1144,43 +1142,6 @@ const Learning = () => {
                                     {_t.title}
                                   </p>
                                   {itemListExtras(_t).marker}
-                                  {freeLock(_t) && (
-                                    <div className="flex justify-center items-center ml-4">
-                                      <RxLockClosed className="w-3.75 h-3.75" />
-                                    </div>
-                                  )}
-                                  {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
-                                  "linear"
-                                    ? ((_i > 0 && mInd === 0) ||
-                                        (mInd > 0 && _i >= 0)) &&
-                                      progress.filter((p) =>
-                                        p.activity_type !== "enroll" &&
-                                        mInd > 0 &&
-                                        _i === 0
-                                          ? p.activity_type === "topic"
-                                            ? p.id_course_topic ===
-                                                modules[mInd - 1].items[
-                                                  modules[mInd - 1].items
-                                                    .length - 1
-                                                ]?.id && p.is_completed
-                                            : p.id_course_test ===
-                                                modules[mInd - 1].items[
-                                                  modules[mInd - 1].items
-                                                    .length - 1
-                                                ]?.id && p.is_completed
-                                          : p.activity_type === "topic"
-                                            ? p.id_course_topic ===
-                                                modules[mInd].items[_i - 1]
-                                                  ?.id && p.is_completed
-                                            : p.id_course_test ===
-                                                modules[mInd].items[_i - 1]
-                                                  ?.id && p.is_completed,
-                                      ).length === 0 && (
-                                        <div className="flex justify-center items-center ml-4">
-                                          <RxLockClosed className="w-3.75 h-3.75" />
-                                        </div>
-                                      )
-                                    : null}
                                 </div>
                               ))}
                             </div>
@@ -1269,7 +1230,7 @@ const Learning = () => {
                             key: item.id,
                             label: (
                               <div className="flex flex-col">
-                                <div className="p-2 cursor-pointer flex items-center">
+                                <div className={`p-2 cursor-pointer flex items-center ${isModuleLocked(item, mInd) ? "opacity-50" : ""}`}>
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -1282,10 +1243,7 @@ const Learning = () => {
                                       className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                       <AiOutlineCheck className="text-white" />
                                     </div>
-                                  ) : (
-                                    <div
-                                      className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
-                                  )}
+                                  ) : statusCircle(isModuleLocked(item, mInd), "shrink-0")}
                                   <p
                                     className={`font-ryker text-sm ml-2 text-[#163986] ${selectedCourseItem?.type && selectedCourseItem?.id_course_module === item.id ? "font-bold" : "font-medium"}`}
                                     onClick={(e) => {
@@ -1294,22 +1252,6 @@ const Learning = () => {
                                     }}>
                                     {item.title}
                                   </p>
-                                  {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
-                                  "linear"
-                                    ? mInd > 0 &&
-                                      progress.filter(
-                                        (p) =>
-                                          p.activity_type === "module" &&
-                                          p.id_course_module ===
-                                            modules[mInd - 1].id &&
-                                          p.is_completed === 1 &&
-                                          p.is_deleted !== 1,
-                                      ).length === 0 && (
-                                        <div className="flex justify-center items-center ml-4">
-                                          <RxLockClosed className="w-3.75 h-3.75" />
-                                        </div>
-                                      )
-                                    : null}
                                 </div>
                               </div>
                             ),
@@ -1318,7 +1260,7 @@ const Learning = () => {
                                 {item.items.map((_t, _i) => (
                                   <div
                                     onClick={() => selectCourseItem(_t)}
-                                    className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
+                                    className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass} ${isListItemLocked(_t, _i, mInd) && !itemListExtras(_t).rowClass.includes("opacity-50") ? "opacity-50" : ""}`}>
                                     {progress.length > 0 &&
                                     progress.filter(
                                       (p) =>
@@ -1331,10 +1273,7 @@ const Learning = () => {
                                         className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-[#2F8351] border border-[#2F8351] flex justify-center items-center shrink-0`}>
                                         <AiOutlineCheck className="text-white" />
                                       </div>
-                                    ) : (
-                                      <div
-                                        className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] shrink-0`}></div>
-                                    )}
+                                    ) : statusCircle(isListItemLocked(_t, _i, mInd), "shrink-0")}
                                     {_t.type === "test" && (
                                       <FaListCheck
                                         className={`${itemListExtras(_t).textClass} shrink-0 w-4 h-4 sm:w-5 sm:h-5`}
@@ -1345,49 +1284,6 @@ const Learning = () => {
                                       {_t.title}
                                     </p>
                                     {itemListExtras(_t).marker}
-                                    {freeLock(_t) && (
-                                      <div className="flex justify-center items-center ml-4">
-                                        <RxLockClosed className="w-3.75 h-3.75" />
-                                      </div>
-                                    )}
-                                    {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
-                                    "linear"
-                                      ? ((_i > 0 && mInd === 0) ||
-                                          (mInd > 0 && _i >= 0)) &&
-                                        progress.filter((p) =>
-                                          mInd > 0 && _i === 0
-                                            ? p.activity_type === "topic"
-                                              ? p.id_course_topic ===
-                                                  modules[mInd - 1].items[
-                                                    modules[mInd - 1].items
-                                                      .length - 1
-                                                  ]?.id &&
-                                                p.is_completed === 1 &&
-                                                p.is_deleted !== 1
-                                              : p.id_course_test ===
-                                                  modules[mInd - 1].items[
-                                                    modules[mInd - 1].items
-                                                      .length - 1
-                                                  ]?.id &&
-                                                p.is_completed === 1 &&
-                                                p.is_deleted !== 1
-                                            : p.activity_type === "topic"
-                                              ? p.id_course_topic ===
-                                                  modules[mInd].items[_i - 1]
-                                                    ?.id &&
-                                                p.is_completed === 1 &&
-                                                p.is_deleted !== 1
-                                              : p.id_course_test ===
-                                                  modules[mInd].items[_i - 1]
-                                                    ?.id &&
-                                                p.is_completed === 1 &&
-                                                p.is_deleted !== 1,
-                                        ).length === 0 && (
-                                          <div className="flex justify-center items-center ml-4">
-                                            <RxLockClosed className="w-3.75 h-3.75" />
-                                          </div>
-                                        )
-                                      : null}
                                   </div>
                                 ))}
                               </div>
