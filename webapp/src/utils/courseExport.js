@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { progressPercent } from "./percent";
 import { testsForStudent } from "./courseStatus";
 
 const parseJson = (value, fallback) => {
@@ -33,6 +32,12 @@ function testStats(test, tries) {
   return { settings, maxTries, parsed, passed, status, last: parsed[parsed.length - 1] ?? null, bestScore: scores.length ? Math.max(...scores) : null, firstPass: tries.find((p) => p.is_completed === 1) ?? null };
 }
 
+// "2/5" -> rácio de cumprimento (igual ao painel do curso)
+const ratio = (value) => {
+  const m = String(value ?? "").match(/^(\d+)\/(\d+)$/);
+  return m && Number(m[2]) > 0 ? Number(m[1]) / Number(m[2]) : null;
+};
+
 const formatSeconds = (seconds) => (seconds == null ? "" : seconds > 60 ? `${Math.floor(seconds / 60)} min ${seconds % 60} s` : `${seconds} s`);
 
 // Dados do export do painel de um curso (Relatórios de curso): uma linha por aluno com o estado, as datas, o progresso, os totais
@@ -40,7 +45,6 @@ const formatSeconds = (seconds) => (seconds == null ? "" : seconds > 60 ? `${Mat
 // `base` são as linhas já calculadas do painel (estado, datas, módulos/tópicos/testes).
 export function buildCourseStudentExport({ course, base, data, languages, t }) {
   const courseTests = (data.tests ?? []).filter((x) => x.id_course === course.id && x.is_deleted === 0);
-  const courseTopics = (data.topics ?? []).filter((x) => x.id_course === course.id);
   const activity = (data.activity ?? []).filter((a) => a.id_course === course.id && a.is_deleted === 0);
   const language = languages?.find((l) => l.id === course.id_lang)?.code?.toUpperCase() ?? "";
 
@@ -94,13 +98,12 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
 
   const rows = base.map((row) => {
     const userActivity = activity.filter((a) => a.id_user === row.ID);
-    const completed = (type, id) => userActivity.some((a) => a.activity_type === type && a.is_completed === 1 && a[`id_course_${type}`] === id);
     // Só os testes que o aluno vê (limite de países do teste); nos outros as colunas ficam vazias
     const studentTests = testsForStudent(courseTests, { country: row.country, id_role: 2 });
-    const topicsDone = courseTopics.filter((x) => completed("topic", x.id)).length;
-    const testsDone = studentTests.filter((x) => completed("test", x.id)).length;
-    const totalItems = courseTopics.length + studentTests.length;
-    const progress = totalItems > 0 ? progressPercent(((topicsDone + testsDone) * 100) / totalItems) : 0;
+    // Progresso igual ao do painel: 100% só para quem concluiu o curso; senão a média do que concluiu em módulos, tópicos e testes
+    // (só os que o curso tem), no máximo 99%
+    const parts = [row.nr_modules, row.nr_topics, row.nr_tests].map(ratio).filter((v) => v !== null);
+    const progress = row.status === t("Approved") ? 100 : parts.length ? Math.min(99, Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100)) : 0;
     const lastActivity = userActivity.map((a) => a.created_at).sort().pop();
     const startedRaw = userActivity.map((a) => a.created_at).sort()[0];
     const endedRaw = userActivity.find((a) => a.activity_type === "course" && a.is_completed === 1)?.created_at;
@@ -131,9 +134,17 @@ export function buildCourseStudentExport({ course, base, data, languages, t }) {
       out[`${k}_passing`] = `${stats.settings?.passing_score ?? 75}%`;
       out[`${k}_last_date`] = fmtDate(stats.last?.row.created_at);
       out[`${k}_passed_date`] = fmtDate(stats.firstPass?.created_at);
+      // Tentativas antigas sem posição gravada: emparelha pelo título e pelas mesmas opções, cada item uma só vez
+      const used = new Set();
+      const options = (answers) => JSON.stringify((answers || []).map((a) => a?.title).sort());
       questions.forEach((q, qi) => {
-        // A pergunta da última tentativa: pelo título (a ordem pode ser aleatória) e, em último caso, pela posição
-        const item = stats.last?.items.find((i) => i.title === q.title) ?? stats.last?.items[qi];
+        // A pergunta da última tentativa pela posição original no teste (a ordem pode ser aleatória e os títulos repetidos)
+        const items = stats.last?.items ?? [];
+        const item =
+          items.find((i) => i.position === qi) ??
+          items.find((i) => i.position === undefined && !used.has(i) && i.title === q.title && options(i.answer) === options(q.answer)) ??
+          items.find((i) => i.position === undefined && !used.has(i) && i.title === q.title);
+        if (item) used.add(item);
         out[`${k}_q${qi}_result`] = item ? (item.is_correct ? t("Correct") : t("Incorrect")) : "";
         out[`${k}_q${qi}_answer`] = item ? asText(item.myAnswer) : "";
       });

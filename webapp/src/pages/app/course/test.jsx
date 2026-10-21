@@ -34,6 +34,9 @@ import { floorPercent } from "../../../utils/percent";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
 // Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
+// Campo do formulário de cada pergunta pela sua posição no teste (perguntas com o mesmo título não podem partilhar a resposta)
+const fieldKey = (question) => `q${question?.index}`;
+
 function evaluateQuestion(question, answer) {
   const correct = (question?.answer || []).filter((a) => a.is_correct);
   if (correct.length === 0) return null;
@@ -45,9 +48,12 @@ function evaluateQuestion(question, answer) {
         ? answer === correct[0].title
         : correct.every((c) => answer.includes(c.title));
   }
+  // A posição original da pergunta no teste fica gravada (position): identifica a pergunta mesmo com títulos repetidos
+  const { index, ...rest } = question;
   return {
     is_correct,
-    ...question,
+    ...rest,
+    position: index,
     myAnswer: answered ? answer : correct.length > 1 ? [] : null,
     ...(answered ? {} : { unanswered: true }),
   };
@@ -120,7 +126,7 @@ const Test = ({
 
   // Escolha única guarda uma string; escolha múltipla guarda um array (precisa de pelo menos uma opção)
   function isQuestionAnswered(question) {
-    const answer = form.getFieldValue([question?.title, "answer"]);
+    const answer = form.getFieldValue([fieldKey(question), "answer"]);
     return Array.isArray(answer) ? answer.length > 0 : !!answer;
   }
 
@@ -267,11 +273,9 @@ const Test = ({
     let aux = Object.assign({}, selectedCourseItem);
     aux.settings = aux.settings ? JSON.parse(aux.settings) : {};
 
-    aux.question = aux.question
-      ? aux.settings?.randomize_questions
-        ? shuffleArray(JSON.parse(aux.question))
-        : JSON.parse(aux.question)
-      : [];
+    // Cada pergunta guarda a sua posição original (antes de baralhar) para identificar o campo da resposta
+    const questions = aux.question ? JSON.parse(aux.question).map((q, index) => ({ ...q, index })) : [];
+    aux.question = aux.settings?.randomize_questions ? shuffleArray(questions) : questions;
     for (let i = 0; i < aux.question.length; i++) {
       if (aux.question[i].answer && aux.question[i].answer.length > 0) {
         aux.question[i].answer = aux.settings?.randomize_answers
@@ -326,7 +330,7 @@ const Test = ({
   function finishByTimeUp() {
     const values = form.getFieldsValue(true) || {};
     const items = (data.question || [])
-      .map((q) => evaluateQuestion(q, values[q.title]?.answer))
+      .map((q) => evaluateQuestion(q, values[fieldKey(q)]?.answer))
       .filter(Boolean);
     const auxResult = {
       items,
@@ -400,20 +404,17 @@ const Test = ({
       }
 
       setIsCalculating(true);
-      const questions = Object.keys(values);
+      const questions = data.question;
 
       let index = 0;
       let auxResult = [];
 
       const interval = setInterval(() => {
         if (index < questions.length) {
-          if (values[questions[index]]) {
-            const auxQuestion = data.question.find(
-              (q) => q.title === questions[index],
-            );
+          if (values[fieldKey(questions[index])]) {
             const evaluated = evaluateQuestion(
-              auxQuestion,
-              values[questions[index]].answer,
+              questions[index],
+              values[fieldKey(questions[index])].answer,
             );
             if (evaluated) auxResult.push(evaluated);
           }
@@ -869,7 +870,7 @@ const Test = ({
                               1 ? (
                                 <div>
                                   <Form.Item
-                                    name={[q.title, "answer"]}
+                                    name={[fieldKey(q), "answer"]}
                                     className="mb-0! test-form-item-multiple"
                                     valuePropName="checked">
                                     <Checkbox.Group
@@ -886,24 +887,24 @@ const Test = ({
                                         prevValues,
                                         currentValues,
                                       ) =>
-                                        prevValues[q.title] !==
-                                        currentValues[q.title]
+                                        prevValues[fieldKey(q)] !==
+                                        currentValues[fieldKey(q)]
                                       }>
                                       {({ getFieldValue }) => (
                                         <Form.Item
-                                          name={[q.title, "answer"]}
+                                          name={[fieldKey(q), "answer"]}
                                           className="mb-0! test-form-item">
                                           <Checkbox
                                             key={a.title}
                                             checked={
                                               getFieldValue([
-                                                q.title,
+                                                fieldKey(q),
                                                 "answer",
                                               ]) === a.title
                                             }
                                             onChange={() =>
                                               form.setFieldValue(
-                                                [q.title, "answer"],
+                                                [fieldKey(q), "answer"],
                                                 a.title,
                                               )
                                             }>
@@ -922,8 +923,8 @@ const Test = ({
                       <Form.Item
                         noStyle
                         shouldUpdate={(prevValues, currentValues) =>
-                          prevValues[data.question[currentQuestion].title] !==
-                          currentValues[data.question[currentQuestion].title]
+                          prevValues[fieldKey(data.question[currentQuestion])] !==
+                          currentValues[fieldKey(data.question[currentQuestion])]
                         }>
                         {() => {
                           const isLastQuestion =
