@@ -70,8 +70,10 @@ export default function Faqs() {
 				</div>
 			) : data && data.length > 0 ? (
 				<div className="w-full flex flex-col justify-center items-center">
+					{/* Acordeão: só uma resposta aberta de cada vez (estilos em .collapse-faqs, index.css) */}
 					<Collapse
-						className="w-full collapse-accordion"
+						className="w-full collapse-accordion collapse-faqs"
+						accordion
 						size="large"
 						bordered={false}
 						items={data.map((n) => {
@@ -79,10 +81,11 @@ export default function Faqs() {
 							if (n.images && typeof n.images === "string") n.images = JSON.parse(n.images);
 							return {
 								key: n.id,
-								label: <p className="font-ryker text-xs sm:text-sm md:text-base">{n.title}</p>,
+								label: <p className="font-ryker leading-snug text-[14px] sm:text-[15px]">{n.title}</p>,
 								children: (
 									<div className="flex gap-4 lg:gap-8 w-full flex-wrap lg:flex-nowrap">
-										<div className="text-xs sm:text-sm md:text-base" dangerouslySetInnerHTML={{ __html: n.description }} />
+										{/* Resposta mais pequena que a pergunta: tamanhos em .faq-answer (index.css) */}
+										<div className="faq-answer" dangerouslySetInnerHTML={{ __html: n.description }} />
 										{n.images && n.images.length > 0 && (
 											<div className="flex flex-col gap-4 max-w-[240px]">
 												{n.images.map((im) => (

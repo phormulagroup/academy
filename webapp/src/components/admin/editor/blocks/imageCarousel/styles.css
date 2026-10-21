@@ -258,12 +258,18 @@
   gap: 16px;
 }
 
-.bial-carousel.is-fullscreen .bial-carousel-arrow {
-  width: 26px;
-  height: 26px;
-  font-size: 14px;
-  box-shadow: none;
-  background: rgba(255, 255, 255, 0.9);
+/* No ecrã inteiro as setas passam para as laterais do slide (ver .fs-side-arrow) */
+.bial-carousel.is-fullscreen .bial-carousel-nav .bial-carousel-arrow {
+  display: none;
+}
+
+/* Setas laterais (só no ecrã inteiro): estilo partilhado .fs-side-arrow em index.css (também nos documentos) */
+
+/* Contador do slide no ecrã inteiro, na barra de baixo ao lado do switch */
+.bial-carousel-fs-counter {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .bial-carousel.is-fullscreen .bial-carousel-fullscreen {

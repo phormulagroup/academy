@@ -19,15 +19,24 @@ import { PiCalendarXDuotone, PiHourglassMediumDuotone } from "react-icons/pi";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
-import { isTestFailed, parseSettings, testDateState } from "../../../utils/courseStatus";
+import {
+  isTestFailed,
+  parseSettings,
+  testDateState,
+  lockedDescription,
+} from "../../../utils/courseStatus";
 import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
 import { hasFullAccess } from "../../../utils/roles";
+import { floorPercent } from "../../../utils/percent";
 
 // Avalia a resposta a uma pergunta (mesma regra do envio normal). Sem resposta conta como errada.
 // Devolve null quando a pergunta não tem resposta correta definida (não conta para a nota).
+// Campo do formulário de cada pergunta pela sua posição no teste (perguntas com o mesmo título não podem partilhar a resposta)
+const fieldKey = (question) => `q${question?.index}`;
+
 function evaluateQuestion(question, answer) {
   const correct = (question?.answer || []).filter((a) => a.is_correct);
   if (correct.length === 0) return null;
@@ -39,9 +48,12 @@ function evaluateQuestion(question, answer) {
         ? answer === correct[0].title
         : correct.every((c) => answer.includes(c.title));
   }
+  // A posição original da pergunta no teste fica gravada (position): identifica a pergunta mesmo com títulos repetidos
+  const { index, ...rest } = question;
   return {
     is_correct,
-    ...question,
+    ...rest,
+    position: index,
     myAnswer: answered ? answer : correct.length > 1 ? [] : null,
     ...(answered ? {} : { unanswered: true }),
   };
@@ -53,7 +65,7 @@ function TestDateNotice({ type, date, t }) {
   const Icon = expired ? PiCalendarXDuotone : PiHourglassMediumDuotone;
   return (
     <div
-      className={`flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white ${expired ? "bg-[#8B9CC3]" : "bg-[#00B9D6]"}`}>
+      className={`flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white ${expired ? "bg-[#8B9CC3]" : "bg-[#FF7D5A]"}`}>
       <Icon className="shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
       <div className="min-w-0">
         <p className="font-ryker font-bold leading-tight text-[14px] sm:text-[16px] lg:text-[18px]">
@@ -85,6 +97,10 @@ const Test = ({
   onInProgressChange,
   // Elemento fixo no fundo do eLearning onde fica a navegação entre perguntas durante o teste
   footerSlot,
+  // Navegação livre: item a seguir a um ainda por concluir (mostra só o bloqueado)
+  forceLocked,
+  // Navegação livre: o que falta concluir ("topic", "test" ou "steps"), para o texto do bloqueio
+  lockedBy,
 }) => {
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
@@ -92,6 +108,8 @@ const Test = ({
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
+  // Tentativa acabada de fazer, enquanto é gravada: conta logo no resultado (tentativas e se ainda pode repetir)
+  const [pendingAttempt, setPendingAttempt] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [calculate, setCalculate] = useState({});
   const [isCalculating, setIsCalculating] = useState(false);
@@ -108,7 +126,7 @@ const Test = ({
 
   // Escolha única guarda uma string; escolha múltipla guarda um array (precisa de pelo menos uma opção)
   function isQuestionAnswered(question) {
-    const answer = form.getFieldValue([question?.title, "answer"]);
+    const answer = form.getFieldValue([fieldKey(question), "answer"]);
     return Array.isArray(answer) ? answer.length > 0 : !!answer;
   }
 
@@ -220,7 +238,12 @@ const Test = ({
       if (failedResult) setResult(failedResult);
     }
 
-    if (course.settings && course.settings.progression_type === "linear") {
+    // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (teste já aprovado não fica bloqueado)
+    if (forceLocked && !hasFullAccess(user) && completedTest.length === 0)
+      setIsTopicLocked(lockedBy || "topic");
+
+    // Teste já aprovado (com o visto) nunca fica bloqueado
+    if (course.settings && course.settings.progression_type === "linear" && completedTest.length === 0) {
       let findIndex = allItems.findIndex(
         (i) =>
           i.id === selectedCourseItem.id && i.type === selectedCourseItem.type,
@@ -231,30 +254,28 @@ const Test = ({
           (p) =>
             p.is_completed === 1 &&
             p.is_deleted !== 1 &&
-            ((p.activity_type === "topic" &&
-              p.id_course_topic === previousItem.id) ||
-              (p.activity_type === "test" &&
-                p.id_course_test === previousItem.id)),
+            // Mesmo tipo que o item anterior: tópicos e testes são tabelas diferentes e os ids podem coincidir
+            p.activity_type === previousItem.type &&
+            p[`id_course_${previousItem.type}`] === previousItem.id,
         ).length;
 
         if (previousCompleted > 0) {
           setIsTopicLocked(false);
         } else {
-          setIsTopicLocked(true);
+          // Guarda o tipo do item anterior, para o texto do bloqueio (tópico ou teste anterior)
+          setIsTopicLocked(previousItem.type);
         }
       }
     }
-  }, [selectedCourseItem]);
+  }, [selectedCourseItem, forceLocked, lockedBy]);
 
   function prepareData() {
     let aux = Object.assign({}, selectedCourseItem);
     aux.settings = aux.settings ? JSON.parse(aux.settings) : {};
 
-    aux.question = aux.question
-      ? aux.settings?.randomize_questions
-        ? shuffleArray(JSON.parse(aux.question))
-        : JSON.parse(aux.question)
-      : [];
+    // Cada pergunta guarda a sua posição original (antes de baralhar) para identificar o campo da resposta
+    const questions = aux.question ? JSON.parse(aux.question).map((q, index) => ({ ...q, index })) : [];
+    aux.question = aux.settings?.randomize_questions ? shuffleArray(questions) : questions;
     for (let i = 0; i < aux.question.length; i++) {
       if (aux.question[i].answer && aux.question[i].answer.length > 0) {
         aux.question[i].answer = aux.settings?.randomize_answers
@@ -309,7 +330,7 @@ const Test = ({
   function finishByTimeUp() {
     const values = form.getFieldsValue(true) || {};
     const items = (data.question || [])
-      .map((q) => evaluateQuestion(q, values[q.title]?.answer))
+      .map((q) => evaluateQuestion(q, values[fieldKey(q)]?.answer))
       .filter(Boolean);
     const auxResult = {
       items,
@@ -322,7 +343,7 @@ const Test = ({
     setReview(false);
     setFinished(true);
 
-    const passingScore = data.settings?.passing_score ?? 80;
+    const passingScore = data.settings?.passing_score ?? 75;
     const percentage =
       items.length > 0
         ? (items.filter((r) => r.is_correct).length * 100) / items.length
@@ -383,20 +404,17 @@ const Test = ({
       }
 
       setIsCalculating(true);
-      const questions = Object.keys(values);
+      const questions = data.question;
 
       let index = 0;
       let auxResult = [];
 
       const interval = setInterval(() => {
         if (index < questions.length) {
-          if (values[questions[index]]) {
-            const auxQuestion = data.question.find(
-              (q) => q.title === questions[index],
-            );
+          if (values[fieldKey(questions[index])]) {
             const evaluated = evaluateQuestion(
-              auxQuestion,
-              values[questions[index]].answer,
+              questions[index],
+              values[fieldKey(questions[index])].answer,
             );
             if (evaluated) auxResult.push(evaluated);
           }
@@ -417,7 +435,7 @@ const Test = ({
           clearInterval(interval);
           setIsCalculating(false);
 
-          let passingScore = data.settings?.passing_score ?? 80;
+          let passingScore = data.settings?.passing_score ?? 75;
 
           if (
             (auxResult.filter((r) => r.is_correct).length * 100) /
@@ -463,6 +481,7 @@ const Test = ({
       },
     ];
 
+    setPendingAttempt(auxData[0]);
     axios
       .post(endpoints.course.updateProgress, {
         data: auxData,
@@ -472,7 +491,8 @@ const Test = ({
       })
       .catch((err) => {
         console.log(err);
-      });
+      })
+      .finally(() => setPendingAttempt(null));
   }
 
   return (
@@ -504,9 +524,7 @@ const Test = ({
           {isTopicLocked ? (
             <LockedMessage
               title={t("This test is locked")}
-              description={t(
-                "You'll need to complete the previous topic first",
-              )}
+              description={lockedDescription(t, isTopicLocked)}
             />
           ) : (
             Object.keys(data).length > 0 && (
@@ -576,13 +594,17 @@ const Test = ({
                       const totalQuestions = result.items?.length || 1;
                       const percentage =
                         (correctAnswers * 100) / totalQuestions;
-                      const passingScore = data.settings?.passing_score ?? 80;
+                      const passingScore = data.settings?.passing_score ?? 75;
                       const isApproved = percentage >= passingScore;
                       // Mesma regra dos relatórios (utils/courseStatus): só há limite de tentativas quando
                       // retries_allowed está definido; sem limite pode repetir sempre
+                      const attemptsProgress = pendingAttempt
+                        ? [...progress, pendingAttempt]
+                        : progress;
                       const canStillRetry =
                         !isApproved &&
-                        !isTestFailed(progress, selectedCourseItem);
+                        // A equipa (Admin) pode sempre repetir o teste
+                        (isAdmin || !isTestFailed(attemptsProgress, selectedCourseItem));
                       const statusLabel = isApproved
                         ? t("Approved")
                         : canStillRetry
@@ -637,7 +659,7 @@ const Test = ({
                               className={`text-[14px] sm:text-[16px] ${result.timeUp ? "mt-1" : "mt-4"}`}>
                               <b>{t("Your tries")}:</b>{" "}
                               {
-                                progress.filter(
+                                attemptsProgress.filter(
                                   (p) =>
                                     p.activity_type === "test" &&
                                     p.is_deleted !== 1 &&
@@ -651,7 +673,7 @@ const Test = ({
                             </p>
                             <p className="mt-4">{t("Your percentage")}:</p>
                             <p className="mb-4 text-[24px] font-bold">
-                              {percentage.toFixed(2)}%
+                              {floorPercent(percentage)}%
                             </p>
                             {!isApproved && (
                               <p className="text-center text-[14px] text-[#666]">
@@ -848,7 +870,7 @@ const Test = ({
                               1 ? (
                                 <div>
                                   <Form.Item
-                                    name={[q.title, "answer"]}
+                                    name={[fieldKey(q), "answer"]}
                                     className="mb-0! test-form-item-multiple"
                                     valuePropName="checked">
                                     <Checkbox.Group
@@ -865,24 +887,24 @@ const Test = ({
                                         prevValues,
                                         currentValues,
                                       ) =>
-                                        prevValues[q.title] !==
-                                        currentValues[q.title]
+                                        prevValues[fieldKey(q)] !==
+                                        currentValues[fieldKey(q)]
                                       }>
                                       {({ getFieldValue }) => (
                                         <Form.Item
-                                          name={[q.title, "answer"]}
+                                          name={[fieldKey(q), "answer"]}
                                           className="mb-0! test-form-item">
                                           <Checkbox
                                             key={a.title}
                                             checked={
                                               getFieldValue([
-                                                q.title,
+                                                fieldKey(q),
                                                 "answer",
                                               ]) === a.title
                                             }
                                             onChange={() =>
                                               form.setFieldValue(
-                                                [q.title, "answer"],
+                                                [fieldKey(q), "answer"],
                                                 a.title,
                                               )
                                             }>
@@ -901,8 +923,8 @@ const Test = ({
                       <Form.Item
                         noStyle
                         shouldUpdate={(prevValues, currentValues) =>
-                          prevValues[data.question[currentQuestion].title] !==
-                          currentValues[data.question[currentQuestion].title]
+                          prevValues[fieldKey(data.question[currentQuestion])] !==
+                          currentValues[fieldKey(data.question[currentQuestion])]
                         }>
                         {() => {
                           const isLastQuestion =

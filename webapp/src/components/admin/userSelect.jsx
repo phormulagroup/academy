@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Select, Spin } from "antd";
+import { Select, Spin, Tag, Tooltip } from "antd";
 import { useTranslation } from "react-i18next";
 
 import endpoints from "../../utils/endpoints";
@@ -10,8 +10,9 @@ const label = (u) => `${u.name} (${u.email})`;
 
 // Seletor de pessoas com pesquisa no servidor (em vez de carregar todos os utilizadores): escreve-se e aparecem até 30 resultados.
 // `value`: ids escolhidos (modo múltiplo) ou um id; `known`: pessoas já conhecidas ({ id, name, email }) para mostrar o nome de quem
-// já está escolhido; `excludeIds`: não mostra estas pessoas nos resultados; `idLang`: limita a um idioma.
-export default function UserSelect({ value, onChange, known = [], excludeIds = [], idLang, multiple = true, placeholder, className = "w-full", size = "large" }) {
+// já está escolhido; `excludeIds`: não mostra estas pessoas nos resultados; `idLang`: limita a um idioma; `countries`: limita a estes
+// países (curso com limite de países) e assinala, sem as retirar, as pessoas já escolhidas que são de outro país.
+export default function UserSelect({ value, onChange, known = [], excludeIds = [], idLang, countries = null, multiple = true, placeholder, className = "w-full", size = "large" }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -24,12 +25,14 @@ export default function UserSelect({ value, onChange, known = [], excludeIds = [
   const knownKey = known.map((u) => u.id).join(",");
   useEffect(() => remember(known), [knownKey]);
 
+  const countriesKey = countries?.length ? countries.join("|") : "";
+
   // Pesquisa (também com a caixa vazia: as primeiras pessoas por nome)
   useEffect(() => {
     const request = ++requestRef.current;
     setIsLoading(true);
     axios
-      .get(endpoints.user.search, { params: { q, id_lang: idLang } })
+      .get(endpoints.user.search, { params: { q, id_lang: idLang, countries: countries?.length ? countries : undefined } })
       .then((res) => {
         if (request !== requestRef.current) return;
         setResults(res.data);
@@ -37,7 +40,7 @@ export default function UserSelect({ value, onChange, known = [], excludeIds = [
       })
       .catch(() => {})
       .finally(() => request === requestRef.current && setIsLoading(false));
-  }, [q, idLang]);
+  }, [q, idLang, countriesKey]);
 
   // Quem já estava escolhido mas não veio nos resultados: pede os nomes por id
   const selected = multiple ? value || [] : value ? [value] : [];
@@ -56,6 +59,23 @@ export default function UserSelect({ value, onChange, known = [], excludeIds = [
     return [...byId.values()].map((u) => ({ value: u.id, label: label(u) }));
   }, [results, loaded, selectedKey, excludeKey]);
 
+  // Pessoa já escolhida que não é de nenhum dos países do limite: fica na lista, mas assinalada (não vê o curso)
+  const isOutside = (id) => countries?.length > 0 && loaded[id] && "country" in loaded[id] && !countries.includes(loaded[id].country);
+  const tagRender = ({ value: id, label: tagLabel, closable, onClose }) => {
+    const outside = isOutside(id);
+    const tag = (
+      <Tag
+        color={outside ? "warning" : undefined}
+        closable={closable}
+        onClose={onClose}
+        onMouseDown={(e) => e.preventDefault()}
+        className="my-0.5! me-1!">
+        {tagLabel}
+      </Tag>
+    );
+    return outside ? <Tooltip title={t("This user is not from the countries of this course and will not see it")}>{tag}</Tooltip> : tag;
+  };
+
   return (
     <Select
       mode={multiple ? "multiple" : undefined}
@@ -68,6 +88,7 @@ export default function UserSelect({ value, onChange, known = [], excludeIds = [
       value={value}
       onChange={onChange}
       onSearch={setSearch}
+      tagRender={multiple && countries?.length ? tagRender : undefined}
       onOpenChange={(open) => !open && setSearch("")}
       notFoundContent={isLoading ? <Spin size="small" /> : t("No users found")}
       options={options}

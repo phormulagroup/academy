@@ -12,9 +12,9 @@ function ObjectionTitle({ form, path, index }) {
   const { t } = useTranslation();
   const title = Form.useWatch(path, form);
   return (
-    <span className="flex items-center gap-2 min-w-0">
+    <span className="flex min-w-0 items-baseline gap-2">
       <span className="shrink-0 text-[12px] text-[#8A8D98]">{index}.</span>
-      <span className={`truncate font-semibold ${title ? "" : "text-[#8A8D98] font-normal italic"}`}>{title || t("Untitled objection")}</span>
+      <span className={`min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] font-semibold ${title ? "" : "text-[#8A8D98] font-normal italic"}`}>{title || t("Untitled objection")}</span>
     </span>
   );
 }
@@ -97,6 +97,8 @@ export default function ObjectionBooks({ form }) {
                         {items.length > 0 && (
                           <Collapse
                             bordered
+                            // Títulos longos quebram de linha: o título encolhe (min-w-0) e o ícone de apagar fica dentro do cartão, à direita
+                            className="min-w-0 [&_.ant-collapse-header]:items-start! [&_.ant-collapse-title]:min-w-0 [&_.ant-collapse-extra]:shrink-0"
                             activeKey={openKeys(book.key)}
                             onChange={(keys) => toggle(book.key, [].concat(keys))}
                             items={items.map((item, itemIndex) => ({

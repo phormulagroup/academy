@@ -2,17 +2,30 @@ import { useState } from "react";
 import { Badge, Button, Progress, Tabs, Tag } from "antd";
 import dayjs from "dayjs";
 import { LuAward, LuCalendar, LuChevronDown, LuClipboardList, LuCloudDownload, LuLayers, LuListChecks } from "react-icons/lu";
+import { PiCalendarBlank, PiHourglassMedium } from "react-icons/pi";
 import { useTranslation } from "react-i18next";
 
 import config from "../../../utils/config";
 import { courseStats } from "../../../utils/userResults";
+import { timeUntil } from "../../../utils/courseStatus";
 import ModuleProgress from "./moduleProgress";
-import TestResult from "./testResult";
+import TestResult from "./testResult";
+import { progressPercent } from "../../../utils/percent";
 
+// Estado do aluno no curso: aprovado (100%), reprovado (esgotou as tentativas de um teste), em curso ou por iniciar
 const STATUS = {
-  completed: { label: "Completed", color: "green" },
+  completed: { label: "Approved", color: "green" },
+  failed: { label: "Failed", color: "red" },
   in_progress: { label: "In progress", color: "blue" },
   not_started: { label: "Not started", color: "default" },
+};
+
+// Borda como no catálogo: aprovado verde, reprovado vermelho, expirado azul do CTA, por abrir laranja Bial
+const BORDER = {
+  completed: "border-[#2F8351] bg-[#2F8351]/5",
+  failed: "border-[#DB0709] bg-[#DB0709]/5",
+  expired: "border-[#00B9D6] bg-[#00B9D6]/5",
+  upcoming: "border-[#FF7D5A] bg-[#FF7D5A]/5",
 };
 
 const Tile = ({ icon, label, value }) => (
@@ -26,21 +39,45 @@ const Tile = ({ icon, label, value }) => (
 );
 
 // Resultado de um aluno num curso: cabeçalho com estado e progresso e, ao abrir, resumo, progresso por módulo e testes
-export default function CourseResult({ course, student, onChange, onDownloadCertificate }) {
+export default function CourseResult({ course, student, onChange, onDownloadCertificate, open: openProp, onToggle }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  // Controlado pela lista (acordeão: abrir um resultado fecha os outros); sem props, estado próprio
+  const [openLocal, setOpenLocal] = useState(false);
+  const open = openProp ?? openLocal;
+  const toggle = () => (onToggle ? onToggle(!open) : setOpenLocal((v) => !v));
   const stats = courseStats(course);
-  const status = STATUS[stats.status];
-  // Curso concluído: borda e fundo verdes, como no perfil do aluno
-  const isCompleted = stats.status === "completed";
+  const statusKey = stats.status !== "completed" && course.isFailed ? "failed" : stats.status;
+  const status = STATUS[statusKey];
+  const isCompleted = statusKey === "completed";
   const tests = course.allItems.filter((i) => i.type === "test");
   const date = (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "-");
+  const dates = course.course.settings?.course_access_expiration_dates || {};
+  const border = BORDER[course.dateState] || BORDER[statusKey] || "border-[#E5E7EB] bg-white";
+
+  // Aviso ao Admin: o curso expirou ou ainda não abriu, por isso o aluno não o vê no catálogo (pode na mesma marcar como concluído)
+  const dateNotice =
+    course.dateState === "expired" ? (
+      <span className="course-card-date-inline">
+        <PiHourglassMedium className="shrink-0" />
+        <span className="font-ryker font-bold uppercase">{t("Expired")}</span>
+        {dates.end_date && <span>· {t("Ended on")} {date(dates.end_date)}</span>}
+      </span>
+    ) : course.dateState === "upcoming" ? (
+      <span className="course-card-date-inline course-card-date-inline-upcoming">
+        <PiCalendarBlank className="shrink-0" />
+        <span className="font-ryker font-bold uppercase">{t("Coming soon")}</span>
+        <span>
+          · {t("Opens to students in {{time}}", { time: timeUntil(dates.start_date) })} · {date(dates.start_date)}
+        </span>
+      </span>
+    ) : null;
 
   return (
-    <div className={`overflow-hidden rounded-[16px] border border-solid ${isCompleted ? "border-[#2F8351] bg-[#2F8351]/5" : "border-[#E5E7EB] bg-white"}`}>
-      <div role="button" tabIndex={0} onClick={() => setOpen((v) => !v)} onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)} className={`flex cursor-pointer flex-wrap items-center gap-4 p-4 ${isCompleted ? "hover:bg-[#2F8351]/10" : "hover:bg-[#FAFBFD]"}`}>
-        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC]">
-          {course.course.thumbnail && <img src={`${config.server_ip}/media/${course.course.thumbnail}`} alt="" className="h-full w-full object-cover" />}
+    <div className={`overflow-hidden rounded-[16px] border border-solid ${border}`}>
+      <div role="button" tabIndex={0} onClick={toggle} onKeyDown={(e) => e.key === "Enter" && toggle()} className="flex cursor-pointer flex-wrap items-center gap-4 p-4 hover:bg-black/[0.02]">
+        {/* Miniaturas 800x600: caixa 4:3, a imagem não é cortada; expirado a cinzento como no catálogo */}
+        <div className="aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-[10px] bg-[#E6F9FC]">
+          {course.course.thumbnail && <img src={`${config.server_ip}/media/${course.course.thumbnail}`} alt="" className={`h-full w-full object-cover ${course.dateState === "expired" ? "grayscale" : ""}`} />}
         </div>
         <div className="min-w-[200px] flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -48,11 +85,12 @@ export default function CourseResult({ course, student, onChange, onDownloadCert
             <Tag color={status.color} className="m-0!">
               {t(status.label)}
             </Tag>
+            {dateNotice}
           </div>
-          <p className="mb-2! text-[12px] text-[#8A8D98]">{stats.lastActivity ? `${t("Last activity at")} ${dayjs(stats.lastActivity).format("DD/MM/YYYY HH:mm")}` : t("Not started")}</p>
+          <p className="mb-2! text-[12px] text-[#8A8D98]">{stats.lastActivity && statusKey !== "not_started" ? `${t("Last activity at")} ${dayjs(stats.lastActivity).format("DD/MM/YYYY HH:mm")}` : t("Not started")}</p>
           <div className="flex items-center gap-3">
-            <Progress percent={stats.percent} showInfo={false} strokeColor="#2F8351" railColor="#EAEAEA" className="max-w-[320px]!" size="small" />
-            <span className={`text-[12px] font-bold whitespace-nowrap ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{stats.percent}%</span>
+            <Progress percent={stats.percent} showInfo={false} strokeColor={statusKey === "failed" ? "#DB0709" : "#2F8351"} railColor="#EAEAEA" className="max-w-[320px]!" size="small" />
+            <span className={`text-[12px] font-bold whitespace-nowrap ${stats.percent === 100 ? "text-[#2F8351]" : "text-[#5B5F6B]"}`}>{progressPercent(stats.percent)}%</span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -91,7 +129,16 @@ export default function CourseResult({ course, student, onChange, onDownloadCert
                   </div>
                 ),
               },
-              { key: "progress", label: t("Progress"), children: <ModuleProgress course={course} student={student} onChange={onChange} /> },
+              {
+                key: "progress",
+                label: t("Progress"),
+                children: (
+                  <>
+                    {dateNotice && <div className="mb-4">{dateNotice}</div>}
+                    <ModuleProgress course={course} student={student} onChange={onChange} />
+                  </>
+                ),
+              },
               {
                 key: "tests",
                 label: (

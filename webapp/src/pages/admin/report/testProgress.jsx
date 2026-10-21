@@ -3,7 +3,9 @@ import { Button, Empty, Select, Skeleton, Switch, Tag } from "antd";
 import { LuBookOpen, LuChevronDown, LuCircleCheck, LuPill, LuUsers } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
-import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
+import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
+import { roundPercent } from "../../../utils/percent";
+import { testsForStudent } from "../../../utils/courseStatus";
 
 // Nº de países visíveis por idioma antes do "Mostrar tudo"
 const COUNTRIES_PREVIEW = 5;
@@ -103,10 +105,17 @@ function computeStats(obj, courses, languages) {
     }
   });
 
-  // Testes dos cursos sem nenhuma tentativa de qualquer aluno
-  const testsWithAttempts = new Set(Object.values(attemptsByKey).map((a) => a[0].id_course_test));
+  // Não iniciado: alunos do público de cada teste (países do curso ou, sem limite, o idioma do curso; e o limite de países do teste)
+  // sem nenhuma tentativa — a mesma regra do relatório de testes. Conta cada aluno + teste, como os outros estados.
   (obj.tests || []).forEach((test) => {
-    if (test.is_deleted !== 1 && courseIds.has(test.id_course) && !testsWithAttempts.has(test.id)) counts.notStarted += 1;
+    const course = courses.find((c) => c.id === test.id_course);
+    if (test.is_deleted === 1 || !course) return;
+    const cs = parseJson(course.settings, {}) || {};
+    const courseLimit = cs.country_limit ? cs.country || [] : null;
+    users.forEach((u) => {
+      const inAudience = (courseLimit ? courseLimit.includes(u.country) : u.id_lang === course.id_lang) && testsForStudent([test], u).length > 0;
+      if (inAudience && !attemptsByKey[`${u.id}_${test.id}`]) counts.notStarted += 1;
+    });
   });
 
   const avgByLang = (languages || []).map((lang) => ({
@@ -125,7 +134,8 @@ function computeStats(obj, courses, languages) {
     .map((c) => ({ id: c.id, name: c.internal_name || c.name, count: byCourse[c.id]?.count || 0, avgScore: byCourse[c.id] ? byCourse[c.id].total / byCourse[c.id].count : 0 }))
     .sort((a, b) => b.avgScore - a.avgScore);
 
-  const evaluated = counts.approved + counts.notApproved;
+  // Taxa de aprovação: aprovados entre todos os que tentaram o teste (aprovados, em progresso e reprovados)
+  const evaluated = counts.approved + counts.inProgress + counts.notApproved;
   return {
     counts,
     buckets,
@@ -152,7 +162,7 @@ function ScoreBar({ label, value, hasData, flag, bold }) {
       <div className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-[#E8ECF4]">
         <div className="h-full rounded-full" style={{ width: `${hasData ? Math.max(value, 1) : 0}%`, backgroundColor: bold ? "#163986" : "#00B9D6" }} />
       </div>
-      <span className={`w-14 min-w-14 text-right text-[13px] sm:w-16 sm:min-w-16 ${hasData ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}>{hasData ? `${value.toFixed(1)}%` : "—"}</span>
+      <span className={`w-14 min-w-14 text-right text-[13px] sm:w-16 sm:min-w-16 ${hasData ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`}>{hasData ? `${roundPercent(value)}%` : "—"}</span>
     </div>
   );
 }
@@ -195,7 +205,7 @@ function LangScores({ stats, groupByCountry, expanded, toggle, prefix, t }) {
                   {l.countries.length} {t("Countries")}
                 </span>
               </div>
-              <span className="rounded-full bg-[#163986] px-2 py-0.5 text-[13px] font-bold text-white">{l.avgScore.toFixed(1)}%</span>
+              <span className="rounded-full bg-[#163986] px-2 py-0.5 text-[13px] font-bold text-white">{roundPercent(l.avgScore)}%</span>
             </div>
             <div className="px-3 py-2">
               {visible.map((c) => (
@@ -214,8 +224,24 @@ function LangScores({ stats, groupByCountry, expanded, toggle, prefix, t }) {
   );
 }
 
-// Um produto: cabeçalho com os números principais e, ao abrir, as estatísticas de todos os cursos associados a esse produto
-function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, toggleExpanded, prefix, t }) {
+// Interruptor "Por idioma / Por país" (cada produto tem o seu)
+function GroupBySwitch({ value, onChange, t }) {
+  return (
+    <div className="flex items-center gap-2 text-[13px]">
+      <span className={`cursor-pointer ${!value ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => onChange(false)}>
+        {t("By language")}
+      </span>
+      <Switch size="small" checked={value} onChange={onChange} aria-label={t("By country")} />
+      <span className={`cursor-pointer ${value ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => onChange(true)}>
+        {t("By country")}
+      </span>
+    </div>
+  );
+}
+
+// Um produto: cabeçalho com os números principais e, ao abrir, as estatísticas de todos os cursos associados a esse produto.
+// O filtro por idioma ou por país é próprio de cada produto
+function ProductCard({ title, stats, open, onToggle, groupByCountry, onGroupByCountry, isOverride, expanded, toggleExpanded, prefix, t }) {
   const statusSegments = [
     { label: t("Not started"), value: stats.counts.notStarted, color: STATUS_COLORS.notStarted },
     { label: t("In progress"), value: stats.counts.inProgress, color: STATUS_COLORS.inProgress },
@@ -233,12 +259,13 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, t
         <div className="min-w-[180px] flex-1">
           <p className="mb-0! text-[16px] font-bold">{title}</p>
           <p className="mb-0! text-[12px] text-[#8A8D98]">
-            {t("{{count}} courses", { count: stats.courses })} · {t("{{count}} students evaluated", { count: stats.students })}
+            {t(stats.courses === 1 ? "{{count}} course" : "{{count}} courses", { count: stats.courses })} ·{" "}
+            {t(stats.students === 1 ? "{{count}} student evaluated" : "{{count}} students evaluated", { count: stats.students })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Tag color="blue" className="m-0!">
-            {t("Average score")}: {stats.avgScore === null ? "—" : `${stats.avgScore.toFixed(1)}%`}
+            {t("Average score")}: {stats.avgScore === null ? "—" : `${roundPercent(stats.avgScore)}%`}
           </Tag>
           <Tag color="green" className="m-0!">
             {t("Approval rate")}: {stats.approvalRate === null ? "—" : `${stats.approvalRate}%`}
@@ -261,7 +288,14 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, t
           </div>
           <div className="flex flex-col gap-4">
             <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
-              <p className="mb-3! text-[14px] font-bold">{groupByCountry ? t("Average score by country") : t("Average score by language")}</p>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="mb-0! text-[14px] font-bold">{groupByCountry ? t("Average score by country") : t("Average score by language")}</p>
+                <div className="flex items-center gap-2">
+                  {/* Marca discreta quando este produto não segue o filtro geral */}
+                  {isOverride && <span className="rounded-full bg-[#E6F9FC] px-2 py-0.5 text-[11px] text-[#0397AE]">{t("Custom")}</span>}
+                  <GroupBySwitch value={groupByCountry} onChange={onGroupByCountry} t={t} />
+                </div>
+              </div>
               <LangScores stats={stats} groupByCountry={groupByCountry} expanded={expanded} toggle={toggleExpanded} prefix={prefix} t={t} />
             </div>
             <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
@@ -287,7 +321,15 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, expanded, t
 export default function TestProgress({ data, products, languages, isLoading = false }) {
   const { t } = useTranslation();
   const [productFilter, setProductFilter] = useState(null);
-  const [groupByCountry, setGroupByCountry] = useState(false);
+  // Filtro por idioma ou por país: o geral aplica-se a todos os produtos; cada produto pode mudar o seu (exceção) até à próxima
+  // mudança do geral, que repõe todos no novo valor
+  const [globalByCountry, setGlobalByCountry] = useState(false);
+  const [overrides, setOverrides] = useState({}); // produto -> por país (true) ou por idioma (false)
+  const byCountryOf = (key) => overrides[key] ?? globalByCountry;
+  const changeGlobal = (value) => {
+    setGlobalByCountry(value);
+    setOverrides({});
+  };
   const [expanded, setExpanded] = useState({});
   const [openProducts, setOpenProducts] = useState({});
 
@@ -319,15 +361,7 @@ export default function TestProgress({ data, products, languages, isLoading = fa
   return (
     <div>
       <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[13px]">
-          <span className={`cursor-pointer ${!groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => setGroupByCountry(false)}>
-            {t("By language")}
-          </span>
-          <Switch size="small" checked={groupByCountry} onChange={setGroupByCountry} aria-label={t("By country")} />
-          <span className={`cursor-pointer ${groupByCountry ? "font-bold text-[#163986]" : "text-[#8B9CC3]"}`} onClick={() => setGroupByCountry(true)}>
-            {t("By country")}
-          </span>
-        </div>
+        <GroupBySwitch value={globalByCountry} onChange={changeGlobal} t={t} />
         <div className="flex flex-wrap items-center gap-2">
           <Select
             allowClear
@@ -345,10 +379,10 @@ export default function TestProgress({ data, products, languages, isLoading = fa
 
       {total && (
         <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi icon={<LuPill />} label={t("Products")} value={visible.length} />
+          <Kpi icon={<LuPill />} label={t("Products")} value={visible.filter((g) => g.key !== NO_PRODUCT).length} />
           <Kpi icon={<LuBookOpen />} label={t("Courses")} value={total.courses} />
           <Kpi icon={<LuUsers />} label={t("Students evaluated")} value={total.students} />
-          <Kpi icon={<LuCircleCheck />} label={t("Average score")} value={total.avgScore === null ? "—" : `${total.avgScore.toFixed(1)}%`} />
+          <Kpi icon={<LuCircleCheck />} label={t("Average score")} value={total.avgScore === null ? "—" : `${roundPercent(total.avgScore)}%`} />
         </div>
       )}
 
@@ -361,7 +395,16 @@ export default function TestProgress({ data, products, languages, isLoading = fa
               stats={g.stats}
               open={isOpen(g.key, index)}
               onToggle={() => setOpenProducts((prev) => ({ ...prev, [g.key]: !isOpen(g.key, index) }))}
-              groupByCountry={groupByCountry}
+              groupByCountry={byCountryOf(g.key)}
+              onGroupByCountry={(value) =>
+                setOverrides((prev) => {
+                  // Voltar ao valor geral deixa de ser exceção
+                  const next = { ...prev, [g.key]: value };
+                  if (value === globalByCountry) delete next[g.key];
+                  return next;
+                })
+              }
+              isOverride={byCountryOf(g.key) !== globalByCountry}
               expanded={expanded}
               toggleExpanded={(key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
               prefix={g.key}

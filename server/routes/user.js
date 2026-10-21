@@ -2,16 +2,19 @@ var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
 var fileUpload = require("express-fileupload");
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 var router = express.Router();
 
 var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
-const { requirePermission, hasPermission, denied, isStaff, hasFullAccess } = require("../utils/permissions");
+const { requirePermission, hasPermission, denied, isStaff, hasFullAccess, ADMIN_ROLE_ID, USER_ROLE_ID } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
 const { createToken } = require("../utils/token");
 const crypto = require("crypto");
 const { notifyUser, emailLanguage } = require("../utils/notify");
+const { visibleCourses, visibleTests } = require("../utils/courseAccess");
 
 const saltRounds = 10;
 router.use(fileUpload());
@@ -77,10 +80,11 @@ router.get("/list", requirePermission("user", "read"), async (req, res) => {
 
 // Pesquisa leve para seletores de pessoas (acesso a cursos, grupos): até 30 resultados por nome ou e-mail, ou os ids pedidos (para mostrar
 // quem já está escolhido). Só contas ativas que não são Admin.
+// Filtros opcionais: id_lang (só utilizadores desse idioma) e countries[] (só utilizadores desses países: curso com limite de países)
 router.get("/search", requirePermission("user", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	const ids = String(req.query.ids || "").split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 500);
-	if (ids.length) return res.send(await query("SELECT id, name, email FROM user WHERE id IN (?)", [ids]));
+	if (ids.length) return res.send(await query("SELECT id, name, email, country FROM user WHERE id IN (?)", [ids]));
 	const q = String(req.query.q || "").trim();
 	const where = ["is_deleted = 0", "id_role != 1"];
 	const params = [];
@@ -88,11 +92,18 @@ router.get("/search", requirePermission("user", "read"), async (req, res) => {
 		where.push("id_lang = ?");
 		params.push(toId(req.query.id_lang));
 	}
+	const countries = (Array.isArray(req.query.countries) ? req.query.countries : req.query.countries ? [req.query.countries] : [])
+		.map((c) => String(c).trim())
+		.filter(Boolean);
+	if (countries.length) {
+		where.push("country IN (?)");
+		params.push(countries);
+	}
 	if (q) {
 		where.push("(name LIKE ? OR email LIKE ?)");
 		params.push(`%${q}%`, `%${q}%`);
 	}
-	res.send(await query(`SELECT id, name, email FROM user WHERE ${where.join(" AND ")} ORDER BY name LIMIT 30`, params));
+	res.send(await query(`SELECT id, name, email, country FROM user WHERE ${where.join(" AND ")} ORDER BY name LIMIT 30`, params));
 });
 
 // Nº de utilizadores ativos por função (página das funções), sem trazer a lista de utilizadores
@@ -141,13 +152,16 @@ router.get("/readById", async (req, res) => {
 					"WHERE cua.id_user = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
 					"AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
 					"AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL);",
-				[languageId, languageId, languageId, languageId, req.query.id_role || user.id_role, user.id],
+				// Testes em rascunho só para o Admin: pela função do utilizador dos resultados (nunca pelo id_role do pedido)
+				[languageId, languageId, languageId, languageId, user.id_role, user.id],
 			);
 
-			let courses = rows[0];
+			// Mesmas restrições do catálogo (países e utilizadores/grupos), vistas pelo utilizador dos resultados (o Admin vê todos)
+			let courses = await visibleCourses(query, rows[0], user);
 			let modules = rows[1];
 			let topics = rows[2];
-			let tests = rows[3];
+			// Testes com limite de países: pelo país do utilizador dos resultados
+			let tests = visibleTests(rows[3], user);
 			let progress = rows[4];
 
 			res.send({ user: userRow[0], courses, modules, topics, tests, progress });
@@ -206,6 +220,18 @@ router.post("/create", requirePermission("user", "create"), async (req, res, nex
 	}
 });
 
+// Apaga o ficheiro do avatar e a sua linha em media (como no /media/singleUpload ao substituir). Só ficheiros de avatar (type "avatar"
+// ou nome "..._avatar_...") e que nenhum outro utilizador use: nunca apaga uma imagem da biblioteca de Multimédia
+async function deleteAvatarFile(query, name) {
+	const [media] = await query("SELECT id, type FROM media WHERE name = ?", [name]);
+	const isAvatar = media?.type === "avatar" || /_avatar_/.test(name);
+	if (!isAvatar) return;
+	const [inUse] = await query("SELECT COUNT(*) AS total FROM user WHERE img = ?", [name]);
+	if (Number(inUse.total) > 0) return;
+	fs.unlink(path.join(__dirname, "..", "media", path.basename(name)), (err) => err && console.error(err));
+	if (media) await query("DELETE FROM media WHERE id = ?", [media.id]);
+}
+
 router.post("/update", async (req, res, next) => {
 	try {
 		// Nome + Apelido do formulário → coluna name
@@ -233,6 +259,13 @@ router.post("/update", async (req, res, next) => {
 			delete data.status;
 			delete data.is_deleted;
 		}
+		// O país fica definido no registo: só um Admin o altera (o de qualquer utilizador ou o seu), mesmo que o cliente o envie
+		if (Number(req.user.id_role) !== ADMIN_ROLE_ID) delete data.country;
+		// Avatar de outro utilizador (mudar ou remover): só de alunos; o de outro Admin nunca se altera aqui
+		if ("img" in data && whereId !== req.user.id) {
+			const [target] = await util.promisify(db.query).bind(db)("SELECT id_role FROM user WHERE id = ?", [whereId]);
+			if (Number(target?.id_role) !== USER_ROLE_ID) delete data.img;
+		}
 
 		if (data.new_password && (typeof data.new_password !== "string" || data.new_password.length < 8)) return res.status(400).send({ message: "The password must have at least 8 characters" });
 		const passwordChanged = !!data.new_password;
@@ -244,19 +277,30 @@ router.post("/update", async (req, res, next) => {
 			if (account?.password) {
 				const valid = typeof currentPassword === "string" && currentPassword !== "" && (await bcrypt.compare(currentPassword, account.password));
 				if (!valid) return res.status(400).send({ message: "The current password is incorrect", code: "invalid_current_password" });
+				// A nova tem de ser diferente da atual
+				if (await bcrypt.compare(data.new_password, account.password)) return res.status(400).send({ message: "The new password must be different from the current one", code: "same_password" });
 			}
 			data.password = await bcrypt.hash(data.new_password, saltRounds);
 			delete data.new_password;
 			delete data.confirm_new_password;
 		}
 
+		const query = util.promisify(db.query).bind(db);
+		// Remover o avatar (img vazio): volta ao avatar por defeito; o ficheiro antigo é apagado depois de gravar
+		let removedAvatar = null;
+		if ("img" in data && !data.img) {
+			data.img = null;
+			const [current] = await query("SELECT img FROM user WHERE id = ?", [whereId]);
+			removedAvatar = current?.img || null;
+		}
+
 		const columns = Object.keys(data);
 		const values = Object.values(data);
 
-		const query = util.promisify(db.query).bind(db);
 		if (columns.length > 0) {
 			await query("UPDATE user SET " + columns.map((c) => `${db.escapeId(c)} = ?`).join(", ") + " WHERE id = ?", [...values, whereId]);
 		}
+		if (removedAvatar) await deleteAvatarFile(query, removedAvatar);
 		let user = await query("SELECT * FROM user WHERE id = ?", whereId);
 		// A própria pessoa mudou a sua password: aviso de segurança (se não foi ela, pode recuperar a conta logo)
 		if (passwordChanged && whereId === req.user.id) notifyUser("password_changed", { ...user[0], id_lang: await emailLanguage(user[0], req.headers["x-lang"]) });

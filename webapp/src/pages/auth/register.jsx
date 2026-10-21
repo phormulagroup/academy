@@ -29,6 +29,12 @@ import {
   namePlaceholders,
 } from "../../utils/userFields";
 
+// Datas do registo: escreve-se no formato da plataforma (DD/MM/AAAA) e aceitam-se também as variantes habituais (o primeiro é o mostrado).
+// Sem isto só valia AAAA-MM-DD: a data escrita como 21/07/1988 era descartada e o formulário dava "Faltam alguns campos"
+const DATE_FORMATS = ["DD/MM/YYYY", "D/M/YYYY", "DD-MM-YYYY", "DD.MM.YYYY", "YYYY-MM-DD"];
+// Datas no futuro não são aceites (o servidor também as recusa)
+const disabledFutureDate = (d) => d && d.isAfter(dayjs(), "day");
+
 export default function Register() {
   const { t } = useTranslation();
   const { languages, toastApi } = useContext(Context);
@@ -69,6 +75,9 @@ export default function Register() {
     // first_name + last_name seguem para o servidor, que os junta na coluna name (server/utils/userName.js)
     delete values.confirm_password;
     delete values.knowledge;
+    // Só o dia escolhido (AAAA-MM-DD): em ISO/UTC a meia-noite local passava para o dia anterior a leste de UTC (ex.: Portugal)
+    for (const field of ["birth_date", "bial_starting_date"])
+      if (values[field]) values[field] = dayjs(values[field]).format("YYYY-MM-DD");
     axios
       .post(endpoints.auth.register, {
         data: values,
@@ -123,7 +132,11 @@ export default function Register() {
   }
 
   return (
-    <AuthLayout cardClassName={isRegistered ? undefined : "max-w-200"}>
+    // Escolha do idioma em destaque: a conta fica associada à região do idioma escolhido
+    <AuthLayout
+      cardClassName={isRegistered ? undefined : "max-w-200"}
+      languagePicker={isRegistered ? "dropdown" : "carousel"}
+      languageHint={t("Your account will be associated with the region of the selected language.")}>
       {isRegistered ? (
         <AuthStepSuccess
           title={t("Registration completed")}
@@ -134,6 +147,10 @@ export default function Register() {
           form={form}
           layout="vertical"
           onFinish={submit}
+          // Enter num campo de data confirma a data escrita: não submete o formulário a meio (dava logo "Faltam alguns campos")
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && e.target.closest?.(".ant-picker")) e.preventDefault();
+          }}
           requiredMark="hidden"
           className="auth-form"
           onFinishFailed={() =>
@@ -196,6 +213,10 @@ export default function Register() {
                   size="large"
                   placeholder={t("Select birth date")}
                   className="w-full"
+                  format={DATE_FORMATS}
+                  disabledDate={disabledFutureDate}
+                  // O calendário abre há 30 anos e não no mês atual (clicar num dia sem mudar de ano dava uma data de nascimento deste mês)
+                  defaultPickerValue={dayjs().subtract(30, "year")}
                 />
               </Form.Item>
             </div>
@@ -242,6 +263,8 @@ export default function Register() {
                   size="large"
                   placeholder={t("Select Bial's starting date")}
                   className="w-full"
+                  format={DATE_FORMATS}
+                  disabledDate={disabledFutureDate}
                 />
               </Form.Item>
             </div>

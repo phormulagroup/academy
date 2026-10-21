@@ -6,6 +6,7 @@ import {
 	Form,
 	Input,
 	Select,
+	Switch,
 	notification,
 } from "antd";
 import axios from "axios";
@@ -13,7 +14,6 @@ import axios from "axios";
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
 import { FaRegEdit } from "react-icons/fa";
-import i18n from "../../../utils/i18n";
 import { useNavigate } from "react-router-dom";
 import { requiredRule } from "../../../utils/formFieldError";
 
@@ -26,11 +26,26 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 
 	const navigate = useNavigate();
 
+	// Países do idioma (language.country)
+	const languageCountries = (langId) => {
+		try {
+			return JSON.parse(languages.find((l) => l.id === langId)?.country || "[]");
+		} catch {
+			return [];
+		}
+	};
+
+	// Países por omissão: nenhum (sem países = cópia disponível em todos os países do idioma)
+	const defaultCountries = () => [];
+	const selectedCountries = Form.useWatch("country", form) || [];
+
 	// Define idioma padrão para o idioma atualmente selecionado e rastrear alterações
 	useEffect(() => {
 		if (open && selectedLanguage?.id) {
 			form.setFieldValue('id_lang', selectedLanguage.id);
 			setFormLanguageId(selectedLanguage.id);
+			form.setFieldValue('country', defaultCountries(selectedLanguage.id));
+			form.setFieldValue('transfer_progress', false);
 			// Define valores padrão para nome e nome_interno com (cópia)
 			form.setFieldValue('name', data.name + " (copy)");
 			form.setFieldValue('internal_name', data.internal_name + " (copy)");
@@ -51,6 +66,9 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 					id: data.id,
 					new_name: values.name,
 					new_internal_name: values.internal_name,
+					country: values.country,
+					// Só no mesmo idioma do curso (o servidor também o garante)
+					transfer_progress: values.id_lang === data.id_lang && !!values.transfer_progress,
 				},
 			});
 			console.log("Duplicate response:", res.data);
@@ -73,13 +91,12 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 						size="small" 
 						icon={<FaRegEdit />}
 						onClick={() => {
-							// Se estiver duplicando para um idioma diferente, mude o idioma do Header quando clicar em Detalhes
+							// Cópia para outro idioma: muda a região do backoffice para a da cópia (a interface fica no idioma do Admin)
 							if (values.id_lang !== selectedLanguage.id) {
 								const selectedLang = languages.find(l => l.id === values.id_lang);
 								if (selectedLang) {
 									setSelectedLanguage(selectedLang);
 									localStorage.setItem('id_lang', selectedLang.id);
-									i18n.changeLanguage(selectedLang.code);
 								}
 							}
 							navigate(`/admin/courses/${res.data.insertId}`);
@@ -106,12 +123,17 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
 	// Lidar com a mudança de idioma no formulário - atualizar formLanguageId para validação
 	const handleLanguageChange = (langId) => {
 		setFormLanguageId(langId);
+		// Países do novo idioma; noutro idioma não há progresso para transferir
+		form.setFieldValue('country', defaultCountries(langId));
+		if (langId !== data.id_lang) form.setFieldValue('transfer_progress', false);
 		// Acionar revalidação do nome e do nome interno quando o idioma muda
 		form.validateFields(["name", "internal_name"]);
 	};
 
 	// Os nomes são únicos no idioma escolhido no formulário
 	const targetLanguageId = formLanguageId || selectedLanguage.id;
+	// Transferir o progresso só é possível no idioma do curso (os alunos de outro idioma são outros)
+	const sameLanguage = targetLanguageId === data.id_lang;
 
 	return (
     <Modal
@@ -185,6 +207,34 @@ export default function Duplicate({ data, open, close, submit, products, nameRul
             }))}
           />
         </Form.Item>
+        <Form.Item
+          name="country"
+          label={t("Countries")}
+          extra={<span className="block text-[12px] leading-[18px] text-[#8A8D98]">{selectedCountries.length > 0 ? t("The copy is only available in the selected countries") : t("Without countries selected, the copy is available in all countries of this language")}</span>}
+        >
+          <Select
+            mode="multiple"
+            size="large"
+            className="w-full"
+            placeholder={t("Select...")}
+            allowClear
+            maxTagCount="responsive"
+            showSearch={{ optionFilterProp: ["label"] }}
+            options={languageCountries(targetLanguageId).map((item) => ({ value: item, label: t(item) }))}
+          />
+        </Form.Item>
+        {/* Transferir o progresso só existe quando a cópia fica no idioma do curso */}
+        {sameLanguage && (
+          <Form.Item
+            name="transfer_progress"
+            label={t("Transfer students' progress to the copy")}
+            valuePropName="checked"
+            className="mb-0!"
+            extra={<span className="block text-[12px] leading-[18px] text-[#8A8D98]">{selectedCountries.length > 0 ? t("Only students from the selected countries. Test attempts are not transferred") : t("All students of this language. Test attempts are not transferred")}</span>}
+          >
+            <Switch checkedChildren={t("Yes")} unCheckedChildren={t("No")} />
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );

@@ -14,37 +14,33 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import ExportTable from "../../../components/admin/export/export";
 import UserCell from "../../../components/admin/userCell";
-import { StackedBar, HorizontalBars, emptyProgressBuckets, progressBucketKey } from "../../../components/admin/charts";
+import { Kpi, FilterLabel } from "../../../components/admin/reportPanel";
+import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
 import { LuDownload } from "react-icons/lu";
 import {
   getCourseReportColumns,
   getExpandedStudentColumns,
 } from "../../../utils/columns";
 
+import { roundPercent } from "../../../utils/percent";
+import { testsForStudent } from "../../../utils/courseStatus";
+
 // Cores da marca Bial para os gráficos (do mais claro ao mais escuro)
-const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", darker: "#163986" };
+const PALETTE = { lighter: "#B8E9F1", light: "#66D4E6", base: "#00b9d6", dark: "#0E78B4", darker: "#163986" };
 
-function Kpi({ label, value, hint }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-[12px] border border-[#ECEEF1] bg-white px-4 py-3">
-      <span className="text-[12px] text-[#8A8D98]">{label}</span>
-      <span className="text-[22px] font-bold leading-none">{value}</span>
-      {hint && <span className="text-[11px] text-[#8A8D98]">{hint}</span>}
-    </div>
-  );
-}
-
-// Rótulo de um filtro com a contagem numa etiqueta (cor da marca quando ativo)
-function FilterLabel({ text, count, active }) {
-  return (
-    <span className="inline-flex items-center gap-2 px-1">
-      {text}
-      <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[11px] font-semibold leading-none ${active ? "bg-[#163986] text-white" : "bg-[#ECEEF1] text-[#5B5F6B]"}`}>
-        {count}
-      </span>
-    </span>
-  );
-}
+// Escalões do progresso no curso, em intervalos como os do resultado no relatório de testes: 0–24%, 25–49%, 50–74%, 75–99% e
+// 100% à parte (só quem concluiu o curso), para "quase a acabar" e "concluído" não ficarem na mesma barra
+const PROGRESS_BUCKETS = [
+  { min: 0, max: 24 },
+  { min: 25, max: 49 },
+  { min: 50, max: 74 },
+  { min: 75, max: 99 },
+  { min: 100, max: 100 },
+];
+const progressBuckets = () => {
+  const colors = [PALETTE.lighter, PALETTE.light, PALETTE.base, PALETTE.dark, PALETTE.darker];
+  return PROGRESS_BUCKETS.map((b, i) => ({ ...b, label: b.min === b.max ? `${b.max}%` : `${b.min}–${b.max}%`, value: 0, color: colors[i] }));
+};
 
 // "2/5" -> percentagem de cumprimento, para a barra de progresso do aluno
 const ratio = (value) => {
@@ -74,7 +70,8 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
     () =>
       rows.map((r) => {
         const parts = [ratio(r.nr_modules), ratio(r.nr_topics), ratio(r.nr_tests)].filter((v) => v !== null);
-        const progress = r.status === APPROVED ? 100 : parts.length ? Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100) : 0;
+        // 100% só para quem concluiu o curso: sem isso, um arredondamento (ex.: 99,6%) punha um aluno por concluir no escalão de 100%
+        const progress = r.status === APPROVED ? 100 : parts.length ? Math.min(99, Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100)) : 0;
         return { ...r, progress };
       }),
     [rows, APPROVED],
@@ -86,11 +83,14 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
       notStarted: { value: counts[NOT_STARTED], label: NOT_STARTED, color: PALETTE.lighter },
       inProgress: { value: counts[IN_PROGRESS], label: IN_PROGRESS, color: PALETTE.light },
       completed: { value: counts[APPROVED], label: t("Completed"), color: PALETTE.base },
+      failed: { value: counts[REPPROVED], label: t("Failed"), color: PALETTE.darker },
     };
-    const buckets = emptyProgressBuckets(PALETTE);
-    withProgress.forEach((r) => (buckets[progressBucketKey(r.progress)].value += 1));
+    // Escalões por intervalos (0–24, 25–49, 50–74, 75–99 e 100% = concluído)
+    const buckets = progressBuckets();
+    // Só quem começou o curso (aprovados, reprovados e em progresso); os não iniciados ficam de fora
+    withProgress.filter((r) => r.status !== NOT_STARTED).forEach((r) => (buckets.find((b) => r.progress <= b.max).value += 1));
     return { distribution, buckets };
-  }, [counts, withProgress, NOT_STARTED, IN_PROGRESS, APPROVED, t]);
+  }, [counts, withProgress, NOT_STARTED, IN_PROGRESS, APPROVED, REPPROVED, t]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -113,10 +113,11 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
 
   return (
     <div className="flex flex-col gap-5 p-4 md:p-5 bg-[#F7F8FA] rounded-[14px]" style={width ? { width: Math.max(width - 32, 320), position: "sticky", left: 0 } : undefined}>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <Kpi label={t("Students")} value={counts.all} />
         <Kpi label={IN_PROGRESS} value={counts[IN_PROGRESS]} />
-        <Kpi label={t("Completed")} value={counts[APPROVED]} hint={counts[REPPROVED] ? `${counts[REPPROVED]} ${t("failed")}` : undefined} />
+        <Kpi label={t("Completed")} value={counts[APPROVED]} />
+        <Kpi label={t("Failed")} value={counts[REPPROVED]} />
         <Kpi label={NOT_STARTED} value={counts[NOT_STARTED]} />
         <Kpi label={t("Average progress")} value={`${avgProgress}%`} />
       </div>
@@ -124,11 +125,12 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
           <p className="font-bold text-[14px] mb-4!">{t("Progress distribution")}</p>
-          <StackedBar segments={[charts.distribution.notStarted, charts.distribution.inProgress, charts.distribution.completed]} />
+          <StackedBar segments={[charts.distribution.notStarted, charts.distribution.inProgress, charts.distribution.completed, charts.distribution.failed]} />
         </div>
         <div className="rounded-[14px] border border-[#ECEEF1] bg-white p-4">
-          <p className="font-bold text-[14px] mb-4!">{t("Progress percentage")}</p>
-          <HorizontalBars rows={Object.values(charts.buckets)} />
+          <p className="font-bold text-[14px] mb-1!">{t("Progress percentage")}</p>
+          <p className="text-[11px] text-[#8A8D98] mb-4!">{t("Progress of each student · 100% = course completed")}</p>
+          <HorizontalBars rows={charts.buckets} />
         </div>
       </div>
 
@@ -152,7 +154,7 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
                   { label: <FilterLabel text={IN_PROGRESS} count={counts[IN_PROGRESS]} active={status === IN_PROGRESS} />, value: IN_PROGRESS },
                   { label: <FilterLabel text={t("Completed")} count={counts[APPROVED]} active={status === APPROVED} />, value: APPROVED },
                   { label: <FilterLabel text={NOT_STARTED} count={counts[NOT_STARTED]} active={status === NOT_STARTED} />, value: NOT_STARTED },
-                  ...(counts[REPPROVED] ? [{ label: <FilterLabel text={t("Failed")} count={counts[REPPROVED]} active={status === REPPROVED} />, value: REPPROVED }] : []),
+                  { label: <FilterLabel text={t("Failed")} count={counts[REPPROVED]} active={status === REPPROVED} />, value: REPPROVED },
                 ]}
               />
             </ConfigProvider>
@@ -383,7 +385,8 @@ export default function CourseReport({ data, isLoading }) {
           );
 
           if (
-            isStudentApproved(studentActivity, course, modules, topics, tests)
+            // Só os testes que o aluno vê (limite de países do teste)
+            isStudentApproved(studentActivity, course, modules, topics, testsForStudent(tests, student))
           ) {
             approvedUsers.add(student.id);
           }
@@ -398,7 +401,7 @@ export default function CourseReport({ data, isLoading }) {
             (a) => a.id_user === student.id && a.is_deleted === 0,
           );
 
-          if (isStudentRepproved(studentActivity, tests)) {
+          if (isStudentRepproved(studentActivity, testsForStudent(tests, student))) {
             repprovedUsers.add(student.id);
           }
         }
@@ -406,7 +409,8 @@ export default function CourseReport({ data, isLoading }) {
 
         aux.push({
           id: course.id,
-          course_name: course.name,
+          // Nos relatórios mostra-se o nome interno (o nome oficial repete-se entre idiomas); sem ele, o nome
+          course_name: course.internal_name || course.name,
           thumbnail: course.thumbnail, // só para mostrar na tabela; não faz parte das colunas do Excel
           start_date:
             course.settings.course_access_expiration &&
@@ -428,9 +432,7 @@ export default function CourseReport({ data, isLoading }) {
           approved: approved,
           repproved: repproved,
           percentage:
-            parseFloat(
-              students.length > 0 ? (approved * 100) / students.length : 0,
-            ).toFixed(2) + "%",
+            roundPercent(students.length > 0 ? (approved * 100) / students.length : 0) + "%",
           students: students.length,
           country: course.settings.country_limit
             ? course.settings.country.map((c) => t(c)).join(", ")
@@ -481,6 +483,9 @@ export default function CourseReport({ data, isLoading }) {
   function closeExport() {
     setIsOpenExport(false);
   }
+
+  // A coluna do curso mostra o nome interno: o mesmo título na tabela e nos exports
+  const withInternalName = (cols, field = "course_name") => cols.map((c) => ((c.dataIndex || c.key) === field ? { ...c, title: t("Internal name") } : c));
 
   // Monta o painel de um curso a partir do detalhe desse curso (pedido à API quando a linha se abre)
   const buildExpanded = (e, data) => {
@@ -535,7 +540,7 @@ export default function CourseReport({ data, isLoading }) {
           lang: languages
             .filter((l) => l.id === course.id_lang)[0]
             .code.toUpperCase(), // Para surgir a informação do idioma no Excel
-          course: course.name, // Para surgir a informação do curso no Excel
+          course: course.internal_name || course.name, // Para surgir a informação do curso no Excel (nome interno)
         });
       } else {
         // Verificar status de inscrição
@@ -574,15 +579,17 @@ export default function CourseReport({ data, isLoading }) {
         let endDate = null; // Será definido apenas se o aluno for aprovado
 
         // Obter todos os testes para este curso (excluindo deletados)
-        let tests = data.tests.filter(
-          (t) => t.id_course === course.id && t.is_deleted === 0,
+        // Só os testes que este aluno vê (limite de países do teste): os outros não contam para ele
+        let tests = testsForStudent(
+          data.tests.filter((t) => t.id_course === course.id && t.is_deleted === 0),
+          student,
         );
 
         // Verificar se aprovado: deve concluir curso + todos os módulos + todos os tópicos + todos os testes
         const tempCourse = { id: course.id };
         const tempModules = Array(e.nr_modules).fill({});
         const tempTopics = Array(e.nr_topics).fill({});
-        const tempTests = Array(e.nr_tests).fill({});
+        const tempTests = Array(tests.length).fill({});
 
         let approved = isStudentApproved(
           studentActivity,
@@ -612,7 +619,8 @@ export default function CourseReport({ data, isLoading }) {
             a.activity_type === "test" &&
             a.id_course === course.id &&
             a.is_completed === 1 &&
-            a.is_deleted === 0,
+            a.is_deleted === 0 &&
+            tests.some((x) => x.id === a.id_course_test),
         ).length;
 
         // Apenas verifica módulos, tópicos e testes se eles existirem no curso
@@ -621,9 +629,7 @@ export default function CourseReport({ data, isLoading }) {
         const displayTopics =
           e.nr_topics > 0 ? `${completedTopics}/${e.nr_topics}` : "—";
         const displayTests =
-          e.nr_tests > 0
-            ? `${studentActivity.filter((a) => a.activity_type === "test" && a.is_completed === 1 && a.is_deleted === 0).length}/${e.nr_tests}`
-            : "—";
+          tests.length > 0 ? `${completedTests}/${tests.length}` : "—";
 
         // Defina endDate apenas se o aluno for aprovado (concluiu tudo)
         if (approved) {
@@ -685,7 +691,7 @@ export default function CourseReport({ data, isLoading }) {
           lang: languages
             .filter((l) => l.id === course.id_lang)[0]
             .code.toUpperCase(), // Para surgir a informação do idioma no Excel
-          course: course.name, // Para surgir a informação do curso no Excel
+          course: course.internal_name || course.name, // Para surgir a informação do curso no Excel (nome interno)
         });
       }
     }
@@ -693,7 +699,7 @@ export default function CourseReport({ data, isLoading }) {
     return <CourseExpandedPanel width={panelWidth} rows={dataExpanded} columns={columnsExpanded} onExport={() => {
       // Export detalhado do curso: estatísticas de cada aluno, dos testes e das respostas às perguntas
       const detailed = buildCourseStudentExport({ course, base: dataExpanded, data, languages, t });
-      openExport(detailed.rows, detailed.columns, "CourseStudentsReport");
+      openExport(detailed.rows, withInternalName(detailed.columns, "course"), "CourseStudentsReport");
     }} t={t} />;
   };
 
@@ -709,7 +715,7 @@ export default function CourseReport({ data, isLoading }) {
             <Button
               // Sem dados na tabela, o botão de exportar fica desativado
               disabled={tableData.length === 0}
-              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, getCourseReportColumns(t, false))}
+              onClick={() => openExport(filteredData.length > 0 ? filteredData : tableData, withInternalName(getCourseReportColumns(t, false)))}
               icon={<LuDownload />}>
               <span className="hidden sm:inline">{t("Export excel")}</span>
             </Button>
@@ -719,7 +725,7 @@ export default function CourseReport({ data, isLoading }) {
                 className="w-full sm:w-[260px]!"
                 placeholder={t("Select course")}
                 showSearch={{ optionFilterProp: ["label"] }}
-                options={courses.map((c) => ({ label: c.name, value: c.id }))}
+                options={courses.map((c) => ({ label: c.internal_name || c.name, value: c.id }))}
               />
             </Form.Item>
             <Form.Item name="country" className="mb-0! w-full sm:w-auto">
@@ -752,7 +758,7 @@ export default function CourseReport({ data, isLoading }) {
             placement: ["none", "bottomCenter"], // paginação ao centro
             showTotal: (total, range) => `${range[0]}-${range[1]} ${t("of")} ${total}`,
           }}
-          columns={getCourseReportColumns(t).map((col) =>
+          columns={withInternalName(getCourseReportColumns(t)).map((col) =>
             col.key === "course_name"
               ? {
                   ...col,

@@ -7,6 +7,7 @@ import { LuBookOpen, LuCircleCheck, LuFileQuestion, LuGraduationCap, LuUsers } f
 import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
+import { activityByStudentCourse, reportCourseItems, reportCourseState } from "../../../utils/userResults";
 import { useTranslation } from "react-i18next";
 
 import CourseReport from "./courseReport";
@@ -14,31 +15,37 @@ import TestReport from "./testReport";
 import StudentProgress from "./studentProgress";
 import TestProgress from "./testProgress";
 
-// Números-resumo do topo, calculados sobre os mesmos dados (já filtrados por idioma) que alimentam os separadores.
-// "Inscrição" = par aluno+curso com atividade; "conclusão" = atividade 'course' concluída (a que liberta o certificado).
+// Números-resumo do topo, calculados sobre os mesmos dados (já filtrados por idioma) que alimentam os separadores, só com alunos
+// aprovados (os Admins têm todos os cursos concluídos por defeito e não podem contar). "Inscrição" = par aluno+curso com atividade;
+// "conclusão" = curso com todos os itens feitos (a mesma regra do perfil e do backoffice, que liberta o certificado).
 function computeSummary(data) {
 	if (!data?.users) return null;
-	const enrollments = new Set();
-	const completed = new Set();
+	const items = reportCourseItems(data);
+	const { students, map } = activityByStudentCourse(data);
+	const courseIds = new Set((data.courses || []).map((c) => c.id));
+	let enrollments = 0;
+	let completed = 0;
 	let testAttempts = 0;
 	let testPassed = 0;
-	const activeUserIds = new Set(data.users.map((u) => u.id));
-	for (const a of data.activity || []) {
-		if (a.is_deleted === 1 || !activeUserIds.has(a.id_user)) continue;
-		enrollments.add(`${a.id_user}-${a.id_course}`);
-		if (a.activity_type === "course" && a.is_completed === 1) completed.add(`${a.id_user}-${a.id_course}`);
-		if (a.activity_type === "test") {
-			testAttempts += 1;
-			if (a.is_completed === 1) testPassed += 1;
-		}
-	}
+	map.forEach((courses) =>
+		courses.forEach((activities, idCourse) => {
+			if (!courseIds.has(idCourse)) return;
+			enrollments += 1;
+			if (reportCourseState(items.get(idCourse), activities).completed) completed += 1;
+			activities.forEach((a) => {
+				if (a.activity_type !== "test") return;
+				testAttempts += 1;
+				if (a.is_completed === 1) testPassed += 1;
+			});
+		}),
+	);
 	const percent = (part, total) => (total > 0 ? `${Math.round((part * 100) / total)}%` : "—");
 	return {
 		courses: (data.courses || []).filter((c) => !c.is_deleted).length,
-		students: data.users.filter((u) => u.id_role === 2).length,
-		enrollments: enrollments.size,
-		completed: completed.size,
-		completionRate: percent(completed.size, enrollments.size),
+		students: students.size,
+		enrollments,
+		completed,
+		completionRate: percent(completed, enrollments),
 		testAttempts,
 		passRate: percent(testPassed, testAttempts),
 	};
@@ -151,7 +158,7 @@ export default function Report() {
 					{ key: "1", label: t("Course reports"), children: card(<CourseReport data={data} isLoading={isLoading} />) },
 					{ key: "2", label: t("Students progress"), children: card(<StudentProgress data={fullData} isLoading={isLoadingFull} />) },
 					{ key: "3", label: t("Test reports"), children: card(<TestReport data={fullData} isLoading={isLoadingFull} />) },
-					{ key: "4", label: t("Tests progress"), children: card(<TestProgress data={globalData} products={products} languages={languages} isLoading={isLoadingGlobal} />) },
+					{ key: "4", label: t("Products reports"), children: card(<TestProgress data={globalData} products={products} languages={languages} isLoading={isLoadingGlobal} />) },
 				]}
 			/>
 		</div>

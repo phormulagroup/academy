@@ -5,7 +5,7 @@ import { Button, Switch } from "antd";
 import { useContext, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
-import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
+import { MdFileDownload, MdFullscreen, MdFullscreenExit } from "react-icons/md";
 import { RxChevronLeft, RxChevronRight } from "react-icons/rx";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
@@ -22,17 +22,27 @@ import endpoints from "../../../utils/endpoints";
 import { useNavigate, useParams } from "react-router-dom";
 import i18n from "../../../utils/i18n";
 import { isAllowedByCountry } from "../../../utils/courseStatus";
+import FullscreenRotateNote from "../../../components/fullscreenRotateNote";
+import useLandscapeLock from "../../../utils/useLandscapeLock";
+
+// Nome do ficheiro ao descarregar: o nome do documento (sem caracteres inválidos em nomes de ficheiros) em .pdf
+function pdfFileName(doc) {
+  const name = (doc?.name || "document").replace(/[\\/:*?"<>|]+/g, "").trim();
+  return `${name || "document"}.pdf`;
+}
 
 export default function DocumentDetails({ themePreference = "light" }) {
-  const { user, languages, windowDimension } = useContext(Context);
+  const { user, languages } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
 
   const viewerRef = useRef(null);
-  // Ecrã inteiro do PDF (ecrãs pequenos/mobile), como nos sliders do eLearning
+  // Ecrã inteiro do PDF (todos os tamanhos de ecrã), como nos sliders do eLearning
   const fullscreenRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Telemóvel: ecrã inteiro roda para horizontal; se não der, mostra a nota para rodar
+  const showRotateNote = useLandscapeLock(isFullscreen);
 
   // Modo "slides" do ecrã inteiro: uma página de cada vez, ajustada ao ecrã. O viewer do embedpdf só faz scroll
   // contínuo (vertical/horizontal), por isso aqui cada página é rasterizada pelo próprio motor do viewer (plugin
@@ -230,7 +240,8 @@ export default function DocumentDetails({ themePreference = "light" }) {
   }, [hasLanguages]);
 
   return (
-    <div className="page-frame py-6">
+    // Mais espaço entre o cabeçalho e o rodapé (em cima e em baixo), em desktop e telemóvel
+    <div className="page-frame pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-14 lg:pb-20">
       {isLoading ? (
         <div className="flex justify-center items-center w-full h-full col-span-3">
           <BialSpin />
@@ -253,7 +264,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
               content={`${data.name} - Bial Regional Academy`}
             />
           </Helmet>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 mb-5 sm:mb-8">
             <p className="font-ryker text-[20px] sm:text-[24px] font-bold text-[#163986] break-words min-w-0">
               {data?.name}
             </p>
@@ -335,48 +346,58 @@ export default function DocumentDetails({ themePreference = "light" }) {
                     </SwiperSlide>
                   ))}
                 </Swiper>
-              </div>
-            )}
-            {/* Ecrã inteiro: só em ecrãs pequenos/mobile */}
-            {windowDimension.width <= 1024 && (
-              <div className="doc-viewer-bar">
-                {isFullscreen && pages.length > 1 && (
-                  <button
-                    type="button"
-                    className="doc-viewer-arrow"
-                    onClick={() => swiperRef.current?.slidePrev()}
-                    disabled={activePage === 0}
-                    aria-label={t("Previous")}>
-                    <RxChevronLeft />
-                  </button>
-                )}
-                {isFullscreen && pages.length > 0 && (
-                  <span className="doc-viewer-counter">
-                    {activePage + 1} / {pages.length}
-                  </span>
-                )}
-                <label className="doc-viewer-fullscreen">
-                  {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
-                  <span>{t("Fullscreen")}</span>
-                  <Switch
-                    size="small"
-                    aria-label={t("Fullscreen")}
-                    checked={isFullscreen}
-                    onChange={toggleFullscreen}
-                  />
-                </label>
-                {isFullscreen && pages.length > 1 && (
-                  <button
-                    type="button"
-                    className="doc-viewer-arrow"
-                    onClick={() => swiperRef.current?.slideNext()}
-                    disabled={activePage === pages.length - 1}
-                    aria-label={t("Next")}>
-                    <RxChevronRight />
-                  </button>
+                {/* Setas nas laterais, iguais às dos slides do eLearning (.fs-side-arrow) */}
+                {pages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="fs-side-arrow prev"
+                      onClick={() => swiperRef.current?.slidePrev()}
+                      disabled={activePage === 0}
+                      aria-label={t("Previous")}>
+                      <RxChevronLeft />
+                    </button>
+                    <button
+                      type="button"
+                      className="fs-side-arrow next"
+                      onClick={() => swiperRef.current?.slideNext()}
+                      disabled={activePage === pages.length - 1}
+                      aria-label={t("Next")}>
+                      <RxChevronRight />
+                    </button>
+                  </>
                 )}
               </div>
             )}
+            <FullscreenRotateNote active={showRotateNote} />
+            {/* Barra do viewer (todos os tamanhos de ecrã): descarregar o PDF e ecrã inteiro */}
+            <div className="doc-viewer-bar">
+              {/* Descarregar o PDF: o mesmo ficheiro já carregado para o viewer (só chega aqui quem tem acesso ao documento) */}
+              {!isFullscreen && pdfUrl && (
+                <a
+                  className="doc-viewer-download"
+                  href={pdfUrl}
+                  download={pdfFileName(data)}>
+                  <MdFileDownload aria-hidden="true" />
+                  <span>{t("Download PDF")}</span>
+                </a>
+              )}
+              {isFullscreen && pages.length > 0 && (
+                <span className="doc-viewer-counter">
+                  {activePage + 1} / {pages.length}
+                </span>
+              )}
+              <label className="doc-viewer-fullscreen">
+                {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
+                <span>{t("Fullscreen")}</span>
+                <Switch
+                  size="small"
+                  aria-label={t("Fullscreen")}
+                  checked={isFullscreen}
+                  onChange={toggleFullscreen}
+                />
+              </label>
+            </div>
           </div>
         </div>
       ) : (

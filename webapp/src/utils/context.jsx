@@ -215,8 +215,9 @@ const ContextProvider = ({ children }) => {
 				if (localStorage.getItem("id_lang") !== String(current.id)) localStorage.setItem("id_lang", current.id);
 			}
 
-			// Garante que o i18n fica no mesmo idioma do header (também refresca as traduções carregadas)
-			await i18n.changeLanguage(current?.code ?? i18n.language);
+			// Garante que o i18n fica no mesmo idioma do header (também refresca as traduções carregadas). No backoffice o idioma do
+			// seletor só filtra os dados: os textos ficam no idioma da conta (layout/admin.jsx), por isso aqui não se muda o i18n
+			await i18n.changeLanguage(isAdminPath ? i18n.language : current?.code ?? i18n.language);
 
 			// As restantes línguas carregam em segundo plano (ficam em cache; trocar de língua é então imediato)
 			Promise.all(auxLanguages.filter((l) => l !== current).map((l) => loadTranslation(l).catch(() => {}))).then(() => i18n.changeLanguage(i18n.language));
@@ -494,6 +495,7 @@ const ContextProvider = ({ children }) => {
 				setCourses,
 				languages,
 				getLanguages,
+				loadTranslation,
 				isLoadingLanguage,
 				setIsLoadingLanguage,
 				t,

@@ -6,6 +6,8 @@ import { RxChevronLeft, RxChevronRight } from "react-icons/rx";
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
 
 import { Section } from "../../components/section";
+import FullscreenRotateNote from "../../../../fullscreenRotateNote";
+import useLandscapeLock from "../../../../../utils/useLandscapeLock";
 import ImagePickerField from "../image/ImagePickerField";
 
 // Import Swiper styles
@@ -55,7 +57,8 @@ const ImageCarousel = {
   },
   defaultProps: {
     images: [],
-    maxWidth: 700,
+    // Igual ao do vídeo, para slides e vídeos terem a mesma largura no eLearning
+    maxWidth: 800, // Largura por omissão dos slides (ajustável por bloco no editor)
     justifyContent: "center",
     alignItems: "center",
   },
@@ -68,8 +71,16 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
   const swiperRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Telemóvel: ecrã inteiro roda para horizontal; se não der, mostra a nota para rodar
+  const showRotateNote = useLandscapeLock(isFullscreen);
 
   const slides = (images || []).filter((item) => item.image?.url);
+  // Todos os slides vistos (chegou ao último): fica marcado no elemento e avisa o tópico (eLearning: só avança depois disso)
+  // Só 1 slide: fica logo visto; com mais, quando o aluno chega ao último (onSlideChange)
+  const [seenAll, setSeenAll] = useState(slides.length <= 1);
+  useEffect(() => {
+    window.dispatchEvent(new Event("bial-carousel-progress"));
+  }, [seenAll]);
 
   // Mantém o switch sincronizado quando se sai do ecrã inteiro com Esc
   useEffect(() => {
@@ -78,6 +89,21 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  // Ecrã inteiro: setas do teclado (← →) mudam de slide. Em captura e sem propagar, para não chegarem
+  // ao switch do ecrã inteiro (o switch do antd liga/desliga com ← →, o que fazia sair do ecrã inteiro)
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "ArrowLeft") swiperRef.current?.slidePrev();
+      else swiperRef.current?.slideNext();
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [isFullscreen]);
 
   function toggleFullscreen(checked) {
     if (checked) containerRef.current?.requestFullscreen?.();
@@ -93,12 +119,16 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
       alignItems={alignItems}>
       <div
         ref={containerRef}
+        data-seen-all={seenAll ? "true" : "false"}
         className={`bial-carousel ${isFullscreen ? "is-fullscreen" : ""}`}>
         <div className="bial-carousel-stage">
           <Swiper
             spaceBetween={10}
             onSwiper={(swiper) => (swiperRef.current = swiper)}
-            onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}>
+            onSlideChange={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (swiper.activeIndex >= slides.length - 1) setSeenAll(true);
+            }}>
             {slides.map((item, i) => (
               <SwiperSlide key={i}>
                 <img
@@ -108,7 +138,30 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
               </SwiperSlide>
             ))}
           </Swiper>
+          {/* Ecrã inteiro: setas nas laterais, a meio do slide (como nos carrosséis das redes sociais) */}
+          {isFullscreen && slides.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="fs-side-arrow prev"
+                onClick={() => swiperRef.current?.slidePrev()}
+                disabled={activeIndex === 0}
+                aria-label={t("Previous")}>
+                <RxChevronLeft />
+              </button>
+              <button
+                type="button"
+                className="fs-side-arrow next"
+                onClick={() => swiperRef.current?.slideNext()}
+                disabled={activeIndex === slides.length - 1}
+                aria-label={t("Next")}>
+                <RxChevronRight />
+              </button>
+            </>
+          )}
         </div>
+
+        <FullscreenRotateNote active={showRotateNote} />
 
         {/* */}
         <div className="bial-carousel-footer">
@@ -139,6 +192,12 @@ function Carousel({ images, alignItems, justifyContent, maxWidth }) {
               </button>
             ) : (
               <span />
+            )}
+            {/* Ecrã inteiro: contador na barra de baixo (a indexação por pontos fica escondida) */}
+            {isFullscreen && slides.length > 1 && (
+              <span className="bial-carousel-fs-counter">
+                {activeIndex + 1} / {slides.length}
+              </span>
             )}
             <label className="bial-carousel-fullscreen">
               {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}

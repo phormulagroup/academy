@@ -37,22 +37,39 @@ const parseCountries = (value) => {
     return [];
   }
 };
+// user_groups: [{ "id": 1 }, ...] (como course_module.items)
+const parseGroupIds = (value) => parseCountries(value).map((g) => Number(g?.id)).filter(Boolean);
 
-// Países da notificação: os primeiros como etiquetas e "+N" com a lista completa; sem países, chega a todos
-function AudienceCell({ countries, t }) {
-  if (!countries.length) return <span className="text-[#5B5F6B]">{t("All countries")}</span>;
-  const shown = countries.slice(0, 2);
-  const rest = countries.slice(2);
+// Etiquetas: as primeiras e "+N" com a lista completa
+function TagList({ items, color }) {
+  const shown = items.slice(0, 2);
+  const rest = items.slice(2);
   return (
     <div className="flex flex-wrap items-center gap-1">
       {shown.map((c) => (
-        <Tag key={c} className="m-0!">
-          {t(c)}
+        <Tag key={c} color={color} className="m-0!">
+          {c}
         </Tag>
       ))}
       {rest.length > 0 && (
-        <Tooltip title={rest.map((c) => t(c)).join(", ")}>
-          <Tag className="m-0! cursor-default">+{rest.length}</Tag>
+        <Tooltip title={rest.join(", ")}>
+          <Tag color={color} className="m-0! cursor-default">+{rest.length}</Tag>
+        </Tooltip>
+      )}
+    </div>
+  );
+}
+
+// Público da notificação: países (sem países, chega a todos) e, se houver, os grupos de utilizadores
+function AudienceCell({ countries, groups, t }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      {countries.length ? <TagList items={countries.map((c) => t(c))} /> : <span className="text-[#5B5F6B]">{t("All countries")}</span>}
+      {groups.length > 0 && (
+        <Tooltip title={t("User groups")}>
+          <div>
+            <TagList items={groups} color="blue" />
+          </div>
         </Tooltip>
       )}
     </div>
@@ -68,6 +85,15 @@ export default function Notification() {
   const [data, setData] = useState([]);
   const [selectedData, setSelectedData] = useState(null);
   const [isOpenForm, setIsOpenForm] = useState(false);
+  // Nomes dos grupos de utilizadores (a notificação guarda só os ids)
+  const [groupNames, setGroupNames] = useState({});
+
+  useEffect(() => {
+    axios
+      .get(endpoints.userGroup.read, { params: { id_lang: selectedLanguage?.id } })
+      .then((res) => setGroupNames(Object.fromEntries(res.data.map((g) => [g.id, g.name]))))
+      .catch((err) => console.log(err));
+  }, [selectedLanguage?.id]);
 
   useEffect(() => {
     getData();
@@ -77,7 +103,7 @@ export default function Notification() {
     setIsLoading(true);
     axios
       .get(endpoints.notification.readByLang, { params: { id_lang: selectedLanguage.id } })
-      .then((res) => setData(res.data.map((n) => ({ ...n, status: notificationStatus(n), countries: parseCountries(n.country), titleText: plain(n.title), descriptionText: plain(n.description) }))))
+      .then((res) => setData(res.data.map((n) => ({ ...n, status: notificationStatus(n), countries: parseCountries(n.country), groupIds: parseGroupIds(n.user_groups), titleText: plain(n.title), descriptionText: plain(n.description) }))))
       .catch((err) => console.log(err))
       .finally(() => setIsLoading(false));
   }
@@ -138,7 +164,11 @@ export default function Notification() {
       match: (row, v) => row.status === v,
     },
   ]);
-  const rows = filterRows(data);
+  const rows = filterRows(data).map((r) => {
+    // Só grupos ativos (um grupo removido fica com is_deleted = 1 e deixa de aparecer)
+    const groups = r.groupIds.filter((id) => groupNames[id]).map((id) => groupNames[id]);
+    return { ...r, groups, groupsText: groups.join(", ") };
+  });
 
   return (
     <div className="p-2">
@@ -151,7 +181,7 @@ export default function Notification() {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbar}
-          <ExportButton table="notifications" data={rows} columns={[{ title: "ID", dataIndex: "id" }, { title: "Title", dataIndex: "titleText" }, { title: "Description", dataIndex: "descriptionText" }, { title: "Status", dataIndex: "status" }, { title: "Recipients", dataIndex: "recipients" }, { title: "Read", dataIndex: "read_count" }, languageColumn, { title: "Country", dataIndex: "country" }, createdColumn]} />
+          <ExportButton table="notifications" data={rows} columns={[{ title: "ID", dataIndex: "id" }, { title: "Title", dataIndex: "titleText" }, { title: "Description", dataIndex: "descriptionText" }, { title: "Status", dataIndex: "status" }, { title: "Recipients", dataIndex: "recipients" }, { title: "Read", dataIndex: "read_count" }, languageColumn, { title: "Country", dataIndex: "country" }, { title: "User groups", dataIndex: "groupsText" }, createdColumn]} />
           <RefreshButton size="large" onClick={getData} />
           {perm.canCreate && (
             <Button size="large" onClick={() => openForm()} icon={<AiOutlinePlus />}>
@@ -181,7 +211,7 @@ export default function Notification() {
             dataIndex: "countries",
             key: "countries",
             width: "18%",
-            render: (countries) => <AudienceCell countries={countries} t={t} />,
+            render: (countries, row) => <AudienceCell countries={countries} groups={row.groups} t={t} />,
           },
           {
             title: t("Status"),

@@ -1,6 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const sectionDomId = (id) => `settings-section-${id}`;
+
+// Contentor que faz scroll (no admin é um contentor do layout, não a janela)
+function scrollParent(el) {
+  for (let node = el?.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if (/(auto|scroll)/.test(overflowY) && node.scrollHeight > node.clientHeight) return node;
+  }
+  return window;
+}
 
 // Cartão de uma secção de uma página de definições (ícone, título, descrição e uma ação opcional à direita).
 // Usado nas Definições do curso e nos detalhes do certificado, para as páginas longas terem a mesma organização.
@@ -23,36 +32,49 @@ export function SettingsSection({ id, icon, title, description, extra, children 
 }
 
 // Índice lateral (só em ecrãs largos). Salta para a secção com scrollIntoView em vez do antd Anchor, que assume scroll da
-// janela (aqui o scroll é de um contentor do layout do admin), e destaca a secção que está à vista (IntersectionObserver,
-// que funciona com qualquer contentor de scroll). `items`: [{ id, label, icon }].
+// janela (aqui o scroll é de um contentor do layout do admin), e destaca a secção que está a ser lida, pela posição do
+// scroll: a última cujo topo já passou a linha de leitura (perto do topo); no fim da página, a última secção (as do fundo
+// nunca chegam ao topo). Depois de um clique fica a escolhida até a pessoa voltar a fazer scroll (roda, toque, teclado ou
+// barra), mesmo que a secção não chegue ao topo. `items`: [{ id, label, icon }].
 export function SettingsSectionNav({ items, label }) {
   const [activeId, setActiveId] = useState(items[0]?.id);
+  // Secção escolhida no índice: mantém o destaque até a pessoa fazer scroll por si
+  const pinned = useRef(false);
 
   useEffect(() => {
-    const visible = new Set();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const id = entry.target.dataset.sectionId;
-          if (entry.isIntersecting) visible.add(id);
-          else visible.delete(id);
-        }
-        // A 1.ª secção (pela ordem do índice) que cruza a faixa de leitura; se nenhuma cruzar (ex.: no espaço entre
-        // cartões), mantém a anterior
-        const first = items.find((item) => visible.has(item.id));
-        if (first) setActiveId(first.id);
-      },
-      // Faixa fina perto do topo do ecrã: conta como "a ler" a secção que a atravessa, não a que só aparece ao fundo
-      { rootMargin: "-15% 0px -70% 0px" },
-    );
-    items.forEach((item) => {
-      const el = document.getElementById(sectionDomId(item.id));
-      if (el) {
-        el.dataset.sectionId = item.id;
-        observer.observe(el);
-      }
-    });
-    return () => observer.disconnect();
+    const sections = () => items.map((item) => ({ id: item.id, el: document.getElementById(sectionDomId(item.id)) })).filter((s) => s.el);
+    const first = sections()[0]?.el;
+    if (!first) return;
+    const container = scrollParent(first);
+    const viewTop = () => (container === window ? 0 : container.getBoundingClientRect().top);
+    const atBottom = () =>
+      container === window
+        ? window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4
+        : container.scrollTop + container.clientHeight >= container.scrollHeight - 4;
+
+    function update() {
+      if (pinned.current) return;
+      const list = sections();
+      if (!list.length) return;
+      if (atBottom()) return setActiveId(list[list.length - 1].id);
+      const line = viewTop() + 96; // linha de leitura: um pouco abaixo do topo da área com scroll
+      let current = list[0].id;
+      for (const s of list) if (s.el.getBoundingClientRect().top <= line) current = s.id;
+      setActiveId(current);
+    }
+
+    // Scroll feito pela pessoa (não o scroll suave do clique): o destaque volta a seguir a posição
+    const release = () => {
+      pinned.current = false;
+    };
+    const userEvents = ["wheel", "touchstart", "keydown", "mousedown"];
+    update();
+    container.addEventListener("scroll", update, { passive: true });
+    userEvents.forEach((e) => container.addEventListener(e, release, { passive: true }));
+    return () => {
+      container.removeEventListener("scroll", update);
+      userEvents.forEach((e) => container.removeEventListener(e, release));
+    };
   }, [items]);
 
   return (
@@ -67,6 +89,7 @@ export function SettingsSectionNav({ items, label }) {
                 aria-current={isActive ? "true" : undefined}
                 onClick={() => {
                   setActiveId(item.id);
+                  pinned.current = true;
                   document.getElementById(sectionDomId(item.id))?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 className={`flex w-full items-center gap-2 rounded-[10px] border-0 px-3 py-2 text-left text-[13px] cursor-pointer transition-colors ${

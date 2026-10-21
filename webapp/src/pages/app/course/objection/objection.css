@@ -274,3 +274,24 @@
   font-size: 1em !important;
   margin-top: 1rem;
 }
+
+/* Leitura confortável: a altura de linha da resposta (1.6) não é anulada pelo HTML do editor */
+.objection-answer :is(p, li, span, td, th, blockquote) {
+  line-height: inherit !important;
+}
+
+.objection-answer p {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+/* Tablet e superior: um pouco mais de respiro no título da pergunta e na resposta */
+@media (min-width: 768px) {
+  .collapse-accordion.collapse-objection .ant-collapse-header {
+    padding: 14px 20px !important;
+  }
+
+  .collapse-accordion.collapse-objection .ant-collapse-content-box {
+    padding: 16px 20px !important;
+  }
+}

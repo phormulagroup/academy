@@ -6,6 +6,7 @@ import { CopyOutlined, DeleteOutlined, InboxOutlined, SearchOutlined } from "@an
 import { LuCheck, LuCopy, LuEye, LuTrash2, LuX } from "react-icons/lu";
 import dayjs from "dayjs";
 import {
+  Alert,
   Button,
   Input,
   Modal,
@@ -23,6 +24,8 @@ import config from "../../utils/config";
 import endpoints from "../../utils/endpoints";
 
 import Delete from "../../components/admin/delete";
+import BulkSelectionBar, { SelectionAction } from "../../components/admin/bulkSelectionBar";
+import useBulkSelection, { fetchAllPages, runInChunks } from "../../utils/useBulkSelection";
 import upload from "../../utils/upload";
 import { CHECKER, FileBadge, fileKind } from "../../utils/fileKind";
 import { Context } from "../../utils/context";
@@ -76,8 +79,7 @@ function Media() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [uploadingItems, setUploadingItems] = useState([]);
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const selection = useBulkSelection();
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [confirm, confirmHolder] = useConfirm();
 
@@ -102,7 +104,6 @@ function Media() {
   const refresh = () => setReload((n) => n + 1);
   const debouncedSearch = useDebounced(search.trim());
   const requestRef = useRef(0);
-  const selectedFilesRef = useRef({}); // id → ficheiro, para apagar vários mesmo noutras páginas
 
   // Mudar a pesquisa ou o filtro volta sempre à 1.ª página
   useEffect(() => {
@@ -277,27 +278,23 @@ function Media() {
       .catch(() => {});
   }
 
-  function toggleSelect(item) {
-    if (selectedFilesRef.current[item.id]) delete selectedFilesRef.current[item.id];
-    else selectedFilesRef.current[item.id] = item;
-    setSelectedIds(Object.keys(selectedFilesRef.current).map(Number));
+  // Selecionar tudo = todos os ficheiros da pesquisa e do filtro atuais, em todas as páginas (não só os 30 à vista)
+  function loadAllFiltered() {
+    return fetchAllPages(endpoints.media.list, { search: debouncedSearch, kinds: kindFilter.join(",") });
   }
 
-  function exitSelectMode() {
-    setIsSelectMode(false);
-    selectedFilesRef.current = {};
-    setSelectedIds([]);
+  function handleSelectAll() {
+    selection.selectAll(loadAllFiltered).catch((err) => {
+      console.log(err);
+      toastApi.open({ type: "error", content: t("Failed to load media") });
+    });
   }
 
   async function handleBulkDelete() {
     setIsBulkDeleting(true);
     try {
-      const itemsToDelete = Object.values(selectedFilesRef.current);
-      await Promise.all(
-        itemsToDelete.map((item) =>
-          axios.post(endpoints.media.delete, { data: { id: item.id, name: item.name } }),
-        ),
-      );
+      const itemsToDelete = selection.items;
+      await runInChunks(itemsToDelete, (item) => axios.post(endpoints.media.delete, { data: { id: item.id, name: item.name } }));
       toastApi.open({
         type: "success",
         content:
@@ -305,7 +302,7 @@ function Media() {
             ? t("File deleted successfully.")
             : t("{{total}} files deleted successfully.", { total: itemsToDelete.length }),
       });
-      exitSelectMode();
+      selection.exit();
       refresh();
     } catch (err) {
       console.log(err);
@@ -443,31 +440,50 @@ function Media() {
               { label: t("Other"), value: "other" },
             ]}
           />
-        </div>
-        {isSelectMode ? (
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+          {/* Mesmo texto e largura nos dois modos (só muda o estilo): entrar/sair da seleção não mexe nos filtros ao lado */}
+          {perm.canDelete && (
             <Button
-              type="primary"
-              loading={isBulkDeleting}
-              disabled={selectedIds.length === 0}
-              onClick={() =>
-                confirm({
-                  tone: "danger",
-                  title: t("Delete files"),
-                  description: t("Are you sure you want to delete {{total}} file(s)?", { total: selectedIds.length }),
-                  okText: t("Delete"),
-                  onOk: handleBulkDelete,
-                })
-              }>
-              {t("Delete selected")}
-              {selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+              type={selection.isSelectMode ? "primary" : "default"}
+              aria-pressed={selection.isSelectMode}
+              onClick={() => (selection.isSelectMode ? selection.exit() : selection.enter())}>
+              {t("Bulk selection")}
             </Button>
-            <Button onClick={exitSelectMode}>{t("Cancel")}</Button>
-          </div>
-        ) : (
-          <Button onClick={() => setIsSelectMode(true)}>{t("Bulk selection")}</Button>
-        )}
+          )}
+        </div>
       </div>
+      {/* Barra da seleção numa linha própria e com altura fixa: selecionar ficheiros não mexe no resto da página */}
+      {selection.isSelectMode && (
+        <div className="flex items-center min-h-8 mb-4">
+          <BulkSelectionBar selection={selection} total={total} onSelectAll={() => handleSelectAll()}>
+            <SelectionAction selection={selection}>
+              <Button
+                type="primary"
+                loading={isBulkDeleting}
+                disabled={selection.count === 0 || selection.isSelectingAll}
+                onClick={() =>
+                  confirm({
+                    tone: "danger",
+                    title: t("Delete files"),
+                    description: t("Are you sure you want to delete {{total}} file(s)?", { total: selection.count }),
+                    okText: t("Delete"),
+                    onOk: handleBulkDelete,
+                  })
+                }>
+                {t("Delete selected")}
+              </Button>
+            </SelectionAction>
+          </BulkSelectionBar>
+        </div>
+      )}
+      {perm.canDelete && (
+        <Alert
+          type="info"
+          showIcon
+          closable
+          className="mb-4! border-[#00b9d6]/30! bg-[#E6F9FC]!"
+          title={t("To remove several files at once, use {{action}}.", { action: `"${t("Bulk selection")}"` })}
+        />
+      )}
       {perm.canCreate && (
       <Dragger {...props} style={{ borderRadius: 12, background: "#FAFAFB", borderWidth: 2 }}>
         <p className="ant-upload-drag-icon">
@@ -510,16 +526,16 @@ function Media() {
         ))}
         {media.map((item) => {
           const { type, color, ext } = fileKind(item.name);
-          const isSelected = selectedIds.includes(item.id);
+          const isSelected = selection.isSelected(item);
           return (
             <div
               key={item.id}
               role="button"
               tabIndex={0}
               title={item.name}
-              onClick={isSelectMode ? () => toggleSelect(item) : () => handleOpenDetails(item)}
+              onClick={selection.isSelectMode ? () => selection.toggle(item) : () => handleOpenDetails(item)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") (isSelectMode ? toggleSelect(item) : handleOpenDetails(item));
+                if (e.key === "Enter") (selection.isSelectMode ? selection.toggle(item) : handleOpenDetails(item));
               }}
               className={`group relative cursor-pointer rounded-xl border border-solid bg-white overflow-hidden transition ${isSelected ? "border-[#163986] ring-2 ring-[#163986]" : "border-[#E5E7EB] hover:border-[#163986]/50 hover:shadow-sm"}`}>
               <div className="relative aspect-[4/3] grid place-items-center" style={type === "image" ? CHECKER : { background: "#F6F7FB" }}>
@@ -533,11 +549,11 @@ function Media() {
                     </span>
                   </div>
                 )}
-                {isSelectMode && (
+                {selection.isSelectMode && (
                   <span className={`absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-full border-2 border-white shadow ${isSelected ? "bg-[#163986] text-white" : "bg-black/25"}`}>{isSelected && <LuCheck />}</span>
                 )}
                 {/* Ações ao passar o rato (em ecrãs táteis ficam sempre à vista); não aparecem na seleção em massa */}
-                {!isSelectMode && (
+                {!selection.isSelectMode && (
                   <div className="absolute top-2 left-2 right-2 flex flex-wrap justify-end gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
                     <CardAction title={t("Details")} icon={<LuEye />} onClick={() => handleOpenDetails(item)} />
                     <CardAction title={t("Copy link")} icon={<LuCopy />} onClick={() => handleCopyClipboard(item.name)} />

@@ -5,6 +5,7 @@ import { Button, Empty } from "antd";
 import { useContext } from "react";
 
 import { Context } from "../../../utils/context";
+import { isAllowedByCountry } from "../../../utils/courseStatus";
 
 import endpoints from "../../../utils/endpoints";
 import { Link } from "react-router-dom";
@@ -42,14 +43,10 @@ export default function Download() {
       .then((res) => {
         let downloads = res.data[0];
 
+        // Limite de país (o Admin vê todos); os ficheiros de cada download, também nos que não têm limite
         const filtered = downloads.filter((d) => {
-          if (!d.country) return true;
-          const arrCountries = JSON.parse(d.country);
-
           d.items = res.data[1].filter((item) => item.id_download === d.id);
-          return (
-            arrCountries.length === 0 || arrCountries.includes(user.country)
-          );
+          return isAllowedByCountry(d.country ? JSON.parse(d.country) : null, user);
         });
 
         setData(filtered);

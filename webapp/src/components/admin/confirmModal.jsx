@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
 import { Button, Modal } from "antd";
-import { LuCircleAlert, LuCircleCheck, LuInfo, LuTrash2, LuTriangleAlert } from "react-icons/lu";
+import {
+  LuCircleAlert,
+  LuCircleCheck,
+  LuInfo,
+  LuTrash2,
+  LuTriangleAlert,
+} from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 // Cor e ícone de cada tipo de confirmação: danger (apagar), warning (repor/fechar), success (completar), info
@@ -13,8 +19,25 @@ const TONES = {
 
 // Janela de confirmação de uma ação: ícone de cor, título, descrição, conteúdo extra (children) e botões.
 // `tone` define a cor e o ícone (pode ser substituído por `icon`); em "danger" o botão de confirmar é vermelho (ou força com `danger`).
-// `hideCancel` mostra só um botão (avisos).
-export default function ConfirmModal({ open, onCancel, onConfirm, title, description, tone = "info", icon, okText, cancelText, hideCancel = false, danger, loading = false, children, width = 440 }) {
+// `hideCancel` mostra só um botão (avisos). `okClassName`/`cancelClassName` acrescentam classes aos botões (ex.: cores do site público).
+export default function ConfirmModal({
+  open,
+  onCancel,
+  onConfirm,
+  title,
+  description,
+  tone = "info",
+  icon,
+  okText,
+  cancelText,
+  hideCancel = false,
+  danger,
+  loading = false,
+  children,
+  width = 440,
+  okClassName = "",
+  cancelClassName = "",
+}) {
   const { t } = useTranslation();
   const style = TONES[tone] ?? TONES.info;
 
@@ -27,24 +50,43 @@ export default function ConfirmModal({ open, onCancel, onConfirm, title, descrip
       destroyOnHidden
       mask={{ closable: !loading }}
       closable={!loading}
+      // Ecrãs estreitos: menos margem interior, para o conteúdo e os botões caberem a partir de 320px
+      className="max-sm:[&_.ant-modal-container]:px-4! max-sm:[&_.ant-modal-container]:py-5!"
       footer={
-        <div className="flex justify-end gap-2">
+        // Em ecrãs estreitos os botões ficam em coluna, a toda a largura, com o de confirmar em cima
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
           {!hideCancel && (
-            <Button disabled={loading} onClick={onCancel}>
+            <Button
+              disabled={loading}
+              onClick={onCancel}
+              className={`w-full sm:w-auto max-sm:h-10! ${cancelClassName}`}>
               {cancelText ?? t("Cancel")}
             </Button>
           )}
-          <Button type="primary" danger={danger ?? tone === "danger"} loading={loading} onClick={onConfirm}>
+          <Button
+            type="primary"
+            danger={danger ?? tone === "danger"}
+            loading={loading}
+            onClick={onConfirm}
+            className={`w-full sm:w-auto max-sm:h-10! ${okClassName}`}>
             {okText ?? t("Confirm")}
           </Button>
         </div>
       }>
-      <div className="flex flex-col items-center px-2 pt-4 text-center">
-        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full text-[26px]" style={{ background: style.bg, color: style.color }}>
+      <div className="flex flex-col items-center px-0 pt-2 text-center sm:px-2 sm:pt-4">
+        <span
+          className="mb-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[22px] sm:mb-4 sm:h-14 sm:w-14 sm:text-[26px]"
+          style={{ background: style.bg, color: style.color }}>
           {icon ?? style.icon ?? <LuCircleAlert />}
         </span>
-        <p className="mb-2! text-[18px] font-bold">{title}</p>
-        {description && <p className="mb-0! text-[14px] leading-relaxed text-[#5B5F6B]">{description}</p>}
+        <p className="mb-2! text-[16px] leading-snug font-bold sm:text-[18px]">
+          {title}
+        </p>
+        {description && (
+          <p className="mb-0! text-[13px] leading-relaxed text-[#5B5F6B] sm:text-[14px]">
+            {description}
+          </p>
+        )}
         {children && <div className="mt-4 w-full text-left">{children}</div>}
       </div>
     </Modal>
@@ -76,6 +118,14 @@ export function useConfirm() {
     }
   }
 
-  const holder = <ConfirmModal {...(lastConfig.current ?? {})} open={open} loading={loading} onCancel={() => setOpen(false)} onConfirm={handleConfirm} />;
+  const holder = (
+    <ConfirmModal
+      {...(lastConfig.current ?? {})}
+      open={open}
+      loading={loading}
+      onCancel={() => setOpen(false)}
+      onConfirm={handleConfirm}
+    />
+  );
   return [confirm, holder];
 }

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { courseAccessState } from "./courseWindow";
+import { ADMIN_ROLE_ID } from "./roles";
 
 /**
  * Regras partilhadas de estado de cursos e testes (catálogo, detalhe do curso, eLearning e resultados).
@@ -17,6 +18,24 @@ export function parseSettings(settings) {
     }
   }
   return settings;
+}
+
+/**
+ * @function testsForStudent
+ * @description Testes que o aluno vê: limite de países do teste (settings.country_limit + country), pelo país da conta.
+ * Mesma regra do servidor (server/utils/courseAccess.js visibleTests); o Admin vê todos. Um teste que o aluno não vê
+ * não conta para o progresso, a aprovação nem a reprovação dele (como nos relatórios do curso com limite de países).
+ * @param {Array} tests - Testes do curso.
+ * @param {object} user - Aluno (country, id_role).
+ * @returns {Array}
+ */
+export function testsForStudent(tests, user) {
+  if (!user || Number(user.id_role) === ADMIN_ROLE_ID) return tests || [];
+  return (tests || []).filter((test) => {
+    const { country_limit, country } = parseSettings(test?.settings);
+    const countries = country_limit && Array.isArray(country) && country.length > 0 ? country : null;
+    return !countries || countries.includes(user.country);
+  });
 }
 
 /**
@@ -88,6 +107,48 @@ export function testDateState(test) {
  * @returns {boolean}
  */
 export function isAllowedByCountry(countries, user) {
+  // O Admin vê tudo (cursos, documentos, downloads e materiais), sem limite de país
+  if (Number(user?.id_role) === ADMIN_ROLE_ID) return true;
   if (!countries || countries.length === 0) return true;
   return countries.includes(user?.country);
+}
+
+// Tempo até o curso abrir aos alunos (ex.: "3d 4h", "5h 20m")
+export function timeUntil(date) {
+  const minutes = Math.max(dayjs(date).diff(dayjs(), "minute"), 0);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes % 60}m`;
+}
+
+// Admin: esconder do SEU catálogo (e dos resultados do perfil, a mesma preferência) os cursos expirados e/ou os que ainda não abriram
+// aos alunos (só no browser; não altera a BD)
+export const catalogueFiltersKey = (userId) => `catalogue_filters_${userId}`;
+
+export function readCatalogueFilters(userId) {
+  try {
+    const value = JSON.parse(localStorage.getItem(catalogueFiltersKey(userId)));
+    return { hideExpired: !!value?.hideExpired, hideUpcoming: !!value?.hideUpcoming };
+  } catch {
+    return { hideExpired: false, hideUpcoming: false };
+  }
+}
+
+// Texto do ecrã de bloqueado conforme o que falta concluir: o tópico anterior, o teste anterior ou vários passos anteriores
+export function lockedDescription(t, lockedBy) {
+  if (lockedBy === "test") return t("You'll need to complete the previous test first");
+  if (lockedBy === "steps") return t("You'll need to complete all the previous steps first");
+  return t("You'll need to complete the previous topic first");
+}
+
+// N.º de tópicos e testes de um módulo, com singular/plural (ex.: "1 tópico | 2 testes")
+export function itemCountsLabel(items, t) {
+  const topics = (items || []).filter((i) => i.type === "topic").length;
+  const tests = (items || []).filter((i) => i.type === "test").length;
+  return [
+    topics > 0 && `${topics} ${topics === 1 ? t("topic") : t("topics")}`,
+    tests > 0 && `${tests} ${tests === 1 ? t("test") : t("tests")}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
 }

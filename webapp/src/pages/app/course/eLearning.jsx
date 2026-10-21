@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { courseAccessState } from "../../../utils/courseWindow";
 import { MenuOutlined } from "@ant-design/icons";
 import {
@@ -29,6 +29,7 @@ import {
   AiOutlineCheck,
   AiFillCaretLeft,
   AiFillCaretRight,
+  AiOutlineArrowLeft,
 } from "react-icons/ai";
 import {
   RxChevronRight,
@@ -64,18 +65,41 @@ import {
   isTestFailed,
   parseSettings,
   testDateState,
+  itemCountsLabel,
 } from "../../../utils/courseStatus";
 import { downloadCertificate } from "../../../utils/certificate";
 import config from "../../../utils/config";
 import CourseLoading from "../../../components/app/courseLoading";
 import { hasFullAccess } from "../../../utils/roles";
+import { itemsProgress } from "../../../utils/percent";
 
 const { confirm } = Modal;
 
 const { Header, Content, Sider } = Layout;
 
+// Largura por omissão da coluna do eLearning (igual ao maxWidth por omissão dos vídeos)
+const DEFAULT_CONTENT_WIDTH = 950;
+
+// Largura de um tópico definida no editor: o maior maxWidth (número) dos seus blocos; null se nenhum tiver
+function topicBlocksWidth(topic) {
+  try {
+    const parsed = JSON.parse(topic?.content || "{}");
+    const blocks = [
+      ...(parsed?.content || []),
+      ...Object.values(parsed?.zones || {}).flat(),
+    ];
+    const widths = blocks
+      .map((b) => Number(b?.props?.maxWidth))
+      .filter((w) => w > 0);
+    return widths.length > 0 ? Math.max(...widths) : null;
+  } catch {
+    return null;
+  }
+}
+
 const Learning = () => {
-  const { user, logout, languages, windowDimension, isStaff } = useContext(Context);
+  const { user, logout, languages, windowDimension, isStaff, toastApi } =
+    useContext(Context);
   const [isOpenDrawerMenu, setIsOpenDrawerMenu] = useState(false);
   const [isOpenLogout, setIsOpenLogout] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -96,6 +120,11 @@ const Learning = () => {
   const [progress, setProgress] = useState(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
+  // Navegação livre: item aberto que fica com o ecrã de bloqueado e o item a partir do qual se conta o "seguinte"
+  const [forcedLockKey, setForcedLockKey] = useState(null);
+  // O que falta concluir para abrir o item bloqueado ("topic", "test" ou "steps"), para o texto do bloqueio
+  const [forcedLockBy, setForcedLockBy] = useState(null);
+  const [lockAnchor, setLockAnchor] = useState(null);
   const [metaData, setMetaData] = useState(null);
   const [activeModule, setActiveModule] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
@@ -161,11 +190,15 @@ const Learning = () => {
         auxCourse.settings = auxCourse.settings
           ? JSON.parse(auxCourse.settings)
           : null;
-        // Navegação: o admin navega sempre livremente (sem restrições, mesmo que o curso seja linear);
-        // os alunos têm sempre navegação linear
+        // Navegação: o admin navega sempre livremente (mesmo que o curso seja linear); os alunos seguem a definição
+        // do curso (linear por omissão; "free" = podem abrir qualquer item e avançar sem concluir o atual)
         auxCourse.settings = {
           ...(auxCourse.settings || {}),
-          progression_type: hasFullAccess(user) ? "free" : "linear",
+          progression_type: hasFullAccess(user)
+            ? "free"
+            : auxCourse.settings?.progression_type === "free"
+              ? "free"
+              : "linear",
         };
 
         // Admins (id_role = 1) can access all courses regardless of restrictions
@@ -348,8 +381,8 @@ const Learning = () => {
     return allItems.every((item) => isItemCompleted(item, progressToCheck));
   }
 
-  // Reprovado no curso (mesma regra dos relatórios): esgotou as tentativas de um teste sem aprovar
-  const courseFailed = isCourseFailed(progress, data?.courseTests);
+  // Reprovado no curso (mesma regra dos relatórios): esgotou as tentativas de um teste sem aprovar. A equipa (Admin) navega sempre livremente
+  const courseFailed = !hasFullAccess(user) && isCourseFailed(progress, data?.courseTests);
 
   // Depois de reprovar só pode rever o que já fez: itens concluídos e o(s) teste(s) em que reprovou
   function isAccessibleWhenFailed(item) {
@@ -368,8 +401,77 @@ const Learning = () => {
     wasFailedRef.current = courseFailed;
   }, [courseFailed, progress, data]);
 
+  // Navegação livre (alunos): pode abrir qualquer item; o que vem logo a seguir ao item em que estava (a "âncora"), enquanto
+  // esta não estiver concluída (todos os slides vistos / vídeo visto até ao fim / teste aprovado), abre com o ecrã de
+  // bloqueado (como no linear) e o Próximo fica desativado. A âncora não muda ao abrir um item bloqueado.
+  const itemKey = (item) => (item?.type ? `${item.type}-${item.id}` : null);
+  function isNextItemLocked(item) {
+    if (hasFullAccess(user) || data?.course?.settings?.progression_type !== "free") return false;
+    // Item já concluído (com o visto) nunca fica bloqueado
+    if (isItemCompleted(item)) return false;
+    const anchor = lockAnchor || selectedCourseItem;
+    if (!anchor?.type || isItemCompleted(anchor)) return false;
+    const current = indexInCourse(anchor);
+    return current >= 0 && indexInCourse(item) === current + 1;
+  }
+
+  // Navegação livre (alunos): um teste só abre depois de concluídos todos os itens anteriores do curso (ex.: um vídeo
+  // por ver). Devolve o que falta ("topic"/"test" = só o item anterior; "steps" = vários) ou null se não está bloqueado
+  function testPrerequisiteLock(item, progressToCheck = progress) {
+    if (hasFullAccess(user) || data?.course?.settings?.progression_type !== "free") return null;
+    if (item?.type !== "test" || isItemCompleted(item, progressToCheck)) return null;
+    const index = indexInCourse(item);
+    const missing = (allItems || [])
+      .slice(0, Math.max(0, index))
+      .filter((i) => !isItemCompleted(i, progressToCheck));
+    if (missing.length === 0) return null;
+    return missing.length === 1 && indexInCourse(missing[0]) === index - 1
+      ? missing[0].type
+      : "steps";
+  }
+
+  // Bloqueio da navegação livre de um item: o que falta concluir, ou null
+  function freeLock(item) {
+    const prerequisite = testPrerequisiteLock(item);
+    if (prerequisite) return prerequisite;
+    return isNextItemLocked(item) ? (lockAnchor || selectedCourseItem)?.type : null;
+  }
+
+  // Abre um item com (ou sem) o ecrã de bloqueado da navegação livre
+  function setForcedLock(item, lockedBy) {
+    setForcedLockKey(lockedBy ? itemKey(item) : null);
+    setForcedLockBy(lockedBy || null);
+  }
+
+  // Ao abrir o eLearning (item vindo da página do curso ou o primeiro), o curso e o progresso ainda não estavam
+  // carregados quando o item foi escolhido: aplica agora o bloqueio dos testes da navegação livre
+  useEffect(() => {
+    if (!allItems || !selectedCourseItem?.type || forcedLockKey) return;
+    const lockedBy = testPrerequisiteLock(selectedCourseItem);
+    if (lockedBy) setForcedLock(selectedCourseItem, lockedBy);
+  }, [allItems]);
+
   function selectCourseItem(item) {
-    if (!isAccessibleWhenFailed(item)) return;
+    // Teste a decorrer: não sai do teste pela lista de módulos (a tentativa não ficava gravada), como na barra inferior
+    if (isTestInProgress && itemKey(item) !== itemKey(selectedCourseItem)) {
+      toastApi.open({
+        type: "warning",
+        content: t("Finish the test before moving to another step"),
+      });
+      return;
+    }
+    // Reprovado: um item que ainda não fez abre só o aviso de conteúdo indisponível (selectedBlocked), sem o conteúdo
+    if (!isAccessibleWhenFailed(item)) {
+      setForcedLock(null);
+      setSelectedCourseItem(item);
+      if (windowDimension.width < 1080) closeDrawer();
+      return;
+    }
+    if (item.type) {
+      const lockedBy = freeLock(item);
+      setForcedLock(item, lockedBy);
+      if (!lockedBy) setLockAnchor(item);
+    }
     setSelectedCourseItem(item);
     // Only close drawer when selecting an actual topic/test item, not module headers
     if (item.type && windowDimension.width < 1080) {
@@ -386,10 +488,13 @@ const Learning = () => {
   }
 
   // Avança para o item seguinte do curso; ao mudar de módulo vai direto para o primeiro item do
-  // módulo seguinte. Devolve false quando já é o último item.
-  function goToNextItem() {
+  // módulo seguinte. Devolve false quando já é o último item. progressToCheck: progresso já com o item acabado
+  // de concluir (o estado ainda não foi atualizado), para o bloqueio dos testes na navegação livre
+  function goToNextItem(progressToCheck = progress) {
     const nextItem = allItems?.[indexInCourse(selectedCourseItem) + 1];
     if (!nextItem || !isAccessibleWhenFailed(nextItem)) return false;
+    setForcedLock(nextItem, testPrerequisiteLock(nextItem, progressToCheck));
+    setLockAnchor(nextItem);
     setSelectedCourseItem(nextItem);
     return true;
   }
@@ -481,7 +586,8 @@ const Learning = () => {
         data: auxData,
       })
       .then(() => {
-        if (changeItem === undefined || changeItem !== false) goToNextItem();
+        if (changeItem === undefined || changeItem !== false)
+          goToNextItem(simulatedProgress);
         setProgress((prev) => [...prev, ...auxData]);
         // Abrir modal de curso concluído se o curso estiver concluído 100% ou se tiver sido concluído no ultimo item
         if (
@@ -501,6 +607,7 @@ const Learning = () => {
     const index = indexInCourse(selectedCourseItem);
     if (index > 0) {
       if (!isAccessibleWhenFailed(allItems[index - 1])) return;
+      setForcedLock(allItems[index - 1], testPrerequisiteLock(allItems[index - 1]));
       setSelectedCourseItem(allItems[index - 1]);
     } else {
       confirm({
@@ -519,15 +626,9 @@ const Learning = () => {
   }
 
   // Percentagem de itens (tópicos/testes) concluídos; cada item conta uma só vez, nunca passa de 100%
+  // (mesma regra do catálogo, do detalhe e dos resultados: utils/percent itemsProgress)
   function calcProgress() {
-    const total = allItems?.length || 0;
-    const completed = (allItems || []).filter((item) =>
-      isItemCompleted(item),
-    ).length;
-    const percentage = total > 0 ? Math.min(100, (100 * completed) / total) : 0;
-    setProgressPercentage(
-      percentage === 100 ? 100 : Number(percentage.toFixed(2)),
-    );
+    setProgressPercentage(itemsProgress(allItems, progress).percent);
   }
 
   function updateProgress(newObj) {
@@ -581,7 +682,12 @@ const Learning = () => {
     const blocked = !isAccessibleWhenFailed(item);
     return {
       expired,
-      rowClass: blocked ? "opacity-50 cursor-not-allowed!" : "",
+      // Teste a decorrer: os outros itens não abrem (ver selectCourseItem)
+      rowClass: `${blocked ? "opacity-50" : ""} ${
+        isTestInProgress && itemKey(item) !== itemKey(selectedCourseItem)
+          ? "cursor-not-allowed"
+          : "cursor-pointer"
+      }`,
       textClass: expired ? "text-[#8B9CC3]" : "text-[#163986]",
       marker: expired ? (
         <Tooltip title={expired}>
@@ -628,19 +734,24 @@ const Learning = () => {
     );
   }
 
-  // Largura da coluna do conteúdo: o maior maxWidth dos blocos do tópico (ex.: vídeo de 1000px)
-  const contentMaxWidth = (() => {
-    try {
-      const blocks =
-        JSON.parse(selectedCourseItem?.content || "{}")?.content || [];
-      const widths = blocks
-        .map((b) => Number(b?.props?.maxWidth))
-        .filter((w) => w > 0);
-      return widths.length > 0 ? Math.max(...widths) : 1000;
-    } catch {
-      return 1000;
-    }
-  })();
+  // Largura da coluna do conteúdo: vem do editor de tópicos (maxWidth dos blocos). Num tópico é o maior maxWidth
+  // dos seus blocos; nos testes (e módulos / tópicos sem largura) é a largura mais comum dos tópicos do curso,
+  // para o teste ficar com a mesma largura do conteúdo à volta
+  const courseContentWidth = useMemo(() => {
+    const counts = {};
+    (allItems || []).forEach((item) => {
+      const width = item.type === "topic" ? topicBlocksWidth(item) : null;
+      if (width) counts[width] = (counts[width] || 0) + 1;
+    });
+    const widths = Object.keys(counts).map(Number);
+    if (widths.length === 0) return DEFAULT_CONTENT_WIDTH;
+    // Mais comum; em empate, a maior
+    return widths.sort((a, b) => counts[b] - counts[a] || b - a)[0];
+  }, [allItems]);
+  const contentMaxWidth =
+    (selectedCourseItem?.type === "topic" &&
+      topicBlocksWidth(selectedCourseItem)) ||
+    courseContentWidth;
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -766,46 +877,12 @@ const Learning = () => {
               <div className="flex justify-end items-center">
                 <Button
                   size="large"
-                  icon={<RxChevronLeft />}
-                  className="button-back-learning-header mr-4"
+                  icon={<AiOutlineArrowLeft />}
+                  className="button-back-learning-header"
                   onClick={() => navigate(`/${i18n.language}/courses/${slug}`)}>
-                  {t("Back to course")}
+                  {t("Back")}
                 </Button>
-                {selectedCourseItem?.type && (
-                  <>
-                    {!isFirstItem && (
-                      <Button
-                        size="large"
-                        icon={<RxChevronLeft />}
-                        className="button-learning-header mr-2"
-                        onClick={() => previous()}
-                        disabled={isTestInProgress || prevBlocked}>
-                        {windowDimension.width >= 1081 &&
-                        windowDimension.width < 1270
-                          ? ""
-                          : t("Previous")}
-                      </Button>
-                    )}
-                    {showNext && (
-                      <Button
-                        size="large"
-                        icon={<RxChevronRight />}
-                        iconPlacement="end"
-                        className="button-learning-header"
-                        onClick={() => next()}
-                        disabled={
-                          isTestInProgress ||
-                          nextBlocked ||
-                          (!allowNext && !hasFullAccess(user))
-                        }>
-                        {windowDimension.width >= 1081 &&
-                        windowDimension.width < 1270
-                          ? ""
-                          : nextLabel}
-                      </Button>
-                    )}
-                  </>
-                )}
+                {/* Anterior/Próximo só na barra inferior (fixa), para não duplicar a navegação */}
               </div>
             </div>
           ) : windowDimension.width <= 768 ? (
@@ -1019,7 +1096,7 @@ const Learning = () => {
                                   onClick={() => selectCourseItem(item)}>
                                   {item.title}
                                 </p>
-                                {data?.course?.settings.progression_type ===
+                                {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
                                 "linear"
                                   ? mInd > 0 &&
                                     progress.filter(
@@ -1041,7 +1118,7 @@ const Learning = () => {
                               {item.items.map((_t, _i) => (
                                 <div
                                   onClick={() => selectCourseItem(_t)}
-                                  className={`p-2 pl-6 cursor-pointer flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
+                                  className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
                                   {progress.length > 0 &&
                                   progress.filter(
                                     (p) =>
@@ -1067,7 +1144,12 @@ const Learning = () => {
                                     {_t.title}
                                   </p>
                                   {itemListExtras(_t).marker}
-                                  {data?.course?.settings.progression_type ===
+                                  {freeLock(_t) && (
+                                    <div className="flex justify-center items-center ml-4">
+                                      <RxLockClosed className="w-3.75 h-3.75" />
+                                    </div>
+                                  )}
+                                  {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
                                   "linear"
                                     ? ((_i > 0 && mInd === 0) ||
                                         (mInd > 0 && _i >= 0)) &&
@@ -1110,12 +1192,6 @@ const Learning = () => {
                         let content = modules.filter(
                           (item) => item.id === parseInt(panelProps.panelKey),
                         )[0];
-                        let topics = content.items?.filter(
-                          (_t) => _t.type === "topic",
-                        );
-                        let tests = content.items?.filter(
-                          (_t) => _t.type === "test",
-                        );
                         return (
                           <div className="flex justify-center items-center">
                             <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
@@ -1126,10 +1202,7 @@ const Learning = () => {
                               )}
                             </div>
                             <p className="text-[#506BA4]">
-                              {topics && topics.length > 0
-                                ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}`
-                                : ""}{" "}
-                              {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                              {itemCountsLabel(content.items, t)}
                             </p>
                           </div>
                         );
@@ -1171,10 +1244,10 @@ const Learning = () => {
                       closeDrawer();
                       navigate(`/${i18n.language}/courses/${slug}`);
                     }}
-                    aria-label={t("Back to course")}>
+                    aria-label={t("Back")}>
                     <span className="flex items-center gap-1 text-white/80 text-[12px] group-hover:text-[#00B9D6] transition-colors">
-                      <RxChevronLeft className="w-3.5 h-3.5" />
-                      {t("Back to course")}
+                      <AiOutlineArrowLeft className="w-3.5 h-3.5" />
+                      {t("Back")}
                     </span>
                     <span className="font-ryker text-white text-[13px] mt-1">
                       {t("Course")}
@@ -1221,7 +1294,7 @@ const Learning = () => {
                                     }}>
                                     {item.title}
                                   </p>
-                                  {data?.course?.settings.progression_type ===
+                                  {!isModuleCompleted(item) && data?.course?.settings.progression_type ===
                                   "linear"
                                     ? mInd > 0 &&
                                       progress.filter(
@@ -1245,7 +1318,7 @@ const Learning = () => {
                                 {item.items.map((_t, _i) => (
                                   <div
                                     onClick={() => selectCourseItem(_t)}
-                                    className={`p-2 pl-6 cursor-pointer flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
+                                    className={`p-2 pl-6 flex items-center gap-2 ${itemListExtras(_t).rowClass}`}>
                                     {progress.length > 0 &&
                                     progress.filter(
                                       (p) =>
@@ -1272,7 +1345,12 @@ const Learning = () => {
                                       {_t.title}
                                     </p>
                                     {itemListExtras(_t).marker}
-                                    {data?.course?.settings.progression_type ===
+                                    {freeLock(_t) && (
+                                      <div className="flex justify-center items-center ml-4">
+                                        <RxLockClosed className="w-3.75 h-3.75" />
+                                      </div>
+                                    )}
+                                    {!isItemCompleted(_t) && data?.course?.settings.progression_type ===
                                     "linear"
                                       ? ((_i > 0 && mInd === 0) ||
                                           (mInd > 0 && _i >= 0)) &&
@@ -1321,12 +1399,6 @@ const Learning = () => {
                           let content = modules.filter(
                             (item) => item.id === parseInt(panelProps.panelKey),
                           )[0];
-                          let topics = content.items?.filter(
-                            (_t) => _t.type === "topic",
-                          );
-                          let tests = content.items?.filter(
-                            (_t) => _t.type === "test",
-                          );
                           return (
                             <div className="flex justify-center items-center">
                               <div className="w-5 h-5 rounded-full bg-[#FFC600] flex justify-center items-center mr-2">
@@ -1337,10 +1409,7 @@ const Learning = () => {
                                 )}
                               </div>
                               <p className="text-[#506BA4]">
-                                {topics && topics.length > 0
-                                  ? `${topics.length} ${t("topic")} ${tests.length > 0 ? " | " : ""}`
-                                  : ""}{" "}
-                                {` ${tests.length > 0 ? `${tests.length} ${t("test")}` : ""}`}
+                                {itemCountsLabel(content.items, t)}
                               </p>
                             </div>
                           );
@@ -1425,6 +1494,8 @@ const Learning = () => {
                             children:
                               selectedCourseItem.type === "topic" ? (
                                 <Topic
+                                  forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
+                                  lockedBy={forcedLockBy}
                                   course={data.course}
                                   progress={progress}
                                   selectedCourseItem={selectedCourseItem}
@@ -1435,6 +1506,8 @@ const Learning = () => {
                                 />
                               ) : (
                                 <Test
+                                  forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
+                                  lockedBy={forcedLockBy}
                                   course={data.course}
                                   progress={progress}
                                   selectedCourseItem={selectedCourseItem}
@@ -1474,6 +1547,8 @@ const Learning = () => {
                       />
                     ) : selectedCourseItem?.type === "topic" ? (
                       <Topic
+                        forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
+                        lockedBy={forcedLockBy}
                         course={data.course}
                         progress={progress}
                         selectedCourseItem={selectedCourseItem}
@@ -1483,6 +1558,8 @@ const Learning = () => {
                       />
                     ) : selectedCourseItem?.type === "test" ? (
                       <Test
+                        forceLocked={forcedLockKey === itemKey(selectedCourseItem)}
+                        lockedBy={forcedLockBy}
                         course={data?.course}
                         progress={progress}
                         selectedCourseItem={selectedCourseItem}
@@ -1517,12 +1594,12 @@ const Learning = () => {
           {/* Navegação entre perguntas do teste: o Test coloca-a aqui (portal) enquanto decorre */}
           <div ref={setTestFooterSlot} className="shrink-0" />
           {/* Barra inferior (fixa): à esquerda o switch do menu do curso (Sider, desktop); à direita Anterior e
-              Próximo. Anterior/Próximo: nos tópicos; nos testes só em tablet/mobile (sem navegação no topo).
+              Próximo (tópicos e testes; é a única navegação entre itens, o header já não a tem).
               Durante o teste é substituída pela navegação entre perguntas. */}
           {selectedCourseItem &&
             !isTestInProgress &&
             (windowDimension.width > 1080 || selectedCourseItem.type) && (
-              <div className="p-2 sm:p-3 md:p-4 flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
+              <div className="learning-footer flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
                 <div className="flex items-center">
                   {windowDimension.width > 1080 && (
                     <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
@@ -1544,10 +1621,8 @@ const Learning = () => {
                     </label>
                   )}
                 </div>
-                {(selectedCourseItem.type === "topic" ||
-                  windowDimension.width <= 1080) && (
-                  // Em mobile também com as labels Anterior/Próximo, como no header
-                  <div className="flex items-center gap-2">
+                {selectedCourseItem.type && (
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {!isFirstItem && (
                       <Button
                         icon={<RxChevronLeft />}
@@ -1556,7 +1631,7 @@ const Learning = () => {
                             ? "course-button-previous-mobile"
                             : "course-button-previous"
                         }
-                        disabled={prevBlocked}
+                        disabled={isTestInProgress || prevBlocked}
                         onClick={() => previous()}>
                         {t("Previous")}
                       </Button>
@@ -1567,9 +1642,10 @@ const Learning = () => {
                         iconPlacement="end"
                         onClick={() => next()}
                         disabled={
-                          nextBlocked || (!allowNext && !hasFullAccess(user))
+                          isTestInProgress ||
+                          nextBlocked ||
+                          (!allowNext && !hasFullAccess(user))
                         }
-                        size="small"
                         className="course-button-next">
                         {nextLabel}
                       </Button>

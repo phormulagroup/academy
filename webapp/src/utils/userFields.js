@@ -25,6 +25,7 @@ export const genderOptions = (t, lang) => {
 export const academicBackgroundOptions = (t) => [
   { label: t("Secondary School"), value: "Secondary School" },
   { label: t("University Degree"), value: "University Degree" },
+  { label: t("Master's Degree"), value: "Master's Degree" },
   { label: t("PhD"), value: "PhD" },
   { label: t("Other"), value: "Other" },
 ];

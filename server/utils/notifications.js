@@ -28,6 +28,17 @@ const parseCountries = (value) => {
     return [];
   }
 };
+// Grupos de utilizadores (notification.user_groups), como course_module.items: [{ "id": 1 }, { "id": 2 }]
+const parseGroups = (value) => {
+  try {
+    const list = typeof value === "string" ? JSON.parse(value) : value;
+    return Array.isArray(list) ? list.map((g) => Number(g?.id)).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+// Ids do formulário → JSON a gravar (sem grupos = NULL, sem filtro)
+const groupsJson = (ids) => (Array.isArray(ids) && ids.length ? JSON.stringify(ids.map((id) => ({ id: Number(id) }))) : null);
 
 // Quem recebe: utilizadores aprovados e ativos do idioma da notificação, e dos países escolhidos (sem países = todos)
 function audienceWhere(n) {
@@ -37,6 +48,16 @@ function audienceWhere(n) {
   if (countries.length) {
     where.push("u.country IN (?)");
     params.push(countries);
+  }
+  // E membro de um dos grupos escolhidos, como no acesso aos cursos. Só contam grupos ativos (is_deleted = 0): sem grupos, ou se
+  // nenhum dos escolhidos estiver ativo (como aparece no backoffice), não há filtro de grupos
+  const groups = parseGroups(n.user_groups);
+  if (groups.length) {
+    where.push(
+      "(NOT EXISTS (SELECT 1 FROM user_group WHERE id IN (?) AND is_deleted = 0) OR " +
+        "EXISTS (SELECT 1 FROM user_group_member ugm INNER JOIN user_group ug ON ug.id = ugm.id_group AND ug.is_deleted = 0 WHERE ugm.id_user = u.id AND ugm.id_group IN (?)))",
+    );
+    params.push(groups, groups);
   }
   return { where, params };
 }
@@ -80,4 +101,4 @@ async function deliverDue() {
   }
 }
 
-module.exports = { scheduleReady, parseCountries, countAudience, deliver, deliverDue };
+module.exports = { scheduleReady, parseCountries, groupsJson, countAudience, deliver, deliverDue };

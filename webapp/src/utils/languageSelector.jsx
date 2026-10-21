@@ -7,12 +7,19 @@ export default function LanguageSelector({
   className = "",
   placement = "bottomRight",
   children, // botão personalizado (por omissão, a pastilha com a bandeira e o código)
+  // Opcional (ex.: formulários de autenticação): o idioma escolhe-se também pelo teclado (Enter no item do menu, foco no menu ao abrir)
+  keyboardSelect = false,
 }) {
   const textSize = "text-[12px] sm:text-[13px] md:text-[14px] lg:text-[14px]";
 
   return (
     <Dropdown
       menu={{
+        ...(keyboardSelect && {
+          selectable: true,
+          selectedKeys: selectedLanguage ? [selectedLanguage.code] : [],
+          onClick: ({ key }) => onSelect(languages.find((l) => l.code === key)),
+        }),
         items: languages.map((item) => ({
           key: item.code,
           label: (
@@ -22,7 +29,7 @@ export default function LanguageSelector({
                   ? "text-[#00B9D6]"
                   : "text-[#163986]"
               }`}
-              onClick={() => onSelect(item)}>
+              onClick={keyboardSelect ? undefined : () => onSelect(item)}>
               <img src={item.flag} className="max-w-5 mr-2" alt={item.name} />
               <p>{item.name}</p>
             </div>
@@ -30,6 +37,7 @@ export default function LanguageSelector({
         })),
       }}
       trigger={["click"]}
+      autoFocus={keyboardSelect}
       placement={placement}>
       {children || (
       <div

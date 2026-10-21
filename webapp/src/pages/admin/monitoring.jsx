@@ -10,7 +10,8 @@ import { useConfirm } from "../../components/admin/confirmModal";
 import UserCell from "../../components/admin/userCell";
 import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
-import { usePermission } from "../../utils/usePermission";
+import { usePermission } from "../../utils/usePermission";
+import { floorPercent } from "../../utils/percent";
 
 const fmt = (value) => (value ? dayjs(value).format("DD/MM/YYYY HH:mm:ss") : "—");
 
@@ -111,7 +112,7 @@ function Availability() {
             <div key={key} className="rounded-[14px] bg-white p-4 shadow">
               <p className="mb-1! text-[12px] text-[#8A8D98]">{label}</p>
               <p className="mb-0! text-[26px] font-bold leading-tight" style={{ color: w.availability >= 99.9 ? "#2F8351" : w.availability >= 99 ? "#D97706" : "#DB0709" }}>
-                {w.availability.toFixed(2)}%
+                {floorPercent(w.availability)}%
               </p>
               <p className="mb-0! text-[12px] text-[#5B5F6B]">
                 {t("Downtime")}: <b>{duration(w.downtime_seconds)}</b> · {t("{{count}} incidents", { count: w.incidents })}

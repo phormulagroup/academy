@@ -12,6 +12,7 @@ import useRetryLock from "../../utils/useRetryLock";
 import maskEmail from "../../utils/maskEmail";
 import { AuthStepHeader, AuthStepSuccess, authLinkClass } from "./authStep";
 import { RetryNotice, RetryTooltip } from "./retryLock";
+import { saveDeviceToken } from "../../utils/trustedDevice";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -60,6 +61,8 @@ export default function LoginCode({ email, sentAt, onVerified, onRestart, onRese
       })
       .then((res) => {
         if (res.data.user && res.data.token) {
+          // Este browser fica de confiança: só volta a pedir código no login daqui a 30 dias
+          saveDeviceToken(email, res.data.device_token);
           // Sucesso: animação no próprio formulário e depois entra na aplicação
           setIsVerified(true);
           setTimeout(() => onVerified({ user: res.data.user, token: res.data.token }), 2800);

@@ -29,7 +29,7 @@ const Video = {
   },
   defaultProps: {
     link: "https://player.vimeo.com/video/1039818823",
-    maxWidth: 1000, // VALORES DEFAULT DEVEM SER AJUSTADOS PARA 1000
+    maxWidth: 950, // Largura por omissão dos vídeos (ajustável por bloco no editor)
   },
   render: (props) => <VideoPlayer {...props} />,
 };
@@ -52,8 +52,9 @@ function VideoPlayer({ link, maxWidth, title, justifyContent, alignItems }) {
             <BialSpin />
           </div>
         )}
+        {/* pip=0: sem picture-in-picture no player do Vimeo (o "allow" também não inclui picture-in-picture) */}
         <iframe
-          src={`${link}?badge=0&amp;autopause=0&amp;player_id=0`}
+          src={`${link}${link?.includes("?") ? "&" : "?"}badge=0&autopause=0&player_id=0&pip=0`}
           frameborder="0"
           allow={`clipboard-write; encrypted-media; fullscreen`}
           referrerpolicy="strict-origin-when-cross-origin"

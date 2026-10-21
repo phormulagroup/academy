@@ -24,4 +24,12 @@ const setRequestLanguage = (lng) => {
 setRequestLanguage(i18n.language);
 i18n.on("languageChanged", setRequestLanguage);
 
+// <html lang> acompanha o idioma da app (o index.html arranca em "en"): sem isto o Chrome via uma página em espanhol marcada como inglês
+// e oferecia/aplicava a tradução automática, que troca textos já traduzidos (ex.: "Tickets" → "Entradas")
+const setDocumentLanguage = (lng) => {
+  if (lng && typeof document !== "undefined") document.documentElement.lang = lng.split("-")[0];
+};
+setDocumentLanguage(i18n.language);
+i18n.on("languageChanged", setDocumentLanguage);
+
 export default i18n;

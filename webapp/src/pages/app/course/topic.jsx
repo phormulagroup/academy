@@ -8,6 +8,7 @@ import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
 import { Context } from "../../../utils/context";
 import { hasFullAccess } from "../../../utils/roles";
+import { lockedDescription } from "../../../utils/courseStatus";
 
 const Topic = ({
   course,
@@ -15,9 +16,11 @@ const Topic = ({
   progress,
   setAllowNext,
   allItems,
+  forceLocked,
+  // Navegação livre: o que falta concluir ("topic", "test" ou "steps"), para o texto do bloqueio
+  lockedBy,
 }) => {
   const [isTopicLocked, setIsTopicLocked] = useState(false);
-  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const [seo, setSeo] = useState({});
   const { t } = useTranslation();
   const { user } = useContext(Context);
@@ -29,7 +32,6 @@ const Topic = ({
   useEffect(() => {
     setAllowNext(false);
     setIsTopicLocked(false);
-    setIsVideoCompleted(false);
 
     if (selectedCourseItem.type !== "topic") return;
 
@@ -44,6 +46,12 @@ const Topic = ({
     // Admin: navegação livre, não precisa de ver os vídeos. Tópico já concluído: pode avançar e rever à vontade
     if (isAdmin || isCompleted) {
       setAllowNext(true);
+      return;
+    }
+
+    // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (sem o conteúdo)
+    if (forceLocked) {
+      setIsTopicLocked(lockedBy || "topic");
       return;
     }
 
@@ -65,16 +73,35 @@ const Topic = ({
             p[`id_course_${previousItem.type}`] === previousItem.id,
         );
         if (!previousCompleted) {
-          setIsTopicLocked(true);
+          // Guarda o tipo do item anterior, para o texto do bloqueio (tópico ou teste anterior)
+          setIsTopicLocked(previousItem.type);
           return;
         }
       }
     }
 
-    // Sem vídeos no conteúdo do tópico: pode avançar
-    if (!(selectedCourseItem.content || "").includes("player.vimeo.com")) {
+    // Requisitos para avançar (navegação free ou linear): ver todos os vídeos até ao fim e todos os slides dos carrosséis
+    const content = selectedCourseItem.content || "";
+    const hasVideo = content.includes("player.vimeo.com");
+    const hasCarousel = content.includes('"ImageCarousel"');
+    if (!hasVideo && !hasCarousel) {
       setAllowNext(true);
       return;
+    }
+    let videosDone = !hasVideo;
+    // Carrosséis na página com todos os slides vistos (um carrossel sem imagens não aparece e não conta)
+    const carouselsDone = () => [...document.querySelectorAll(".bial-carousel")].every((c) => c.dataset.seenAll === "true");
+    const checkDone = () => {
+      if (videosDone && carouselsDone()) setAllowNext(true);
+    };
+    window.addEventListener("bial-carousel-progress", checkDone);
+    // Primeira verificação depois de os blocos aparecerem na página (o carrossel só com 1 slide fica logo visto)
+    const firstCheck = setTimeout(checkDone, 1500);
+    if (!hasVideo) {
+      return () => {
+        clearTimeout(firstCheck);
+        window.removeEventListener("bial-carousel-progress", checkDone);
+      };
     }
 
     // Vídeos (Vimeo): o aluno tem de ver todos até ao fim para avançar; se tentar avançar o tempo do
@@ -111,8 +138,8 @@ const Topic = ({
           ended = true;
           endedCount++;
           if (endedCount === iframes.length) {
-            setAllowNext(true);
-            setIsVideoCompleted(true);
+            videosDone = true;
+            checkDone();
           }
         });
         return player;
@@ -124,13 +151,15 @@ const Topic = ({
     // Ao mudar de item, remove os listeners dos vídeos anteriores
     return () => {
       clearTimeout(retryTimer);
+      clearTimeout(firstCheck);
+      window.removeEventListener("bial-carousel-progress", checkDone);
       players.forEach((player) => {
         player.off("timeupdate");
         player.off("seeked");
         player.off("ended");
       });
     };
-  }, [selectedCourseItem]);
+  }, [selectedCourseItem, forceLocked, lockedBy]);
 
   const parsedContent = useMemo(() => {
     const resp = selectedCourseItem.content
@@ -145,16 +174,9 @@ const Topic = ({
   }, [selectedCourseItem.content]);
 
   useEffect(() => {
-    setIsVideoCompleted(false);
-  }, [selectedCourseItem]);
-
-  useEffect(() => {
     console.log(seo);
   }, [seo]);
 
-  useEffect(() => {
-    if (isVideoCompleted) setAllowNext(true);
-  }, [isVideoCompleted]);
 
   return (
     <div>
@@ -182,9 +204,7 @@ const Topic = ({
           {isTopicLocked ? (
             <LockedMessage
               title={t("This topic is locked")}
-              description={t(
-                "You'll need to complete the previous topic first",
-              )}
+              description={lockedDescription(t, isTopicLocked)}
             />
           ) : (
             <PuckRender config={configRender} data={parsedContent} />

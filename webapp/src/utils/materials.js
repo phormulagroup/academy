@@ -1,4 +1,5 @@
 import { isAllowedByCountry } from "./courseStatus";
+import { ADMIN_ROLE_ID } from "./roles";
 
 /**
  * @function courseMaterials
@@ -13,6 +14,8 @@ import { isAllowedByCountry } from "./courseStatus";
  */
 export function courseMaterials(course, user) {
   const materials = (course?.material || []).filter((m) => m.file);
+  // O Admin vê todos os materiais (sem limite de país)
+  if (Number(user?.id_role) === ADMIN_ROLE_ID) return materials;
   const courseCountries = course?.settings?.country_limit
     ? course.settings.country || []
     : [];

@@ -12,7 +12,7 @@ import Question from "./question";
 export default function Test() {
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
-  // Separador ativo: o rodapé fixo das perguntas só aparece no separador das perguntas
+  // Separador ativo: o rodapé fixo de cada separador (perguntas ou definições) só aparece nesse separador
   const [activeTab, setActiveTab] = useState("1");
 
   const { t } = useTranslation();
@@ -66,7 +66,7 @@ export default function Test() {
           {
             key: "2",
             label: t("Settings"),
-            children: <Settings data={data} />,
+            children: <Settings data={data} isActive={activeTab === "2"} />,
           },
         ]}
       />

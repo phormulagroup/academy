@@ -6,13 +6,14 @@ import { useTranslation } from "react-i18next";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
-import { requiredRule } from "../../../utils/formFieldError";
+import { requiredRule, setFieldError, uniqueRule } from "../../../utils/formFieldError";
 import UserSelect from "../userSelect";
 
-// Criar e editar um grupo; os membros só se gerem ao editar (sem um grupo criado não há a quem os associar)
-export default function UserGroupForm({ data, open, close }) {
+// Criar e editar um grupo; os membros só se gerem ao editar (sem um grupo criado não há a quem os associar).
+// `groups`: grupos ativos, para não repetir o nome (o servidor volta a validar ao gravar)
+export default function UserGroupForm({ data, open, close, groups = [] }) {
   const isUpdate = !!data?.id;
-  const { create, update, toastApi } = useContext(Context);
+  const { create, update, toastApi, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
@@ -72,7 +73,7 @@ export default function UserGroupForm({ data, open, close }) {
     }
     setIsButtonLoading(true);
     try {
-      const res = isUpdate ? await update({ data: { ...values }, table: "userGroup" }) : await create({ data: { ...values }, table: "userGroup" });
+      const res = isUpdate ? await update({ data: { ...values }, table: "userGroup" }) : await create({ data: { ...values, id_lang: selectedLanguage?.id }, table: "userGroup" });
 
       // create()/update() já mostraram o seu toast se falharam: chegar aqui significa que o grupo ficou guardado,
       // por isso um erro a seguir (só nos membros) precisa de mensagem própria
@@ -91,6 +92,8 @@ export default function UserGroupForm({ data, open, close }) {
       close(true);
     } catch (err) {
       console.log(err);
+      // Nome repetido (ex.: outro grupo criado entretanto com o mesmo nome)
+      if (err.response?.status === 409) setFieldError(form, "name", t("A group with this name already exists"));
       setIsButtonLoading(false);
     }
   }
@@ -113,7 +116,10 @@ export default function UserGroupForm({ data, open, close }) {
             <Input />
           </Form.Item>
         )}
-        <Form.Item name="name" label={t("Group name")} rules={[requiredRule]}>
+        <Form.Item
+          name="name"
+          label={t("Group name")}
+          rules={[requiredRule, uniqueRule(groups, t("A group with this name already exists"), { excludeId: data?.id ?? null })]}>
           <Input size="large" placeholder={t("E.g. Medical team")} />
         </Form.Item>
       </Form>
@@ -121,7 +127,8 @@ export default function UserGroupForm({ data, open, close }) {
       {isUpdate ? (
         <>
           <p className="mb-2 mt-6">{t("Add member")}</p>
-          <UserSelect multiple={false} value={userToAdd} onChange={addMember} excludeIds={members.map((m) => m.id)} />
+          {/* Só utilizadores do idioma selecionado no backoffice */}
+          <UserSelect multiple={false} value={userToAdd} onChange={addMember} excludeIds={members.map((m) => m.id)} idLang={selectedLanguage?.id} />
 
           <p className="mb-2 mt-6">
             {t("Members")} ({members.length})

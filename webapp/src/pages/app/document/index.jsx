@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Empty } from "antd";
 import { useContext } from "react";
 import { Context } from "../../../utils/context";
+import { isAllowedByCountry } from "../../../utils/courseStatus";
 
 import endpoints from "../../../utils/endpoints";
 import { Link } from "react-router-dom";
@@ -32,13 +33,10 @@ export default function Document() {
       })
       .then((res) => {
         if (res.data.length > 0) {
-          const filtered = res.data.filter((item) => {
-            if (!item.country) return true;
-            const arrCountries = JSON.parse(item.country);
-            return (
-              arrCountries.length === 0 || arrCountries.includes(user.country)
-            );
-          });
+          // Limite de país (o Admin vê todos)
+          const filtered = res.data.filter((item) =>
+            isAllowedByCountry(item.country ? JSON.parse(item.country) : null, user),
+          );
 
           setData(filtered);
         }

@@ -21,6 +21,7 @@ import {
   isAllowedByCountry,
   isCourseFailed,
   testDateState,
+  timeUntil,
 } from "../../../utils/courseStatus";
 
 import i18n from "../../../utils/i18n";
@@ -29,12 +30,16 @@ import {
   PiFileTextLight,
   PiBookBookmark,
   PiBookOpenLight,
+  PiCalendarBlank,
+  PiHourglassMedium,
+  PiShieldCheck,
 } from "react-icons/pi";
 import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+import { itemsProgress } from "../../../utils/percent";
 
 export default function CourseDetails() {
   const { user, languages, toastApi, windowDimension } = useContext(Context);
@@ -50,16 +55,24 @@ export default function CourseDetails() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Mesmas regras do catálogo: restrição de países para alunos e admin; validade (datas) só para alunos
-  const canAccess = useCallback(
+  // Mesmas regras do catálogo: restrição de países para alunos e admin; validade (datas) só para alunos.
+  // Devolve a mensagem do motivo (país / ainda não abriu / expirou) ou null se pode entrar
+  const accessDeniedMessage = useCallback(
     (obj) => {
       const countries = obj.settings?.country_limit
         ? obj.settings.country
         : null;
-      if (!isAllowedByCountry(countries, user)) return false;
-      return hasFullAccess(user) || courseDateState(obj) === "active";
+      if (!isAllowedByCountry(countries, user)) return t("This course is not available in your country.");
+      if (hasFullAccess(user)) return null;
+      const state = courseDateState(obj);
+      if (state === "upcoming")
+        return t("This course is not open yet. It opens on {{date}}.", {
+          date: dayjs(obj.settings.course_access_expiration_dates.start_date).format("DD/MM/YYYY"),
+        });
+      if (state === "expired") return t("Your access period to this course has ended.");
+      return null;
     },
-    [user],
+    [user, t],
   );
 
   useEffect(() => {
@@ -79,7 +92,8 @@ export default function CourseDetails() {
           auxCourse.settings = auxCourse.settings
             ? JSON.parse(auxCourse.settings)
             : null;
-          if (!canAccess(auxCourse)) auxCourse = null;
+          const deniedMessage = accessDeniedMessage(auxCourse);
+          if (deniedMessage) auxCourse = null;
           if (auxCourse) {
             // Alunos: testes expirados saem do eLearning, logo também dos módulos e do progresso
             const allTests = res.data.tests.filter((_t) => _t.is_deleted !== 1);
@@ -161,15 +175,12 @@ export default function CourseDetails() {
               allTests,
             });
           } else {
-            toastApi.open({
-              type: "info",
-              content: t(
-                "This course is not available in your country or your access period has expired.",
-              ),
-            });
+            toastApi.open({ type: "info", content: deniedMessage });
             navigate(`/${i18n.language}/courses`, { replace: true });
           }
         } else {
+          // O servidor não devolve cursos restritos a utilizadores/grupos de que a pessoa não faz parte (ou slug inexistente)
+          toastApi.open({ type: "info", content: t("You do not have access to this course.") });
           navigate(`/${i18n.language}/courses`, { replace: true });
         }
         setTimeout(() => {
@@ -181,41 +192,14 @@ export default function CourseDetails() {
     }
 
     getData();
-  }, [slug, user, languages, navigate, t, toastApi, canAccess]);
+  }, [slug, user, languages, navigate, t, toastApi, accessDeniedMessage]);
 
-  // Nº de tópicos/testes (não apagados) concluídos; cada item conta uma só vez, mesmo com registos repetidos
-  function countCompletedItems() {
-    const completed = new Set(
-      progress
-        .filter(
-          (p) =>
-            p.is_completed === 1 &&
-            p.is_deleted !== 1 &&
-            ((p.activity_type === "topic" &&
-              data?.topics?.some(
-                (t) => t.id === p.id_course_topic && t.is_deleted !== 1,
-              )) ||
-              (p.activity_type === "test" &&
-                data?.tests?.some(
-                  (t) => t.id === p.id_course_test && t.is_deleted !== 1,
-                ))),
-        )
-        .map((p) =>
-          p.activity_type === "topic"
-            ? `topic_${p.id_course_topic}`
-            : `test_${p.id_course_test}`,
-        ),
-    );
-    return completed.size;
-  }
-
-  function calcCourseProgress(a, b, c) {
-    let progressPercentage = (100 * a) / (b + c);
-    const isInteger = progressPercentage % 1 === 0;
-    return !isInteger
-      ? (Math.round(progressPercentage * 100) / 100).toFixed(2)
-      : progressPercentage;
-  }
+  // Progresso pelos itens visíveis dos módulos (como no catálogo, no eLearning e nos resultados): cada item conta uma só vez,
+  // mesmo com registos repetidos, e não contam tópicos/testes retirados dos módulos, em rascunho ou escondidos pelo país
+  const courseProgress = itemsProgress(
+    modules.flatMap((m) => m.items || []),
+    progress,
+  );
 
   function enroll() {
     let auxData = [
@@ -297,11 +281,7 @@ export default function CourseDetails() {
   // Estado do aluno no curso: Aprovado (curso concluído) ou Reprovado (mesma regra do relatório do backoffice)
   const courseStatus = !data.course
     ? null
-    : calcCourseProgress(
-          countCompletedItems(),
-          data.topics?.filter((t) => t.is_deleted !== 1)?.length || 0,
-          data.tests?.filter((t) => t.is_deleted !== 1)?.length || 0,
-        ) === 100
+    : courseProgress.percent === 100
       ? "approved"
       : isCourseFailed(progress, data.allTests)
         ? "failed"
@@ -351,6 +331,30 @@ export default function CourseDetails() {
                 </div>
               </div>
 
+              {/* Só o admin chega aqui com o curso expirado ou por abrir: aviso de que os alunos não o veem */}
+              {hasFullAccess(user) && ["expired", "upcoming"].includes(courseDateState(data.course)) && (
+                <div
+                  className={`course-details-date-notice ${courseDateState(data.course) === "upcoming" ? "is-upcoming" : ""}`}>
+                  {courseDateState(data.course) === "upcoming" ? (
+                    <PiCalendarBlank className="shrink-0" />
+                  ) : (
+                    <PiHourglassMedium className="shrink-0" />
+                  )}
+                  <span className="font-ryker font-bold uppercase">
+                    {courseDateState(data.course) === "upcoming" ? t("Coming soon") : t("Expired")}
+                  </span>
+                  <span>
+                    {courseDateState(data.course) === "upcoming"
+                      ? `${t("Opens to students in {{time}}", { time: timeUntil(data.course.settings.course_access_expiration_dates.start_date) })} · ${dayjs(data.course.settings.course_access_expiration_dates.start_date).format("DD/MM/YYYY")}`
+                      : `${t("Ended on")} ${dayjs(data.course.settings.course_access_expiration_dates.end_date).format("DD/MM/YYYY")}`}
+                  </span>
+                  <span className="course-details-date-notice-admin">
+                    <PiShieldCheck className="shrink-0" />
+                    {t("Only visible to administrators")}
+                  </span>
+                </div>
+              )}
+
               {/* Grupo 2: Progress Bar */}
               <div className="bg-[#C5CEE1] p-3 sm:p-5 lg:p-6 rounded-[5px]">
                 <div className="flex flex-col gap-4 sm:gap-6">
@@ -367,13 +371,7 @@ export default function CourseDetails() {
                         <div className="flex-1 flex flex-col w-full">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start mb-3 gap-2 sm:gap-4">
                             <p className="text-[#163986] font-bold uppercase whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-xl">
-                              {calcCourseProgress(
-                                countCompletedItems(),
-                                data?.topics?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0,
-                                data?.tests?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0,
-                              )}
+                              {courseProgress.percent}
                               % {t("Completed")}
                             </p>
                             {courseStatus && (
@@ -403,24 +401,12 @@ export default function CourseDetails() {
                           <Progress
                             strokeColor={"#2F8351"}
                             railColor={"#FFF"}
-                            percent={
-                              (100 * countCompletedItems()) /
-                              ((data?.topics?.filter((t) => t.is_deleted !== 1)
-                                ?.length || 0) +
-                                (data?.tests?.filter((t) => t.is_deleted !== 1)
-                                  ?.length || 0))
-                            }
+                            percent={courseProgress.percent}
                             className="w-full!"
                             showInfo={false}
                           />
                         </div>
-                        {calcCourseProgress(
-                          countCompletedItems(),
-                          data?.topics?.filter((t) => t.is_deleted !== 1)
-                            ?.length || 0,
-                          data?.tests?.filter((t) => t.is_deleted !== 1)
-                            ?.length || 0,
-                        ) === 100 ? (
+                        {courseProgress.percent === 100 ? (
                           <Button
                             className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
                             color="#163986"
@@ -508,7 +494,6 @@ export default function CourseDetails() {
                                 <CourseContent
                                   modules={modules}
                                   progress={progress}
-                                  data={data}
                                   compact
                                 />
                               </div>

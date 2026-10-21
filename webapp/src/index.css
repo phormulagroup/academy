@@ -331,6 +331,120 @@ textarea::placeholder,
   color: #163986 !important;
 }
 
+/* FAQs e Livro de Objecções (front): hover no cabeçalho e abertura/fecho mais suaves.
+   O Livro de Objecções é o mesmo componente no detalhe do curso e no eLearning */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection) .ant-collapse-item {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header {
+  cursor: pointer;
+  align-items: center !important;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-expand-icon {
+  color: #163986;
+  transition: color 0.25s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-expand-icon
+  svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-item:hover {
+  border-color: #00b9d6 !important;
+  box-shadow: 0 2px 8px rgba(22, 57, 134, 0.08);
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header:hover {
+  background-color: rgba(0, 185, 214, 0.06) !important;
+  color: #00b9d6 !important;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-header:hover
+  .ant-collapse-expand-icon {
+  color: #00b9d6;
+}
+
+/* Pergunta aberta: ligeiro destaque no cabeçalho */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-item-active
+  .ant-collapse-header {
+  background-color: rgba(22, 57, 134, 0.04) !important;
+}
+
+/* Animação da resposta (sobrepõe a duração por omissão do antd) */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection).ant-collapse
+  .ant-motion-collapse {
+  transition:
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease !important;
+}
+
+/* Ligações nas respostas (ex.: e-mail de suporte): azul CTA, sublinhado no hover */
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-content-box
+  a {
+  color: #00b9d6 !important;
+  font-weight: 500;
+  text-decoration: none;
+  word-break: break-word;
+  transition: color 0.2s ease;
+}
+
+.collapse-accordion:is(.collapse-faqs, .collapse-objection)
+  .ant-collapse-content-box
+  a:hover {
+  color: #163986 !important;
+  text-decoration: underline;
+}
+
+/* FAQs: resposta sempre mais pequena que a pergunta (título 14 / 15px sm+; resposta 13 / 13.5 / 14px).
+   O HTML vem da BD e pode trazer tamanhos próprios (inline / ql-size-*): forçamos o tamanho do contentor */
+.collapse-accordion.collapse-faqs .faq-answer {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.collapse-accordion.collapse-faqs .faq-answer * {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.collapse-accordion.collapse-faqs .faq-answer p {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+@media (min-width: 640px) {
+  /* Ecrãs acima de mobile: cabeçalho mais baixo */
+  .collapse-accordion.collapse-faqs .ant-collapse-header {
+    padding: 9px 16px !important;
+  }
+
+  .collapse-accordion.collapse-faqs .faq-answer {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .collapse-accordion.collapse-faqs .faq-answer {
+    font-size: 14px !important;
+  }
+}
+
 .elearning-column [class*="Section"]:not([class*="Section-inner"]) {
   padding-inline-start: 0 !important;
   padding-inline-end: 0 !important;
@@ -480,6 +594,16 @@ ul {
 .ant-dropdown-menu-item:has(.dropdown-language-item):hover
   .dropdown-language-item {
   color: #00b9d6 !important;
+}
+
+/* Menu de idiomas com seleção pelo teclado (formulários de autenticação: recuperar password, código...): o idioma atual fica como
+   no seletor do header (sem o fundo cinzento do antd, só o texto a #00B9D6); hover e item com o foco do teclado com o fundo suave do hover do header */
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-selected:has(.dropdown-language-item) {
+  background-color: transparent;
+}
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-selected:has(.dropdown-language-item):hover,
+.ant-dropdown .ant-dropdown-menu-item.ant-dropdown-menu-item-active:has(.dropdown-language-item) {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 /* USER DROPDOWN MENU BASE STATE */
@@ -1198,12 +1322,12 @@ select {
   background-color: white !important;
   color: #163986 !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -1214,12 +1338,12 @@ select {
   background-color: transparent !important;
   color: #ffffff !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -1230,15 +1354,63 @@ select {
   background-color: #163986 !important;
   color: #ffffff !important;
   border-radius: 5px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
+}
+
+/* Barra inferior do eLearning: botões Anterior/Próximo maiores e a barra acompanha a altura
+   (respeita a zona segura do fundo nos telemóveis com barra de gestos) */
+.learning-footer {
+  min-height: 50px;
+  padding-top: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+.course-button-previous .anticon,
+.course-button-previous-mobile .anticon,
+.course-button-next .anticon,
+.course-button-previous svg,
+.course-button-previous-mobile svg,
+.course-button-next svg {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .learning-footer {
+    min-height: 60px;
+    padding-top: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .course-button-previous,
+  .course-button-previous-mobile,
+  .course-button-next {
+    height: 40px !important;
+    padding: 0 18px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* Telemóvel/tablet na horizontal (pouca altura): barra e botões mais compactos para o conteúdo ter espaço */
+@media (max-height: 500px) and (orientation: landscape) {
+  .learning-footer {
+    min-height: 48px;
+    padding-top: 7px;
+    padding-bottom: calc(7px + env(safe-area-inset-bottom));
+  }
+  .course-button-previous,
+  .course-button-previous-mobile,
+  .course-button-next {
+    height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 15px !important;
+  }
 }
 
 /* Hover só em dispositivos com rato: em ecrãs táteis o hover ficava "preso" depois do toque
@@ -1805,7 +1977,9 @@ body:has(.admin-layout)
   ):hover
   svg,
 body:has(.admin-layout)
-  .ant-dropdown-menu-submenu-title:not(.ant-dropdown-menu-submenu-title-disabled):hover {
+  .ant-dropdown-menu-submenu-title:not(
+    .ant-dropdown-menu-submenu-title-disabled
+  ):hover {
   color: #00b9d6 !important;
 }
 
@@ -1888,7 +2062,45 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding-top: 10px;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+/* Descarregar o PDF (à esquerda; o ecrã inteiro fica à direita): botão principal (cores do .main-cta-button), bem visível */
+.doc-viewer-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-inline-end: auto;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #00b9d6;
+  border-radius: 8px;
+  background-color: #00b9d6;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff !important;
+  text-decoration: none;
+  box-shadow: 0px 3px 6px #00000029;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.doc-viewer-download:hover {
+  background-color: #ffffff;
+  color: #00b9d6 !important;
+}
+
+.doc-viewer-download svg {
+  font-size: 18px;
+}
+
+@media (max-width: 639px) {
+  .doc-viewer-download {
+    min-height: 40px;
+  }
 }
 
 .doc-viewer-fullscreen {
@@ -1957,6 +2169,7 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   flex: 1;
   min-height: 0;
   display: flex;
+  position: relative;
   padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
@@ -1989,39 +2202,6 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   width: 100%;
 }
 
-.doc-viewer-arrow {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  border: 1px solid #163986;
-  background: rgba(255, 255, 255, 0.9);
-  color: #163986;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 14px;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    opacity 0.2s ease;
-}
-
-@media (hover: hover) {
-  .doc-viewer-arrow:hover:not(:disabled) {
-    background: #00b9d6;
-    border-color: #00b9d6;
-    color: #ffffff;
-  }
-}
-
-.doc-viewer-arrow:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
 .doc-viewer-counter {
   min-width: 44px;
   text-align: center;
@@ -2047,23 +2227,8 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   border-color: #163986 !important;
 }
 
-/* Títulos dos materiais (aba "Materiais" do detalhe do curso): tamanho moderado */
-.course-tab-materials p.font-ryker {
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-@media (min-width: 640px) {
-  .course-tab-materials p.font-ryker {
-    font-size: 14px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .course-tab-materials p.font-ryker {
-    font-size: 15px;
-  }
-}
+/* Títulos dos materiais (aba "Materiais" do detalhe do curso e do eLearning): os tamanhos
+   (13px / 14px sm / 15px xl) estão agora no próprio componente (pages/app/course/material.jsx) */
 
 /* === Editor de texto rico (Quill, components/admin/richText) === */
 .rich-text-editor {
@@ -2180,7 +2345,6 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   margin: 0;
 }
 
-
 /* ---- Menu lateral do admin recolhido (só ícones), como no eLearning ---- */
 
 /* Recolhido, os títulos dos grupos ("Website", "e-Learning"...) não cabem: escondem-se */
@@ -2202,7 +2366,10 @@ body:has(.admin-layout) .ant-drawer-close:hover {
    dentro de grupos e já existe uma regra com padding-inline !important nesse caminho, por isso o seletor tem de ser
    igual de específico e !important. */
 .principal-menu.ant-menu-inline-collapsed .ant-menu-item,
-.principal-menu.ant-menu-inline-collapsed .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item {
+.principal-menu.ant-menu-inline-collapsed
+  .ant-menu-item-group
+  .ant-menu-item-group-list
+  .ant-menu-item {
   display: flex !important;
   align-items: center;
   justify-content: center !important;
@@ -2223,7 +2390,9 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 }
 
 /* O texto do item continua a ocupar largura (só fica transparente): sem display:none o ícone ficava ~16px à esquerda do eixo */
-.principal-menu.ant-menu-inline-collapsed .ant-menu-item .ant-menu-title-content {
+.principal-menu.ant-menu-inline-collapsed
+  .ant-menu-item
+  .ant-menu-title-content {
   display: none !important;
 }
 
@@ -2240,7 +2409,10 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 /* Hover dos itens do menu lateral: o mesmo do botão de recolher (fundo branco a 10%), para se perceber melhor onde está o rato.
    O item selecionado mantém o fundo branco. */
 .principal-menu .ant-menu-item:not(.ant-menu-item-selected):hover,
-.principal-menu .ant-menu-item-group .ant-menu-item-group-list .ant-menu-item:not(.ant-menu-item-selected):hover {
+.principal-menu
+  .ant-menu-item-group
+  .ant-menu-item-group-list
+  .ant-menu-item:not(.ant-menu-item-selected):hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #fff !important;
 }
@@ -2287,14 +2459,46 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 .rich-text-editor .ql-image-resize-handle:hover {
   background: #00b9d6;
 }
-.rich-text-editor .ql-image-resize-nw { left: -6px; top: -6px; cursor: nwse-resize; }
-.rich-text-editor .ql-image-resize-ne { right: -6px; top: -6px; cursor: nesw-resize; }
-.rich-text-editor .ql-image-resize-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
-.rich-text-editor .ql-image-resize-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
-.rich-text-editor .ql-image-resize-n { left: calc(50% - 5px); top: -6px; cursor: ns-resize; }
-.rich-text-editor .ql-image-resize-s { left: calc(50% - 5px); bottom: -6px; cursor: ns-resize; }
-.rich-text-editor .ql-image-resize-e { right: -6px; top: calc(50% - 5px); cursor: ew-resize; }
-.rich-text-editor .ql-image-resize-w { left: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+.rich-text-editor .ql-image-resize-nw {
+  left: -6px;
+  top: -6px;
+  cursor: nwse-resize;
+}
+.rich-text-editor .ql-image-resize-ne {
+  right: -6px;
+  top: -6px;
+  cursor: nesw-resize;
+}
+.rich-text-editor .ql-image-resize-se {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+.rich-text-editor .ql-image-resize-sw {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+.rich-text-editor .ql-image-resize-n {
+  left: calc(50% - 5px);
+  top: -6px;
+  cursor: ns-resize;
+}
+.rich-text-editor .ql-image-resize-s {
+  left: calc(50% - 5px);
+  bottom: -6px;
+  cursor: ns-resize;
+}
+.rich-text-editor .ql-image-resize-e {
+  right: -6px;
+  top: calc(50% - 5px);
+  cursor: ew-resize;
+}
+.rich-text-editor .ql-image-resize-w {
+  left: -6px;
+  top: calc(50% - 5px);
+  cursor: ew-resize;
+}
 .rich-text-editor .ql-editor img {
   cursor: pointer;
 }
@@ -2307,7 +2511,9 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   border: 1px solid #c5cee1;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .rich-text-table-visual:focus-within {
   border-color: #00b9d6;
@@ -2335,37 +2541,34 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   background-color: #db0709;
 }
 
-/* Expirado (só admin): imagem esbatida a azul Bial, faixa com ampulheta e data de fim */
+/* Expirado (só admin): borda e faixa no azul do CTA (#00b9d6), texto e ícone a branco; imagem a cinzento, a cores no hover */
 .course-card-expired {
   box-shadow:
-    0 0 0 2px #8b9cc3,
+    0 0 0 2px #00b9d6,
     0px 3px 6px #00000029 !important;
 }
 
-.course-card-expired > div:first-child::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(139, 156, 195, 0.55) 0%, rgba(22, 57, 134, 0.7) 100%);
-  pointer-events: none;
+.course-card-expired .course-card-thumb {
+  filter: grayscale(1);
+  transition: filter 0.3s ease;
+}
+
+.course-card-expired .course-card-thumb:hover {
+  filter: none;
 }
 
 .course-card-expired .course-card-info {
-  background-color: #e3e8f2 !important;
+  background-color: #e5f7fa !important;
 }
 
+/* Faixa por baixo da imagem (não a tapa nem a corta) */
 .course-card-expired-ribbon {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 8px 12px;
-  background-color: rgba(22, 57, 134, 0.92);
-  border-top: 3px solid #00b9d6;
+  background-color: #00b9d6;
   color: #ffffff;
   font-size: 13px;
 }
@@ -2373,41 +2576,12 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 .course-card-expired-icon {
   width: 20px;
   height: 20px;
-  color: #00b9d6;
+  color: #ffffff;
 }
 
 .course-card-expired-date {
   margin-top: 2px;
   font-size: 11px;
-  color: #c5cee1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.course-card-expired-hide {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 11;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #c5cee1;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  color: #163986;
-  font-size: 17px;
-  cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.course-card-expired-hide:hover {
-  background-color: #163986;
-  border-color: #163986;
   color: #ffffff;
 }
 
@@ -2417,25 +2591,123 @@ body:has(.admin-layout) .ant-drawer-close:hover {
   }
 }
 
-.course-hidden-expired-toggle.ant-btn {
-  color: #163986;
-  border-color: #8b9cc3;
+/* Por abrir aos alunos (só admin): borda e faixa no laranja Bial */
+.course-card-upcoming {
+  box-shadow:
+    0 0 0 2px #ff7d5a,
+    0px 3px 6px #00000029 !important;
 }
 
-.course-hidden-expired-toggle.ant-btn:hover {
-  color: #00b9d6 !important;
-  border-color: #00b9d6 !important;
+.course-card-upcoming .course-card-info {
+  background-color: #ffece6 !important;
 }
 
-/* Por iniciar (só admin): data de início por cima do botão */
-.course-card-upcoming-hint {
-  display: flex;
+.course-card-expired-ribbon.course-card-upcoming-ribbon {
+  background-color: #ff7d5a;
+  color: #ffffff;
+}
+
+/* Selo "só visível para administradores" (na faixa por baixo da imagem e, em lista, no painel de informação) */
+.course-card-admin-only {
+  display: inline-flex;
   align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #163986;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+}
+
+.course-card-admin-only span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lista: estado expirado (azul do CTA) / por abrir (laranja Bial) no painel de informação, com o texto completo */
+.course-card-date-inline {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
-  color: #00b9d6;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: #00b9d6;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+}
+
+.course-card-date-inline.course-card-date-inline-upcoming {
+  background-color: #ff7d5a;
+}
+
+.course-card-admin-only.course-card-admin-only-inline {
+  box-shadow: none;
+  border: 1px solid #163986;
+}
+
+.course-card-admin-only.course-card-admin-only-ribbon {
+  box-shadow: none;
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+/* Opções do catálogo (só admin): esconder expirados / por abrir */
+.course-catalogue-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #163986;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Detalhe do curso (só admin): aviso de curso expirado (azul do CTA) / ainda por abrir aos alunos (laranja Bial) */
+.course-details-date-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 5px;
+  background-color: #00b9d6;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.course-details-date-notice.is-upcoming {
+  background-color: #ff7d5a;
+}
+
+.course-details-date-notice svg {
+  width: 20px;
+  height: 20px;
+}
+
+.course-details-date-notice-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #163986;
+  font-size: 12px;
+}
+
+.course-details-date-notice-admin svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Detalhe do curso: estado do aluno (Aprovado / Reprovado) junto ao progresso */
@@ -2515,16 +2787,20 @@ deles invalida a regra inteira. */
   right: 16px !important;
   inset-inline-end: 16px !important;
 }
-.ant-notification-notice-success .ant-notification-notice-progress::-webkit-progress-value {
+.ant-notification-notice-success
+  .ant-notification-notice-progress::-webkit-progress-value {
   background: #1fb26a !important;
 }
-.ant-notification-notice-success .ant-notification-notice-progress::-moz-progress-bar {
+.ant-notification-notice-success
+  .ant-notification-notice-progress::-moz-progress-bar {
   background: #1fb26a !important;
 }
-.ant-notification-notice-error .ant-notification-notice-progress::-webkit-progress-value {
+.ant-notification-notice-error
+  .ant-notification-notice-progress::-webkit-progress-value {
   background: #ff4d4f !important;
 }
-.ant-notification-notice-error .ant-notification-notice-progress::-moz-progress-bar {
+.ant-notification-notice-error
+  .ant-notification-notice-progress::-moz-progress-bar {
   background: #ff4d4f !important;
 }
 
@@ -2569,7 +2845,9 @@ deles invalida a regra inteira. */
     padding: 10px 12px !important;
   }
 }
-.collapse-course.collapse-course-compact .ant-collapse-item-active > .ant-collapse-header {
+.collapse-course.collapse-course-compact
+  .ant-collapse-item-active
+  > .ant-collapse-header {
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
@@ -2812,4 +3090,170 @@ deles invalida a regra inteira. */
 .auth-retry-notice svg {
   color: #ff7d5a;
   font-size: 16px;
+}
+
+/* Ecrã inteiro (slides do eLearning e documentos): setas nas laterais, circulares e semitransparentes,
+   a meio do slide (como nos carrosséis das redes sociais) */
+.fs-side-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(13, 27, 62, 0.45);
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fs-side-arrow.prev {
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.fs-side-arrow.next {
+  right: max(12px, env(safe-area-inset-right));
+}
+
+.fs-side-arrow:focus-visible {
+  outline: 2px solid #00b9d6;
+  outline-offset: 2px;
+}
+
+/* No início/fim não há para onde ir: a seta desaparece */
+.fs-side-arrow:disabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Com rato: aparecem ao passar o rato pelo ecrã inteiro ou com foco (teclado); em ecrãs táteis ficam sempre visíveis */
+@media (hover: hover) and (pointer: fine) {
+  .fs-side-arrow {
+    opacity: 0;
+  }
+  .is-fullscreen:hover .fs-side-arrow,
+  .is-fullscreen:focus-within .fs-side-arrow {
+    opacity: 1;
+  }
+  .fs-side-arrow:hover {
+    background: #00b9d6;
+    border-color: #00b9d6;
+    transform: translateY(-50%) scale(1.06);
+  }
+}
+
+@media (min-width: 1024px) {
+  .fs-side-arrow {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+  .fs-side-arrow.prev {
+    left: 24px;
+  }
+  .fs-side-arrow.next {
+    right: 24px;
+  }
+}
+
+/* Nota "rode o telemóvel" no ecrã inteiro (telemóvel na vertical sem bloqueio de orientação, ex.: iPhone) */
+.fs-rotate-note {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #163986;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.fs-rotate-note-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  animation: fs-rotate-hint 2.4s ease-in-out infinite;
+}
+
+.fs-rotate-note-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 0;
+  background: transparent;
+  color: #163986;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+@keyframes fs-rotate-hint {
+  0%,
+  30% {
+    transform: rotate(0deg);
+  }
+  50%,
+  80% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-rotate-note-icon {
+    animation: none;
+  }
+}
+
+/* ===== Escolha do idioma nos formulários de login e registo (components/auth/languageCarousel.jsx) ===== */
+/* Carrossel: 3 idiomas visíveis (2 nos ecrãs muito estreitos), cada um com a mesma largura; com menos idiomas ocupam o espaço todo */
+.auth-lang-track {
+  --auth-lang-visible: min(var(--auth-lang-count, 3), 3);
+  scrollbar-width: none;
+  scroll-padding-inline: 0.25rem;
+}
+.auth-lang-track::-webkit-scrollbar {
+  display: none;
+}
+.auth-lang-item {
+  flex: 0 0 calc((100% - (var(--auth-lang-visible) - 1) * 0.5rem) / var(--auth-lang-visible));
+  min-width: 0;
+}
+@media (max-width: 359px) {
+  .auth-lang-track {
+    --auth-lang-visible: min(var(--auth-lang-count, 2), 2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-lang-item,
+  .auth-lang-item * {
+    transition: none !important;
+  }
 }

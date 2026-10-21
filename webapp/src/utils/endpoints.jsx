@@ -185,6 +185,7 @@ const endpoints = {
 		list: "/iec/list",
 		upload: "/iec/upload",
 		file: "/iec/file",
+		zip: "/iec/zip",
 		delete: "/iec/delete",
 	},
 	notification: {

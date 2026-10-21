@@ -32,6 +32,26 @@ module.exports = {
     });
   },
 
+  // 2FA: dispositivo de confiança. Depois de confirmar o código, o browser guarda este comprovativo e nos logins seguintes (30 dias)
+  // não volta a ser pedido código. Deixa de valer ao fim de 30 dias ou se a password mudar (pv)
+  createDeviceToken: function (user) {
+    return new Promise((resolve, reject) => {
+      jwt.sign({ id: user.id, purpose: "2fa", pv: passwordFingerprint(user.password) }, privateKey, { expiresIn: "30d", algorithm: "HS256" }, (err, token) => {
+        if (err) return reject(err);
+        resolve(token);
+      });
+    });
+  },
+  isTrustedDevice: function (deviceToken, user) {
+    if (typeof deviceToken !== "string" || !deviceToken) return false;
+    try {
+      const decoded = jwt.verify(deviceToken, privateKey, { algorithms: ["HS256"] });
+      return decoded.purpose === "2fa" && decoded.id === user.id && decoded.pv === passwordFingerprint(user.password);
+    } catch {
+      return false;
+    }
+  },
+
   // O token leva só o necessário (a API lê o papel e o estado à base de dados em cada pedido)
   createToken: function (user) {
     const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password) };

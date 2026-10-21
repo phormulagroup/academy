@@ -19,7 +19,7 @@ import endpoints from "../../utils/endpoints";
 
 // Grupos de utilizadores: listas reutilizáveis de pessoas, usadas para restringir o acesso a cursos
 export default function UserGroup() {
-  const { toastApi } = useContext(Context);
+  const { toastApi, selectedLanguage } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("user_group");
 
@@ -33,14 +33,15 @@ export default function UserGroup() {
 
   const [search, setSearch] = useState("");
 
+  // Grupos do idioma escolhido no backoffice (cada grupo é de um idioma)
   useEffect(() => {
-    getData();
-  }, []);
+    if (selectedLanguage?.id) getData();
+  }, [selectedLanguage?.id]);
 
   function getData() {
     setIsLoading(true);
     axios
-      .get(endpoints.userGroup.read)
+      .get(endpoints.userGroup.read, { params: { id_lang: selectedLanguage.id } })
       .then((res) => {
         prepareData(res.data);
         setIsLoading(false);
@@ -96,7 +97,7 @@ export default function UserGroup() {
 
   return (
     <div className="p-2">
-      <UserGroupForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} />
+      <UserGroupForm data={isOpenUpdate ? selectedData : null} open={isOpenCreate || isOpenUpdate} close={closeAction} groups={tableData.map((r) => r.full_data)} />
       <Delete data={selectedData} open={isOpenDelete} close={closeAction} table="userGroup" />
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
