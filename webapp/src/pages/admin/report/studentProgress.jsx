@@ -102,7 +102,6 @@ export default function StudentProgress({ data, isLoading }) {
 
   function filterData(values) {
     setIsSearching(true);
-    console.log(values);
     // Começa com os users regulares (id_role = 2) que foram aprovados pelo administrador
     let newData = data.users.filter(
       (u) => u.id_role === 2 && u.status?.toLowerCase() === "approved",

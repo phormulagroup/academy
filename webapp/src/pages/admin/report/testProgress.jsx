@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { StackedBar, HorizontalBars } from "../../../components/admin/charts";
 import { roundPercent } from "../../../utils/percent";
+import { testsForStudent } from "../../../utils/courseStatus";
 
 // Nº de países visíveis por idioma antes do "Mostrar tudo"
 const COUNTRIES_PREVIEW = 5;
@@ -104,10 +105,17 @@ function computeStats(obj, courses, languages) {
     }
   });
 
-  // Testes dos cursos sem nenhuma tentativa de qualquer aluno
-  const testsWithAttempts = new Set(Object.values(attemptsByKey).map((a) => a[0].id_course_test));
+  // Não iniciado: alunos do público de cada teste (países do curso ou, sem limite, o idioma do curso; e o limite de países do teste)
+  // sem nenhuma tentativa — a mesma regra do relatório de testes. Conta cada aluno + teste, como os outros estados.
   (obj.tests || []).forEach((test) => {
-    if (test.is_deleted !== 1 && courseIds.has(test.id_course) && !testsWithAttempts.has(test.id)) counts.notStarted += 1;
+    const course = courses.find((c) => c.id === test.id_course);
+    if (test.is_deleted === 1 || !course) return;
+    const cs = parseJson(course.settings, {}) || {};
+    const courseLimit = cs.country_limit ? cs.country || [] : null;
+    users.forEach((u) => {
+      const inAudience = (courseLimit ? courseLimit.includes(u.country) : u.id_lang === course.id_lang) && testsForStudent([test], u).length > 0;
+      if (inAudience && !attemptsByKey[`${u.id}_${test.id}`]) counts.notStarted += 1;
+    });
   });
 
   const avgByLang = (languages || []).map((lang) => ({
@@ -126,7 +134,8 @@ function computeStats(obj, courses, languages) {
     .map((c) => ({ id: c.id, name: c.internal_name || c.name, count: byCourse[c.id]?.count || 0, avgScore: byCourse[c.id] ? byCourse[c.id].total / byCourse[c.id].count : 0 }))
     .sort((a, b) => b.avgScore - a.avgScore);
 
-  const evaluated = counts.approved + counts.notApproved;
+  // Taxa de aprovação: aprovados entre todos os que tentaram o teste (aprovados, em progresso e reprovados)
+  const evaluated = counts.approved + counts.inProgress + counts.notApproved;
   return {
     counts,
     buckets,
@@ -250,7 +259,8 @@ function ProductCard({ title, stats, open, onToggle, groupByCountry, onGroupByCo
         <div className="min-w-[180px] flex-1">
           <p className="mb-0! text-[16px] font-bold">{title}</p>
           <p className="mb-0! text-[12px] text-[#8A8D98]">
-            {t("{{count}} courses", { count: stats.courses })} · {t("{{count}} students evaluated", { count: stats.students })}
+            {t(stats.courses === 1 ? "{{count}} course" : "{{count}} courses", { count: stats.courses })} ·{" "}
+            {t(stats.students === 1 ? "{{count}} student evaluated" : "{{count}} students evaluated", { count: stats.students })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -369,7 +379,7 @@ export default function TestProgress({ data, products, languages, isLoading = fa
 
       {total && (
         <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi icon={<LuPill />} label={t("Products")} value={visible.length} />
+          <Kpi icon={<LuPill />} label={t("Products")} value={visible.filter((g) => g.key !== NO_PRODUCT).length} />
           <Kpi icon={<LuBookOpen />} label={t("Courses")} value={total.courses} />
           <Kpi icon={<LuUsers />} label={t("Students evaluated")} value={total.students} />
           <Kpi icon={<LuCircleCheck />} label={t("Average score")} value={total.avgScore === null ? "—" : `${roundPercent(total.avgScore)}%`} />
