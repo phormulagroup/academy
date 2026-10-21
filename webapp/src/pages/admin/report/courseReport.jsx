@@ -104,6 +104,8 @@ function CourseExpandedPanel({ width, rows, columns, onExport, t }) {
     .filter((c) => c.key !== "ID" && c.key !== "email")
     .map((c) => {
       if (c.key === "name") return { ...c, width: 260, sorter: (a, b) => (a.name || "").localeCompare(b.name || ""), render: (_, row) => <UserCell id={row.ID} name={row.name} email={row.email} /> };
+      // País traduzido (o valor original continua nas linhas: serve para os testes que o aluno vê; o Excel traduz à parte)
+      if (c.key === "country" || c.dataIndex === "country") return { ...c, render: (v) => dash(v && v !== "—" ? t(v) : v) };
       if (c.key === "status") {
         const colors = { [APPROVED]: "green", [REPPROVED]: "red", [IN_PROGRESS]: "blue" };
         return { ...c, width: 130, render: (v) => <Tag color={colors[v] || "default"}>{v}</Tag> };
@@ -258,27 +260,27 @@ export default function CourseReport({ data, isLoading }) {
       return false;
     }
 
-    const completedModules = studentActivity.filter(
+    const completedModules = new Set(studentActivity.filter(
       (a) =>
         a.activity_type === "module" &&
         a.id_course === course.id &&
         a.is_completed === 1 &&
         a.is_deleted === 0,
-    ).length;
-    const completedTopics = studentActivity.filter(
+    ).map((a) => a.id_course_module)).size;
+    const completedTopics = new Set(studentActivity.filter(
       (a) =>
         a.activity_type === "topic" &&
         a.id_course === course.id &&
         a.is_completed === 1 &&
         a.is_deleted === 0,
-    ).length;
-    const completedTests = studentActivity.filter(
+    ).map((a) => a.id_course_topic)).size;
+    const completedTests = new Set(studentActivity.filter(
       (a) =>
         a.activity_type === "test" &&
         a.id_course === course.id &&
         a.is_completed === 1 &&
         a.is_deleted === 0,
-    ).length;
+    ).map((a) => a.id_course_test)).size;
 
     // Apenas verifica módulos, tópicos e testes se eles existirem no curso
     const needToCheckModules = modules.length > 0;
@@ -286,11 +288,11 @@ export default function CourseReport({ data, isLoading }) {
     const needToCheckTests = tests.length > 0;
 
     const allModulesCompleted =
-      !needToCheckModules || completedModules === modules.length;
+      !needToCheckModules || completedModules >= modules.length;
     const allTopicsCompleted =
-      !needToCheckTopics || completedTopics === topics.length;
+      !needToCheckTopics || completedTopics >= topics.length;
     const allTestsCompleted =
-      !needToCheckTests || completedTests === tests.length;
+      !needToCheckTests || completedTests >= tests.length;
 
     // Aprovado APENAS se completou todos os módulos, tópicos e testes que existem no curso
     return allModulesCompleted && allTopicsCompleted && allTestsCompleted;
@@ -600,28 +602,28 @@ export default function CourseReport({ data, isLoading }) {
         );
 
         // Obter contagens de conclusão para exibição
-        const completedModules = studentActivity.filter(
+        const completedModules = new Set(studentActivity.filter(
           (a) =>
             a.activity_type === "module" &&
             a.id_course === course.id &&
             a.is_completed === 1 &&
             a.is_deleted === 0,
-        ).length;
-        const completedTopics = studentActivity.filter(
+        ).map((a) => a.id_course_module)).size;
+        const completedTopics = new Set(studentActivity.filter(
           (a) =>
             a.activity_type === "topic" &&
             a.id_course === course.id &&
             a.is_completed === 1 &&
             a.is_deleted === 0,
-        ).length;
-        const completedTests = studentActivity.filter(
+        ).map((a) => a.id_course_topic)).size;
+        const completedTests = new Set(studentActivity.filter(
           (a) =>
             a.activity_type === "test" &&
             a.id_course === course.id &&
             a.is_completed === 1 &&
             a.is_deleted === 0 &&
             tests.some((x) => x.id === a.id_course_test),
-        ).length;
+        ).map((a) => a.id_course_test)).size;
 
         // Apenas verifica módulos, tópicos e testes se eles existirem no curso
         const displayModules =
