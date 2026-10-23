@@ -39,7 +39,6 @@ import { courseStats } from "../../../utils/userResults";
 import {
   courseDateState,
   isCourseFailed,
-  testDateState,
 } from "../../../utils/courseStatus";
 import { ADMIN_ROLE_ID, USER_ROLE_ID, hasFullAccess } from "../../../utils/roles";
 import UserAvatarEditor from "../../../components/userAvatarEditor";
@@ -207,9 +206,7 @@ export default function UserDetails() {
                 ).find(
                   (_t) =>
                     _t.id === ref.id &&
-                    (ref.type === "topic" ||
-                      hasFullAccess(res.data.user) ||
-                      testDateState(_t) !== "expired"),
+                    true,
                 );
                 courseModules[i].items[y] = found
                   ? { type: ref.type, ...found }

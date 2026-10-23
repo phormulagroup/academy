@@ -8,7 +8,7 @@ import PuckRender from "../../../components/app/puckRender";
 import { Helmet } from "react-helmet";
 import { Context } from "../../../utils/context";
 import { hasFullAccess } from "../../../utils/roles";
-import { lockedDescription } from "../../../utils/courseStatus";
+import { lockedDescription, previousRequiredItem } from "../../../utils/courseStatus";
 
 const Topic = ({
   course,
@@ -63,8 +63,9 @@ const Topic = ({
             i.id === selectedCourseItem.id &&
             i.type === selectedCourseItem.type,
         ) ?? -1;
-      if (findIndex > 0) {
-        const previousItem = allItems[findIndex - 1];
+      // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
+      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress) : null;
+      if (previousItem) {
         const previousCompleted = progress.some(
           (p) =>
             p.is_completed === 1 &&

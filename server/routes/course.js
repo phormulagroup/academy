@@ -608,12 +608,68 @@ async function gradeTestRows(query, rows) {
 	return rows.filter((r) => !(["module", "course"].includes(r.activity_type) && Number(r.is_completed) === 1 && failedCourses.has(Number(r.id_course))));
 }
 
+// Teste com data de fim já passada (test.settings.end_date)
+function isExpiredTest(settings) {
+	try {
+		const end = (typeof settings === "string" ? JSON.parse(settings || "{}") : settings || {}).end_date;
+		return !!end && new Date(end).getTime() < Date.now();
+	} catch {
+		return false;
+	}
+}
+
+// Alunos: um teste expirado já não se pode fazer (as tentativas novas não se gravam) e o curso só se conclui com TODOS os itens feitos,
+// incluindo um teste que entretanto expirou: sem este controlo, um teste expirado deixava o curso concluir sem o teste feito.
+// Devolve os índices dos pedidos recusados. A equipa (Admin) não tem este limite.
+async function blockedExpiredOrIncomplete(query, user, rows) {
+	const blocked = new Set();
+	if (hasFullAccess(user)) return blocked;
+	const ids = [...new Set(rows.filter((r) => r.activity_type === "test").map((r) => Number(r.id_course_test)).filter(Boolean))];
+	if (ids.length) {
+		const tests = await query("SELECT id, settings FROM course_test WHERE id IN (?)", [ids]);
+		rows.forEach((r, i) => {
+			if (r.activity_type !== "test") return;
+			const test = tests.find((t) => t.id === Number(r.id_course_test));
+			if (test && isExpiredTest(test.settings)) blocked.add(i);
+		});
+	}
+	for (const idCourse of [...new Set(rows.filter((r) => r.activity_type === "course" && Number(r.is_completed) === 1).map((r) => Number(r.id_course)).filter(Boolean))]) {
+		const modules = await query("SELECT items FROM course_module WHERE id_course = ? AND is_deleted = 0", [idCourse]);
+		const refs = modules.flatMap((m) => {
+			try {
+				return (m.items ? JSON.parse(m.items) : []).map((i) => ({ type: i.type, id: Number(i.id) }));
+			} catch {
+				return [];
+			}
+		});
+		if (!refs.length) continue;
+		const topicIds = refs.filter((r) => r.type === "topic").map((r) => r.id);
+		const testIds = refs.filter((r) => r.type === "test").map((r) => r.id);
+		const topics = topicIds.length ? await query("SELECT id FROM course_topic WHERE id IN (?) AND is_deleted = 0", [topicIds]) : [];
+		// Só os testes publicados e do país da pessoa (como no curso); os expirados contam
+		const tests = testIds.length ? visibleTests(await query("SELECT id, settings FROM course_test WHERE id IN (?) AND is_deleted = 0 AND status = 'published'", [testIds]), user) : [];
+		const required = [...topics.map((t) => ["topic", t.id]), ...tests.map((t) => ["test", t.id])];
+		const activity = await query("SELECT activity_type, id_course_topic, id_course_test FROM course_user_activity WHERE id_user = ? AND id_course = ? AND is_completed = 1 AND (is_deleted = 0 OR is_deleted IS NULL)", [user.id, idCourse]);
+		const done = new Set(activity.map((a) => `${a.activity_type}:${a.activity_type === "topic" ? a.id_course_topic : a.id_course_test}`));
+		// O que vem no mesmo pedido (a última tópico/teste concluído junto com o curso)
+		rows.forEach((r, i) => {
+			if (Number(r.id_course) === idCourse && Number(r.is_completed) === 1 && !blocked.has(i) && (r.activity_type === "topic" || r.activity_type === "test")) done.add(`${r.activity_type}:${r.activity_type === "topic" ? r.id_course_topic : r.id_course_test}`);
+		});
+		if (required.every(([type, id]) => done.has(`${type}:${id}`))) continue;
+		rows.forEach((r, i) => {
+			if (Number(r.id_course) === idCourse && r.activity_type === "course" && Number(r.is_completed) === 1) blocked.add(i);
+		});
+	}
+	return blocked;
+}
+
 router.post("/updateProgress", async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
 		// O progresso é sempre de quem faz o pedido (a app só grava o próprio; o Admin usa /completeProgress para os alunos)
 		const sent = await gradeTestRows(query, (req.body.data || []).map((row) => ({ ...row, id_user: req.user.id })));
 		const blocked = await blockedAfterFailing(query, req.user, sent);
+		(await blockedExpiredOrIncomplete(query, req.user, sent)).forEach((i) => blocked.add(i));
 		let data = sent.filter((_, i) => !blocked.has(i));
 		if (!data.length) return res.send({ affectedRows: 0, blocked: blocked.size });
 

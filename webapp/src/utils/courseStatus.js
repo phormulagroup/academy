@@ -99,6 +99,32 @@ export function testDateState(test) {
 }
 
 /**
+ * @function isMissedExpiredTest
+ * @description Teste cuja data de fim já passou e que a pessoa não concluiu. Continua a contar no curso (o curso só se conclui com
+ * todos os testes feitos), mas já não se pode fazer: por isso aparece como expirado e não trava os itens seguintes.
+ * @param {object} item - Item do curso.
+ * @param {Array} progress - Atividade do utilizador no curso.
+ * @returns {boolean}
+ */
+export function isMissedExpiredTest(item, progress) {
+  if (item?.type !== "test" || testDateState(item) !== "expired") return false;
+  return !(progress || []).some((p) => p.is_completed === 1 && p.is_deleted !== 1 && p.activity_type === "test" && p.id_course_test === item.id);
+}
+
+/**
+ * @function previousRequiredItem
+ * @description Item que tem de estar concluído antes do item na posição `index` (navegação linear): o anterior, saltando os testes
+ * expirados por fazer (que já não se podem fazer e não podem travar o resto do curso).
+ * @returns {object|null}
+ */
+export function previousRequiredItem(allItems, index, progress) {
+  for (let i = index - 1; i >= 0; i--) {
+    if (!isMissedExpiredTest(allItems[i], progress)) return allItems[i];
+  }
+  return null;
+}
+
+/**
  * @function isAllowedByCountry
  * @description Restrição de países (curso, material ou documento): sem restrição -> todos; com restrição ->
  * só utilizadores desses países (alunos e admin).

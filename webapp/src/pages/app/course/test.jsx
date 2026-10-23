@@ -23,7 +23,9 @@ import {
   isTestFailed,
   parseSettings,
   testDateState,
+  isMissedExpiredTest,
   lockedDescription,
+  previousRequiredItem,
 } from "../../../utils/courseStatus";
 import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
@@ -76,7 +78,7 @@ function TestDateNotice({ type, date, t }) {
         </p>
         <p className="text-[12px] sm:text-[13px] lg:text-[14px] mt-0.5">
           {expired
-            ? t("Students no longer see this test in the course")
+            ? t("Students can no longer take this test, but it still counts to complete the course")
             : t("Students see a countdown until this date")}
         </p>
       </div>
@@ -105,6 +107,8 @@ const Test = ({
   const { user, toastApi, windowDimension } = useContext(Context);
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
   const isAdmin = hasFullAccess(user);
+  // Alunos: teste expirado que não concluíram. Já não se pode fazer (nem repetir), mas continua a contar para concluir o curso
+  const missedExpired = !isAdmin && isMissedExpiredTest(selectedCourseItem, progress);
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
@@ -248,8 +252,9 @@ const Test = ({
         (i) =>
           i.id === selectedCourseItem.id && i.type === selectedCourseItem.type,
       );
-      if (findIndex > 0) {
-        let previousItem = allItems[findIndex - 1];
+      // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
+      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress) : null;
+      if (previousItem) {
         let previousCompleted = progress.filter(
           (p) =>
             p.is_completed === 1 &&
@@ -529,7 +534,17 @@ const Test = ({
           ) : (
             Object.keys(data).length > 0 && (
               <div>
-                {!isAvailable ? (
+                {missedExpired && !finished ? (
+                  <div className="flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white bg-[#8B9CC3]">
+                    <PiCalendarXDuotone className="shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
+                    <div className="min-w-0">
+                      <p className="font-ryker font-bold leading-tight text-[14px] sm:text-[16px] lg:text-[18px]">
+                        {t("This test expired on")} {dayjs(parseSettings(selectedCourseItem.settings).end_date).format("DD/MM/YYYY HH:mm")}
+                      </p>
+                      <p className="text-[12px] sm:text-[13px] lg:text-[14px] mt-0.5">{t("It can no longer be taken. Contact your representative if you need access.")}</p>
+                    </div>
+                  </div>
+                ) : !isAvailable ? (
                   <TestCountdown
                     startDate={data.settings?.start_date}
                     onReachZero={() => setIsAvailable(true)}
@@ -708,7 +723,7 @@ const Test = ({
                                 ? t("Hide questions")
                                 : t("Review questions")}
                             </Button>
-                            {!isApproved && canStillRetry && (
+                            {!isApproved && canStillRetry && !missedExpired && (
                               <Button
                                 size="large"
                                 className="flex-1 main-secondary-cta-button"

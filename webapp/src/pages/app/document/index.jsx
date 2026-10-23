@@ -90,7 +90,7 @@ export default function Document() {
             {data.map((d) => (
               <Link
                 key={d.id}
-                className="flex flex-col shadow-[0px_3px_6px_#00000029] rounded-[5px] cursor-pointer overflow-hidden hover:shadow-[0px_6px_12px_#00000040] transition-shadow"
+                className="catalog-card flex flex-col shadow-[0px_3px_6px_#00000029] rounded-[5px] cursor-pointer overflow-hidden"
                 to={`/${i18n.language}/documents/${d.slug}`}>
                 <div
                   // Thumbnails 800x600 (4:3): mesma proporção, a imagem não é cortada

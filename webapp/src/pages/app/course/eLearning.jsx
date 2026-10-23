@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { courseAccessState } from "../../../utils/courseWindow";
 import { MenuOutlined } from "@ant-design/icons";
 import {
@@ -65,6 +65,8 @@ import {
   isTestFailed,
   parseSettings,
   testDateState,
+  isMissedExpiredTest,
+  previousRequiredItem,
   itemCountsLabel,
 } from "../../../utils/courseStatus";
 import { downloadCertificate } from "../../../utils/certificate";
@@ -76,26 +78,6 @@ import { itemsProgress } from "../../../utils/percent";
 const { confirm } = Modal;
 
 const { Header, Content, Sider } = Layout;
-
-// Largura por omissão da coluna do eLearning (igual ao maxWidth por omissão dos vídeos)
-const DEFAULT_CONTENT_WIDTH = 950;
-
-// Largura de um tópico definida no editor: o maior maxWidth (número) dos seus blocos; null se nenhum tiver
-function topicBlocksWidth(topic) {
-  try {
-    const parsed = JSON.parse(topic?.content || "{}");
-    const blocks = [
-      ...(parsed?.content || []),
-      ...Object.values(parsed?.zones || {}).flat(),
-    ];
-    const widths = blocks
-      .map((b) => Number(b?.props?.maxWidth))
-      .filter((w) => w > 0);
-    return widths.length > 0 ? Math.max(...widths) : null;
-  } catch {
-    return null;
-  }
-}
 
 const Learning = () => {
   const { user, logout, languages, windowDimension, isStaff, toastApi } =
@@ -270,13 +252,12 @@ const Learning = () => {
                     )[0];
                     if (testData) {
                       courseTests.push(testData);
-                      // Teste expirado (depois da data de fim): sai do curso para os alunos (não aparece nem
-                      // conta para o progresso/conclusão); o admin continua a vê-lo, marcado como expirado
-                      if (isAdmin || testDateState(testData) !== "expired")
-                        itemToAdd = {
-                          type: auxModules[i].items[y].type,
-                          ...testData,
-                        };
+                      // Teste expirado (depois da data de fim): continua no curso, marcado como expirado, e conta para o progresso e para
+                      // a conclusão (o curso não se conclui sem ele); já não se pode fazer e não trava os itens seguintes
+                      itemToAdd = {
+                        type: auxModules[i].items[y].type,
+                        ...testData,
+                      };
                     }
                   }
 
@@ -423,7 +404,7 @@ const Learning = () => {
     const index = indexInCourse(item);
     const missing = (allItems || [])
       .slice(0, Math.max(0, index))
-      .filter((i) => !isItemCompleted(i, progressToCheck));
+      .filter((i) => !isItemCompleted(i, progressToCheck) && !isMissedExpiredTest(i, progressToCheck));
     if (missing.length === 0) return null;
     return missing.length === 1 && indexInCourse(missing[0]) === index - 1
       ? missing[0].type
@@ -685,8 +666,9 @@ const Learning = () => {
   function isListItemLocked(item, i, mInd) {
     if (freeLock(item)) return true;
     if (isItemCompleted(item) || data?.course?.settings.progression_type !== "linear" || (mInd === 0 && i === 0)) return false;
-    const previous = i === 0 ? modules[mInd - 1].items[modules[mInd - 1].items.length - 1] : modules[mInd].items[i - 1];
-    return !previous || !isCompletedActivity(previous.type, previous.id);
+    // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
+    const previous = previousRequiredItem(allItems || [], indexInCourse(item), progress);
+    return !!previous && !isCompletedActivity(previous.type, previous.id);
   }
   const statusCircle = (locked, extra = "") => (
     <div className={`w-6.25 h-6.25 min-w-6.25 min-h-6.25 rounded-full bg-white border border-[#2F8351] flex justify-center items-center ${extra}`}>
@@ -751,25 +733,6 @@ const Learning = () => {
       </div>
     );
   }
-
-  // Largura da coluna do conteúdo: vem do editor de tópicos (maxWidth dos blocos). Num tópico é o maior maxWidth
-  // dos seus blocos; nos testes (e módulos / tópicos sem largura) é a largura mais comum dos tópicos do curso,
-  // para o teste ficar com a mesma largura do conteúdo à volta
-  const courseContentWidth = useMemo(() => {
-    const counts = {};
-    (allItems || []).forEach((item) => {
-      const width = item.type === "topic" ? topicBlocksWidth(item) : null;
-      if (width) counts[width] = (counts[width] || 0) + 1;
-    });
-    const widths = Object.keys(counts).map(Number);
-    if (widths.length === 0) return DEFAULT_CONTENT_WIDTH;
-    // Mais comum; em empate, a maior
-    return widths.sort((a, b) => counts[b] - counts[a] || b - a)[0];
-  }, [allItems]);
-  const contentMaxWidth =
-    (selectedCourseItem?.type === "topic" &&
-      topicBlocksWidth(selectedCourseItem)) ||
-    courseContentWidth;
 
   function closeDrawer() {
     setIsOpenDrawerMenu(false);
@@ -1318,10 +1281,9 @@ const Learning = () => {
               {/* Conclusão do curso: modal de parabéns (CourseCompletedModal) em vez do ecrã inline */}
               <div className="overflow-y-auto">
                 <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-                  {/* Título, tabs e conteúdo com a mesma largura do vídeo do tópico (ver .elearning-column) */}
-                  <div
-                    className="elearning-column mx-auto w-full"
-                    style={{ maxWidth: contentMaxWidth }}>
+                  {/* Título, tabs e conteúdo ocupam a largura disponível; em ecrãs grandes ficam a 80% (a largura dos blocos do editor
+                      já não limita o curso, ver .elearning-column) */}
+                  <div className="elearning-column mx-auto w-full min-[1440px]:max-w-[80%]">
                     {/* Estado permanente do curso: Aprovado / Reprovado */}
                     <CourseStatusBanner status={courseStatus} />
                     {progress?.length > 0 &&

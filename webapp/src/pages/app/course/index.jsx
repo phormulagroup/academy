@@ -35,7 +35,6 @@ import {
   courseDateState,
   isAllowedByCountry,
   isCourseFailed,
-  testDateState,
   timeUntil,
   catalogueFiltersKey,
   readCatalogueFilters,
@@ -179,15 +178,11 @@ export default function CourseDetails() {
                       (hasFullAccess(user) || testData.status !== "draft")
                     ) {
                       courseTests.push(testData);
-                      // Alunos: testes expirados saem do eLearning, logo também do progresso
-                      if (
-                        hasFullAccess(user) ||
-                        testDateState(testData) !== "expired"
-                      )
-                        enrichedItem = {
-                          type: auxModules[i].items[y].type,
-                          ...testData,
-                        };
+                      // Os testes expirados continuam no curso e no progresso (o curso não se conclui sem eles)
+                      enrichedItem = {
+                        type: auxModules[i].items[y].type,
+                        ...testData,
+                      };
                     }
                   }
 
@@ -462,7 +457,7 @@ export default function CourseDetails() {
                   key={item.course.id}
                   // Curso concluído: borda e painel em verde Bial, com selo "Concluído" na imagem;
                   // reprovado: o mesmo em vermelho Bial; expirado (só admin): imagem esbatida com faixa "Expirado"
-                  className={`shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""} ${item.dateState === "upcoming" ? "course-card-upcoming" : ""}`}>
+                  className={`catalog-card shadow-[0px_3px_6px_#00000029] rounded-[5px] ${viewType === "list" && windowDimension.width > 640 ? "flex" : "flex flex-col"} ${viewType === "list" && windowDimension.width > 640 ? "col-span-3" : "col-span-1"} overflow-hidden ${calcProgress(item.progress, item.modules) === 100 ? "course-card-completed" : item.isFailed ? "course-card-failed" : ""} ${item.dateState === "expired" ? "course-card-expired" : ""} ${item.dateState === "upcoming" ? "course-card-upcoming" : ""}`}>
                   <div
                     // Thumbnails 800x600 (4:3): a caixa tem sempre a mesma proporção (grelha e lista), por isso o bg-cover não corta a imagem
                     className={`${viewType === "list" && windowDimension.width > 640 ? "w-44 lg:w-52 shrink-0 self-start aspect-[4/3] rounded-bl-[5px] rounded-tl-[5px]" : "w-full aspect-[4/3] rounded-tl-[5px] rounded-tr-[5px]"} bg-center bg-cover bg-no-repeat p-3 sm:p-4 lg:p-6 flex justify-start items-end relative course-card-thumb`}

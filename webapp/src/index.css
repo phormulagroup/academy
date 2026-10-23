@@ -445,6 +445,12 @@ textarea::placeholder,
   }
 }
 
+/* O curso ocupa a largura disponível: a largura máxima definida em cada bloco do editor (vídeos, texto, carrosséis...) não se aplica aos alunos */
+.elearning-column [class*="Section-inner"] {
+  max-width: 100% !important;
+  width: 100%;
+}
+
 .elearning-column [class*="Section"]:not([class*="Section-inner"]) {
   padding-inline-start: 0 !important;
   padding-inline-end: 0 !important;
@@ -3255,5 +3261,35 @@ deles invalida a regra inteira. */
   .auth-lang-item,
   .auth-lang-item * {
     transition: none !important;
+  }
+}
+
+/* Menu do backoffice: o ponto sobre o ícone só aparece com o menu recolhido (com o texto visível, o contador fica à direita do item) */
+.menu-badge-dot .ant-badge-dot {
+  box-shadow: none;
+  display: none;
+}
+.ant-menu-inline-collapsed .menu-badge-dot .ant-badge-dot {
+  display: block;
+}
+
+/* Cards dos catálogos (cursos, documentos, downloads): ao passar o rato o card sobe um pouco, e a sombra cresce em azul Bial (a imagem fica parada) */
+.catalog-card {
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease;
+}
+@media (hover: hover) {
+  .catalog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 28px rgba(22, 57, 134, 0.22);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalog-card {
+    transition: none;
+  }
+  .catalog-card:hover {
+    transform: none;
   }
 }

@@ -20,7 +20,6 @@ import {
   courseDateState,
   isAllowedByCountry,
   isCourseFailed,
-  testDateState,
   timeUntil,
 } from "../../../utils/courseStatus";
 
@@ -38,7 +37,8 @@ import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
-import { hasFullAccess } from "../../../utils/roles";
+import { hasFullAccess } from "../../../utils/roles";
+
 import { itemsProgress } from "../../../utils/percent";
 
 export default function CourseDetails() {
@@ -95,14 +95,9 @@ export default function CourseDetails() {
           const deniedMessage = accessDeniedMessage(auxCourse);
           if (deniedMessage) auxCourse = null;
           if (auxCourse) {
-            // Alunos: testes expirados saem do eLearning, logo também dos módulos e do progresso
+            // Os testes expirados continuam no curso e no progresso (o curso não se conclui sem eles)
             const allTests = res.data.tests.filter((_t) => _t.is_deleted !== 1);
-            const visibleTests =
-              hasFullAccess(user)
-                ? res.data.tests
-                : res.data.tests.filter(
-                    (_t) => testDateState(_t) !== "expired",
-                  );
+            const visibleTests = res.data.tests;
             // Materiais filtrados pelos países do curso (ver utils/materials)
             auxCourse.material = auxCourse.material
               ? courseMaterials({
@@ -309,8 +304,8 @@ export default function CourseDetails() {
             <div className="relative z-10 pt-4 sm:pt-8 lg:pt-10 mb-6 sm:mb-10">
               {/* Grupo 1: Nome do Curso + Thumbnail */}
               <div
-                className={`grid gap-4 sm:gap-8 mb-6 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-3" : "grid-cols-1"}`}>
-                {/* Nome do Curso - 30% no desktop */}
+                className={`grid gap-4 sm:gap-8 mb-6 sm:mb-10 ${windowDimension.width >= 768 ? "grid-cols-2 items-center" : "grid-cols-1"}`}>
+                {/* Nome do Curso - 50% no desktop */}
                 <div className="flex flex-col justify-center col-span-1">
                   <p className="font-ryker font-thin text-[#163986] uppercase text-[13px] sm:text-base md:text-lg lg:text-[20px]">
                     {t("Course")}
@@ -320,9 +315,8 @@ export default function CourseDetails() {
                   </p>
                 </div>
 
-                {/* Thumbnail - 70% no desktop - altura dinâmica */}
-                {/* Banner 12:5 na proporção natural (sem altura fixa nem object-cover, a imagem não é cortada) */}
-                <div className="col-span-2">
+                {/* Thumbnail - 50% no desktop: o banner 12:5 na proporção natural (sem altura fixa nem object-cover, a imagem não é cortada), mais baixo */}
+                <div className="col-span-1">
                   <img
                     src={`${config.server_ip}/media/${data.course?.img}`}
                     className="w-full h-auto rounded-[5px]"

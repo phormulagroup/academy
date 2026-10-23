@@ -16,7 +16,6 @@ import {
   isAllowedByCountry,
   isCourseFailed,
   readCatalogueFilters,
-  testDateState,
 } from "../../utils/courseStatus";
 import config from "../../utils/config";
 import { courseStats } from "../../utils/userResults";
@@ -141,12 +140,12 @@ export default function Result() {
                   const testData = res.data.tests.filter(
                     (_t) => _t.id === courseModules[i].items[y].id,
                   )[0];
-                  // Alunos: sem testes em rascunho nem expirados (como no curso); o Admin vê todos
+                  // Alunos: sem testes em rascunho (os expirados contam para o progresso); o Admin vê todos
                   if (
                     testData &&
                     testData.is_deleted !== 1 &&
                     (hasFullAccess(res.data.user) ||
-                      (testData.status !== "draft" && testDateState(testData) !== "expired"))
+                      testData.status !== "draft")
                   ) {
                     itemToAdd = {
                       type: courseModules[i].items[y].type,

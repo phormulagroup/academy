@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { isCourseFailed, testDateState } from "./courseStatus";
+import { isCourseFailed } from "./courseStatus";
 
 // Cálculos dos resultados de um aluno nos cursos (página de detalhes do utilizador no backoffice)
 
@@ -93,10 +93,10 @@ export const formatSeconds = (seconds) => {
 };
 
 // ---- Relatórios: as mesmas regras do perfil/backoffice, a partir dos dados do /course/report ----
-// Itens que contam em cada curso: os dos módulos que ainda existem; testes de alunos sem rascunhos nem expirados (como no perfil)
+// Itens que contam em cada curso: os dos módulos que ainda existem; testes de alunos sem rascunhos (os expirados contam: o curso não se conclui sem eles)
 export function reportCourseItems(data) {
   const topics = new Set((data.topics || []).map((t) => t.id));
-  const tests = new Map((data.tests || []).filter((t) => t.status !== "draft" && testDateState(t) !== "expired").map((t) => [t.id, t]));
+  const tests = new Map((data.tests || []).filter((t) => t.status !== "draft").map((t) => [t.id, t]));
   const byCourse = new Map();
   (data.modules || []).forEach((m) => {
     if (!byCourse.has(m.id_course)) byCourse.set(m.id_course, { keys: new Set(), tests: [] });
