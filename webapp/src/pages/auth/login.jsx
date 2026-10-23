@@ -162,7 +162,7 @@ export default function Login() {
 
   return (
     // Escolha do idioma em destaque (carrossel) no formulário; nos outros passos (código, estado da conta) o seletor do topo
-    <AuthLayout languagePicker={step === "credentials" ? "carousel" : "dropdown"}>
+    <AuthLayout languageLocked={step !== "credentials"}>
       {step === "checking" ? (
         <AuthStepLoading title={t("Checking your account")} subtitle={t("Just a moment")} />
       ) : step === "status" ? (

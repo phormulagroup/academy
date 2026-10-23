@@ -135,7 +135,7 @@ export default function Register() {
     // Escolha do idioma em destaque: a conta fica associada à região do idioma escolhido
     <AuthLayout
       cardClassName={isRegistered ? undefined : "max-w-200"}
-      languagePicker={isRegistered ? "dropdown" : "carousel"}
+      languageLocked={isRegistered}
       languageHint={t("Your account will be associated with the region of the selected language.")}>
       {isRegistered ? (
         <AuthStepSuccess

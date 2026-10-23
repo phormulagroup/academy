@@ -3,11 +3,11 @@ import { Navigate, Route, Routes, useRoutes } from "react-router-dom";
 
 import MainLayout from "../layout/main";
 
-const Login = lazyPage(() => import("../pages/auth/login"));
-const Register = lazyPage(() => import("../pages/auth/register"));
+const Login = lazyPage(() => import("../pages/auth/login"), { preload: true });
+const Register = lazyPage(() => import("../pages/auth/register"), { preload: true });
 const Main = lazyPage(() => import("../pages/app"));
 const Error404 = lazyPage(() => import("../pages/app/404"));
-const Recover = lazyPage(() => import("../pages/auth/recover"));
+const Recover = lazyPage(() => import("../pages/auth/recover"), { preload: true });
 const Faqs = lazyPage(() => import("../pages/app/faqs"));
 const Contact = lazyPage(() => import("../pages/app/contact"));
 

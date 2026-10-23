@@ -23,6 +23,15 @@
   </head>
   <body>
     <div id="root">
+      <!-- Ecrã inicial: enquanto o JavaScript descarrega, o mesmo azul claro e a barra do carregamento da app (em vez de uma página branca).
+           O React substitui-o quando arranca. -->
+      <style>
+        #boot-splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f1f9ff; }
+        #boot-splash span { position: relative; width: 220px; height: 3px; overflow: hidden; border-radius: 999px; background: rgba(22, 57, 134, 0.14); }
+        #boot-splash span::after { content: ""; position: absolute; top: 0; left: 0; width: 40%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00b9d6, #163986); animation: boot-slide 1.3s ease-in-out infinite; }
+        @keyframes boot-slide { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+      </style>
+      <div id="boot-splash" aria-hidden="true"><span></span></div>
       <div id="boot-fallback" style="display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; font-family: system-ui, sans-serif; color: #163986">
         <h1 style="margin: 0; font-size: 1.5rem">Bial Regional Academy</h1>
         <p style="margin: 0; max-width: 460px; line-height: 1.5">Não foi possível carregar a aplicação. / Unable to load the application.</p>

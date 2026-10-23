@@ -26,6 +26,6 @@ export default function useChangeLanguage() {
     setIsLoadingLanguage(true);
     setTimeout(() => {
       setIsLoadingLanguage(false);
-    }, 1500);
+    }, 900);
   };
 }
