@@ -3,7 +3,7 @@ var util = require("util");
 var router = express.Router();
 
 var db = require("../utils/database");
-const { requireStaff } = require("../utils/permissions");
+const { requireStaff, hasPermission } = require("../utils/permissions");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -56,6 +56,33 @@ router.get("/read", requireStaff(), async (req, res) => {
     console.error(e);
     res.status(500).send({ message: "Some error on server." });
   }
+});
+
+// Sinais de novidades no menu do backoffice: registos à espera de aprovação e mensagens do formulário de contacto por ler.
+// Só conta o que a pessoa pode ver (mesmas permissões das secções); é uma consulta leve, chamada de 30 em 30 segundos.
+router.get("/badges", requireStaff(), async (req, res) => {
+  const out = { users: 0, answers: 0 };
+  try {
+    if (await hasPermission(req.user, "user", "read")) {
+      // Contas pendentes (ficam inativas, is_deleted = 1, até serem aprovadas)
+      const [row] = await query("SELECT COUNT(*) AS n FROM user WHERE status = 'pending'");
+      out.users = Number(row.n);
+    }
+    if (await hasPermission(req.user, "form_submission", "read")) {
+      try {
+        // Só as por ler (e de idiomas que existem: a página das respostas só mostra esses)
+        const [row] = await query("SELECT COUNT(*) AS n FROM form_submission fs JOIN language l ON l.id = fs.id_lang WHERE fs.is_deleted = 0 AND fs.is_read = 0");
+        out.answers = Number(row.n);
+      } catch (err) {
+        // Sem a coluna is_read (migração por correr): sem contador
+        if (err.code !== "ER_BAD_FIELD_ERROR") throw err;
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  res.set("Cache-Control", "no-store");
+  res.send(out);
 });
 
 module.exports = router;

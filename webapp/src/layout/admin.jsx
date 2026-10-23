@@ -56,6 +56,7 @@ import {
   LuUsersRound,
   LuShieldCheck,
   LuTicket,
+  LuCheck,
   LuActivity,
   LuSend,
   LuMessageSquareText,
@@ -87,6 +88,7 @@ const Main = () => {
     selectedLanguage,
     setSelectedLanguage,
     unreadTicketsCount,
+    menuBadges,
     permissions,
     loadTranslation,
   } = useContext(Context);
@@ -115,6 +117,27 @@ const Main = () => {
 
   const location = useLocation();
   const { t, i18n } = useTranslation();
+
+  // Contador à direita do texto do item, centrado na vertical; com o menu recolhido (só ícones) passa a um ponto sobre o ícone (ver .menu-badge-dot)
+  const menuItemBadge = (text, icon, count, title) => ({
+    label: (
+      <span className="flex w-full items-center justify-between gap-2">
+        <span className="min-w-0 truncate">{text}</span>
+        {count > 0 && (
+          <span
+            title={title}
+            className="ml-auto inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-[#00B9D6] px-1.5 pt-[1px] text-[11px] font-semibold leading-none text-white">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </span>
+    ),
+    icon: (
+      <Badge dot={count > 0} color="#00B9D6" offset={[2, -2]} className="menu-badge-dot">
+        {icon}
+      </Badge>
+    ),
+  });
 
   const allItems = useMemo(
     () => [
@@ -197,7 +220,11 @@ const Main = () => {
         label: t("Management"),
         type: "group",
         children: [
-          { key: "/admin/users", label: t("Users"), icon: <LuUsers /> },
+          {
+            key: "/admin/users",
+            // Registos à espera de aprovação
+            ...menuItemBadge(t("Users"), <LuUsers />, menuBadges.users, t("{{count}} registrations waiting for approval", { count: menuBadges.users })),
+          },
           {
             key: "/admin/user-groups",
             label: t("User groups"),
@@ -215,8 +242,8 @@ const Main = () => {
           },
           {
             key: "/admin/answers",
-            label: t("Answers"),
-            icon: <LuMessageSquareText />,
+            // Mensagens do formulário de contacto por responder
+            ...menuItemBadge(t("Answers"), <LuMessageSquareText />, menuBadges.answers, t("{{count}} messages waiting for a reply", { count: menuBadges.answers })),
           },
           {
             key: "/admin/monitoring",
@@ -244,7 +271,7 @@ const Main = () => {
         ],
       },
     ],
-    [t],
+    [t, menuBadges],
   );
 
   // O Admin vê tudo; as outras funções (incluindo o Gestor) só as secções em que podem ver. "Permissões": o Admin edita, o Gestor só vê
@@ -395,6 +422,42 @@ const Main = () => {
                 {/* Rodapé: o que estava no cabeçalho (utilizador, idioma, mensagens, website e terminar sessão) e o botão de recolher */}
                 <div
                   className={`shrink-0 flex flex-col gap-3 border-0 border-t border-solid border-white/15 px-4 py-5 ${isSiderCollapsed ? "items-center" : ""}`}>
+                  {/* Idioma: as bandeiras como no login e no registo, por cima do utilizador (recolhido, fica o seletor no grupo de ícones) */}
+                  {!isSiderCollapsed && (
+                    <div role="radiogroup" aria-label={t("Language")} className="flex items-start justify-between gap-1">
+                      {languages.map((language) => {
+                        const isSelected = language.id === selectedLanguage?.id;
+                        return (
+                          <button
+                            key={language.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            lang={language.code}
+                            title={language.name}
+                            onClick={() => !isSelected && selectLanguage(language)}
+                            className={`group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[10px] border border-solid py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00B9D6] ${
+                              isSelected ? "cursor-default border-white/70 bg-white/15" : "cursor-pointer border-transparent bg-transparent hover:bg-white/10"
+                            }`}>
+                            <span className="relative">
+                              <span
+                                className={`block h-7 w-7 rounded-full bg-cover bg-center ring-1 ring-white/40 transition-opacity ${isSelected ? "" : "opacity-60 group-hover:opacity-100"}`}
+                                style={{ backgroundImage: `url(${language.flag})` }}
+                                aria-hidden="true"
+                              />
+                              {isSelected && (
+                                <span className="absolute -bottom-0.5 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#00B9D6] text-[9px] text-white ring-2 ring-[#163986]" aria-hidden="true">
+                                  <LuCheck />
+                                </span>
+                              )}
+                            </span>
+                            <span className={`text-[10px] font-semibold leading-none ${isSelected ? "text-white" : "text-white/70"}`}>{language.code.toUpperCase()}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <Tooltip
                     title={isSiderCollapsed ? user.name : undefined}
                     placement="right">
@@ -437,6 +500,7 @@ const Main = () => {
                         <AiOutlineGlobal />
                       </Link>
                     </Tooltip>
+                    {isSiderCollapsed && (
                     <LanguageSelector
                       languages={languages}
                       selectedLanguage={selectedLanguage}
@@ -459,6 +523,7 @@ const Main = () => {
                         )}
                       </button>
                     </LanguageSelector>
+                    )}
                     {canAccess("/admin/tickets") && (
                       <Tooltip
                         title={t("Tickets")}
@@ -477,6 +542,17 @@ const Main = () => {
                         </Link>
                       </Tooltip>
                     )}
+                    <Tooltip
+                      title={t("Logout")}
+                      placement={isSiderCollapsed ? "right" : "top"}>
+                      <button
+                        type="button"
+                        onClick={() => setIsOpenLogout(true)}
+                        aria-label={t("Logout")}
+                        className={`${SIDER_ICON_BUTTON} cursor-pointer border-0 bg-transparent`}>
+                        <LuLogOut />
+                      </button>
+                    </Tooltip>
                     <Tooltip
                       title={
                         isSiderCollapsed ? t("Expand menu") : t("Collapse menu")
@@ -499,21 +575,6 @@ const Main = () => {
                       </button>
                     </Tooltip>
                   </div>
-
-                  <Tooltip
-                    title={isSiderCollapsed ? t("Logout") : undefined}
-                    placement="right">
-                    <button
-                      type="button"
-                      onClick={() => setIsOpenLogout(true)}
-                      aria-label={t("Logout")}
-                      className={`flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-white/10 text-[13px] text-white transition-colors hover:bg-white/20 ${
-                        isSiderCollapsed ? "h-9 w-9 text-[18px]" : "h-9 w-full"
-                      }`}>
-                      <LuLogOut className="text-[18px]" />
-                      {!isSiderCollapsed && <span>{t("Logout")}</span>}
-                    </button>
-                  </Tooltip>
                 </div>
               </div>
             </Sider>

@@ -1,5 +1,6 @@
 const endpoints = {
 	dashboard: {
+		badges: "/dashboard/badges",
 		read: "/dashboard/read",
 	},
 	auth: {
@@ -234,6 +235,7 @@ const endpoints = {
 		readById: "/form/readById",
 		reply: "/form/reply",
 		retryReply: "/form/retryReply",
+		setRead: "/form/setRead",
 		update: "/form/update",
 		create: "/form/create",
 		delete: "/form/delete",

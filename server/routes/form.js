@@ -194,6 +194,20 @@ router.post("/retryReply", middleware, requirePermission("form_submission", "upd
   }
 });
 
+// Marca como lida ou por ler (is_read: 1 ou 0). Sem a coluna (migração 2026-10-15 por correr) não faz nada
+router.post("/setRead", middleware, requirePermission("form_submission", "read"), async (req, res) => {
+  const query = util.promisify(db.query).bind(db);
+  try {
+    const isRead = req.body.data?.is_read ? 1 : 0;
+    const result = await query("UPDATE form_submission SET is_read = ?, read_at = ? WHERE id = ? AND is_deleted = 0", [isRead, isRead ? new Date() : null, toId(req.body.data?.id)]);
+    res.send({ affectedRows: result.affectedRows, is_read: isRead });
+  } catch (err) {
+    if (err.code === "ER_BAD_FIELD_ERROR") return res.send({ affectedRows: 0 });
+    console.error(err);
+    res.status(500).send({ message: "Some error on server.", error: err.message });
+  }
+});
+
 router.post("/delete", middleware, requirePermission("form_submission", "delete"), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);

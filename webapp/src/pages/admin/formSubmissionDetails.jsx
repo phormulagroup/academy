@@ -32,7 +32,7 @@ function Info({ icon, label, children }) {
 // Detalhes de uma submissão do formulário de contacto: a mensagem completa, quem a enviou, os dados da submissão e as respostas. A resposta
 // envia-se pelo e-mail da plataforma: fica registada (quem, quando, o texto) e mostra-se se o e-mail saiu ou, se falhou, porquê.
 export default function FormSubmissionDetails() {
-  const { toastApi } = useContext(Context);
+  const { toastApi, refreshMenuBadges } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("form_submission");
   const navigate = useNavigate();
@@ -60,6 +60,16 @@ export default function FormSubmissionDetails() {
       .get(endpoints.form.readById, { params: { id } })
       .then((res) => {
         setData(res.data);
+        // Abrir a submissão marca-a como lida (o número no menu desce)
+        if (initial && res.data.is_read === 0) {
+          axios
+            .post(endpoints.form.setRead, { data: { id: res.data.id, is_read: 1 } })
+            .then(() => {
+              setData((prev) => (prev ? { ...prev, is_read: 1 } : prev));
+              refreshMenuBadges?.();
+            })
+            .catch((err) => console.log(err));
+        }
         if (initial) setSubject(`Re: ${res.data.subject || ""}`.trim());
       })
       .catch((err) => {
@@ -67,6 +77,16 @@ export default function FormSubmissionDetails() {
         if (err.response?.status === 404) navigate("/admin/answers", { replace: true });
       })
       .finally(() => setIsLoading(false));
+  }
+
+  function markUnread() {
+    axios
+      .post(endpoints.form.setRead, { data: { id: data.id, is_read: 0 } })
+      .then(() => {
+        refreshMenuBadges?.();
+        navigate("/admin/answers");
+      })
+      .catch((err) => console.log(err));
   }
 
   function copyEmail() {
@@ -157,6 +177,11 @@ export default function FormSubmissionDetails() {
                 {!data.repliesAvailable && mailtoHref && (
                   <Button type="primary" icon={<LuReply />} onClick={() => (window.location.href = mailtoHref)}>
                     {t("Reply by e-mail")}
+                  </Button>
+                )}
+                {"is_read" in data && (
+                  <Button icon={<LuMail />} onClick={markUnread}>
+                    {t("Mark as unread")}
                   </Button>
                 )}
                 {perm.canDelete && (

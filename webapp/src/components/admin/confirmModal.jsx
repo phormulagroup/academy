@@ -46,7 +46,8 @@ export default function ConfirmModal({
       open={open}
       onCancel={onCancel}
       width={width}
-      centered
+      // No topo, a 40px da margem do ecrã (em vez de centrada na vertical)
+      style={{ top: 40 }}
       destroyOnHidden
       mask={{ closable: !loading }}
       closable={!loading}
