@@ -11,6 +11,7 @@ import i18n from "./i18n";
 import { createToastApi, toastRef } from "./notify";
 import { useTranslation } from "react-i18next";
 import { ADMIN_ROLE_ID, hasFullAccess } from "./roles";
+import useIdleLock, { ACTIVITY_KEY, isIdleExceeded, touchActivity } from "./useIdleLock";
 
 export const Context = createContext();
 
@@ -21,6 +22,7 @@ const POLL_INTERVAL = (Number(import.meta.env.VITE_POLL_INTERVAL) || 30) * 1000;
 
 const ContextProvider = ({ children }) => {
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const [isIdleLocked, setIsIdleLocked] = useState(false); // sessão bloqueada por inatividade (modal para voltar a entrar com a palavra-passe)
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoadingLanguage, setIsLoadingLanguage] = useState(false);
 	const [user, setUser] = useState({});
@@ -32,6 +34,7 @@ const ContextProvider = ({ children }) => {
 	const [languages, setLanguages] = useState([]);
 	const [selectedLanguage, setSelectedLanguage] = useState(null);
 	const [notifications, setNotifications] = useState([]);
+	const [menuBadges, setMenuBadges] = useState({ users: 0, answers: 0 }); // novidades do backoffice (registos por aprovar, mensagens por responder)
 	const [unreadTicketsCount, setUnreadTicketsCount] = useState(0); // tickets com novidades por ler (ver /ticket/unreadCount)
 	const [personalization, setPersonalization] = useState({});
 
@@ -95,6 +98,34 @@ const ContextProvider = ({ children }) => {
 		getPersonalization(languages);
 	}, [i18n.language]);
 
+	// Inatividade (por segurança, além da duração do token): passados 30 minutos sem atividade (rato, teclado, scroll, toque; a ver um
+	// vídeo conta como atividade) a sessão fica bloqueada e pede a palavra-passe, sem perder a página onde a pessoa estava
+	useIdleLock({ enabled: !!user.id && !isIdleLocked, onIdle: () => setIsIdleLocked(true) });
+
+	// Fim da sessão: o token tem hora de expirar (`exp`, ver SESSION_HOURS na API). A página sai sozinha à hora certa e logo que se volta
+	// ao separador (um computador deixado aberto de um dia para o outro não fica com a sessão iniciada), sem esperar pelo próximo pedido
+	useEffect(() => {
+		if (!user.id) return;
+		const expired = () => {
+			try {
+				const payload = JSON.parse(atob(localStorage.getItem("token").split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+				return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now();
+			} catch {
+				return false;
+			}
+		};
+		const check = () => localStorage.getItem("token") && expired() && expireSessionRef.current();
+		const timer = setInterval(check, 30 * 1000);
+		document.addEventListener("visibilitychange", check);
+		window.addEventListener("focus", check);
+		check();
+		return () => {
+			clearInterval(timer);
+			document.removeEventListener("visibilitychange", check);
+			window.removeEventListener("focus", check);
+		};
+	}, [user.id]);
+
 	// Polling: de X em X segundos procura notificações e mensagens novas (em vez de socket)
 	useEffect(() => {
 		if (!user.id) return;
@@ -136,7 +167,20 @@ const ContextProvider = ({ children }) => {
 		});
 	}
 
+	// Novidades do backoffice (só para quem tem acesso a alguma secção: a API recusa os outros)
+	const isStaffRef = useRef(false);
+	async function getMenuBadges() {
+		if (!isStaffRef.current) return;
+		try {
+			const res = await axios.get(endpoints.dashboard.badges);
+			setMenuBadges((prev) => (prev.users === res.data.users && prev.answers === res.data.answers ? prev : { users: res.data.users || 0, answers: res.data.answers || 0 }));
+		} catch {
+			// sem sinais por agora
+		}
+	}
+
 	async function pollUpdates(auxUser) {
+		getMenuBadges();
 		// Verificação leve: só se pede a lista completa de notificações quando o resumo mudou
 		const [summaryRes, ticketsRes] = await Promise.allSettled([axios.get(endpoints.notification.summary), axios.get(endpoints.ticket.unreadCount)]);
 		let notificationsRes = { status: "rejected" };
@@ -253,6 +297,8 @@ const ContextProvider = ({ children }) => {
 		if (isExpiringRef.current) return;
 		isExpiringRef.current = true;
 		localStorage.removeItem("token");
+		localStorage.removeItem(ACTIVITY_KEY);
+		setIsIdleLocked(false);
 		delete axios.defaults.headers.common["Authorization"];
 		setIsLoggedIn(false);
 		setUser({});
@@ -292,7 +338,10 @@ const ContextProvider = ({ children }) => {
 				const res = await axios.post(endpoints.auth.verifyToken, {
 					data: token,
 				});
+				// Browser fechado ou computador a dormir mais de 30 minutos: entra bloqueado (pede a palavra-passe)
+				const wasIdle = isIdleExceeded();
 				await login({ user: res.data.user, token: token });
+				if (wasIdle) setIsIdleLocked(true);
 				getNotifications(res.data.user);
 				getTickets();
 				setTimeout(() => {
@@ -375,6 +424,8 @@ const ContextProvider = ({ children }) => {
 
 	async function logout() {
 		localStorage.removeItem("token");
+		localStorage.removeItem(ACTIVITY_KEY);
+		setIsIdleLocked(false);
 		const auxUser = JSON.parse(JSON.stringify(user));
 		setIsLoggedIn(false);
 		setIsLoading(true);
@@ -395,9 +446,19 @@ const ContextProvider = ({ children }) => {
 		}, 1000);
 	}
 
+	// Voltar a entrar a partir do bloqueio por inatividade: só troca o token (a página e o estado ficam como estavam)
+	function resumeSession(token) {
+		isExpiringRef.current = false;
+		localStorage.setItem("token", token);
+		api.token(token);
+		touchActivity();
+		setIsIdleLocked(false);
+	}
+
 	function login(res) {
 		isExpiringRef.current = false;
 		localStorage.setItem("token", res.token);
+		touchActivity();
 		api.token(res.token);
 		getInfoData(res.token);
 		setUser(res.user);
@@ -475,6 +536,12 @@ const ContextProvider = ({ children }) => {
 		});
 	}
 
+	// Quem tem acesso ao backoffice (Admin ou alguma secção): é a ele que se pedem os sinais do menu
+	isStaffRef.current = hasFullAccess(user) || permissions.some((p) => p.can_read);
+	useEffect(() => {
+		if (isStaffRef.current && user?.id) getMenuBadges();
+	}, [user?.id, permissions]);
+
 	return (
 		<Context.Provider
 			value={{
@@ -512,6 +579,10 @@ const ContextProvider = ({ children }) => {
 				notifications,
 				setNotifications,
 				unreadTicketsCount,
+				menuBadges,
+				refreshMenuBadges: getMenuBadges,
+				isIdleLocked,
+				resumeSession,
 				setUnreadTicketsCount,
 				personalization, 
 				getPersonalization

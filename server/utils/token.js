@@ -10,6 +10,10 @@ if (!privateKey || privateKey.length < 32) {
 // Campos que nunca saem da API (hashes da password e do código de recuperação)
 const SECRET_FIELDS = ["password", "recover_code", "recover_code_expires", "generate_password", "login_code", "login_code_expires"];
 
+// Duração da sessão (SESSION_HOURS, por omissão 12 h): passada essa hora o token deixa de valer e a pessoa tem de entrar de novo, por isso uma
+// sessão deixada aberta de um dia para o outro termina. A webapp lê o `exp` do token e também sai sozinha (ver utils/context.jsx).
+const SESSION_HOURS = Math.min(24 * 30, Math.max(1, Number(process.env.SESSION_HOURS) || 12));
+
 // Impressão digital da password atual: muda quando a password muda, por isso um token antigo deixa de valer, sem levar o hash no token
 const passwordFingerprint = (hash) => crypto.createHmac("sha256", privateKey).update(String(hash || "")).digest("hex").slice(0, 24);
 
@@ -56,7 +60,7 @@ module.exports = {
   createToken: function (user) {
     const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password) };
     return new Promise((resolve, reject) => {
-      jwt.sign(payload, privateKey, { expiresIn: "5d", algorithm: "HS256" }, (err, token) => {
+      jwt.sign(payload, privateKey, { expiresIn: `${SESSION_HOURS}h`, algorithm: "HS256" }, (err, token) => {
         if (err) return reject(err);
         resolve(token);
       });

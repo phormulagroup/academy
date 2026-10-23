@@ -49,6 +49,7 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `API_PUBLIC_URL` | `https://academy.phormuladev.com/api` (endereço público da API: links de rastreio das comunicações) |
    | `JWT_SECRET` | **Obrigatório.** Segredo que assina as sessões e os links de rastreio (a API não arranca sem ele). Em staging/produção usar um valor longo e aleatório e nunca o pôr no código. Mudá-lo termina todas as sessões |
    | _(já preenchidas no `.env.staging` do zip)_ | `TRUST_PROXY=1`, `CORS_ORIGINS=https://academy.phormuladev.com`, `DB_POOL_SIZE=10` e `SLOW_REQUEST_MS=1500` |
+   | `SESSION_HOURS` | opcional: duração da sessão em horas (por omissão 12). Passado esse tempo é preciso entrar de novo, por isso uma sessão deixada aberta de um dia para o outro termina |
    | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
    | `TRUST_PROXY` | opcional: nº de proxies à frente da API (Cloudflare = 1; Cloudflare + Apache = 2), para o limite de pedidos usar o IP real |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
@@ -88,6 +89,8 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
      e guarda-se um ano. Sem a tabela a API funciona na mesma, só não regista.
    - `2026-10-14-permissions-audit-security.sql`: duas secções novas nas permissões, "Registo de atividade" (ver) e "Acessos bloqueados" (ver e desbloquear), que saem de "Monitorização".
      Cada função fica com nelas o que já tinha em Monitorização, por isso ninguém perde acesso. Repetível.
+   - `2026-10-15-form-submission-read.sql`: acrescenta `is_read` e `read_at` a `form_submission` (Respostas lidas / por ler; o número no menu conta só as por ler) e marca como lidas as que já existiam.
+     Correr **uma única vez** (um `ADD COLUMN` não se repete). Já foi aplicada na BD de staging. Sem a coluna a API funciona na mesma, só sem estado nem contador.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).

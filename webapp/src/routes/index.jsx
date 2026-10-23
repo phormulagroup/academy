@@ -16,6 +16,7 @@ import { adminRoutes } from "./routesAdmin";
 import { userRoutes } from "./routesUser";
 import { publicRoutes } from "./routesPublic";
 import LanguageWrapper from "./languageWrapper";
+import IdleLockModal from "../components/idleLockModal";
 import i18n from "../utils/i18n";
 import I18nextBrowserLanguageDetector from "i18next-browser-languagedetector";
 
@@ -125,6 +126,7 @@ export default function AppRoutes() {
 			) : (
 				element
 			)}
+			<IdleLockModal />
 		</ConfigProvider>
 	);
 }
