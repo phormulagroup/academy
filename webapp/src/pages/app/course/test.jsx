@@ -15,20 +15,22 @@ import {
   RxReload,
 } from "react-icons/rx";
 import { MdTimerOff } from "react-icons/md";
+import { LuClock, LuListChecks, LuRepeat, LuTarget } from "react-icons/lu";
 import { PiCalendarXDuotone, PiHourglassMediumDuotone } from "react-icons/pi";
 import axios from "axios";
 import endpoints from "../../../utils/endpoints";
 import { Context } from "../../../utils/context";
 import {
   isTestFailed,
-  parseSettings,
   testDateState,
+  testDates,
   isMissedExpiredTest,
   lockedDescription,
   previousRequiredItem,
 } from "../../../utils/courseStatus";
 import LockedMessage from "../../../components/app/course/lockedMessage";
 import TestCountdown from "../../../components/app/course/testCountdown";
+import TestDeadline from "../../../components/app/course/testDeadline";
 import dayjs from "dayjs";
 import { Helmet } from "react-helmet";
 import { hasFullAccess } from "../../../utils/roles";
@@ -108,7 +110,9 @@ const Test = ({
   // Admin (id_role = 1) sem restrições de datas; alunos veem a contagem decrescente até à data de início
   const isAdmin = hasFullAccess(user);
   // Alunos: teste expirado que não concluíram. Já não se pode fazer (nem repetir), mas continua a contar para concluir o curso
-  const missedExpired = !isAdmin && isMissedExpiredTest(selectedCourseItem, progress);
+  // Força nova leitura do estado das datas quando o prazo termina com a página aberta
+  const [, setDeadlineTick] = useState(0);
+  const missedExpired = !isAdmin && isMissedExpiredTest(selectedCourseItem, progress, user?.country);
   // Ecrãs estreitos: labels curtas na barra de navegação do teste
   const shortNavLabels = windowDimension?.width < 480;
   const [data, setData] = useState({});
@@ -253,7 +257,7 @@ const Test = ({
           i.id === selectedCourseItem.id && i.type === selectedCourseItem.type,
       );
       // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
-      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress) : null;
+      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress, user?.country) : null;
       if (previousItem) {
         let previousCompleted = progress.filter(
           (p) =>
@@ -302,7 +306,7 @@ const Test = ({
     }
 
     // Antes da data de início os alunos veem a contagem decrescente (o admin não tem restrições)
-    setIsAvailable(isAdmin || testDateState(aux) !== "upcoming");
+    setIsAvailable(isAdmin || testDateState(aux, user?.country) !== "upcoming");
     setData(aux);
   }
 
@@ -514,15 +518,13 @@ const Test = ({
           {/* Admin: aviso das datas do teste (expirado / ainda não disponível para os alunos) */}
           {isAdmin &&
             (() => {
-              const dateState = testDateState(selectedCourseItem);
-              const { start_date, end_date } = parseSettings(
-                selectedCourseItem.settings,
-              );
+              const dateState = testDateState(selectedCourseItem, user?.country);
+              const { start, end } = testDates(selectedCourseItem, user?.country);
               if (dateState === "expired")
-                return <TestDateNotice type="expired" date={end_date} t={t} />;
+                return <TestDateNotice type="expired" date={end} t={t} />;
               if (dateState === "upcoming")
                 return (
-                  <TestDateNotice type="upcoming" date={start_date} t={t} />
+                  <TestDateNotice type="upcoming" date={start} t={t} />
                 );
               return null;
             })()}
@@ -534,52 +536,45 @@ const Test = ({
           ) : (
             Object.keys(data).length > 0 && (
               <div>
+                {/* Alunos: até quando o teste está aberto e quanto falta (neutro, laranja nas últimas 24 h, vermelho na última hora) */}
+                {!isAdmin && isAvailable && !missedExpired && !finished && testDates(selectedCourseItem, user?.country).end !== null && (
+                  <TestDeadline endMs={testDates(selectedCourseItem, user?.country).end} compact={begin} onEnded={() => setDeadlineTick((n) => n + 1)} />
+                )}
                 {missedExpired && !finished ? (
                   <div className="flex items-center gap-3 rounded-[5px] mt-4 p-3 sm:p-4 text-white bg-[#8B9CC3]">
                     <PiCalendarXDuotone className="shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
                     <div className="min-w-0">
                       <p className="font-ryker font-bold leading-tight text-[14px] sm:text-[16px] lg:text-[18px]">
-                        {t("This test expired on")} {dayjs(parseSettings(selectedCourseItem.settings).end_date).format("DD/MM/YYYY HH:mm")}
+                        {t("This test expired on")} {dayjs(testDates(selectedCourseItem, user?.country).end).format("DD/MM/YYYY HH:mm")}
                       </p>
                       <p className="text-[12px] sm:text-[13px] lg:text-[14px] mt-0.5">{t("It can no longer be taken. Contact your representative if you need access.")}</p>
                     </div>
                   </div>
                 ) : !isAvailable ? (
                   <TestCountdown
-                    startDate={data.settings?.start_date}
+                    startMs={testDates(selectedCourseItem, user?.country).start}
                     onReachZero={() => setIsAvailable(true)}
                   />
                 ) : !begin ? (
-                  <div className="flex flex-col justify-center items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
-                    <p className="font-ryker font-bold text-[16px]">
-                      <b>{t("Approval percentage")}:</b>{" "}
-                      {data.settings.passing_score}%
-                    </p>
-                    {Number(data.settings.time) > 0 && (
-                      <p className="text-[16px]">
-                        <b>{t("Time")}:</b> {data.settings.time} {t("minutes")}
-                      </p>
-                    )}
-                    {Number(data.settings.retries_allowed) > 0 && (
-                      <p className="text-[16px]">
-                        <b>{t("Retries allowed")}:</b>{" "}
-                        {data.settings.retries_allowed}
-                      </p>
-                    )}
-                    <p className="text-center text-[14px] text-[#999] mt-2">
-                      {!data.settings.time && !data.settings.retries_allowed
-                        ? t(
-                            "This test doesn't have limited time or retries allowed",
-                          )
-                        : !data.settings.time
-                          ? t("This test doesn't have limited time")
-                          : !data.settings.retries_allowed
-                            ? t("This test doesn't have retries allowed")
-                            : null}
-                    </p>
+                  <div className="flex flex-col items-center bg-white border-2 border-dashed border-[#00B9D6] p-4 sm:p-6 rounded-[5px] mt-4">
+                    {/* Resumo do teste em mini-cards: perguntas, nota mínima, tempo limite e tentativas */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-200">
+                      {[
+                        { icon: <LuListChecks />, label: t("Questions"), value: data.question?.length ?? 0 },
+                        { icon: <LuTarget />, label: t("Approval percentage"), value: `${data.settings.passing_score ?? 75}%` },
+                        { icon: <LuClock />, label: t("Time limit"), value: Number(data.settings.time) > 0 ? `${data.settings.time} ${t("min")}` : t("No limit") },
+                        { icon: <LuRepeat />, label: t("Attempts"), value: Number(data.settings.retries_allowed) > 0 ? data.settings.retries_allowed : t("Unlimited") },
+                      ].map((card) => (
+                        <div key={card.label} className="flex flex-col items-center text-center rounded-[10px] bg-[#F1F9FF] px-2 py-3 sm:py-4">
+                          <span className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-white text-[18px] sm:text-[20px] text-[#00B9D6]">{card.icon}</span>
+                          <span className="font-ryker font-bold text-[#163986] text-[18px] sm:text-[22px] leading-tight mt-2">{card.value}</span>
+                          <span className="text-[11px] sm:text-[12px] text-[#5F6B7A] mt-0.5">{card.label}</span>
+                        </div>
+                      ))}
+                    </div>
                     <Button
                       onClick={startTest}
-                      className="mt-4 main-cta-button"
+                      className="mt-5 main-cta-button"
                       type="primary"
                       size="large">
                       {t("Start test")}

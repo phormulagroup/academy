@@ -1,5 +1,8 @@
 import dayjs from "dayjs";
 import { courseAccessState } from "./courseWindow";
+import { testState, testWindow } from "./testSchedule";
+import countryTimezones from "./countryTimezones.json";
+import { serverNow } from "./serverClock";
 import { ADMIN_ROLE_ID } from "./roles";
 
 /**
@@ -86,16 +89,25 @@ export function courseDateState(course) {
 
 /**
  * @function testDateState
- * @description Disponibilidade do teste (definições do teste: start_date / end_date).
+ * @description Disponibilidade do teste (definições do teste: start_date / end_date, ou as do país da conta).
  * @param {object} test - Teste com settings (objeto ou string).
+ * @param {string} [country] - País da conta (datas próprias do país).
  * @returns {"upcoming"|"active"|"expired"}
  */
-export function testDateState(test) {
-  const { start_date, end_date } = parseSettings(test?.settings);
-  const now = dayjs();
-  if (start_date && now.isBefore(dayjs(start_date))) return "upcoming";
-  if (end_date && now.isAfter(dayjs(end_date))) return "expired";
-  return "active";
+export function testDateState(test, country) {
+  return testState(test?.settings, country, countryTimezones, serverNow());
+}
+
+/**
+ * @function testDates
+ * @description Quando o teste abre e fecha para esta pessoa (ms; null = sem limite): as datas de Lisboa ou, se o teste as tiver para o
+ * país da conta, as desse país. São instantes absolutos: mostram-se na hora local de quem vê.
+ * @param {object} test - Teste com settings.
+ * @param {string} [country] - País da conta.
+ * @returns {{ start: number|null, end: number|null }}
+ */
+export function testDates(test, country) {
+  return testWindow(test?.settings, country, countryTimezones);
 }
 
 /**
@@ -106,8 +118,8 @@ export function testDateState(test) {
  * @param {Array} progress - Atividade do utilizador no curso.
  * @returns {boolean}
  */
-export function isMissedExpiredTest(item, progress) {
-  if (item?.type !== "test" || testDateState(item) !== "expired") return false;
+export function isMissedExpiredTest(item, progress, country) {
+  if (item?.type !== "test" || testDateState(item, country) !== "expired") return false;
   return !(progress || []).some((p) => p.is_completed === 1 && p.is_deleted !== 1 && p.activity_type === "test" && p.id_course_test === item.id);
 }
 
@@ -117,9 +129,9 @@ export function isMissedExpiredTest(item, progress) {
  * expirados por fazer (que já não se podem fazer e não podem travar o resto do curso).
  * @returns {object|null}
  */
-export function previousRequiredItem(allItems, index, progress) {
+export function previousRequiredItem(allItems, index, progress, country) {
   for (let i = index - 1; i >= 0; i--) {
-    if (!isMissedExpiredTest(allItems[i], progress)) return allItems[i];
+    if (!isMissedExpiredTest(allItems[i], progress, country)) return allItems[i];
   }
   return null;
 }

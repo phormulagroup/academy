@@ -63,8 +63,8 @@ import LockedMessage from "../../../components/app/course/lockedMessage";
 import {
   isCourseFailed,
   isTestFailed,
-  parseSettings,
   testDateState,
+  testDates,
   isMissedExpiredTest,
   previousRequiredItem,
   itemCountsLabel,
@@ -404,7 +404,7 @@ const Learning = () => {
     const index = indexInCourse(item);
     const missing = (allItems || [])
       .slice(0, Math.max(0, index))
-      .filter((i) => !isItemCompleted(i, progressToCheck) && !isMissedExpiredTest(i, progressToCheck));
+      .filter((i) => !isItemCompleted(i, progressToCheck) && !isMissedExpiredTest(i, progressToCheck, user?.country));
     if (missing.length === 0) return null;
     return missing.length === 1 && indexInCourse(missing[0]) === index - 1
       ? missing[0].type
@@ -652,9 +652,9 @@ const Learning = () => {
 
   // Teste expirado (só o admin o vê): texto esbatido + ícone com a data de fim
   function expiredInfo(item) {
-    if (item?.type !== "test" || testDateState(item) !== "expired") return null;
-    const { end_date } = parseSettings(item.settings);
-    return `${t("Expired test")} · ${dayjs(end_date).format("DD/MM/YYYY HH:mm")}`;
+    if (item?.type !== "test" || testDateState(item, user?.country) !== "expired") return null;
+    const { end } = testDates(item, user?.country);
+    return `${t("Expired test")} · ${dayjs(end).format("DD/MM/YYYY HH:mm")}`;
   }
 
   // Cadeados da lista de módulos: dentro do círculo de estado. Linear: bloqueado até o anterior estar concluído.
@@ -667,7 +667,7 @@ const Learning = () => {
     if (freeLock(item)) return true;
     if (isItemCompleted(item) || data?.course?.settings.progression_type !== "linear" || (mInd === 0 && i === 0)) return false;
     // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
-    const previous = previousRequiredItem(allItems || [], indexInCourse(item), progress);
+    const previous = previousRequiredItem(allItems || [], indexInCourse(item), progress, user?.country);
     return !!previous && !isCompletedActivity(previous.type, previous.id);
   }
   const statusCircle = (locked, extra = "") => (
@@ -1457,14 +1457,14 @@ const Learning = () => {
           {selectedCourseItem &&
             !isTestInProgress &&
             (windowDimension.width > 1080 || selectedCourseItem.type) && (
-              <div className="learning-footer flex items-center justify-between gap-3 bg-[#FF9E83] shrink-0 px-3 sm:px-6">
+              <div className="learning-footer flex items-center justify-between gap-3 bg-[#00B9D6] shrink-0 px-3 sm:px-6">
                 <div className="flex items-center">
                   {windowDimension.width > 1080 && (
-                    <label className="flex items-center gap-2 cursor-pointer select-none text-white font-semibold text-[13px] lg:text-[14px]">
+                    <label className="flex items-center gap-3 cursor-pointer select-none text-white font-bold text-[15px] lg:text-[17px]">
                       {collapsed ? (
-                        <RiMenuUnfold4Line className="w-5 h-5" />
+                        <RiMenuUnfold4Line className="w-7 h-7" />
                       ) : (
-                        <RiMenuFold4Line className="w-5 h-5" />
+                        <RiMenuFold4Line className="w-7 h-7" />
                       )}
                       <span>
                         {collapsed
@@ -1472,7 +1472,6 @@ const Learning = () => {
                           : t("Hide course menu")}
                       </span>
                       <Switch
-                        size="small"
                         checked={!collapsed}
                         onChange={(checked) => setCollapsed(!checked)}
                       />

@@ -64,7 +64,7 @@ const Topic = ({
             i.type === selectedCourseItem.type,
         ) ?? -1;
       // O item anterior que tem de estar concluído (um teste expirado por fazer não conta: já não se pode fazer)
-      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress) : null;
+      const previousItem = findIndex > 0 ? previousRequiredItem(allItems, findIndex, progress, user?.country) : null;
       if (previousItem) {
         const previousCompleted = progress.some(
           (p) =>

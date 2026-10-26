@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PiHourglassMediumDuotone } from "react-icons/pi";
 import dayjs from "dayjs";
+import { serverNow } from "../../../utils/serverClock";
 
 // Tempo restante (ms) dividido em dias / horas / minutos / segundos
 function splitTime(ms) {
@@ -18,19 +19,19 @@ function splitTime(ms) {
  * @component TestCountdown
  * @description Contagem decrescente até à data de início de um teste (alunos). Ao chegar a zero chama
  * onReachZero para o teste ficar disponível sem recarregar a página.
- * @param {string} startDate - Data de início do teste (settings.start_date).
+ * @param {number} startMs - Instante em que o teste abre (ms), já com as datas do país da pessoa; a contagem usa a hora do servidor.
  * @param {Function} onReachZero - Chamada uma vez quando o tempo termina.
  */
-function TestCountdown({ startDate, onReachZero }) {
+function TestCountdown({ startMs, onReachZero }) {
   const { t } = useTranslation();
-  const target = dayjs(startDate).valueOf();
-  const [remaining, setRemaining] = useState(() => target - Date.now());
+  const target = startMs;
+  const [remaining, setRemaining] = useState(() => target - serverNow());
   const doneRef = useRef(false);
 
   useEffect(() => {
     doneRef.current = false;
     const tick = () => {
-      const left = target - Date.now();
+      const left = target - serverNow();
       setRemaining(left);
       if (left <= 0 && !doneRef.current) {
         doneRef.current = true;
@@ -60,7 +61,7 @@ function TestCountdown({ startDate, onReachZero }) {
         {t("This test is not available yet")}
       </p>
       <p className="text-[#8B9CC3] text-[12px] sm:text-[14px] mt-1">
-        {t("Available from")} {dayjs(startDate).format("DD/MM/YYYY HH:mm")}
+        {t("Available from")} {dayjs(startMs).format("DD/MM/YYYY HH:mm")}
       </p>
       <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4 w-full max-w-120 mt-4 sm:mt-6">
         {tiles.map((tile) => (

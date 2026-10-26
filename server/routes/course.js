@@ -11,6 +11,8 @@ const { read } = require("fs");
 const { notifyUser, emailLanguage } = require("../utils/notify");
 const { approvedResult, gradeAttempt } = require("../utils/testResult");
 const { courseSettings, visibleCourses, visibleTests } = require("../utils/courseAccess");
+const { testState } = require("../utils/testSchedule");
+const countryTimezones = require("../utils/countryTimezones.json");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
 // lang: idioma escolhido na app, só quando é a própria pessoa a concluir (a equipa recebe nesse idioma; o aluno no da sua conta)
@@ -608,14 +610,10 @@ async function gradeTestRows(query, rows) {
 	return rows.filter((r) => !(["module", "course"].includes(r.activity_type) && Number(r.is_completed) === 1 && failedCourses.has(Number(r.id_course))));
 }
 
-// Teste com data de fim já passada (test.settings.end_date)
-function isExpiredTest(settings) {
-	try {
-		const end = (typeof settings === "string" ? JSON.parse(settings || "{}") : settings || {}).end_date;
-		return !!end && new Date(end).getTime() < Date.now();
-	} catch {
-		return false;
-	}
+// Teste fora da janela de datas para esta pessoa: ainda não abriu ou já fechou. As datas são as de Lisboa ou, se o teste as tiver para o país da
+// conta, as desse país (ver utils/testSchedule.js)
+function isUnavailableTest(settings, country) {
+	return testState(settings, country, countryTimezones) !== "active";
 }
 
 // Alunos: um teste expirado já não se pode fazer (as tentativas novas não se gravam) e o curso só se conclui com TODOS os itens feitos,
@@ -630,7 +628,7 @@ async function blockedExpiredOrIncomplete(query, user, rows) {
 		rows.forEach((r, i) => {
 			if (r.activity_type !== "test") return;
 			const test = tests.find((t) => t.id === Number(r.id_course_test));
-			if (test && isExpiredTest(test.settings)) blocked.add(i);
+			if (test && isUnavailableTest(test.settings, user?.country)) blocked.add(i);
 		});
 	}
 	for (const idCourse of [...new Set(rows.filter((r) => r.activity_type === "course" && Number(r.is_completed) === 1).map((r) => Number(r.id_course)).filter(Boolean))]) {

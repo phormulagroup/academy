@@ -3,12 +3,12 @@ import { useState } from "react";
 
 import { Context } from "../../../../utils/context";
 
-import { Button, DatePicker, Form, InputNumber, Radio, Select, Switch } from "antd";
+import { Button, Form, InputNumber, Radio, Select, Switch } from "antd";
 import { useParams } from "react-router-dom";
-import dayjs from "dayjs";
 import { LuEye, LuGlobe, LuListChecks, LuLock, LuShuffle, LuTarget } from "react-icons/lu";
 import { SettingsSection, SettingsSectionNav } from "../../../../components/admin/settingsSection";
 import PageFooter from "../../../../components/admin/pageFooter";
+import { CountryDates, ZonedDatePicker } from "../../../../components/admin/course/testDates";
 
 // Secções das definições do teste, pela ordem em que aparecem: alimenta o índice lateral
 const SECTIONS = [
@@ -96,21 +96,23 @@ export default function Settings({ data, isActive = true }) {
           <Form form={form} onFinish={save} layout="vertical" onValuesChange={() => setIsDirty(true)}>
             <SettingsSection id="access" icon={<LuLock />} title={t("Access")} description={t("Controls the acces settings of the test")}>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
-                <Form.Item
-                  name="start_date"
-                  label={t("Start date")}
-                  className="mb-0!"
-                  getValueProps={(value) => ({ value: value && dayjs(value) })}>
-                  <DatePicker format="YYYY-MM-DD HH:mm" showTime size="large" className="w-full" />
+                <Form.Item name="start_date" label={`${t("Start date")} (${t("Lisbon time")})`} className="mb-0!">
+                  <ZonedDatePicker />
                 </Form.Item>
-                <Form.Item
-                  name="end_date"
-                  label={t("End date")}
-                  className="mb-0!"
-                  getValueProps={(value) => ({ value: value && dayjs(value) })}>
-                  <DatePicker format="YYYY-MM-DD HH:mm" showTime size="large" className="w-full" />
+                <Form.Item name="end_date" label={`${t("End date")} (${t("Lisbon time")})`} className="mb-0!">
+                  <ZonedDatePicker />
                 </Form.Item>
               </div>
+              <p className="text-[13px] text-[#8A8D98] mt-3 mb-0!">{t("Students see these dates in their own time zone")}</p>
+              {countryOptions.length > 0 && (
+                <div className="mt-5">
+                  <p className="font-semibold mb-1!">{t("Dates by country")}</p>
+                  <p className="text-[13px] text-[#8A8D98] mb-3!">{t("A country can open and close at a different time, written in that country's local time. What is left empty follows the Lisbon date")}</p>
+                  <Form.Item name="country_dates" className="mb-0!">
+                    <CountryDates countries={countryOptions} />
+                  </Form.Item>
+                </div>
+              )}
             </SettingsSection>
 
             {/* Limitar por país (como no curso): os alunos de outros países não recebem o teste */}
