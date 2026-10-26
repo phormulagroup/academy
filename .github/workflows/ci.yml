@@ -47,6 +47,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # Mais memória para o build: o pacote é grande (editor, PDF, gráficos) e o limite por omissão do Node, nos servidores do GitHub, não chega
       - run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - run: npm audit --omit=dev --audit-level=high
         continue-on-error: true

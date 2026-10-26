@@ -22,7 +22,9 @@ import { sanitizeHtml } from "./sanitizeHtml";
 
 export const Context = createContext();
 
-api.init();
+// Primeiro contacto com a API (define o endereço base). Se falhar, o ecrã de "servidor em baixo" (utils/serverStatus.js) trata do aviso:
+// o erro não pode ficar por tratar (rejeição sem catch), senão rebenta também quem importa este módulo sem API (testes, CI)
+api.init().catch(() => {});
 
 const ContextProvider = ({ children }) => {
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
