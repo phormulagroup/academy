@@ -5,6 +5,7 @@ var router = express.Router();
 var slugify = require("slugify");
 var fs = require("fs");
 var path = require("path");
+const { MEDIA_DIR } = require("../utils/paths");
 
 var db = require("../utils/database");
 const { toId, setClause, columnList } = require("../utils/sql");
@@ -45,7 +46,7 @@ router.get("/readBySlug", async (req, res) => {
 router.get("/readFile", async (req, res) => {
 	// Serve o ficheiro PDF solicitado. Primeiro tenta servir a partir do servidor local; se não existir, busca do servidor remoto.
 	const fileName = path.basename(req.query.file || "");
-	const localFile = path.join(__dirname, "..", "media", fileName);
+	const localFile = path.join(MEDIA_DIR, fileName);
 	let buffer;
 	if (fileName && fs.existsSync(localFile)) {
 		buffer = fs.readFileSync(localFile);

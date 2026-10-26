@@ -15,17 +15,15 @@ Tudo num só domínio: React na raiz, API Node em `/api`, IECs em `/regional/wp-
 > `.htaccess` da webapp por cima apaga-o (ver secção 8).
 
 ## 1. Gerar os zips
-Na raiz do projeto:
+Na raiz do projeto, um só comando gera os dois pacotes **da mesma versão** (webapp e API), depois de correr os testes da API, o lint e os testes da webapp:
 ```
-# Webapp (usa webapp/.env.staging → VITE_API_URL=https://academy.phormuladev.com/api)
-cd webapp && npm run build:staging && cd ..
-mkdir -p deploy
-(cd webapp/dist && zip -qr ../../deploy/webapp-staging.zip . -x ".DS_Store")
-
-# API (sem node_modules, sem media, sem os .env de dev/produção)
-(cd server && zip -qr ../deploy/server-staging.zip . -x "node_modules/*" -x "media/*" -x ".env.development" -x ".env.production" -x ".DS_Store" -x "*/.DS_Store" && zip -q ../deploy/server-staging.zip media/)
+scripts/build-release.sh staging        # ou: production. Com --skip-checks salta os testes e o lint
 ```
-A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
+Resultado em `deploy/` (não vai para o git): `webapp-staging.zip` (usa `webapp/.env.staging` → `VITE_API_URL=https://academy.phormuladev.com/api`) e
+`server-staging.zip` (a API com o `.env.staging`, sem `node_modules`, sem `media`, sem testes, com o Excel das traduções em `database/translations.xlsx`).
+Os dois levam um `version.json` com o mesmo valor (`<commit>[-dirty]`): depois do deploy, `https://<dominio>/api/health` e `https://<dominio>/version.json`
+têm de mostrar a **mesma versão** (uma webapp e uma API de versões diferentes foi a causa de um login que deixou de funcionar).
+O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
 
 ## 2. Webapp (React)
 - Extrair `webapp-staging.zip` **na raiz do domínio** (`public_html`): o **conteúdo**, não uma pasta. Confirmar que o `.htaccess`
@@ -49,12 +47,20 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    | `API_PUBLIC_URL` | `https://academy.phormuladev.com/api` (endereço público da API: links de rastreio das comunicações) |
    | `JWT_SECRET` | **Obrigatório.** Segredo que assina as sessões e os links de rastreio (a API não arranca sem ele). Em staging/produção usar um valor longo e aleatório e nunca o pôr no código. Mudá-lo termina todas as sessões |
    | _(já preenchidas no `.env.staging` do zip)_ | `TRUST_PROXY=1`, `CORS_ORIGINS=https://academy.phormuladev.com`, `DB_POOL_SIZE=10` e `SLOW_REQUEST_MS=1500` |
+   | `IDLE_MINUTES` | opcional: minutos de inatividade até a sessão ficar bloqueada e pedir a palavra-passe (por omissão 30). A API recusa (401 `session_idle`) sessões sem atividade e a webapp mostra o modal de desbloqueio |
+   | `MEDIA_DIR` | **recomendado no cPanel:** pasta dos ficheiros carregados fora da app (ex.: `/home/<utilizador-cpanel>/academy-media`). Assim os deploys (que substituem a pasta da API) não tocam nos media. Por omissão `server/media` |
    | `SESSION_HOURS` | opcional: duração da sessão em horas (por omissão 12). Passado esse tempo é preciso entrar de novo, por isso uma sessão deixada aberta de um dia para o outro termina |
    | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
    | `TRUST_PROXY` | opcional: nº de proxies à frente da API (Cloudflare = 1; Cloudflare + Apache = 2), para o limite de pedidos usar o IP real |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
-3. **Base de dados** (uma vez por ambiente, antes de arrancar): correr, por esta ordem, os ficheiros de `server/database/migrations/`
-   (todos são aditivos e podem repetir-se sem estragar nada):
+3. **Base de dados**: as migrações (`server/database/migrations/*.sql`) aplicam-se com o executor `scripts/migrate.js`, que regista o que já correu em cada ambiente
+   (tabela `schema_migrations`). No cPanel: *Setup Node.js App → Run NPM Script* (ou, no Terminal da app, `npm run <script>`):
+   - `migrate:status:staging`: mostra o que está aplicado e o que falta (só lê, nunca altera).
+   - `migrate:staging`: aplica, por ordem, as que faltam. Para no primeiro erro e diz qual (o que já passou fica registado).
+   - **Primeira vez num ambiente que já tem as migrações aplicadas à mão** (é o caso da staging atual): marcar o que já existe, sem correr nada, no Terminal da app:
+     `npm run migrate:baseline -- --env=staging --through=2026-10-15-form-submission-read`. O `migrate:staging` recusa-se a correr numa BD com tabelas e sem registo, para não repetir migrações que só se aplicam uma vez.
+   - Em produção usar `migrate:status:production` / `migrate:production`. Em local: `npm run migrate:status` / `npm run migrate`.
+   Notas sobre cada migração (para referência; o executor aplica-as pela ordem do nome):
    - `2026-10-02-certificate-text-layout.sql`: acrescenta `text_align`, `text_x` e `text_y` a `course_certificate`. Sem isto o
      backoffice mostra o alinhamento e a posição do certificado desativados e não os guarda.
    - `2026-10-02-course-access.sql`: cria `user_group`, `user_group_member`, `course_user_access` e `course_group` (acesso a cursos
@@ -90,17 +96,32 @@ A pasta `deploy/` não vai para o git. O zip da API inclui o `.env.staging` (cre
    - `2026-10-14-permissions-audit-security.sql`: duas secções novas nas permissões, "Registo de atividade" (ver) e "Acessos bloqueados" (ver e desbloquear), que saem de "Monitorização".
      Cada função fica com nelas o que já tinha em Monitorização, por isso ninguém perde acesso. Repetível.
    - `2026-10-15-form-submission-read.sql`: acrescenta `is_read` e `read_at` a `form_submission` (Respostas lidas / por ler; o número no menu conta só as por ler) e marca como lidas as que já existiam.
-     Correr **uma única vez** (um `ADD COLUMN` não se repete). Já foi aplicada na BD de staging. Sem a coluna a API funciona na mesma, só sem estado nem contador.
+     Já foi aplicada na BD de staging. Sem a coluna a API funciona na mesma, só sem estado nem contador.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
    Esta pasta tem de sobreviver aos deploys: não a apagar ao extrair um novo `server-staging.zip`.
-   Depois, importar as traduções novas (`docs/translations/admin-redesign-translations.xlsx`) para a tabela `language`.
+   **Traduções:** o Excel (`docs/translations/admin-redesign-translations.xlsx`, copiado para `database/translations.xlsx` no zip da API) importa-se com o executor:
+   `translations:check:staging` mostra o que mudaria (só lê) e `translations:import:staging` acrescenta as chaves em falta (nunca sobrescreve as existentes; `--env=staging --overwrite` no Terminal
+   também corrige as diferentes). Antes de alterar guarda uma cópia de cada idioma em `database/backups/`.
 4. cPanel → *Setup Node.js App* → *Create*:
    - Application root: a pasta da API · Application URL: `academy.phormuladev.com/api` · Startup file: `index.js`
    - Variável de ambiente **`NODE_ENV=staging`** (sem ela carrega `.env.development`)
    - *Run NPM Install* (os avisos `npm warn deprecated … glob` são inofensivos) e *Restart*.
 5. Se o Passenger **tirar** o `/api` antes de chegar ao Node, pôr `API_PREFIX=` (vazio) e reiniciar.
+
+## Sessão, cookies e segurança
+- **Sessão em cookie `HttpOnly`** (`academy_session`, `SameSite=Lax`, `Secure` quando o pedido chega por HTTPS): o token nunca passa pelo JavaScript da página (nem fica no `localStorage`), por isso um XSS
+  não o consegue roubar. A webapp só guarda `session` no `localStorage` (quando termina e a inatividade permitida, sem segredos). Os pedidos que alteram dados levam o cabeçalho `X-Requested-With: academy-webapp`
+  (defesa extra contra CSRF). Sessões antigas (token no `localStorage`) são trocadas por cookie no primeiro carregamento.
+- **Tem de ser o mesmo "site":** a webapp e a API no mesmo domínio (`academy.phormuladev.com` e `/api`), como já está. Em desenvolvimento o cookie só segue se a página e a API usarem o **mesmo nome**:
+  `VITE_API_URL=http://localhost:4000` (não `127.0.0.1`) no `webapp/.env.development` e abrir `http://localhost:5174`.
+- **`TRUST_PROXY`** (já configurado, 1 com Cloudflare): sem ele a API não percebe que o pedido veio por HTTPS e o cookie sai sem `Secure`.
+- **Inatividade:** a webapp envia um sinal de atividade (no máximo 1 por minuto, enquanto a pessoa mexe ou vê um vídeo) a `POST /auth/ping`. Passado `IDLE_MINUTES` (30) mais 2 min de margem sem sinais, a API responde
+  `401 session_idle` a qualquer pedido e a webapp mostra o modal para voltar a entrar com a palavra-passe. As consultas automáticas (notificações, sinais do menu) não contam como atividade.
+- **Deploys e sessões:** mudar o `JWT_SECRET` termina todas as sessões. Um deploy normal não termina nenhuma.
+- **Integração contínua:** `.github/workflows/ci.yml` corre os testes da API e, na webapp, o lint (sem erros), os testes e o build em cada pull request e push para a `main`.
+  Para bloquear o merge de PRs com falhas: GitHub → Settings → Branches → regra para `main` → *Require status checks* (`server`, `webapp`).
 
 ## E-mails automáticos da plataforma
 A plataforma envia sozinha estes e-mails (templates em *E-mail → Templates*, um por língua: pt, es, en, fr): registo recebido, conta aprovada, conta não aprovada,
@@ -130,9 +151,12 @@ definições. Não há serviço externo. No cPanel (Passenger) há quatro pontos
 
 ## 4. Pasta `media`
 A webapp vai buscar as imagens/documentos a `https://academy.phormuladev.com/api/media/<ficheiro>`.
-- Copiar `server/media/` (≈1,4 GB, ~4800 ficheiros) para **dentro da pasta da API** (`~/academy-api/media`).
-  Mais rápido: copiar do servidor antigo (`academyapi…`) pelo gestor de ficheiros do cPanel.
-- Sem os ficheiros, as capas dos cursos, thumbnails e documentos aparecem vazios (404).
+- **Onde fica:** definir `MEDIA_DIR` (ex.: `/home/<utilizador-cpanel>/academy-media`) e copiar para lá o conteúdo de `server/media/` (≈1,4 GB, ~4800 ficheiros). Fora da pasta da API,
+  um novo `server-staging.zip` nunca a apaga nem obriga a recopiar tudo. Sem `MEDIA_DIR` usa `server/media` (dentro da app: então não a apagar ao extrair o zip).
+- **Atualizações (só o que é novo):** com SSH, a partir da raiz do projeto, `rsync -av --ignore-existing server/media/ utilizador@servidor:/home/<utilizador>/academy-media/`
+  (`--ignore-existing` nunca substitui ficheiros já lá; para um ficheiro trocado com o mesmo nome, copiá-lo à mão ou tirar essa opção). Sem SSH: o gestor de ficheiros do cPanel.
+  Os ficheiros novos de cada release (ver `git log --stat -- server/media`) têm de seguir **antes** de atualizar as linhas da BD que apontam para eles (ex.: o fundo do certificado).
+- Sem os ficheiros, as capas dos cursos, thumbnails e documentos aparecem vazios (404). O módulo de documentos, se não encontrar um ficheiro, vai buscá-lo a `MEDIA_FALLBACK_URL`.
 
 ## 5. IECs
 - Criar `public_html/regional/wp-content/uploads/iec` e copiar para lá os ficheiros (em local: `server/media/iec`, ≈270 MB).

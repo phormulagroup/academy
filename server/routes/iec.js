@@ -2,6 +2,7 @@ var express = require("express");
 const dayjs = require("dayjs");
 const fs = require("fs");
 const path = require("path");
+const { MEDIA_DIR } = require("../utils/paths");
 var fileUpload = require("express-fileupload");
 const middleware = require("../utils/middleware");
 
@@ -16,7 +17,7 @@ const { writeZip, zipLimitsError } = require("../utils/zip");
 
 // Os ficheiros vivem nesta pasta: já contém os IECs em uso (em produção, /regional/wp-content/uploads/iec no cPanel).
 // O QRCode impresso aponta para IEC_PUBLIC_URL/<nome do ficheiro>, por isso o nome e o caminho nunca podem mudar.
-const IEC_DIR = process.env.IEC_DIR || path.join(__dirname, "..", "media", "iec");
+const IEC_DIR = process.env.IEC_DIR || path.join(MEDIA_DIR, "iec");
 const DELETED_DIR = path.join(IEC_DIR, "_deleted");
 // Máximo de IECs ativos (não apagados) na biblioteca; substituir um ficheiro com o mesmo nome não conta como novo
 const IEC_LIMIT = 100;

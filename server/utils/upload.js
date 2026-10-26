@@ -3,7 +3,7 @@ var util = require("util");
 var path = require("path");
 
 // Relativo a este ficheiro (e não ao diretório de onde o processo foi arrancado)
-const MEDIA_DIR = path.join(__dirname, "..", "media");
+const { MEDIA_DIR } = require("./paths");
 
 module.exports = {
   // fileName (opcional): guarda com esse nome exato, substituindo o ficheiro existente (ex.: avatar nome_apelido.png)

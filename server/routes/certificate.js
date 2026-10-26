@@ -10,7 +10,7 @@ const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const { generateCertificatePdf } = require("../utils/certificatePdf");
 
-const MEDIA_DIR = path.join(__dirname, "..", "media");
+const { MEDIA_DIR } = require("../utils/paths");
 
 router.get("/read", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
