@@ -7,7 +7,7 @@
 #   scripts/local-db.sh stop     pára a instância
 #   scripts/local-db.sh status   diz se está a correr
 #
-# Depois, na pasta server: npm run dev:local (a API usa esta BD, nunca a staging).
+# Depois, na pasta server: npm run dev (a API usa esta BD, nunca a staging).
 set -euo pipefail
 
 BIN="/opt/homebrew/opt/mysql@8.0/bin"
