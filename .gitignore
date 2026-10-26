@@ -1,2 +1,9 @@
 .DS_Store
 deploy/
+
+# Cópias de segurança das traduções feitas pelo executor (scripts/translations.js)
+server/database/backups/
+
+# Capturas de ecrã de revisão (não vão para o git)
+docs/screenshots/
+docs/*.png
