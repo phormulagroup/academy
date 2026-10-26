@@ -28,9 +28,11 @@ module.exports = {
         if (err) {
           resolve({ token_valid: false, error: err });
         } else {
+          // exp: fim absoluto da sessão; la: última atividade registada (sem ele, o momento em que o token foi emitido)
+          const meta = { token_exp: decoded.exp, token_iat: decoded.iat, token_la: Number.isFinite(decoded.la) ? decoded.la : decoded.iat };
           delete decoded.iat;
           delete decoded.exp;
-          resolve({ token_valid: true, token_decoded: decoded });
+          resolve({ token_valid: true, token_decoded: decoded, ...meta });
         }
       });
     });
@@ -56,9 +58,28 @@ module.exports = {
     }
   },
 
+  // Sessão nova de um utilizador: o token (para o cookie) e quando termina (segundos desde 1970)
+  createSession: async function (user) {
+    const token = await module.exports.createToken(user);
+    return { token, expires_at: jwt.decode(token).exp };
+  },
+
+  // Renova o sinal de atividade (la) mantendo o fim absoluto da sessão (exp). Devolve null se o token não for válido
+  refreshActivity: async function (token) {
+    const result = await module.exports.verifyToken(token);
+    if (!result.token_valid) return null;
+    const payload = { ...result.token_decoded, la: Math.floor(Date.now() / 1000), exp: result.token_exp };
+    return new Promise((resolve, reject) => {
+      jwt.sign(payload, privateKey, { algorithm: "HS256" }, (err, signed) => {
+        if (err) return reject(err);
+        resolve({ token: signed, expires_at: result.token_exp });
+      });
+    });
+  },
+
   // O token leva só o necessário (a API lê o papel e o estado à base de dados em cada pedido)
   createToken: function (user) {
-    const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password) };
+    const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password), la: Math.floor(Date.now() / 1000) };
     return new Promise((resolve, reject) => {
       jwt.sign(payload, privateKey, { expiresIn: `${SESSION_HOURS}h`, algorithm: "HS256" }, (err, token) => {
         if (err) return reject(err);

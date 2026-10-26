@@ -73,9 +73,9 @@ export default function Login() {
 
   const { t } = useTranslation();
 
-  function startSession({ user, token }) {
+  function startSession({ user, session }) {
     savePending2fa(null);
-    login({ user, token });
+    login({ user, session });
     createLog({
       id_user: user.id,
       action: "login",
@@ -99,8 +99,8 @@ export default function Login() {
       // device_token: código já confirmado neste browser há menos de 30 dias → a API entra sem pedir novo código
       .post(endpoints.auth.login, { data: { ...values, lang: i18n.language, device_token: await getDeviceToken(values.email) } })
       .then((res) => {
-        if (res.data.user && res.data.token) {
-          startSession({ user: res.data.user, token: res.data.token });
+        if (res.data.user && res.data.session) {
+          startSession({ user: res.data.user, session: res.data.session });
           return;
         }
         if (res.data.otp_required) {

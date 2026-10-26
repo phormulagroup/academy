@@ -8,6 +8,8 @@ const endpoints = {
 		validateEmail: "/auth/validateEmail",
 		register: "/auth/register",
 		verifyToken: "/auth/verifyToken",
+		ping: "/auth/ping",
+		logout: "/auth/logout",
 		verifyTokenGeneratePassword: "/auth/verifyTokenGeneratePassword",
 		verifyUser: "/auth/verifyUser",
 		verifyRecoverCode: "/auth/verifyRecoverCode",

@@ -1,6 +1,7 @@
 const util = require("util");
 const db = require("./database");
 const { verifyToken } = require("./token");
+const { readSession } = require("./session");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -152,8 +153,8 @@ function auditMiddleware(prefix = "") {
     try {
       const data = state.sent || {};
       const id = Number(data.id);
-      if (info.table && ["update", "delete"].includes(info.verb) && Number.isInteger(id) && id > 0 && req.headers.authorization && (await tableReady())) {
-        const { token_valid } = await verifyToken(req.headers.authorization);
+      if (info.table && ["update", "delete"].includes(info.verb) && Number.isInteger(id) && id > 0 && readSession(req) && (await tableReady())) {
+        const { token_valid } = await verifyToken(readSession(req).token);
         if (token_valid) state.before = (await query("SELECT * FROM ?? WHERE id = ?", [info.table, id]))[0] ?? null;
       }
     } catch (err) {

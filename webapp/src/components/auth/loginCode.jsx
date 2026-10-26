@@ -60,12 +60,12 @@ export default function LoginCode({ email, sentAt, onVerified, onRestart, onRese
         data: { email, code: values.code },
       })
       .then((res) => {
-        if (res.data.user && res.data.token) {
+        if (res.data.user && res.data.session) {
           // Este browser fica de confiança: só volta a pedir código no login daqui a 30 dias
           saveDeviceToken(email, res.data.device_token);
           // Sucesso: animação no próprio formulário e depois entra na aplicação
           setIsVerified(true);
-          setTimeout(() => onVerified({ user: res.data.user, token: res.data.token }), 2800);
+          setTimeout(() => onVerified({ user: res.data.user, session: res.data.session }), 2800);
           return;
         }
         setIsVerifying(false);

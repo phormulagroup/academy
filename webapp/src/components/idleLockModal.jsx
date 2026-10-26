@@ -32,8 +32,8 @@ export default function IdleLockModal() {
       const res = await axios.post(endpoints.auth.login, {
         data: { email: user.email, password: values.password, lang: i18n.language, device_token: await getDeviceToken(user.email) },
       });
-      if (res.data.token && res.data.user?.id === user.id) {
-        resumeSession(res.data.token);
+      if (res.data.session && res.data.user?.id === user.id) {
+        await resumeSession(res.data);
         return;
       }
       if (res.data.message === "The password is not correct, try again.") {

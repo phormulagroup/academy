@@ -69,6 +69,10 @@ app.use(
 			if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
 			return callback(null, false);
 		},
+		// O cookie da sessão (HttpOnly) acompanha os pedidos da webapp
+		credentials: true,
+		// A webapp acerta o relógio do countdown dos testes pela hora do servidor (cabeçalho Date)
+		exposedHeaders: ["Date"],
 	}),
 );
 app.use(requestMonitor);
@@ -102,7 +106,7 @@ db.getConnection((error, conn) => {
 app.use(`${prefix}/t`, require("./routes/tracking"));
 // Multimédia sem cache fixa: os ficheiros podem ser trocados (mesmo nome) e têm de aparecer atualizados. O browser pergunta sempre (ETag/Last-Modified)
 // e só volta a descarregar se o ficheiro mudou (resposta 304, sem corpo). Na Cloudflare, ver a regra de cache em docs/deploy-staging.md.
-app.use(`${prefix}/media`, express.static(require("path").join(__dirname, "media"), { setHeaders: (res) => res.setHeader("Cache-Control", "no-cache") }));
+app.use(`${prefix}/media`, express.static(require("./utils/paths").MEDIA_DIR, { setHeaders: (res) => res.setHeader("Cache-Control", "no-cache") }));
 // Fontes da marca para os e-mails (ficheiros em server/public/fonts): os e-mails vão buscá-las a este endereço
 app.use(`${prefix}/fonts`, express.static(require("path").join(__dirname, "public", "fonts"), { maxAge: "30d" }));
 
@@ -111,7 +115,7 @@ app.get(`${prefix}/health`, (req, res) => {
 	res.set("Cache-Control", "no-store");
 	db.query("SELECT 1", (error) => {
 		if (error) return res.status(503).json({ status: "error" });
-		res.json({ status: "ok" });
+		res.json({ status: "ok", version: require("./utils/version").readVersion() });
 	});
 });
 

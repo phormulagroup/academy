@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-// Inatividade máxima antes de bloquear a sessão (por segurança, além da duração do token)
+// Inatividade máxima por omissão antes de bloquear a sessão; o valor em uso vem da API (IDLE_MINUTES no servidor)
 export const IDLE_MINUTES = 30;
 export const ACTIVITY_KEY = "last_activity";
 
@@ -37,15 +37,21 @@ export function isIdleExceeded(minutes = IDLE_MINUTES) {
  * está a ver uma aula não ser desligado.
  * @param {object} options
  * @param {boolean} options.enabled - Só conta com a sessão iniciada e desbloqueada.
+ * @param {number} [options.minutes] - Limite de inatividade (por omissão IDLE_MINUTES).
  * @param {function} options.onIdle - Chamada uma vez quando o limite é ultrapassado.
+ * @param {function} [options.onActivity] - Chamada quando há atividade (rato, teclado, vídeo a tocar...); quem a recebe decide com que frequência avisa a API.
  */
-export default function useIdleLock({ enabled, onIdle }) {
+export default function useIdleLock({ enabled, minutes = IDLE_MINUTES, onIdle, onActivity }) {
   const onIdleRef = useRef(onIdle);
-  onIdleRef.current = onIdle;
+  const onActivityRef = useRef(onActivity);
+  useEffect(() => {
+    onIdleRef.current = onIdle;
+    onActivityRef.current = onActivity;
+  });
 
   useEffect(() => {
     if (!enabled) return;
-    const limit = IDLE_MINUTES * 60 * 1000;
+    const limit = minutes * 60 * 1000;
     let lastWrite = 0;
     let vimeoPlaying = 0;
     let fired = false;
@@ -59,6 +65,7 @@ export default function useIdleLock({ enabled, onIdle }) {
       if (now - lastWrite < 5000) return;
       lastWrite = now;
       touchActivity();
+      onActivityRef.current?.();
     };
     ACTIVITY_EVENTS.forEach((name) => window.addEventListener(name, onActivity, { passive: true, capture: true }));
 
@@ -99,6 +106,7 @@ export default function useIdleLock({ enabled, onIdle }) {
       // A ver um vídeo: conta como atividade
       if (vimeoPlaying > 0 || nativePlaying()) {
         touchActivity();
+        onActivityRef.current?.();
         return;
       }
       const last = lastActivity();
@@ -131,5 +139,6 @@ export default function useIdleLock({ enabled, onIdle }) {
         player.off("ended");
       });
     };
-  }, [enabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, minutes]);
 }

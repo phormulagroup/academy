@@ -6,9 +6,8 @@ import { useContext } from "react";
 import { Context } from "../../utils/context";
 
 import endpoints from "../../utils/endpoints";
-import api from "../../utils/api";
+import { saveSession } from "../../utils/sessionStore";
 import PasswordChangedLogout from "../../components/passwordChangedLogout";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import UserHero from "../../components/app/user/hero";
 import { ADMIN_ROLE_ID } from "../../utils/roles";
@@ -48,7 +47,6 @@ export default function Account() {
     .sort((a, b) => a.label.localeCompare(b.label));
   // Exemplos de Nome e Apelido no idioma atual
   const placeholders = namePlaceholders(i18n.language);
-  const navigate = useNavigate();
 
   const [form] = Form.useForm();
 
@@ -76,18 +74,17 @@ export default function Account() {
         data: values,
       })
       .then((res) => {
-        if (res.data.user && res.data.token && changingPassword) {
+        if (res.data.user && res.data.password_changed && changingPassword) {
           form.setFieldsValue({
             current_password: undefined,
             password: undefined,
             confirm_password: undefined,
           });
           setPasswordChanged(true);
-        } else if (res.data.user && res.data.token) {
+        } else if (res.data.user && res.data.session) {
           setUser(res.data.user);
-          // Token novo (muda com a password): também nos pedidos seguintes, senão a sessão terminava no pedido a seguir
-          localStorage.setItem("token", res.data.token);
-          api.token(res.data.token);
+          // Sessão nova (muda com a password; a API já renovou o cookie): guarda quando termina
+          saveSession(res.data.session);
           form.setFieldsValue({
             current_password: undefined,
             password: undefined,

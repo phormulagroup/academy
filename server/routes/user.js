@@ -4,6 +4,7 @@ var util = require("util");
 var fileUpload = require("express-fileupload");
 const fs = require("fs");
 const path = require("path");
+const { MEDIA_DIR } = require("../utils/paths");
 const bcrypt = require("bcryptjs");
 var router = express.Router();
 
@@ -11,7 +12,8 @@ var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
 const { requirePermission, hasPermission, denied, isStaff, hasFullAccess, ADMIN_ROLE_ID, USER_ROLE_ID } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
-const { createToken } = require("../utils/token");
+const { createSession } = require("../utils/token");
+const { setSessionCookie } = require("../utils/session");
 const crypto = require("crypto");
 const { notifyUser, emailLanguage } = require("../utils/notify");
 const { visibleCourses, visibleTests } = require("../utils/courseAccess");
@@ -228,7 +230,7 @@ async function deleteAvatarFile(query, name) {
 	if (!isAvatar) return;
 	const [inUse] = await query("SELECT COUNT(*) AS total FROM user WHERE img = ?", [name]);
 	if (Number(inUse.total) > 0) return;
-	fs.unlink(path.join(__dirname, "..", "media", path.basename(name)), (err) => err && console.error(err));
+	fs.unlink(path.join(MEDIA_DIR, path.basename(name)), (err) => err && console.error(err));
 	if (media) await query("DELETE FROM media WHERE id = ?", [media.id]);
 }
 
@@ -305,8 +307,16 @@ router.post("/update", async (req, res, next) => {
 		// A própria pessoa mudou a sua password: aviso de segurança (se não foi ela, pode recuperar a conta logo)
 		if (passwordChanged && whereId === req.user.id) notifyUser("password_changed", { ...user[0], id_lang: await emailLanguage(user[0], req.headers["x-lang"]) });
 
-		let newToken = await createToken(user[0]);
-		res.send({ user: user[0], token: newToken });
+		// Só a própria pessoa recebe sessão nova (muda com a password, senão terminava no pedido a seguir). Um admin que edita outra conta
+		// não recebe a sessão dessa conta
+		if (whereId === req.user.id) {
+			// Password mudada: as sessões terminam (a webapp mostra o aviso e sai ao fim de uns segundos), por isso não se renova o cookie
+			if (passwordChanged) return res.send({ user: user[0], password_changed: true });
+			const session = await createSession(user[0]);
+			setSessionCookie(req, res, session.token, session.expires_at);
+			return res.send({ user: user[0], session: { expires_at: session.expires_at } });
+		}
+		res.send({ user: user[0] });
 	} catch (err) {
 		console.error(err);
 		res.status(500).send({ message: "Error updating user" });

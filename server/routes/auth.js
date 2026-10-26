@@ -6,7 +6,8 @@ const bcrypt = require("bcryptjs");
 
 var db = require("../utils/database");
 const crypto = require("crypto");
-const { verifyToken, createToken, passwordFingerprint, createDeviceToken, isTrustedDevice } = require("../utils/token");
+const { verifyToken, createSession, refreshActivity, passwordFingerprint, createDeviceToken, isTrustedDevice } = require("../utils/token");
+const { IDLE_MINUTES, readSession, setSessionCookie, clearSessionCookie, csrfOk, isIdle } = require("../utils/session");
 const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
 const { notifyUser, notifyTeam, appUrl, emailLanguage } = require("../utils/notify");
@@ -35,31 +36,71 @@ const TOO_MANY_REQUESTS = "Too many code requests. Wait before requesting a new 
 // Hash de uma password qualquer: o login gasta o mesmo tempo quer o e-mail exista ou não
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", saltRounds);
 
+// Entrega a sessão ao browser: cookie HttpOnly (o token não vai no corpo) e, no corpo, só quando termina e a inatividade permitida
+async function startSession(req, res, user, extra = {}) {
+  const { token, expires_at } = await createSession(user);
+  setSessionCookie(req, res, token, expires_at);
+  return res.send({ user, session: { expires_at, idle_minutes: IDLE_MINUTES }, ...extra });
+}
+
+// Quem está com sessão: lê o cookie (ou, numa sessão guardada antes dos cookies, o token enviado no corpo, que passa a cookie).
+// Se a sessão está bloqueada por inatividade devolve só a identidade mínima (idle: true) para o ecrã de desbloqueio.
 router.post("/verifyToken", async (req, res, next) => {
   try {
-    let token = req.body.data;
-    const result = await verifyToken(token);
-    if (result.token_valid) {
-      const query = util.promisify(db.query).bind(db);
-      const user = await query("SELECT * FROM user WHERE id = ?", result.token_decoded.id);
-      if (user.length > 0) {
-        // O token traz a impressão digital da password (pv); os antigos traziam o hash e continuam a valer até expirarem
-        const decoded = result.token_decoded;
-        const samePassword = decoded.pv !== undefined ? decoded.pv === passwordFingerprint(user[0].password) : user[0].password === decoded.password;
-        if (user[0].email === decoded.email && samePassword && user[0].is_deleted === 0) {
-          res.send({ token_valid: true, user: user[0] });
-        } else {
-          res.status(401).send("Invalid Token");
-        }
-      } else {
-        res.status(401).send("Invalid Token");
-      }
-    } else {
-      return res.status(401).send("Invalid Token");
+    const stored = readSession(req);
+    const legacyToken = typeof req.body?.data === "string" && req.body.data ? req.body.data : null;
+    const session = stored ?? (legacyToken ? { token: legacyToken, source: "body" } : null);
+    if (!session) return res.status(401).send("Invalid Token");
+    if (!csrfOk(req, session.source)) return res.status(403).send("Invalid request origin");
+    const result = await verifyToken(session.token);
+    if (!result.token_valid) return res.status(401).send("Invalid Token");
+    const query = util.promisify(db.query).bind(db);
+    const user = await query("SELECT * FROM user WHERE id = ?", result.token_decoded.id);
+    if (user.length === 0) return res.status(401).send("Invalid Token");
+    // O token traz a impressão digital da password (pv); os antigos traziam o hash e continuam a valer até expirarem
+    const decoded = result.token_decoded;
+    const samePassword = decoded.pv !== undefined ? decoded.pv === passwordFingerprint(user[0].password) : user[0].password === decoded.password;
+    if (!(user[0].email === decoded.email && samePassword && user[0].is_deleted === 0)) return res.status(401).send("Invalid Token");
+
+    if (isIdle(result.token_la)) {
+      // Sessão do cookie bloqueada: identidade mínima. Um token de uma sessão antiga (corpo) bloqueado já não é trocado por cookie
+      if (session.source === "body") return res.status(401).send({ message: "Session locked due to inactivity", code: "session_idle" });
+      return res.send({ token_valid: true, idle: true, user: { id: user[0].id, name: user[0].name, email: user[0].email }, session: { expires_at: result.token_exp, idle_minutes: IDLE_MINUTES } });
     }
+    // Sessão antiga (token no localStorage): passa a cookie HttpOnly, com o mesmo fim
+    if (session.source === "body" || session.source === "header") {
+      const refreshed = await refreshActivity(session.token);
+      if (refreshed) setSessionCookie(req, res, refreshed.token, refreshed.expires_at);
+    }
+    res.send({ token_valid: true, user: user[0], session: { expires_at: result.token_exp, idle_minutes: IDLE_MINUTES } });
   } catch (err) {
     throw err;
   }
+});
+
+// Sinal de atividade da pessoa (a webapp envia-o enquanto ela usa a plataforma, no máximo 1 por minuto): renova o limite de inatividade.
+// Os pedidos automáticos (notificações, sinais do menu) não passam por aqui, por isso não mantêm a sessão viva sozinhos.
+router.post("/ping", async (req, res, next) => {
+  try {
+    const session = readSession(req);
+    if (!session) return res.status(401).send("Invalid Token");
+    if (!csrfOk(req, session.source)) return res.status(403).send("Invalid request origin");
+    const result = await verifyToken(session.token);
+    if (!result.token_valid) return res.status(401).send("Invalid Token");
+    if (isIdle(result.token_la)) return res.status(401).send({ message: "Session locked due to inactivity", code: "session_idle" });
+    const refreshed = await refreshActivity(session.token);
+    if (!refreshed) return res.status(401).send("Invalid Token");
+    setSessionCookie(req, res, refreshed.token, refreshed.expires_at);
+    res.send({ ok: true, expires_at: refreshed.expires_at });
+  } catch (err) {
+    throw err;
+  }
+});
+
+// Terminar sessão: apaga o cookie (o token não se consegue apagar a partir da página, porque é HttpOnly)
+router.post("/logout", (req, res) => {
+  clearSessionCookie(req, res);
+  res.send({ ok: true });
 });
 
 // 2FA: gera um código de 6 dígitos, guarda o hash com a validade e envia-o por e-mail (template "login_code", no idioma do utilizador)
@@ -93,7 +134,7 @@ router.post("/login", async (req, res, next) => {
       if (user[0].status === "approved" && user[0].is_deleted === 0) {
         // Dispositivo de confiança (código confirmado neste browser há menos de 30 dias): entra sem novo código
         if (isTrustedDevice(data.device_token, user[0])) {
-          return res.send({ user: user[0], token: await createToken(user[0]), message: "Welcome " + user[0].name + "!" });
+          return startSession(req, res, user[0], { message: "Welcome " + user[0].name + "!" });
         }
         // Cada login com sucesso envia um código: conta para o mesmo limite de pedidos do Reenviar
         const sendWait = await loginCodeRequests.blocked(key, clientIp(req));
@@ -141,9 +182,8 @@ router.post("/verifyLoginCode", async (req, res, next) => {
     }
     await query("UPDATE user SET login_code = NULL, login_code_expires = NULL WHERE id = ?", [user[0].id]);
     await loginCodeThrottle.reset(key);
-    const token = await createToken(user[0]);
     // device_token: o browser guarda-o e só volta a ser pedido código no login daqui a 30 dias
-    res.send({ user: user[0], token, device_token: await createDeviceToken(user[0]), message: "Welcome " + user[0].name + "!" });
+    return startSession(req, res, user[0], { device_token: await createDeviceToken(user[0]), message: "Welcome " + user[0].name + "!" });
   } catch (err) {
     throw err;
   }

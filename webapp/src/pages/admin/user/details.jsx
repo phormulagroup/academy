@@ -31,7 +31,7 @@ import { useTranslation } from "react-i18next";
 
 import { Context } from "../../../utils/context";
 import endpoints from "../../../utils/endpoints";
-import api from "../../../utils/api";
+import { saveSession } from "../../../utils/sessionStore";
 import PasswordChangedLogout from "../../../components/passwordChangedLogout";
 import { downloadCertificate } from "../../../utils/certificate";
 import { usePermission } from "../../../utils/usePermission";
@@ -258,11 +258,8 @@ export default function UserDetails() {
           });
           setPasswordChanged(true);
         } else if (res.data.user) {
-          // A própria conta: guarda o token novo (muda com a password), senão a sessão terminava no pedido a seguir
-          if (isOwnAccount && res.data.token) {
-            localStorage.setItem("token", res.data.token);
-            api.token(res.data.token);
-          }
+          // A própria conta: sessão nova (muda com a password; a API já renovou o cookie), guarda quando termina
+          if (isOwnAccount && res.data.session) saveSession(res.data.session);
           toastApi.success(t("Account updated successfully!"));
           form.setFieldsValue({
             current_password: undefined,

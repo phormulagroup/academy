@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -11,14 +11,16 @@ import i18n from "./i18n";
 import { createToastApi, toastRef } from "./notify";
 import { useTranslation } from "react-i18next";
 import { ADMIN_ROLE_ID, hasFullAccess } from "./roles";
-import useIdleLock, { ACTIVITY_KEY, isIdleExceeded, touchActivity } from "./useIdleLock";
+import { ACTIVITY_KEY, touchActivity } from "./useIdleLock";
+import { clearLegacyToken, clearStoredSession, getLegacyToken, getStoredSession, saveSession } from "./sessionStore";
+import useLanguages from "./useLanguages";
+import useMenuBadges from "./useMenuBadges";
+import useSessionGuard from "./useSessionGuard";
+import useUpdates from "./useUpdates";
 
 export const Context = createContext();
 
 api.init();
-
-// Segundos entre cada consulta de novas notificações/mensagens (VITE_POLL_INTERVAL)
-const POLL_INTERVAL = (Number(import.meta.env.VITE_POLL_INTERVAL) || 30) * 1000;
 
 const ContextProvider = ({ children }) => {
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -31,18 +33,9 @@ const ContextProvider = ({ children }) => {
 	// De quem são as permissões carregadas: até chegarem não se sabe se uma conta (ex.: Gestor) é da equipa
 	const [permissionsUserId, setPermissionsUserId] = useState(null);
 	const [courses, setCourses] = useState([]);
-	const [languages, setLanguages] = useState([]);
-	const [selectedLanguage, setSelectedLanguage] = useState(null);
-	const [notifications, setNotifications] = useState([]);
-	const [menuBadges, setMenuBadges] = useState({ users: 0, answers: 0 }); // novidades do backoffice (registos por aprovar, mensagens por responder)
-	const [unreadTicketsCount, setUnreadTicketsCount] = useState(0); // tickets com novidades por ler (ver /ticket/unreadCount)
-	const [personalization, setPersonalization] = useState({});
 
-	const unreadTicketsRef = useRef(0);
-	const notificationSummaryRef = useRef(null); // último resumo (total, não lidas, última) para só pedir a lista quando muda
-	const knownNotificationsRef = useRef(null); // ids já conhecidos (null até à 1ª leitura, para não avisar das antigas)
-	const ticketsLoadedRef = useRef(false);
 	const isExpiringRef = useRef(false); // evita várias mensagens quando vários pedidos falham ao mesmo tempo
+	const needsFullLoadRef = useRef(false); // a página abriu com a sessão já bloqueada: só se conhece a identidade, falta carregar o resto ao desbloquear
 
 	const [windowDimension, setWindowDimension] = useState({
 		width: window.innerWidth,
@@ -72,77 +65,35 @@ const ContextProvider = ({ children }) => {
 
 	const navigate = useNavigate();
 
+	// Idiomas, traduções e texto da página inicial (utils/useLanguages.js)
+	const { languages, selectedLanguage, setSelectedLanguage, personalization, getLanguages, loadTranslation, getPersonalization } = useLanguages();
+
+	// Quem tem acesso ao backoffice (Admin ou alguma secção): é a ele que se pedem os sinais do menu
+	const isStaff = hasFullAccess(user) || permissions.some((p) => p.can_read);
+	const { menuBadges, refreshMenuBadges } = useMenuBadges({ userId: user.id, isStaff });
+
+	function showToast(title, description) {
+		notificationApi.open({
+			type: "info",
+			placement: "top",
+			title: <div dangerouslySetInnerHTML={{ __html: title }}></div>,
+			description: <div dangerouslySetInnerHTML={{ __html: description }}></div>,
+		});
+	}
+
+	// Notificações e tickets por ler, com polling (utils/useUpdates.js)
+	const { notifications, setNotifications, unreadTicketsCount, setUnreadTicketsCount, getNotifications, getTickets, resetUpdates } = useUpdates({
+		user,
+		locked: isIdleLocked,
+		showToast,
+		refreshMenuBadges,
+	});
+
 	useEffect(() => {
 		getData();
-		getLanguages();
+		// Só no arranque
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-
-	// Idiomas (países e traduções) alterados noutro separador, ex.: backoffice aberto em nova aba:
-	// ao voltar a este separador recarrega-os (no máximo uma vez a cada 30s)
-	useEffect(() => {
-		let lastLoad = Date.now();
-		const onFocus = () => {
-			if (document.visibilityState !== "visible" || Date.now() - lastLoad < 30000) return;
-			lastLoad = Date.now();
-			getLanguages();
-		};
-		window.addEventListener("focus", onFocus);
-		document.addEventListener("visibilitychange", onFocus);
-		return () => {
-			window.removeEventListener("focus", onFocus);
-			document.removeEventListener("visibilitychange", onFocus);
-		};
-	}, []);
-
-	useEffect(() => {
-		getPersonalization(languages);
-	}, [i18n.language]);
-
-	// Inatividade (por segurança, além da duração do token): passados 30 minutos sem atividade (rato, teclado, scroll, toque; a ver um
-	// vídeo conta como atividade) a sessão fica bloqueada e pede a palavra-passe, sem perder a página onde a pessoa estava
-	useIdleLock({ enabled: !!user.id && !isIdleLocked, onIdle: () => setIsIdleLocked(true) });
-
-	// Fim da sessão: o token tem hora de expirar (`exp`, ver SESSION_HOURS na API). A página sai sozinha à hora certa e logo que se volta
-	// ao separador (um computador deixado aberto de um dia para o outro não fica com a sessão iniciada), sem esperar pelo próximo pedido
-	useEffect(() => {
-		if (!user.id) return;
-		const expired = () => {
-			try {
-				const payload = JSON.parse(atob(localStorage.getItem("token").split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-				return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now();
-			} catch {
-				return false;
-			}
-		};
-		const check = () => localStorage.getItem("token") && expired() && expireSessionRef.current();
-		const timer = setInterval(check, 30 * 1000);
-		document.addEventListener("visibilitychange", check);
-		window.addEventListener("focus", check);
-		check();
-		return () => {
-			clearInterval(timer);
-			document.removeEventListener("visibilitychange", check);
-			window.removeEventListener("focus", check);
-		};
-	}, [user.id]);
-
-	// Polling: de X em X segundos procura notificações e mensagens novas (em vez de socket)
-	useEffect(() => {
-		if (!user.id) return;
-		const timer = setInterval(() => {
-			if (!document.hidden) pollUpdates(user);
-		}, POLL_INTERVAL);
-		const onVisible = () => !document.hidden && pollUpdates(user);
-		document.addEventListener("visibilitychange", onVisible);
-		return () => {
-			clearInterval(timer);
-			document.removeEventListener("visibilitychange", onVisible);
-		};
-	}, [user.id]);
-
-	useEffect(() => {
-		unreadTicketsRef.current = unreadTicketsCount;
-	}, [unreadTicketsCount]);
 
 	useEffect(() => {
 		const detectSize = () => {
@@ -158,154 +109,26 @@ const ContextProvider = ({ children }) => {
 		};
 	}, [windowDimension]);
 
-	function showToast(title, description) {
-		notificationApi.open({
-			type: "info",
-			placement: "top",
-			title: <div dangerouslySetInnerHTML={{ __html: title }}></div>,
-			description: <div dangerouslySetInnerHTML={{ __html: description }}></div>,
-		});
-	}
-
-	// Novidades do backoffice (só para quem tem acesso a alguma secção: a API recusa os outros)
-	const isStaffRef = useRef(false);
-	async function getMenuBadges() {
-		if (!isStaffRef.current) return;
-		try {
-			const res = await axios.get(endpoints.dashboard.badges);
-			setMenuBadges((prev) => (prev.users === res.data.users && prev.answers === res.data.answers ? prev : { users: res.data.users || 0, answers: res.data.answers || 0 }));
-		} catch {
-			// sem sinais por agora
-		}
-	}
-
-	async function pollUpdates(auxUser) {
-		getMenuBadges();
-		// Verificação leve: só se pede a lista completa de notificações quando o resumo mudou
-		const [summaryRes, ticketsRes] = await Promise.allSettled([axios.get(endpoints.notification.summary), axios.get(endpoints.ticket.unreadCount)]);
-		let notificationsRes = { status: "rejected" };
-		if (summaryRes.status === "fulfilled") {
-			const next = summaryRes.value.data;
-			const prev = notificationSummaryRef.current;
-			const changed = !prev || prev.total !== next.total || prev.unread !== next.unread || prev.latest_id !== next.latest_id;
-			if (changed) {
-				try {
-					notificationsRes = { status: "fulfilled", value: await axios.get(endpoints.notification.readByUser, { params: { id_user: auxUser.id } }) };
-					notificationSummaryRef.current = next;
-				} catch {
-					// tenta de novo na próxima verificação
-				}
-			}
-		}
-
-		// Notificações: avisa das que ainda não tinham aparecido e não foram lidas
-		if (notificationsRes.status === "fulfilled") {
-			const rows = notificationsRes.value.data;
-			if (knownNotificationsRef.current) {
-				rows
-					.filter((n) => !knownNotificationsRef.current.has(n.id) && !n.is_read)
-					.forEach((n) => showToast(n.title, n.description));
-			}
-			knownNotificationsRef.current = new Set(rows.map((n) => n.id));
-			setNotifications(rows);
-		}
-
-		// Tickets: avisa quando há mais por ler do que na última leitura
-		if (ticketsRes.status === "fulfilled") {
-			const count = ticketsRes.value.data.count || 0;
-			if (ticketsLoadedRef.current && count > unreadTicketsRef.current) {
-				showToast(t("New ticket activity"), t("There is a new ticket or reply, go check it out!"));
-			}
-			ticketsLoadedRef.current = true;
-			setUnreadTicketsCount(count);
-		}
-	}
-
-	// Traduções por língua, com cache do browser (o URL leva a versão, por isso só se volta a descarregar quando mudam)
-	const loadedTranslationsRef = useRef({}); // código → versão já carregada
-	async function loadTranslation(language) {
-		if (!language?.has_translation || loadedTranslationsRef.current[language.code] === language.version) return;
-		const res = await axios.get(endpoints.language.translation, { params: { code: language.code, v: language.version } });
-		const translation = (res.data || []).reduce((acc, item) => {
-			acc[item.key] = item.value;
-			return acc;
-		}, {});
-		i18n.removeResourceBundle(language.code, "translation");
-		i18n.addResourceBundle(language.code, "translation", translation, true, true);
-		loadedTranslationsRef.current[language.code] = language.version;
-	}
-
-	async function getLanguages() {
-		try {
-			// Só a lista (sem as traduções): as traduções vêm a seguir, a da língua em uso primeiro
-			const res = await axios.get(endpoints.language.read, { params: { light: 1 } });
-			setLanguages(res.data);
-			getPersonalization(res.data);
-
-			const auxLanguages = res.data;
-			// Idioma escolhido: fonte única. No backoffice manda o id_lang guardado (escolha da equipa); no site manda o idioma em uso
-			// (vem do :lang do URL, que o LanguageWrapper sincroniza com o id_lang). Antes o id_lang era aplicado ao header sem mudar o
-			// i18n, e como isto volta a correr ao regressar ao separador o header/idioma pareciam mudar sozinhos
-			const idLangStorage = localStorage.getItem("id_lang");
-			const stored = auxLanguages.find((l) => l.id === parseInt(idLangStorage));
-			const byCode = auxLanguages.find((l) => l.code === i18n.language);
-			const fallback = auxLanguages.find((l) => l.is_default === 1);
-			const isAdminPath = window.location.pathname.startsWith("/admin");
-			const current = (isAdminPath ? stored ?? byCode : byCode ?? stored) ?? fallback;
-			await loadTranslation(current).catch((err) => console.log(err));
-
-			if (current) {
-				setSelectedLanguage(current);
-				if (localStorage.getItem("id_lang") !== String(current.id)) localStorage.setItem("id_lang", current.id);
-			}
-
-			// Garante que o i18n fica no mesmo idioma do header (também refresca as traduções carregadas). No backoffice o idioma do
-			// seletor só filtra os dados: os textos ficam no idioma da conta (layout/admin.jsx), por isso aqui não se muda o i18n
-			await i18n.changeLanguage(isAdminPath ? i18n.language : current?.code ?? i18n.language);
-
-			// As restantes línguas carregam em segundo plano (ficam em cache; trocar de língua é então imediato)
-			Promise.all(auxLanguages.filter((l) => l !== current).map((l) => loadTranslation(l).catch(() => {}))).then(() => i18n.changeLanguage(i18n.language));
-		} catch (err) {
-			console.log(err);
-		}
-	}
-
-	async function getNotifications(auxUser) {
-		try {
-			const res = await axios.get(endpoints.notification.readByUser, {
-				params: { id_user: auxUser ? auxUser.id : user.id },
-			});
-			knownNotificationsRef.current = new Set(res.data.map((n) => n.id));
-			setNotifications(res.data);
-		} catch (err) {
-			console.log(err);
-		}
-	}
-
-	async function getTickets() {
-		try {
-			const res = await axios.get(endpoints.ticket.unreadCount);
-			ticketsLoadedRef.current = true;
-			setUnreadTicketsCount(res.data.count || 0);
-		} catch (err) {
-			console.log(err);
-		}
-	}
-
-	// Token inválido/expirado: limpa a sessão, avisa uma única vez e vai para a homepage (não para o login)
-	function expireSession() {
-		if (isExpiringRef.current) return;
-		isExpiringRef.current = true;
-		localStorage.removeItem("token");
+	// Limpa tudo o que é da sessão (em memória e no browser); o cookie HttpOnly apaga-se na API (POST /auth/logout)
+	function clearSessionState() {
+		clearStoredSession();
+		clearLegacyToken();
 		localStorage.removeItem(ACTIVITY_KEY);
+		needsFullLoadRef.current = false;
 		setIsIdleLocked(false);
-		delete axios.defaults.headers.common["Authorization"];
 		setIsLoggedIn(false);
 		setUser({});
 		setPermissions([]);
 		setPermissionsUserId(null);
-		setNotifications([]);
-		setUnreadTicketsCount(0);
+	}
+
+	// Sessão inválida/expirada: limpa a sessão, avisa uma única vez e vai para a homepage (não para o login)
+	function expireSession() {
+		if (isExpiringRef.current) return;
+		isExpiringRef.current = true;
+		clearSessionState();
+		axios.post(endpoints.auth.logout).catch(() => {});
+		resetUpdates();
 		toastApi.open({
 			key: "session-expired",
 			type: "warning",
@@ -315,42 +138,36 @@ const ContextProvider = ({ children }) => {
 		navigate(`/${i18n.language}`, { replace: true });
 	}
 
-	// A meio da sessão: qualquer pedido da API recusado com 401 (token expirou ou deixou de ser válido).
-	// Os pedidos de /auth (login, recuperar palavra-passe, verificar token) têm tratamento próprio.
-	const expireSessionRef = useRef(expireSession);
-	expireSessionRef.current = expireSession;
-	useEffect(() => {
-		const id = axios.interceptors.response.use(
-			(res) => res,
-			(err) => {
-				const url = err.config?.url || "";
-				if (err.response?.status === 401 && !url.includes("/auth/") && localStorage.getItem("token")) expireSessionRef.current();
-				return Promise.reject(err);
-			},
-		);
-		return () => axios.interceptors.response.eject(id);
-	}, []);
+	// Vigia a sessão: fim da sessão, 401 da API e bloqueio por inatividade (utils/useSessionGuard.js)
+	useSessionGuard({ userId: user.id, isLocked: isIdleLocked, lock: () => setIsIdleLocked(true), expire: expireSession });
 
 	async function getData() {
-		let token = localStorage.getItem("token");
-		if (token) {
+		const legacyToken = getLegacyToken();
+		if (getStoredSession() || legacyToken) {
 			try {
-				const res = await axios.post(endpoints.auth.verifyToken, {
-					data: token,
-				});
-				// Browser fechado ou computador a dormir mais de 30 minutos: entra bloqueado (pede a palavra-passe)
-				const wasIdle = isIdleExceeded();
-				await login({ user: res.data.user, token: token });
-				if (wasIdle) setIsIdleLocked(true);
-				getNotifications(res.data.user);
-				getTickets();
+				// A sessão vai no cookie; uma sessão guardada antes dos cookies (token no browser) é trocada uma vez
+				const res = await axios.post(endpoints.auth.verifyToken, legacyToken ? { data: legacyToken } : {});
+				if (legacyToken) clearLegacyToken();
+				if (res.data.idle) {
+					// Browser fechado ou computador a dormir mais do que o limite de inatividade: entra bloqueado (pede a palavra-passe)
+					saveSession(res.data.session);
+					needsFullLoadRef.current = true;
+					setUser(res.data.user);
+					setIsLoggedIn(true);
+					setIsIdleLocked(true);
+				} else {
+					await login({ user: res.data.user, session: res.data.session });
+					getNotifications(res.data.user);
+					getTickets();
+				}
 				setTimeout(() => {
 					setIsLoading(false);
 				}, 3000);
 			} catch (err) {
 				console.log(err);
 				if (err.response?.status === 401) {
-					// O token guardado já não é válido
+					// A sessão guardada já não é válida
+					if (legacyToken) clearLegacyToken();
 					expireSession();
 				} else {
 					setIsLoggedIn(false);
@@ -370,7 +187,7 @@ const ContextProvider = ({ children }) => {
 	}
 
 	// Permissões da função do utilizador, para mostrar só o que pode usar no backoffice (o servidor volta a validar tudo)
-	async function loadPermissions(auxUser, token) {
+	async function loadPermissions(auxUser) {
 		// O Admin tem tudo; as outras funções (incluindo o Gestor) seguem a sua matriz
 		if (!auxUser?.id_role || Number(auxUser.id_role) === ADMIN_ROLE_ID) {
 			setPermissions([]);
@@ -380,7 +197,6 @@ const ContextProvider = ({ children }) => {
 		try {
 			const res = await axios.get(endpoints.permission.read, {
 				params: { id_role: auxUser.id_role },
-				headers: { Authorization: token },
 			});
 			setPermissions(res.data);
 		} catch (err) {
@@ -390,89 +206,64 @@ const ContextProvider = ({ children }) => {
 		setPermissionsUserId(auxUser.id);
 	}
 
-	async function getInfoData(token) {
+	async function getInfoData() {
 		try {
-			const rolesList = await axios.get(endpoints.role.read, {
-				headers: { Authorization: token },
-			});
+			const rolesList = await axios.get(endpoints.role.read);
 			setRoles(rolesList.data);
 		} catch (err) {
 			console.log(err);
 		}
 	}
 
-	async function getPersonalization(languagesData) {
-		if (languagesData.length === 0) return;
-		try {
-			const langStorage = localStorage.getItem("i18nextLng");
-			// i18nextLng pode ainda ter o código do browser (ex.: "pt-PT"): usa o idioma por defeito
-			const auxLanguage =
-				languagesData.find((_l) => _l.code === langStorage) ??
-				languagesData.find((_l) => _l.is_default === 1) ??
-				languagesData[0];
-
-			const res = await axios.get(endpoints.personalization.readByLang, {
-				params: { id_lang: auxLanguage.id },
-			});
-			setPersonalization(
-				res.data.filter((s) => s.name === "homepage_text")[0] ?? {},
-			);
-		} catch (err) {
-			console.log(err);
-		}
-	}
-
 	async function logout() {
-		localStorage.removeItem("token");
-		localStorage.removeItem(ACTIVITY_KEY);
-		setIsIdleLocked(false);
 		const auxUser = JSON.parse(JSON.stringify(user));
-		setIsLoggedIn(false);
+		clearSessionState();
 		setIsLoading(true);
-		setUser({});
-		setPermissions([]);
-		setPermissionsUserId(null);
 		navigate(`/${i18n.language}/login`);
-		createLog({
-			id_user: auxUser.id,
-			action: "logout",
-			id_lang:
-				!hasFullAccess(auxUser)
-					? languages.filter((l) => l.code === i18n.language)[0].id
-					: selectedLanguage.id,
-		});
+		// O registo do logout ainda precisa da sessão: só depois se apaga o cookie
+		Promise.resolve(
+			createLog({
+				id_user: auxUser.id,
+				action: "logout",
+				id_lang:
+					!hasFullAccess(auxUser)
+						? languages.filter((l) => l.code === i18n.language)[0].id
+						: selectedLanguage.id,
+			}),
+		).finally(() => axios.post(endpoints.auth.logout).catch(() => {}));
 		setTimeout(() => {
 			setIsLoading(false);
 		}, 1000);
 	}
 
-	// Voltar a entrar a partir do bloqueio por inatividade: só troca o token (a página e o estado ficam como estavam)
-	function resumeSession(token) {
+	// Voltar a entrar a partir do bloqueio por inatividade: a API já renovou o cookie. Se a página abriu bloqueada, só agora se carrega o resto.
+	async function resumeSession(res) {
 		isExpiringRef.current = false;
-		localStorage.setItem("token", token);
-		api.token(token);
+		saveSession(res.session);
 		touchActivity();
+		if (needsFullLoadRef.current) {
+			needsFullLoadRef.current = false;
+			await login({ user: res.user, session: res.session });
+			getNotifications(res.user);
+			getTickets();
+		}
 		setIsIdleLocked(false);
 	}
 
 	function login(res) {
 		isExpiringRef.current = false;
-		localStorage.setItem("token", res.token);
+		saveSession(res.session);
 		touchActivity();
-		api.token(res.token);
-		getInfoData(res.token);
+		getInfoData();
 		setUser(res.user);
-		const loading = loadPermissions(res.user, res.token);
-
-		console.log(window.location.pathname);
-
+		const loading = loadPermissions(res.user);
 		setIsLoggedIn(true);
 		return loading;
 	}
 
 	async function createLog(obj) {
 		try {
-			const res = await axios.post(endpoints.logs.create, {
+			await axios.post(endpoints.logs.create, {
 				data: obj,
 			});
 		} catch (err) {
@@ -480,67 +271,57 @@ const ContextProvider = ({ children }) => {
 		}
 	}
 
-	function create(obj) {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const res = await axios.post(endpoints[obj.table].create, {
-					data: obj.data,
-				});
-				createLog({
-					id_user: user.id,
-					action: "create",
-					table_name: obj.table,
-					meta_data: JSON.stringify({ ...obj.data, id: res.insertId }),
-					id_lang: selectedLanguage.id,
-				});
-				toastApi.open({
-					type: "success",
-					content: `${tablesName[obj.table]} ${t("was successfully created")}.`,
-				});
-				resolve(res);
-			} catch (err) {
-				toastApi.open({
-					type: "error",
-					content: t("Something went wrong, please try again"),
-				});
-				reject(err);
-			}
-		});
+	async function create(obj) {
+		try {
+			const res = await axios.post(endpoints[obj.table].create, {
+				data: obj.data,
+			});
+			createLog({
+				id_user: user.id,
+				action: "create",
+				table_name: obj.table,
+				meta_data: JSON.stringify({ ...obj.data, id: res.insertId }),
+				id_lang: selectedLanguage.id,
+			});
+			toastApi.open({
+				type: "success",
+				content: `${tablesName[obj.table]} ${t("was successfully created")}.`,
+			});
+			return res;
+		} catch (err) {
+			toastApi.open({
+				type: "error",
+				content: t("Something went wrong, please try again"),
+			});
+			throw err;
+		}
 	}
 
-	function update(obj) {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const res = await axios.post(endpoints[obj.table].update, {
-					data: obj.data,
-				});
-				createLog({
-					id_user: user.id,
-					action: "update",
-					table_name: obj.table,
-					meta_data: JSON.stringify(obj.data),
-					id_lang: selectedLanguage.id,
-				});
-				toastApi.open({
-					type: "success",
-					content: `${tablesName[obj.table]} ${t("was successfully updated")}.`,
-				});
-				resolve(res);
-			} catch (err) {
-				toastApi.open({
-					type: "error",
-					content: t("Something went wrong, please try again"),
-				});
-				reject(err);
-			}
-		});
+	async function update(obj) {
+		try {
+			const res = await axios.post(endpoints[obj.table].update, {
+				data: obj.data,
+			});
+			createLog({
+				id_user: user.id,
+				action: "update",
+				table_name: obj.table,
+				meta_data: JSON.stringify(obj.data),
+				id_lang: selectedLanguage.id,
+			});
+			toastApi.open({
+				type: "success",
+				content: `${tablesName[obj.table]} ${t("was successfully updated")}.`,
+			});
+			return res;
+		} catch (err) {
+			toastApi.open({
+				type: "error",
+				content: t("Something went wrong, please try again"),
+			});
+			throw err;
+		}
 	}
-
-	// Quem tem acesso ao backoffice (Admin ou alguma secção): é a ele que se pedem os sinais do menu
-	isStaffRef.current = hasFullAccess(user) || permissions.some((p) => p.can_read);
-	useEffect(() => {
-		if (isStaffRef.current && user?.id) getMenuBadges();
-	}, [user?.id, permissions]);
 
 	return (
 		<Context.Provider
@@ -569,7 +350,7 @@ const ContextProvider = ({ children }) => {
 				roles,
 				setRoles,
 				permissions,
-				isStaff: hasFullAccess(user) || permissions.some((p) => p.can_read),
+				isStaff,
 				// Já se sabe se o utilizador com sessão é da equipa (as permissões dele foram carregadas)
 				isStaffKnown: !!user?.id && permissionsUserId === user.id,
 				windowDimension,
@@ -580,12 +361,12 @@ const ContextProvider = ({ children }) => {
 				setNotifications,
 				unreadTicketsCount,
 				menuBadges,
-				refreshMenuBadges: getMenuBadges,
+				refreshMenuBadges,
 				isIdleLocked,
 				resumeSession,
 				setUnreadTicketsCount,
-				personalization, 
-				getPersonalization
+				personalization,
+				getPersonalization,
 			}}
 		>
 			{/* Título por defeito: o react-helmet não repõe o título quando a página que o definiu desmonta (ex.: logout ou páginas
