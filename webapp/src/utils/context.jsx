@@ -17,6 +17,7 @@ import useLanguages from "./useLanguages";
 import useMenuBadges from "./useMenuBadges";
 import useSessionGuard from "./useSessionGuard";
 import useUpdates from "./useUpdates";
+import { sanitizeHtml } from "./sanitizeHtml";
 
 export const Context = createContext();
 
@@ -76,8 +77,8 @@ const ContextProvider = ({ children }) => {
 		notificationApi.open({
 			type: "info",
 			placement: "top",
-			title: <div dangerouslySetInnerHTML={{ __html: title }}></div>,
-			description: <div dangerouslySetInnerHTML={{ __html: description }}></div>,
+			title: <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(title) }}></div>,
+			description: <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}></div>,
 		});
 	}
 

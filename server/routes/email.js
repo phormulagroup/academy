@@ -13,7 +13,7 @@ const { requirePermission } = require("../utils/permissions");
 
 const { uploadFile } = require("../utils/upload");
 
-router.use(fileUpload());
+router.use(fileUpload({ limits: { fileSize: 10 * 1024 * 1024 }, abortOnLimit: true }));
 
 router.get("/read", requirePermission("email_template", "read"), (req, res, next) => {
 

@@ -9,6 +9,7 @@ import { Helmet } from "react-helmet";
 import LottieAnim from "../../components/lottieAnimations";
 
 import emergingMarket from "../../assets/Emerging-Markets.svg";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 export default function Main() {
   const { user, personalization, t } = useContext(Context);
@@ -46,7 +47,7 @@ export default function Main() {
             <div
               className="homepage_text text-[13px] sm:text-sm lg:text-base"
               style={{ color: "#163986" }}
-              dangerouslySetInnerHTML={{ __html: data.text }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.text) }}
             />
           ) : (
             <div className="mt-4 text-[13px] sm:text-sm lg:text-base">

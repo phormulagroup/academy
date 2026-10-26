@@ -57,6 +57,28 @@ ErrorDocument 504 /maintenance.html
   </FilesMatch>
 </IfModule>
 
+# Cabeçalhos de segurança (todas as respostas da raiz do domínio; a API Node acrescenta os seus)
+<IfModule mod_headers.c>
+  # HTTPS obrigatório durante 1 ano (a Cloudflare também pode definir; sem includeSubDomains/preload de propósito)
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  # Política de conteúdo: só carrega scripts do próprio domínio (e do player do Vimeo). Limita o dano de um XSS e impede a página de ser
+  # incorporada noutro site. Se algo legítimo deixar de carregar, a consola do browser diz "Refused to ... Content Security Policy"; para só
+  # observar sem bloquear, trocar o nome do cabeçalho por Content-Security-Policy-Report-Only.
+  #  - styles: 'unsafe-inline' (o antd e o editor injetam estilos) + Google Fonts e rsms.me (a fonte Inter do editor de páginas)
+  #  - img/media: https: (imagens do conteúdo escrito no editor e bandeiras em flagcdn.com), data: e blob:
+  #  - frame-src: vídeos do Vimeo; connect-src: a API do próprio domínio e o Vimeo
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  # Editor de e-mails (GrapesJS): precisa de 'unsafe-eval' (os seus modelos usam new Function) e do Font Awesome da cdnjs. Fica só nestas páginas de administração;
+  # o resto do site mantém a política acima, sem eval.
+  <If "%{REQUEST_URI} =~ m#^/admin/(templates|communications)/[0-9]+/editor#">
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  </If>
+</IfModule>
+
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
 </IfModule>

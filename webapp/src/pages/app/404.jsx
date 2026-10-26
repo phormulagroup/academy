@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet";
 import { useTranslation } from "react-i18next";
 import { Button } from "antd";
 import i18n from "../../utils/i18n";
-import Lottie from "lottie-react";
+import LottieAnim from "../../components/lottieAnimations";
 import Error404Animation from "../../assets/Error-404.json";
 
 export default function Error404() {
@@ -30,11 +30,7 @@ export default function Error404() {
         />
       </Helmet>
       <div className="flex flex-col justify-center items-center">
-        <Lottie
-          animationData={Error404Animation}
-          loop={true}
-          className="max-w-[300px]"
-        />
+        <LottieAnim animationData={Error404Animation} loop={true} className="max-w-[300px] w-full" />
         <p className="text-center">{t("Page not found")}</p>
         <Button
           type="primary"

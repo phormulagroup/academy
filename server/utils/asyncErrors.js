@@ -57,7 +57,9 @@ function errorHandler(err, req, res, next) {
     logError({ source: "request", message: err?.message || String(err), stack: err?.stack, req, status: err?.status || 500 });
   }
   if (res.headersSent) return next(err);
-  res.status(err?.status && err.status < 500 ? err.status : 500).send({ message: "Internal server error" });
+  // Erros esperados (ex.: ficheiro recusado) levam a sua mensagem; os outros nunca expõem detalhes
+  const status = err?.status && err.status < 500 ? err.status : 500;
+  res.status(status).send({ message: err?.expose && status < 500 ? err.message : "Internal server error" });
 }
 
 function installProcessHandlers() {

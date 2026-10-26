@@ -1,5 +1,6 @@
 import { lazyPage } from "../components/lazyPage";
 import { Navigate } from "react-router-dom";
+import ReloadForPolicy from "../components/reloadForPolicy";
 
 const MainAdmin = lazyPage(() => import("../pages/admin/index"));
 const AdminLayout = lazyPage(() => import("../layout/admin"));
@@ -51,7 +52,7 @@ export const adminRoutes = [
 			{ path: "smtp", element: <SMTP /> },
 			{ path: "templates", element: <Template /> },
 			{ path: "templates/:id", element: <TemplateDetails /> },
-			{ path: "templates/:id/editor", element: <TemplateEditor /> },
+			{ path: "templates/:id/editor", element: <ReloadForPolicy><TemplateEditor /></ReloadForPolicy> },
 			{ path: "users", element: <User /> },
 			{ path: "users/:id", element: <UserDetails /> },
 			{ path: "perfil", element: <UserDetails /> },
@@ -68,7 +69,7 @@ export const adminRoutes = [
 			{ path: "monitoring", element: <Monitoring /> },
 			{ path: "communications", element: <Communication /> },
 			{ path: "communications/:id", element: <CommunicationDetails /> },
-			{ path: "communications/:id/editor", element: <CommunicationEditor /> },
+			{ path: "communications/:id/editor", element: <ReloadForPolicy><CommunicationEditor /></ReloadForPolicy> },
 			{ path: "inbox", element: <Navigate to="/admin/tickets" replace /> },
 			{ path: "faqs", element: <Faqs /> },
 			{ path: "answers", element: <FormSubmission /> },

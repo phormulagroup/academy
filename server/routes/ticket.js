@@ -9,6 +9,7 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { hasPermission, requirePermission } = require("../utils/permissions");
+const { SIGNATURES } = require("../utils/fileTypes");
 const { notifyUser, notifyTeam, notifyMember, excerpt, plainText, emailLanguage } = require("../utils/notify");
 
 const poolQuery = util.promisify(db.query).bind(db);
@@ -41,6 +42,8 @@ function normalizeFiles(fileField) {
 async function saveAttachment(file) {
   const ext = ALLOWED_ATTACHMENTS[file.mimetype];
   if (!ext) throw new ValidationError(TICKET_TYPE_ERROR);
+  // O tipo declarado pelo cliente não chega: o conteúdo (primeiros bytes) tem de ser mesmo desse tipo
+  if (!SIGNATURES[ext.slice(1)]?.(file.data)) throw new ValidationError(TICKET_TYPE_ERROR);
   if (file.size > MAX_ATTACHMENT_BYTES || file.truncated) throw new ValidationError("File too large. The maximum size is 2MB.");
   await fs.promises.mkdir(ATTACHMENTS_DIR, { recursive: true });
   const base = path.basename(file.name, path.extname(file.name)).replace(/[^\w-]+/g, "_").slice(0, 60) || "file";

@@ -36,6 +36,7 @@ import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import config from "../../utils/config";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 // Ordenar com drag and drop (exemplo do antd): cada linha é ordenável e o pegador de arrastar vem do contexto
 const RowContext = createContext({});
@@ -126,7 +127,7 @@ export default function Faqs() {
         ...array[i],
         key: i + 1,
         description: (
-          <div dangerouslySetInnerHTML={{ __html: array[i].description }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(array[i].description) }} />
         ),
         images:
           images.length > 0 ? (

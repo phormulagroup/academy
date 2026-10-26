@@ -1,0 +1,26 @@
+# Atualizações de dependências e alertas de segurança: o Dependabot abre pull requests (o CI valida cada um).
+# As atualizações menores e de correção vêm agrupadas numa só PR por pasta; as maiores (major) vêm à parte, para se reverem com cuidado.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /webapp
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

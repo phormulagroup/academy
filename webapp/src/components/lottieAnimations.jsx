@@ -9,14 +9,16 @@ export default function LottieAnim(props) {
 		let disposed = false;
 		let onComplete = null;
 
-		import("lottie-web").then(({ default: lottie }) => {
+		// lottie_light: sem o motor de expressões (que usa eval, bloqueado pela política de segurança do site); as animações da Bial não usam expressões
+		import("lottie-web/build/player/lottie_light").then(({ default: lottie }) => {
 			if (disposed || !ref.current) return;
 			anim = lottie.loadAnimation({
 				container: ref.current,
 				renderer: "svg",
 				loop: props?.loop ?? true,
 				autoplay: true,
-				path: "/animationWithoutLoop.json", // 👈 usa path!
+				// Com animationData usa essa animação; senão a do logótipo (ficheiro em /public)
+				...(props?.animationData ? { animationData: props.animationData } : { path: "/animationWithoutLoop.json" }),
 			});
 
 			// Animação sem loop: avisa quando termina (ex.: para a remover da página)
@@ -34,5 +36,5 @@ export default function LottieAnim(props) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	return <div ref={ref} />;
+	return <div ref={ref} className={props?.className} />;
 }

@@ -119,6 +119,15 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
 - **`TRUST_PROXY`** (já configurado, 1 com Cloudflare): sem ele a API não percebe que o pedido veio por HTTPS e o cookie sai sem `Secure`.
 - **Inatividade:** a webapp envia um sinal de atividade (no máximo 1 por minuto, enquanto a pessoa mexe ou vê um vídeo) a `POST /auth/ping`. Passado `IDLE_MINUTES` (30) mais 2 min de margem sem sinais, a API responde
   `401 session_idle` a qualquer pedido e a webapp mostra o modal para voltar a entrar com a palavra-passe. As consultas automáticas (notificações, sinais do menu) não contam como atividade.
+- **Cabeçalhos de segurança e CSP** (`webapp/public/.htaccess`): HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` e uma *Content-Security-Policy* que só deixa correr scripts do próprio
+  domínio (e do player do Vimeo). Testada em todas as páginas de alunos e do backoffice. Se um dia algo legítimo deixar de carregar, a consola do browser mostra "Refused to … Content Security Policy"; para
+  só observar sem bloquear, trocar o nome do cabeçalho para `Content-Security-Policy-Report-Only` no `.htaccess`. Dois pormenores: o editor de e-mails (GrapesJS) precisa de `unsafe-eval` e do Font Awesome
+  da cdnjs, por isso as suas duas páginas (`/admin/templates/:id/editor` e `/admin/communications/:id/editor`) levam uma política própria e a webapp recarrega uma vez ao chegar lá por navegação interna
+  (`ReloadForPolicy`); e o editor de páginas (Puck) vai buscar a fonte Inter a `rsms.me`. O `maintenance.html` e o aviso de arranque usam ficheiros de script próprios (`/maintenance/page.js`, `/boot.js`) porque scripts inline não são permitidos.
+- **Uploads** (`server/utils/fileTypes.js`): todos os carregamentos validam o nome (sem pastas nem `../`), a extensão permitida para o destino (avatar: imagens; e-mail: imagens; multimédia: imagens, PDF, MP4 e Office;
+  tickets: imagens e PDF; nunca SVG nem HTML), o conteúdo (os primeiros bytes têm de corresponder à extensão) e o tamanho (avatar 5 MB, e-mail 10 MB, tickets 2 MB, multimédia 100 MB).
+- **Dependências:** o Dependabot (`.github/dependabot.yml`) abre PRs semanais e o CI tem um passo `audit` informativo (`npm audit`). Ainda pendente: o `xlsx` do npm (0.18.5) tem falhas conhecidas só corrigidas na
+  distribuição oficial da SheetJS (`cdn.sheetjs.com`); só é usado para ler Excel de administradores e no script das traduções.
 - **Deploys e sessões:** mudar o `JWT_SECRET` termina todas as sessões. Um deploy normal não termina nenhuma.
 - **Integração contínua:** `.github/workflows/ci.yml` corre os testes da API e, na webapp, o lint (sem erros), os testes e o build em cada pull request e push para a `main`.
   Para bloquear o merge de PRs com falhas: GitHub → Settings → Branches → regra para `main` → *Require status checks* (`server`, `webapp`).

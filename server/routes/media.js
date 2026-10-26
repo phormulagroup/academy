@@ -7,10 +7,12 @@ const { MEDIA_DIR } = require("../utils/paths");
 var fileUpload = require("express-fileupload");
 const middleware = require("../utils/middleware");
 const { uploadFile } = require("../utils/upload");
+const { validateUpload } = require("../utils/fileTypes");
 const { avatarFileName } = require("../utils/avatar");
 
 var router = express.Router();
-router.use(fileUpload());
+// Limite à cabeça: o tamanho máximo de cada destino (avatar, imagens, multimédia) valida-se em utils/fileTypes.js
+router.use(fileUpload({ limits: { fileSize: 100 * 1024 * 1024 }, abortOnLimit: true, responseOnLimit: JSON.stringify({ message: "File too large." }) }));
 
 var db = require("../utils/database");
 const { requirePermission, hasPermission, denied } = require("../utils/permissions");
@@ -74,6 +76,7 @@ router.get("/list", middleware, requirePermission("media", "read"), async (req, 
 // por isso não aparece na biblioteca de Multimédia) e o upload para a biblioteca (exige permissão em Multimédia)
 router.post("/singleUpload", middleware, async (req, res) => {
   try {
+    if (!req.files?.file) return res.status(400).send({ message: "No file received" });
     const data = req.body.data ? JSON.parse(req.body.data) : null;
     let fileName = null;
 
@@ -91,7 +94,7 @@ router.post("/singleUpload", middleware, async (req, res) => {
     // substitui o avatar atual do utilizador (se existir)
     if (data && data.id_user) {
       const query = util.promisify(db.query).bind(db);
-      fileName = await avatarFileName(data.id_user, req.files.file.name.split(".").pop().toLowerCase());
+      fileName = await avatarFileName(data.id_user, validateUpload(req.files.file, "avatar").ext);
       const user = await query("SELECT img FROM user WHERE id = ?", [data.id_user]);
       if (user[0].img && user[0].img !== fileName) {
         fs.unlink(path.join(MEDIA_DIR, user[0].img), (err) => err && console.error(err));
@@ -108,11 +111,12 @@ router.post("/singleUpload", middleware, async (req, res) => {
 
 router.post("/upload", middleware, requirePermission("media", "create"), async (req, res) => {
   try {
-    let files = req.files.file.length ? req.files.file : [req.files.file];
+    if (!req.files?.file) return res.status(400).send({ message: "No file received" });
+    const files = Array.isArray(req.files.file) ? req.files.file : [req.files.file];
 
-    files.forEach(async (file) => {
-      await uploadFile(file);
-    });
+    // Valida todos antes de guardar qualquer um e responde só quando estão guardados (antes respondia logo e os erros perdiam-se)
+    files.forEach((file) => validateUpload(file, "multimedia"));
+    for (const file of files) await uploadFile(file);
 
     res.send({ message: "Success, all files uploaded!" });
   } catch (e) {

@@ -19,7 +19,7 @@ const { notifyUser, emailLanguage } = require("../utils/notify");
 const { visibleCourses, visibleTests } = require("../utils/courseAccess");
 
 const saltRounds = 10;
-router.use(fileUpload());
+router.use(fileUpload({ limits: { fileSize: 10 * 1024 * 1024 }, abortOnLimit: true }));
 
 router.get("/read", requirePermission("user", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);

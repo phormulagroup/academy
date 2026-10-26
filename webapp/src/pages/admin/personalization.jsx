@@ -12,6 +12,7 @@ import { usePermission } from "../../utils/usePermission";
 import { Context } from "../../utils/context";
 import endpoints from "../../utils/endpoints";
 import i18n from "../../utils/i18n";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 const KEY = "homepage_text";
 
@@ -50,7 +51,7 @@ function HomepagePreview({ html, heading }) {
         <div className={`mx-auto rounded-lg bg-white p-5 shadow-sm ${device === "mobile" ? "max-w-[360px]" : ""}`}>
           <p className={`font-ryker font-bold leading-tight text-[#163986] ${device === "mobile" ? "text-[22px]" : "text-[28px]"}`}>{heading}</p>
           <p className={`font-ryker italic mt-1 text-[#163986] ${device === "mobile" ? "text-base" : "text-lg"}`}>Keeping training in mind</p>
-          {plain(html) ? <div className={`homepage_text ${device === "mobile" ? "text-[13px]" : "text-base"}`} style={{ color: "#163986" }} dangerouslySetInnerHTML={{ __html: html }} /> : <p className="mt-4 mb-0! text-[14px] italic text-[#8A8D98]">{t("The text you write appears here")}</p>}
+          {plain(html) ? <div className={`homepage_text ${device === "mobile" ? "text-[13px]" : "text-base"}`} style={{ color: "#163986" }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} /> : <p className="mt-4 mb-0! text-[14px] italic text-[#8A8D98]">{t("The text you write appears here")}</p>}
         </div>
       </div>
     </div>

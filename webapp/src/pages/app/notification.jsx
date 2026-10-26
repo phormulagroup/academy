@@ -16,6 +16,7 @@ import {
   LuCheckCheck,
   LuClock,
 } from "react-icons/lu";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 export default function Notifications() {
   const { user, notifications, setNotifications } = useContext(Context);
@@ -122,7 +123,7 @@ export default function Notifications() {
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <div
                             className="font-ryker font-semibold text-[16px] sm:text-[18px] text-[#163986] wrap-break-word min-w-0"
-                            dangerouslySetInnerHTML={{ __html: n.title }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(n.title) }}
                           />
                           {n.is_read ? (
                             <span className="flex items-center gap-1 text-[12px] text-[#8B9CC3] shrink-0">
@@ -150,7 +151,7 @@ export default function Notifications() {
                         </div>
                         <div
                           className="mt-3 text-[14px] text-[#163986] wrap-break-word"
-                          dangerouslySetInnerHTML={{ __html: n.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(n.description) }}
                         />
                       </div>
                     </div>

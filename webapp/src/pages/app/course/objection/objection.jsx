@@ -3,6 +3,7 @@ import { Collapse, Image, Tabs } from "antd";
 import "./objection.css";
 import { Context } from "../../../../utils/context";
 import config from "../../../../utils/config";
+import { sanitizeHtml } from "../../../../utils/sanitizeHtml";
 
 // Imagens no HTML das objecções são guardadas como src="/media/<ficheiro>" e resolvidas para o servidor atual
 const withMediaUrl = (html) =>
@@ -55,7 +56,7 @@ export default function CourseObjection({ data }) {
               <div
                 onClick={openImagePreview}
                 dangerouslySetInnerHTML={{
-                  __html: withMediaUrl(data.objection.text),
+                  __html: sanitizeHtml(withMediaUrl(data.objection.text)),
                 }}
               />
             </div>
@@ -106,7 +107,7 @@ export default function CourseObjection({ data }) {
                             className="prose-content objection-answer text-[13px] leading-[1.6] sm:text-[13px] md:text-[14px]"
                             onClick={openImagePreview}
                             dangerouslySetInnerHTML={{
-                              __html: withMediaUrl(_i.text),
+                              __html: sanitizeHtml(withMediaUrl(_i.text)),
                             }}
                           />
                         ),

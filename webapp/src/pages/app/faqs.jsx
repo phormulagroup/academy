@@ -21,6 +21,7 @@ import i18n from "../../utils/i18n";
 import config from "../../utils/config";
 
 import { Helmet } from "react-helmet";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 export default function Faqs() {
 	const { languages, user } = useContext(Context);
@@ -82,7 +83,7 @@ export default function Faqs() {
 								children: (
 									<div className="flex gap-4 lg:gap-8 w-full flex-wrap lg:flex-nowrap">
 										{/* Resposta mais pequena que a pergunta: tamanhos em .faq-answer (index.css) */}
-										<div className="faq-answer" dangerouslySetInnerHTML={{ __html: n.description }} />
+										<div className="faq-answer" dangerouslySetInnerHTML={{ __html: sanitizeHtml(n.description) }} />
 										{n.images && n.images.length > 0 && (
 											<div className="flex flex-col gap-4 max-w-[240px]">
 												{n.images.map((im) => (
