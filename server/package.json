@@ -38,7 +38,7 @@
     "handlebars": "^4.7.10",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
-    "mysql": "github:mysqljs/mysql",
+    "mysql": "2.18.1",
     "mysql2": "^2.3.3",
     "nodemailer": "^6.10.1",
     "nodemon": "^2.0.19",
@@ -46,5 +46,12 @@
     "short-unique-id": "^5.2.0",
     "slugify": "^1.6.9",
     "xlsx": "^0.18.5"
+  },
+  "overrides": {
+    "mysql": {
+      "sqlstring": "2.3.3",
+      "safe-buffer": "5.2.1",
+      "bignumber.js": "9.0.2"
+    }
   }
 }
