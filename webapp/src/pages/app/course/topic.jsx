@@ -21,7 +21,6 @@ const Topic = ({
   lockedBy,
 }) => {
   const [isTopicLocked, setIsTopicLocked] = useState(false);
-  const [seo, setSeo] = useState({});
   const { t } = useTranslation();
   const { user } = useContext(Context);
   // Admin (id_role = 1) sem restrições; aluno (id_role = 2) com navegação linear e vídeos obrigatórios
@@ -162,22 +161,17 @@ const Topic = ({
     };
   }, [selectedCourseItem, forceLocked, lockedBy]);
 
-  const parsedContent = useMemo(() => {
-    const resp = selectedCourseItem.content
-      ? JSON.parse(selectedCourseItem.content)
-      : {};
-    setSeo({
-      title: resp?.root?.props?.title || null,
-      description: resp?.root?.props?.description || null,
-      heroImage: resp?.root?.props?.heroImage?.url || null,
-    });
-    return resp;
-  }, [selectedCourseItem.content]);
+  const parsedContent = useMemo(() => (selectedCourseItem.content ? JSON.parse(selectedCourseItem.content) : {}), [selectedCourseItem.content]);
 
-  useEffect(() => {
-    console.log(seo);
-  }, [seo]);
-
+  // Título, descrição e imagem da página (definições da raiz do conteúdo): derivam do conteúdo, sem estado próprio
+  const seo = useMemo(
+    () => ({
+      title: parsedContent?.root?.props?.title || null,
+      description: parsedContent?.root?.props?.description || null,
+      heroImage: parsedContent?.root?.props?.heroImage?.url || null,
+    }),
+    [parsedContent],
+  );
 
   return (
     <div>

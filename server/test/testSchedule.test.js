@@ -73,7 +73,8 @@ test("países sem fuso conhecido usam Lisboa; todos os países dos idiomas têm 
   for (const tz of Object.values(zones)) assert.doesNotThrow(() => new Intl.DateTimeFormat("en", { timeZone: tz }));
 });
 
-test("o código do servidor e o da webapp são o mesmo (e as tabelas de fusos também)", () => {
+// Só corre com o repositório inteiro (o servidor sozinho, ex.: no cPanel, não traz a webapp)
+test("o código do servidor e o da webapp são o mesmo (e as tabelas de fusos também)", { skip: !fs.existsSync(path.join(__dirname, "..", "..", "webapp", "src", "utils", "testSchedule.js")) }, () => {
   const strip = (s) => s.replace(/^export /gm, "").replace(/module\.exports = \{[^}]*\};\n?/, "").trim();
   const server = fs.readFileSync(path.join(__dirname, "..", "utils", "testSchedule.js"), "utf8");
   const web = fs.readFileSync(path.join(__dirname, "..", "..", "webapp", "src", "utils", "testSchedule.js"), "utf8");
