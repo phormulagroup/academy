@@ -27,6 +27,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+      # Dependências de produção com falhas conhecidas: informativo (o passo fica com aviso mas não faz falhar o CI)
+      - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
 
   webapp:
     name: webapp
@@ -45,21 +48,5 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-
-  # Dependências de produção com falhas conhecidas (informativo: não bloqueia o merge, mas aparece a amarelo)
-  audit:
-    name: audit
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    strategy:
-      matrix:
-        folder: [server, webapp]
-    defaults:
-      run:
-        working-directory: ${{ matrix.folder }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
