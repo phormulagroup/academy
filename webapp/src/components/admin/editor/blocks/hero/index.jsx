@@ -1,7 +1,7 @@
 import quotes from "./quotes";
 import { AutoField, FieldLabel, RichTextMenu } from "@puckeditor/core";
 import { Link2, Quote } from "lucide-react";
-import HeroComponent from "./Hero";
+import HeroComponent from "./hero";
 
 const Hero = {
   fields: {
