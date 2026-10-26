@@ -7,6 +7,13 @@ const { requireStaff, hasPermission } = require("../utils/permissions");
 
 const query = util.promisify(db.query).bind(db);
 
+// Data/hora recebida no pedido (ISO) → Date, ou null se faltar ou for inválida
+function parseInstant(value) {
+  if (!value) return null;
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 // Quantos registos de acesso seguem para o painel (a lista só mostra os mais recentes, de 5 em 5); o total vem à parte
 const LOGS_LIMIT = 100;
 
@@ -17,6 +24,14 @@ router.get("/read", requireStaff(), async (req, res) => {
   try {
     const lang = Number(req.query.id_lang);
     if (!Number.isInteger(lang) || lang <= 0) return res.status(400).send({ message: "Invalid language" });
+
+    // Intervalo de datas e horas opcional (from/to): limita a atividade dos alunos e os registos de acesso a esse período
+    const from = parseInstant(req.query.from);
+    const to = parseInstant(req.query.to);
+    if ((req.query.from && !from) || (req.query.to && !to)) return res.status(400).send({ message: "Invalid date range" });
+    const range = (column) => ({ sql: `${from ? ` AND ${column} >= ?` : ""}${to ? ` AND ${column} <= ?` : ""}`, params: [from, to].filter(Boolean) });
+    const activityRange = range("cua.created_at");
+    const logsRange = range("logs.created_at");
 
     const [users, courses, modules, topics, tests, activity, logs, [logsCount]] = await Promise.all([
       query("SELECT id, name, email, img, status, country, id_role, id_lang, created_at FROM user WHERE id_lang = ? AND is_deleted = 0", [lang]),
@@ -41,14 +56,14 @@ router.get("/read", requireStaff(), async (req, res) => {
           "LEFT JOIN course_test ON cua.id_course_test = course_test.id LEFT JOIN user ON user.id = cua.id_user " +
           "WHERE course.id_lang = ? AND course.is_deleted = 0 AND (course_module.is_deleted = 0 OR cua.id_course_module IS NULL) " +
           "AND (course_topic.is_deleted = 0 OR cua.id_course_topic IS NULL) " +
-          "AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL) ORDER BY cua.created_at DESC",
-        [lang],
+          `AND (course_test.is_deleted = 0 OR cua.id_course_test IS NULL)${activityRange.sql} ORDER BY cua.created_at DESC`,
+        [lang, ...activityRange.params],
       ),
       query(
-        "SELECT logs.id, logs.id_user, logs.action, logs.created_at, user.name AS `user_name`, user.email AS `user_email`, user.img AS `user_img` FROM logs LEFT JOIN user ON user.id = logs.id_user WHERE logs.id_lang = ? ORDER BY logs.created_at DESC LIMIT ?",
-        [lang, LOGS_LIMIT],
+        `SELECT logs.id, logs.id_user, logs.action, logs.created_at, user.name AS user_name, user.email AS user_email, user.img AS user_img FROM logs LEFT JOIN user ON user.id = logs.id_user WHERE logs.id_lang = ?${logsRange.sql} ORDER BY logs.created_at DESC LIMIT ?`,
+        [lang, ...logsRange.params, LOGS_LIMIT],
       ),
-      query("SELECT COUNT(*) AS total FROM logs WHERE id_lang = ?", [lang]),
+      query(`SELECT COUNT(*) AS total FROM logs WHERE id_lang = ?${logsRange.sql.replaceAll("logs.created_at", "created_at")}`, [lang, ...logsRange.params]),
     ]);
 
     res.send({ users, courses, modules, topics, tests, activity, logs, logsTotal: logsCount.total });

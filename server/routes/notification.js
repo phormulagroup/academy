@@ -156,6 +156,13 @@ router.post("/markAsRead", async (req, res, next) => {
   }
 });
 
+// Marca todas as notificações por ler de quem faz o pedido como lidas
+router.post("/markAllAsRead", async (req, res) => {
+  const query = util.promisify(db.query).bind(db);
+  const result = await query("UPDATE notification_user SET is_read = 1 WHERE id_user = ? AND is_read = 0", [req.user.id]);
+  res.send({ updated: result.affectedRows ?? 0 });
+});
+
 // Enviar já (a partir da lista): entrega a quem ainda não a tem; uma notificação já enviada não se repete
 router.post("/send", requirePermission("notification", "update"), async (req, res, next) => {
   try {

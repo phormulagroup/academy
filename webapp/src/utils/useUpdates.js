@@ -14,10 +14,11 @@ const POLL_INTERVAL = (Number(import.meta.env.VITE_POLL_INTERVAL) || 30) * 1000;
  * @param {object} options
  * @param {object} options.user - Utilizador com sessão (id).
  * @param {boolean} options.locked - Sessão bloqueada por inatividade: não consulta.
- * @param {function} options.showToast - (título, descrição) mostra um aviso.
+ * @param {function} options.showToast - (título, descrição, endereço) mostra um aviso; clicar nele abre o endereço.
+ * @param {{notifications: string|null, tickets: string}} options.paths - Páginas a abrir ao clicar nos avisos.
  * @param {function} options.refreshMenuBadges - Atualiza os sinais do menu do backoffice.
  */
-export default function useUpdates({ user, locked, showToast, refreshMenuBadges }) {
+export default function useUpdates({ user, locked, showToast, refreshMenuBadges, paths }) {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [unreadTicketsCount, setUnreadTicketsCount] = useState(0); // tickets com novidades por ler (ver /ticket/unreadCount)
@@ -37,7 +38,7 @@ export default function useUpdates({ user, locked, showToast, refreshMenuBadges 
   }, [locked]);
   // As funções mudam a cada render: o temporizador usa sempre as mais recentes
   useEffect(() => {
-    latest.current = { showToast, refreshMenuBadges, t };
+    latest.current = { showToast, refreshMenuBadges, t, paths };
   });
 
   async function pollUpdates(auxUser) {
@@ -63,7 +64,7 @@ export default function useUpdates({ user, locked, showToast, refreshMenuBadges 
     if (notificationsRes.status === "fulfilled") {
       const rows = notificationsRes.value.data;
       if (knownNotificationsRef.current) {
-        rows.filter((n) => !knownNotificationsRef.current.has(n.id) && !n.is_read).forEach((n) => latest.current.showToast(n.title, n.description));
+        rows.filter((n) => !knownNotificationsRef.current.has(n.id) && !n.is_read).forEach((n) => latest.current.showToast(n.title, n.description, latest.current.paths?.notifications));
       }
       knownNotificationsRef.current = new Set(rows.map((n) => n.id));
       setNotifications(rows);
@@ -73,7 +74,7 @@ export default function useUpdates({ user, locked, showToast, refreshMenuBadges 
     if (ticketsRes.status === "fulfilled") {
       const count = ticketsRes.value.data.count || 0;
       if (ticketsLoadedRef.current && count > unreadTicketsRef.current) {
-        latest.current.showToast(latest.current.t("New ticket activity"), latest.current.t("There is a new ticket or reply, go check it out!"));
+        latest.current.showToast(latest.current.t("New ticket activity"), latest.current.t("There is a new ticket or reply, go check it out!"), latest.current.paths?.tickets);
       }
       ticketsLoadedRef.current = true;
       setUnreadTicketsCount(count);

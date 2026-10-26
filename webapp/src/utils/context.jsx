@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createContext } from "react";
+import { LuBellRing } from "react-icons/lu";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -73,12 +74,19 @@ const ContextProvider = ({ children }) => {
 	const isStaff = hasFullAccess(user) || permissions.some((p) => p.can_read);
 	const { menuBadges, refreshMenuBadges } = useMenuBadges({ userId: user.id, isStaff });
 
-	function showToast(title, description) {
+	// Aviso de notificação nova ou de atividade num ticket: cartão com o sino da marca; clicar leva à página respetiva (`to`)
+	function showToast(title, description, to) {
 		notificationApi.open({
 			type: "info",
 			placement: "top",
+			icon: <LuBellRing style={{ color: "#00B9D6" }} aria-hidden="true" />,
+			className: "platform-toast",
+			showProgress: true,
+			pauseOnHover: true,
+			onClick: to ? () => navigate(to) : undefined,
+			style: to ? { cursor: "pointer" } : undefined,
 			title: <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(title) }}></div>,
-			description: <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}></div>,
+			description: <div className="line-clamp-3" dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}></div>,
 		});
 	}
 
@@ -88,6 +96,7 @@ const ContextProvider = ({ children }) => {
 		locked: isIdleLocked,
 		showToast,
 		refreshMenuBadges,
+		paths: { notifications: isStaff ? null : `/${i18n.language}/notifications`, tickets: isStaff ? "/admin/tickets" : `/${i18n.language}/tickets` },
 	});
 
 	useEffect(() => {

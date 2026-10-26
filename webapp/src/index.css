@@ -3304,3 +3304,14 @@ deles invalida a regra inteira. */
   --brand-success: #2f8351;
   --brand-error: #db0709;
 }
+
+/* Aviso de notificação nova (utils/context.jsx › showToast): cartão com o sino da marca; clicável quando leva a uma página */
+.platform-toast.ant-notification-notice {
+  border-left: 4px solid #00b9d6;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(22, 57, 134, 0.18) !important;
+}
+.platform-toast .ant-notification-notice-title {
+  color: #163986;
+  font-family: "Ryker Text", Poppins, sans-serif;
+}

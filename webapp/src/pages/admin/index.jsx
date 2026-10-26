@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import RowActions from "../../components/admin/rowActions";
-import { Divider, Pagination, Progress, Select, Skeleton, Table, Tag } from "antd";
+import { DatePicker, Divider, Pagination, Progress, Select, Skeleton, Table, Tag } from "antd";
 import { FaRegEdit } from "react-icons/fa";
 import { useContext } from "react";
 import { LuClipboardCheck, LuAward, LuGraduationCap, LuSettings, LuUsers } from "react-icons/lu";
@@ -86,6 +86,10 @@ export default function Main() {
   const [isOpenStatus, setIsOpenStatus] = useState(false);
   // Curso escolhido no seletor: filtra os gráficos de progresso e a tabela de atividade
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const selectedCourseRef = useRef(null);
+  selectedCourseRef.current = selectedCourse;
+  // Intervalo de data e hora (dayjs, dayjs) que limita a atividade, os acessos e os registos mostrados; null = tudo
+  const [range, setRange] = useState(null);
 
   const [paginationByTable, setPaginationByTable] = useState({
     bestStudents: { currentPage: 1, pageSize: 5 },
@@ -94,20 +98,25 @@ export default function Main() {
 
   const navigate = useNavigate();
 
+  // Ao mudar de idioma o curso escolhido deixa de existir; ao mudar o período mantém-se
+  useEffect(() => {
+    setSelectedCourse(null);
+  }, [selectedLanguage?.id]);
+
   useEffect(() => {
     getData();
-  }, [selectedLanguage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLanguage?.id, range?.[0]?.valueOf(), range?.[1]?.valueOf()]);
 
   function getData() {
     const request = ++requestRef.current;
     setIsLoading(true);
     axios
       .get(endpoints.dashboard.read, {
-        params: { id_lang: selectedLanguage.id },
+        params: { id_lang: selectedLanguage.id, from: range?.[0]?.toISOString(), to: range?.[1]?.toISOString() },
       })
       .then((res) => {
         if (request !== requestRef.current) return;
-        setSelectedCourse(null);
         setData(res.data);
         prepareData(res.data);
       })
@@ -160,7 +169,13 @@ export default function Main() {
             ? obj.topics.find((_t) => _t.id === current.id_course_topic)?.title
             : current.activity_type === "module"
               ? obj.modules.find((_t) => _t.id === current.id_course_module)?.title
-              : t(`${current.activity_type}`);
+              : current.activity_type === "course"
+                ? current.is_completed
+                  ? t("Course completed")
+                  : t("Course")
+                : current.activity_type === "enroll"
+                  ? t("Enrolled in the course")
+                  : t(`${current.activity_type}`);
 
       auxActivity.push({
         user: <UserCell id={activityUser.id} name={activityUser.name} email={activityUser.email} img={activityUser.img} />,
@@ -173,7 +188,7 @@ export default function Main() {
             {current.activity_type !== "enroll" &&
               current.activity_type !== "course" && (
                 <p className="text-[10px]">
-                  {t(`${current.activity_type}`)}
+                  {current.activity_type === "module" ? t("Module") : t(`${current.activity_type}`)}
                 </p>
               )}
           </div>
@@ -225,6 +240,8 @@ export default function Main() {
     auxBestStudents = [...bestByUser.values()].sort((a, b) => b.percentage - a.percentage);
 
     for (let u = 0; u < obj.users.length; u++) {
+      // Registos: só os feitos dentro do período escolhido
+      if (range && (dayjs(obj.users[u].created_at).isBefore(range[0]) || dayjs(obj.users[u].created_at).isAfter(range[1]))) continue;
       auxUsers.push({
         name: (
           <Link
@@ -233,18 +250,19 @@ export default function Main() {
             {obj.users[u].name}
           </Link>
         ),
+        // Estado traduzido (como na lista de utilizadores): aprovado, pendente ou não aprovado
         status:
           obj.users[u].status === "approved" ? (
             <Tag color={"green"} variant="outlined">
-              {obj.users[u].status}
+              {t("Approved", { context: "user" })}
             </Tag>
           ) : obj.users[u].status === "pending" ? (
-            <Tag color={"grey"} variant="outlined">
-              {obj.users[u].status}
+            <Tag color={"orange"} variant="outlined">
+              {t("Pending")}
             </Tag>
           ) : (
             <Tag color={"red"} variant="outlined">
-              {obj.users[u].status}
+              {t("Not Approved")}
             </Tag>
           ),
         id: obj.users[u].id,
@@ -272,7 +290,7 @@ export default function Main() {
       });
     }
 
-    filterProgressCourses(null, obj.users, obj.activity, obj.courses);
+    filterProgressCourses(selectedCourseRef.current, obj.users, obj.activity, obj.courses);
     setCourseActivity(auxActivity);
     setBestStudentsData(auxBestStudents);
     setUsersData(auxUsers);
@@ -423,7 +441,29 @@ export default function Main() {
     <div className="p-2 flex flex-col gap-4">
       <Status data={selectedUser} open={isOpenStatus} close={closeSatus} />
 
-      <p className="text-[18px] font-bold mb-0!">{t("Overview e-Learning")}</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[18px] font-bold mb-0!">{t("Overview e-Learning")}</p>
+        {/* Período (data e hora): limita a atividade, os acessos e os registos; os totais gerais não mudam */}
+        <div className="flex flex-col gap-1 sm:items-end">
+          <DatePicker.RangePicker
+            className="w-full sm:w-[400px]!"
+            value={range}
+            onChange={(value) => setRange(value && value[0] && value[1] ? value : null)}
+            showTime={{ format: "HH:mm", defaultOpenValue: [dayjs().startOf("day"), dayjs().endOf("day")] }}
+            format="DD/MM/YYYY HH:mm"
+            allowClear
+            placeholder={[t("Start date"), t("End date")]}
+            presets={[
+              { label: t("Today"), value: [dayjs().startOf("day"), dayjs().endOf("day")] },
+              { label: t("Yesterday"), value: [dayjs().subtract(1, "day").startOf("day"), dayjs().subtract(1, "day").endOf("day")] },
+              { label: t("Last 7 days"), value: [dayjs().subtract(6, "day").startOf("day"), dayjs().endOf("day")] },
+              { label: t("Last 30 days"), value: [dayjs().subtract(29, "day").startOf("day"), dayjs().endOf("day")] },
+              { label: t("This month"), value: [dayjs().startOf("month"), dayjs().endOf("month")] },
+            ]}
+          />
+          {range && <p className="text-[11px] text-[#8A8D98] mb-0!">{t("Showing activity, accesses and registrations in this period")}</p>}
+        </div>
+      </div>
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <StatTile to="/admin/users" icon={<LuUsers />} label={t("Total of students")} value={data.users?.length} loading={isLoading} />
         <StatTile to="/admin/courses" icon={<LuGraduationCap />} label={t("Total of courses")} value={data.courses?.length} loading={isLoading} />

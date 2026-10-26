@@ -198,6 +198,7 @@ const endpoints = {
 		readByLang: "/notification/readByLang",
 		update: "/notification/update",
 		markAsRead: "/notification/markAsRead",
+		markAllAsRead: "/notification/markAllAsRead",
 		create: "/notification/create",
 		send: "/notification/send",
 		audience: "/notification/audience",
