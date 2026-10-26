@@ -5,7 +5,7 @@ import ExportButton, { activityColumn, languageColumn, createdColumn } from "../
 import { usePermission } from "../../../utils/usePermission";
 import { useContext, useEffect, useRef } from "react";
 import { useState } from "react";
-import { Avatar, Button, Input, Select, Table } from "antd";
+import { Avatar, Button, Input, Select, Table, Tag } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { FaCopy, FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 import { CiCalendar } from "react-icons/ci";
@@ -158,6 +158,7 @@ export default function Course() {
           </div>
         ),
         ...courseDateFields(array[i]),
+        publication: <Tag color={array[i].status === "published" ? "green" : "gold"}>{array[i].status === "published" ? t("Published") : t("Draft")}</Tag>,
         is_deleted: <StatusTag isDeleted={array[i].is_deleted} />,
         full_data: array[i],
         actions: (
@@ -372,6 +373,12 @@ export default function Course() {
             sorter: true,
             sortOrder: sortOrderOf("end"),
             width: "175px",
+          },
+          {
+            title: t("Publication"),
+            dataIndex: "publication",
+            key: "publication",
+            width: "120px",
           },
           canSeeStatus && {
             title: t("Status"),

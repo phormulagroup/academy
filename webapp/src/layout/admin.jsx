@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CloseOutlined, MenuOutlined } from "@ant-design/icons";
 import {
   Badge,
@@ -35,6 +35,7 @@ import { ADMIN_ROLE_ID, GESTOR_ROLE_ID } from "../utils/roles";
 import LanguageSelector from "../utils/languageSelector";
 import UserAvatar from "../utils/userAvatar";
 import Logout from "../components/logout";
+import BialSpin from "../components/bialSpin";
 
 import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
 import logoColor from "../assets/BIAL-Regional-Academy.png";
@@ -304,9 +305,16 @@ const Main = () => {
   );
 
   // No backoffice o seletor escolhe só a região cujos dados se veem/editam (selectedLanguage): os textos ficam no idioma da conta
+  const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false);
+  const switchTimer = useRef(null);
   const selectLanguage = (lang) => {
+    if (lang.id === selectedLanguage?.id) return;
     localStorage.setItem("id_lang", lang.id);
     setSelectedLanguage(lang);
+    // Aviso simples sobre o conteúdo para se perceber que a região mudou (as páginas voltam sozinhas a pedir os dados dessa região)
+    setIsSwitchingLanguage(true);
+    clearTimeout(switchTimer.current);
+    switchTimer.current = setTimeout(() => setIsSwitchingLanguage(false), 700);
   };
 
   // Idioma da interface do backoffice: sempre da região do Admin
@@ -648,6 +656,21 @@ const Main = () => {
             )}
             <div
               className={`relative flex flex-col ${windowDimension.width > 1080 ? "h-screen" : "h-[calc(100vh-64px)]"}`}>
+              {isSwitchingLanguage && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/90" role="status" aria-live="polite">
+                  {/* A região escolhida: bandeira e nome, como no ecrã de mudança de idioma do site */}
+                  {selectedLanguage && (
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="block h-16 w-16 rounded-full bg-cover bg-center ring-4 ring-white shadow-[0_6px_20px_rgba(22,57,134,0.2)]" style={{ backgroundImage: `url(${selectedLanguage.flag})` }} aria-hidden="true" />
+                      <p lang={selectedLanguage.code} className="font-ryker m-0 text-base font-semibold text-[#163986]">
+                        {selectedLanguage.name}
+                      </p>
+                    </div>
+                  )}
+                  <BialSpin size={40} label={t("Loading the selected language")} />
+                  <p className="m-0 text-[13px] text-[#5F6B7A]">{t("Loading the selected language")}...</p>
+                </div>
+              )}
               <div className="p-6 flex-1 min-h-0 overflow-auto">
                 {canAccess(location.pathname.replace(/\/$/, "") || "/admin") ? (
                   <Outlet />
