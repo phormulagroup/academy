@@ -204,7 +204,7 @@ function ExpandedCourse({ record, build }) {
 }
 
 export default function CourseReport({ data, isLoading }) {
-  const { user, selectedLanguage, languages } = useContext(Context);
+  const { selectedLanguage, languages } = useContext(Context);
   const [tableData, setTableData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [dataToExport, setDataToExport] = useState([]);

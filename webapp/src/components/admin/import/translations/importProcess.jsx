@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
 import { toastRef } from "../../../../utils/notify";
 import { Button, Spin, Result } from "antd";
 import { AiOutlineLoading } from "react-icons/ai";

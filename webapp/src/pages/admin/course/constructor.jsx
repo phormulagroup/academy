@@ -968,7 +968,7 @@ export default function Constructor({ course, isActive = true }) {
   const [overId, setOverId] = useState(null); // highlight do módulo alvo
   const [modDropIndicator, setModDropIndicator] = useState(null); // { modId, side: 'top'|'bottom' }
   const [itemDropIndicator, setItemDropIndicator] = useState(null); // { modId, itemId, side: 'top'|'bottom' }
-  const [forbiddenDropId, setForbiddenDropId] = useState(null); // Visual feedback when trying to drag outside module
+  const [, setForbiddenDropId] = useState(null); // Visual feedback when trying to drag outside module
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

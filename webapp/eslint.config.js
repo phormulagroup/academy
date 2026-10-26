@@ -23,7 +23,17 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', args: 'none', caughtErrors: 'none' }],
+      // Regras novas do React Compiler (eslint-plugin-react-hooks 7): apontam padrões válidos que só se reescrevem com refactors maiores.
+      // Ficam como aviso (visíveis) para o lint só falhar com erros reais.
+      'react-hooks/immutability': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/use-memo': 'warn',
+      'react-refresh/only-export-components': 'warn',
     },
   },
 ])

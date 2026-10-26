@@ -48,7 +48,6 @@ const formatSeconds = (seconds) => (seconds == null ? "" : seconds > 60 ? `${Mat
 export function buildCourseStudentExport({ course, base, data, languages, t }) {
   const courseTests = (data.tests ?? []).filter((x) => x.id_course === course.id && x.is_deleted === 0);
   const activity = (data.activity ?? []).filter((a) => a.id_course === course.id && a.is_deleted === 0);
-  const language = languages?.find((l) => l.id === course.id_lang)?.code?.toUpperCase() ?? "";
 
   const statusLabel = { passed: t("Passed"), not_passed: t("Not passed"), in_progress: t("In progress"), not_started: t("Not started") };
 

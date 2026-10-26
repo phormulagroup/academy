@@ -191,20 +191,20 @@ function Media() {
 
       setUploadingItems((prev) => [...prev, { uid, name: file.name, status: "uploading", progress: 0 }]);
 
-      return new Promise(async (resolve, reject) => {
+      return (async () => {
         try {
-          let compressedFile = await upload.compress(file);
+          const compressedFile = await upload.compress(file);
           // A compressão pode devolver um novo File/Blob sem o uid original: reatribui-se para
           // continuar a conseguir encontrar este item na lista
           compressedFile.uid = uid;
-          resolve(compressedFile);
+          return compressedFile;
         } catch (err) {
           console.log(err);
           setUploadingItems((prev) => prev.map((it) => (it.uid === uid ? { ...it, status: "error" } : it)));
           settleBatch(batch, false);
-          reject(false);
+          throw false;
         }
-      });
+      })();
     },
     onDrop(e) {
       console.log("Dropped files", e.dataTransfer.files);

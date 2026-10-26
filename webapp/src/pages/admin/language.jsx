@@ -1,8 +1,8 @@
 import axios from "axios";
 import RefreshButton from "../../components/admin/refreshButton";
-import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
+import ExportButton, { createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
 import { Button, Progress, Tag, Tooltip } from "antd";
@@ -68,7 +68,6 @@ function TranslationsCell({ row, t }) {
 }
 
 export default function Language() {
-  const { user } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("language");
   const [isLoading, setIsLoading] = useState(true);

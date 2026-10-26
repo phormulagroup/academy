@@ -81,9 +81,7 @@ const Main = () => {
   const {
     user,
     logout,
-    isLoggedIn,
     languages,
-    setIsLoadingLanguage,
     windowDimension,
     selectedLanguage,
     setSelectedLanguage,

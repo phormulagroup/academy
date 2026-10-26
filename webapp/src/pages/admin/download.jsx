@@ -25,19 +25,18 @@ import { useTranslation } from "react-i18next";
 import config from "../../utils/config";
 
 export default function Download() {
-	const { user, selectedLanguage } = useContext(Context);
+	const { selectedLanguage } = useContext(Context);
 	const { t } = useTranslation();
 	const perm = usePermission("download");
 	const [isLoading, setIsLoading] = useState(true);
 	const [data, setData] = useState([]);
-	const [items, setItems] = useState([]);
+	const [, setItems] = useState([]);
 	const [tableData, setTableData] = useState([]);
 	const [selectedData, setSelectedData] = useState({});
 
 	const [isOpenCreate, setIsOpenCreate] = useState(false);
 	const [isOpenUpdate, setIsOpenUpdate] = useState(false);
 	const [isOpenDelete, setIsOpenDelete] = useState(false);
-	const [isOpenTranslations, setIsOpenTranslations] = useState(false);
 
 	useEffect(() => {
 		getData();

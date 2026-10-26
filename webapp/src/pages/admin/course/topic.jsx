@@ -10,12 +10,12 @@ import { useParams } from "react-router-dom";
 import { Editor } from "../../../components/admin/editor";
 
 export default function Topic() {
-  const { user, toastApi } = useContext(Context);
-  const [isLoading, setIsLoading] = useState(true);
+  const { toastApi } = useContext(Context);
+  const [, setIsLoading] = useState(true);
   const [data, setData] = useState([]);
 
   const { t } = useTranslation();
-  let { id, idTopic } = useParams();
+  let { idTopic } = useParams();
 
   useEffect(() => {
     getData();

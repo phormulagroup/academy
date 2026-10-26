@@ -1,8 +1,8 @@
 import axios from "axios";
 import RefreshButton from "../../components/admin/refreshButton";
-import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
+import ExportButton, { activityColumn, createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
 import { useState } from "react";
 import { Button } from "antd";
@@ -23,7 +23,6 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 
 export default function Product() {
-  const { user } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("product");
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +33,7 @@ export default function Product() {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
+  const [, setIsOpenTranslations] = useState(false);
 
   useEffect(() => {
     getData();
@@ -90,11 +89,6 @@ export default function Product() {
   function openUpdate(obj) {
     setSelectedData(obj);
     setIsOpenUpdate(true);
-  }
-
-  function openTranslations(obj) {
-    setSelectedData(obj);
-    setIsOpenTranslations(true);
   }
 
   function openDelete(obj) {

@@ -60,7 +60,7 @@ function Card({ title, subtitle, to, extra, className = "", children }) {
 }
 
 export default function Main() {
-  const { user, selectedLanguage, toastApi } = useContext(Context);
+  const { selectedLanguage, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const [data, setData] = useState({});
   // A carregar os dados do painel (mostra esqueletos); requestRef ignora respostas de um idioma que já mudou
@@ -83,7 +83,6 @@ export default function Main() {
     update: "blue",
     login: "green",
   });
-  const [tables] = useState({ course_module: "course module" });
   const [isOpenStatus, setIsOpenStatus] = useState(false);
   // Curso escolhido no seletor: filtra os gráficos de progresso e a tabela de atividade
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -216,11 +215,6 @@ export default function Main() {
         }
       }
 
-      if (
-        obj.activity[i].activity_type === "course" &&
-        obj.activity[i].is_completed
-      ) {
-      }
     }
 
     // Melhores alunos: a melhor nota de cada pessoa (um aluno que fez vários testes só conta uma vez), da mais alta para a mais baixa

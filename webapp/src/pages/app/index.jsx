@@ -3,7 +3,7 @@ import { Button } from "antd";
 import { useContext } from "react";
 import { Context } from "../../utils/context";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import i18n from "../../utils/i18n";
 import { Helmet } from "react-helmet";
 import LottieAnim from "../../components/lottieAnimations";
@@ -14,8 +14,6 @@ export default function Main() {
   const { user, personalization, t } = useContext(Context);
   const [data, setData] = useState(null);
   // A animação só aparece enquanto corre; no fim é removida (não fica espaço vazio em mobile)
-  const [showAnimation, setShowAnimation] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (personalization?.json) {

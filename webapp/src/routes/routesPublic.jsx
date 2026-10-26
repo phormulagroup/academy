@@ -1,5 +1,5 @@
 import { lazyPage } from "../components/lazyPage";
-import { Navigate, Route, Routes, useRoutes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import MainLayout from "../layout/main";
 

@@ -1,6 +1,6 @@
 import axios from "axios";
 import RefreshButton from "../../components/admin/refreshButton";
-import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../components/admin/export/exportButton";
+import ExportButton, { languageColumn, createdColumn } from "../../components/admin/export/exportButton";
 import { usePermission } from "../../utils/usePermission";
 import { useContext, useEffect } from "react";
 import RowActions from "../../components/admin/rowActions";
@@ -23,7 +23,7 @@ import endpoints from "../../utils/endpoints";
 import { useTranslation } from "react-i18next";
 
 export default function FormSubmission() {
-  const { user, selectedLanguage, refreshMenuBadges } = useContext(Context);
+  const { selectedLanguage, refreshMenuBadges } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("form_submission");
   const navigate = useNavigate();
@@ -33,7 +33,6 @@ export default function FormSubmission() {
   const [selectedData, setSelectedData] = useState({});
 
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
 
   useEffect(() => {
     getData();
@@ -57,8 +56,6 @@ export default function FormSubmission() {
   function prepareData(array) {
     const aux = [];
     for (let i = 0; i < array.length; i++) {
-      let images = array[i].images ? JSON.parse(array[i].images) : [];
-
       aux.push({
         ...array[i],
         key: i + 1,

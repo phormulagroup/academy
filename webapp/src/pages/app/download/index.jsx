@@ -18,7 +18,7 @@ import { Helmet } from "react-helmet";
 import { RxChevronUp } from "react-icons/rx";
 
 export default function Download() {
-  const { user, languages, t: i18nT, windowDimension } = useContext(Context);
+  const { user, languages, windowDimension } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
   const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();

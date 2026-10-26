@@ -7,7 +7,7 @@ import { Context } from "../../../utils/context";
 import { requiredRule } from "../../../utils/formFieldError";
 
 export default function Create({ open, close, nameRule }) {
-  const { createLog, selectedLanguage, user, create } = useContext(Context);
+  const { create } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -22,7 +22,7 @@ export default function Create({ open, close, nameRule }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      const res = await create({
+      await create({
         data: values,
         table: "product",
       });

@@ -11,7 +11,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { LuGripVertical } from "react-icons/lu";
 import ExportButton, {
-  activityColumn,
   languageColumn,
   createdColumn,
 } from "../../components/admin/export/exportButton";
@@ -37,7 +36,6 @@ import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import config from "../../utils/config";
-import i18n from "../../utils/i18n";
 
 // Ordenar com drag and drop (exemplo do antd): cada linha é ordenável e o pegador de arrastar vem do contexto
 const RowContext = createContext({});
@@ -86,7 +84,7 @@ function SortableRow(props) {
 }
 
 export default function Faqs() {
-  const { user, selectedLanguage, toastApi } = useContext(Context);
+  const { selectedLanguage, toastApi } = useContext(Context);
   const { t } = useTranslation();
   const perm = usePermission("faqs");
   const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +95,6 @@ export default function Faqs() {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [isOpenUpdate, setIsOpenUpdate] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
-  const [isOpenTranslations, setIsOpenTranslations] = useState(false);
 
   useEffect(() => {
     getData();

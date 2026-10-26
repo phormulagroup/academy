@@ -22,7 +22,7 @@ function TranslationsImport({ open, close }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedData, setUploadedData] = useState(null);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [resetCounter, setResetCounter] = useState(0);
 
   const handleUploadComplete = (data) => {

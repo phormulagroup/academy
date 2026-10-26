@@ -17,7 +17,7 @@ import { FaRegEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { requiredRule } from "../../../utils/formFieldError";
 
-export default function Duplicate({ data, open, close, submit, products, nameRule, internalNameRule }) {
+export default function Duplicate({ data, open, close, products, nameRule, internalNameRule }) {
 	const { t, selectedLanguage, languages, setSelectedLanguage } = useContext(Context);
 	const [isButtonLoading, setIsButtonLoading] = useState(false);
 	const [formLanguageId, setFormLanguageId] = useState(null);

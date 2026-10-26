@@ -9,7 +9,7 @@ import {
   requiredSelectRule,
 } from "../../../utils/formFieldError";
 
-export default function Update({ data, open, close, submit }) {
+export default function Update({ data, open, close }) {
   const { update, roles } = useContext(Context);
   const { t } = useTranslation();
   const [isButtonLoading, setIsButtonLoading] = useState(false);

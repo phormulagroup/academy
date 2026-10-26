@@ -7,7 +7,7 @@ import { Context } from "../../../utils/context";
 import { requiredRule } from "../../../utils/formFieldError";
 
 export default function Update({ data, open, close, nameRule }) {
-  const { createLog, selectedLanguage, user, update } = useContext(Context);
+  const { update } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -27,7 +27,7 @@ export default function Update({ data, open, close, nameRule }) {
   async function submit(values) {
     setIsButtonLoading(true);
     try {
-      const res = await update({ table: "product", data: values });
+      await update({ table: "product", data: values });
 
       setIsButtonLoading(false);
       close(true);

@@ -12,20 +12,11 @@ export default function Logs({ table, id_client, id_project, id_account, open, c
   const { t } = useTranslation();
   const [tableData, setTableData] = useState([]);
 
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const diffEditorRef = useRef(null);
 
   function handleEditorDidMount(editor, monaco) {
     diffEditorRef.current = editor;
-  }
-
-  function showOriginalValue() {
-    alert(diffEditorRef.current.getOriginalEditor().getValue());
-  }
-
-  function showModifiedValue() {
-    alert(diffEditorRef.current.getModifiedEditor().getValue());
   }
 
   useEffect(() => {

@@ -6,11 +6,11 @@ import { Context } from "../../../utils/context";
 import { useTranslation } from "react-i18next";
 import { requiredSelectRule } from "../../../utils/formFieldError";
 
-export default function Create({ open, close, submit }) {
+export default function Create({ open, close }) {
   const { create, getLanguages } = useContext(Context);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const { t } = useTranslation();
-  const [languageOptions, setLanguageOptions] = useState([
+  const [languageOptions] = useState([
     { flag: "https://flagcdn.com/es.svg", name: "Español" },
     { flag: "https://flagcdn.com/pt.svg", name: "Português" },
     { flag: "https://flagcdn.com/fr.svg", name: "Français" },

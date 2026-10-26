@@ -15,7 +15,6 @@ import endpoints from "../../utils/endpoints";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 import { RxReload } from "react-icons/rx";
-import dayjs from "dayjs";
 import NotificationIcon from "../../assets/Notifications-off.svg?react";
 import { RiCloseCircleLine } from "react-icons/ri";
 import i18n from "../../utils/i18n";
@@ -26,9 +25,7 @@ import { Helmet } from "react-helmet";
 export default function Faqs() {
 	const { languages, user } = useContext(Context);
 	const [isLoading, setIsLoading] = useState(true);
-	const [currentPage, setCurrentPage] = useState(1);
 	const [data, setData] = useState(null);
-	const [pageSize] = useState(5);
 
 	const { t } = useTranslation();
 

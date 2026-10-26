@@ -1,11 +1,6 @@
-import styles from "../styles.module.css";
-import utils from "../../utils";
 import ImagePickerField from "./ImagePickerField";
-import axios from "axios";
 import config from "../../../../../utils/config";
 import { AiOutlineColumnHeight, AiOutlineColumnWidth } from "react-icons/ai";
-
-const getClassName = utils.getClassNameFactory("Logos", styles);
 
 const Image = {
   // ...

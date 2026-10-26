@@ -1,6 +1,6 @@
 import axios from "axios";
 import RefreshButton from "../../../components/admin/refreshButton";
-import ExportButton, { activityColumn, languageColumn, createdColumn } from "../../../components/admin/export/exportButton";
+import ExportButton, { activityColumn, createdColumn } from "../../../components/admin/export/exportButton";
 import { LuUpload } from "react-icons/lu";
 import { usePermission } from "../../../utils/usePermission";
 import { useContext, useEffect, useRef } from "react";
@@ -29,15 +29,15 @@ import { useNavigate } from "react-router-dom";
 const SORT_FIELDS = { name: "name", country: "country", role_name: "role_name", status_tag: "status", is_deleted: "is_deleted" };
 
 export default function User() {
-  const { user, languages, selectedLanguage } = useContext(Context);
+  const { languages, selectedLanguage } = useContext(Context);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState([]);
+  const [, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
 
   const [isOpenCreate, setIsOpenCreate] = useState(false);
-  const [isOpenUpdate, setIsOpenUpdate] = useState(false);
+  const [, setIsOpenUpdate] = useState(false);
   const [isOpenStatus, setIsOpenStatus] = useState(false);
   const [isOpenDelete, setIsOpenDelete] = useState(false);
   const [isOpenImport, setIsOpenImport] = useState(false);
@@ -48,13 +48,6 @@ export default function User() {
   const { t } = useTranslation();
 
   const perm = usePermission("user");
-  // Rótulos traduzidos dos estados (filtro da coluna Estado)
-  const statusLabels = {
-    approved: t("Approved", { context: "user" }),
-    pending: t("Pending"),
-    not_approved: t("Not Approved"),
-  };
-
   // Paginação, pesquisa, filtros e ordenação são feitos no servidor: a página só pede as linhas que mostra
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);

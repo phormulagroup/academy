@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import { Context } from "../utils/context";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 
 import Loading from "../layout/loading";
 import LoadingLanguage from "../layout/loadingLanguage";
@@ -35,7 +35,7 @@ export default function AppRoutes() {
 				{
 					path: "/",
 					element: (
-						<Navigate to={`/${i18n.language ?? userLang?.code}`} replace />
+						<Navigate to={`/${i18n.language ?? languages.find((l) => l.is_default === 1)?.code}`} replace />
 					),
 				},
 				{
