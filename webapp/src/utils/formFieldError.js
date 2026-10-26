@@ -1,5 +1,6 @@
 import axios from "axios";
-import validator from "validator";
+// Só a validação de e-mail (importar "validator" inteiro levava ~150 KB ao pacote principal)
+import isEmail from "validator/lib/isEmail";
 import i18n from "./i18n";
 import endpoints from "./endpoints";
 
@@ -142,7 +143,7 @@ export const otpCodeRule = (length = 6, { digitsOnly = true } = {}) => ({
 
 export const emailRule = {
   validator: async (_, value) => {
-    if (value && !validator.isEmail(value.trim()))
+    if (value && !isEmail(value.trim()))
       throw new Error(i18n.t("The e-mail must be valid"));
   },
 };
@@ -159,7 +160,7 @@ export const emailRule = {
 export const userEmailRule = ({ shouldExist = false, excludeId = null } = {}) => ({
   validator: async (_, value) => {
     const email = (value || "").trim();
-    if (!email || !validator.isEmail(email)) return;
+    if (!email || !isEmail(email)) return;
     let data;
     try {
       ({ data } = await axios.get(endpoints.user.readByEmail, {

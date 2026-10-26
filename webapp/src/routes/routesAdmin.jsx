@@ -2,7 +2,7 @@ import { lazyPage } from "../components/lazyPage";
 import { Navigate } from "react-router-dom";
 
 const MainAdmin = lazyPage(() => import("../pages/admin/index"));
-import AdminLayout from "../layout/admin";
+const AdminLayout = lazyPage(() => import("../layout/admin"));
 const User = lazyPage(() => import("../pages/admin/user/index"));
 const Language = lazyPage(() => import("../pages/admin/language"));
 const Media = lazyPage(() => import("../pages/admin/media"));
