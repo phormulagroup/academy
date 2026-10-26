@@ -1,0 +1,76 @@
+/* Classificação por estrelas (também usada pelos Testemunhos). As cores
+   vêm de variáveis para o CSS por instância as poder trocar sem repetir
+   seletores. `fill` em CSS ganha ao atributo fill="none" dos ícones lucide
+   — é o que os torna "cheios". */
+
+.el-rating {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 10px;
+}
+
+.el-rating--stacked {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+.el-rating__stars {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.el-rating__value {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.el-stars {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	font-size: 20px;
+	line-height: 1;
+	--el-star-filled: #f5a623;
+	--el-star-empty: #d9dce1;
+}
+
+.el-stars__star {
+	position: relative;
+	display: inline-flex;
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+}
+
+.el-stars__empty,
+.el-stars__fill {
+	display: inline-flex;
+}
+
+.el-stars__empty {
+	color: var(--el-star-empty);
+}
+
+.el-stars__fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	overflow: hidden;
+	color: var(--el-star-filled);
+}
+
+.el-stars svg {
+	display: block;
+	flex-shrink: 0;
+	width: 1em;
+	height: 1em;
+	fill: currentColor;
+}
+
+.el-stars--outline .el-stars__empty svg {
+	fill: none;
+}

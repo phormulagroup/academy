@@ -1,0 +1,126 @@
+/* Antes / Depois — "Depois" no fluxo, "Antes" por cima recortado com
+   clip-path até à posição da pega. */
+
+.el-ba {
+  --el-ba-handle: #ffffff;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ew-resize;
+  /* Deixa a página deslocar na direção que não é a da comparação. */
+  touch-action: pan-y;
+}
+
+.el-ba--vertical {
+  cursor: ns-resize;
+  touch-action: pan-x;
+}
+
+/* No editor, só a pega arrasta (o resto do bloco seleciona/move). */
+.el-ba--editing {
+  cursor: default;
+}
+
+.el-ba .el-ba__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.el-ba .el-ba__img--before {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+.el-ba--ratio .el-ba__img--after {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+.el-ba .el-ba__label {
+  position: absolute;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.el-ba--horizontal .el-ba__label { top: 12px; }
+.el-ba--horizontal .el-ba__label--before { left: 12px; }
+.el-ba--horizontal .el-ba__label--after { right: 12px; }
+.el-ba--vertical .el-ba__label { left: 12px; }
+.el-ba--vertical .el-ba__label--before { top: 12px; }
+.el-ba--vertical .el-ba__label--after { bottom: 12px; }
+
+.el-ba .el-ba__handle {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.el-ba--horizontal .el-ba__handle {
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  margin-left: -22px;
+  cursor: ew-resize;
+}
+
+.el-ba--vertical .el-ba__handle {
+  left: 0;
+  right: 0;
+  height: 44px;
+  margin-top: -22px;
+  cursor: ns-resize;
+}
+
+.el-ba .el-ba__line {
+  position: absolute;
+  background: var(--el-ba-handle);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.el-ba--horizontal .el-ba__line { top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; }
+.el-ba--vertical .el-ba__line { left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; }
+
+.el-ba .el-ba__knob {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--el-ba-handle);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--el-ba-handle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.el-ba .el-ba__handle:focus-visible .el-ba__knob {
+  outline: 3px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-ba .el-ba__label {
+    transition: none;
+  }
+}

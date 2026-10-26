@@ -1,0 +1,102 @@
+/* PDF — iframe embutido ou cartão com botão. */
+
+.el-pdf .el-pdf__heading {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.el-pdf .el-pdf__frame-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.el-pdf .el-pdf__frame {
+  display: block;
+  width: 100%;
+  height: 700px;
+  border: 1px solid #e5e6ea;
+  border-radius: 8px;
+  background: #f2f3f5;
+}
+
+/* No editor o iframe "engolia" os cliques e não deixava selecionar o
+   bloco. */
+.el-pdf--editing .el-pdf__frame {
+  pointer-events: none;
+}
+
+.el-pdf a.el-pdf__fallback {
+  align-self: flex-end;
+  font-size: 12px;
+  text-decoration: underline;
+  opacity: 0.75;
+}
+
+.el-pdf .el-pdf__card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e5e6ea;
+  border-radius: 12px;
+  background: #fff;
+  min-width: 0;
+}
+
+.el-pdf .el-pdf__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: var(--brand-primary-lighter, #f2f3f5);
+  color: var(--brand-primary);
+}
+
+.el-pdf .el-pdf__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.el-pdf .el-pdf__title {
+  font-weight: 600;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.el-pdf .el-pdf__file {
+  font-size: 12px;
+  opacity: 0.65;
+  overflow-wrap: anywhere;
+}
+
+.el-pdf .el-pdf__button {
+  flex: 0 0 auto;
+}
+
+.el-pdf .el-pdf__card--mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .el-pdf--mobile-card .el-pdf__frame-wrap {
+    display: none;
+  }
+  .el-pdf--mobile-card .el-pdf__card--mobile {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .el-pdf .el-pdf__card {
+    flex-wrap: wrap;
+  }
+  .el-pdf .el-pdf__button {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,69 +1,55 @@
-import React from "react";
-import { ALargeSmall, AlignLeft } from "lucide-react";
-
-import { Section } from "../../components/section";
-import { withLayout } from "../../components/layout";
+import { withStyle } from "../../components/style";
+import { withTabs } from "../../components/tabsField";
+import { alignField, colorField, responsive, sliderField, switchField } from "../../core/fields";
+import { responsiveRules, own } from "../../core/css";
 
 const TextInner = {
+  label: "Texto",
   fields: {
-    text: {
-      type: "textarea",
-      contentEditable: true,
-    },
-    size: {
-      type: "select",
-      labelIcon: <ALargeSmall size={16} />,
-      options: [
-        { label: "S", value: "s" },
-        { label: "M", value: "m" },
-      ],
-    },
-    align: {
-      type: "radio",
-      labelIcon: <AlignLeft size={16} />,
-      options: [
-        { label: "Left", value: "left" },
-        { label: "Center", value: "center" },
-        { label: "Right", value: "right" },
-      ],
-    },
-    color: {
-      type: "radio",
-      options: [
-        { label: "Default", value: "default" },
-        { label: "Muted", value: "muted" },
-      ],
-    },
-    maxWidth: { type: "text" },
+    text: { type: "richtext", contentEditable: true, label: "Texto" },
+    align: responsive(alignField("Alinhamento", { justify: true })),
+    columns: responsive(sliderField("Colunas de texto", { min: 1, max: 4 })),
+    columnGap: sliderField("Espaço entre colunas", { min: 0, max: 120, suffix: "px", showIf: (p) => Object.values(p.columns || {}).some((n) => n > 1) }),
+    dropCap: switchField("Letra capitular"),
+    dropCapColor: colorField("Cor da letra capitular", { showIf: (p) => !!p.dropCap }),
   },
   defaultProps: {
-    align: "left",
-    text: "Text",
-    size: "m",
-    color: "default",
+    align: { desktop: "left" },
+    text: "<p>Escreva aqui o seu texto. Pode usar <strong>negrito</strong>, listas, links e títulos.</p>",
+    style: {
+      color: "#000000",
+      fontSize: { desktop: { value: 18, unit: "px" } },
+    },
   },
-  render: ({ align, color, text, size, maxWidth }) => {
+  // `size`/`maxWidth` eram campos antigos — continuam a ser respeitados
+  // para não mudar o aspeto das lições já guardadas (a Tipografia/Avançado
+  // têm prioridade quando estão definidos).
+  render: ({ id, align, text, size, maxWidth, columns, columnGap, dropCap, dropCapColor, style }) => {
+    const sel = `[data-style-id="${id}"] .el-prose`;
+    const css = responsiveRules(sel, (d) => {
+      const cols = own(columns, d);
+      return {
+        textAlign: own(align, d),
+        columnCount: cols ? String(cols) : undefined,
+        columnGap: cols && cols > 1 ? `${columnGap ?? 32}px` : undefined,
+      };
+    });
+    const legacyStyle = {
+      fontSize: !style?.fontSize && size ? `${size}px` : undefined,
+      maxWidth: maxWidth || undefined,
+      "--el-dropcap-color": dropCapColor || undefined,
+    };
     return (
-      <Section maxWidth={maxWidth}>
-        <span
-          style={{
-            color: color === "default" ? "inherit" : "var(--puck-color-grey-05)",
-            display: "flex",
-            textAlign: align,
-            width: "100%",
-            fontSize: size === "m" ? "20px" : "16px",
-            fontWeight: 300,
-            maxWidth,
-            justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
-          }}
-        >
+      <>
+        {css && <style>{css}</style>}
+        <div className={`el-prose${dropCap ? " el-prose--dropcap" : ""}`} style={legacyStyle}>
           {text}
-        </span>
-      </Section>
+        </div>
+      </>
     );
   },
 };
 
-const Text = withLayout(TextInner);
+const Text = withTabs(withStyle(TextInner, { typography: true }));
 
 export default Text;

@@ -1,0 +1,133 @@
+/* Galeria — tudo sob .el-gallery para nunca vazar para o resto da página. */
+
+.el-gallery--grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.el-gallery--masonry {
+  column-count: 3;
+  column-gap: 16px;
+}
+
+.el-gallery--masonry .el-gallery__item {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+
+.el-gallery .el-gallery__item {
+  margin: 0;
+  min-width: 0;
+}
+
+.el-gallery .el-gallery__media {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.el-gallery button.el-gallery__media {
+  cursor: zoom-in;
+}
+
+.el-gallery button.el-gallery__media:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+.el-gallery .el-gallery__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.4s ease;
+}
+
+.el-gallery--zoom .el-gallery__media:hover .el-gallery__img,
+.el-gallery--zoom .el-gallery__media:focus-visible .el-gallery__img {
+  transform: scale(1.06);
+}
+
+.el-gallery .el-gallery__overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.el-gallery--overlay .el-gallery__media:hover .el-gallery__overlay,
+.el-gallery--overlay .el-gallery__media:focus-visible .el-gallery__overlay {
+  opacity: 1;
+}
+
+.el-gallery .el-gallery__caption--below {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.el-gallery .el-gallery__caption--overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.el-gallery .el-gallery__media:hover .el-gallery__caption--overlay,
+.el-gallery .el-gallery__media:focus-visible .el-gallery__caption--overlay {
+  opacity: 1;
+  transform: none;
+}
+
+/* Ecrãs táteis não têm hover — a legenda fica sempre visível. */
+@media (hover: none) {
+  .el-gallery .el-gallery__caption--overlay {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-gallery .el-gallery__img,
+  .el-gallery .el-gallery__caption--overlay,
+  .el-gallery .el-gallery__overlay {
+    transition: none;
+  }
+  .el-gallery--zoom .el-gallery__media:hover .el-gallery__img,
+  .el-gallery--zoom .el-gallery__media:focus-visible .el-gallery__img {
+    transform: none;
+  }
+}
+
+/* Legenda dentro do lightbox (portal do antd, fora de .el-gallery). */
+.el-gallery-lightbox__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.el-gallery-lightbox__caption {
+  max-width: min(720px, 90vw);
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}

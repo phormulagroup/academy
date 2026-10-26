@@ -2,7 +2,7 @@ import Root from "./root";
 
 const initialData = {
   content: [],
-  root: Root,
+  root: { props: Root.defaultProps },
 };
 
 export default initialData;

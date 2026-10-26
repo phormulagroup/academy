@@ -1,0 +1,79 @@
+{
+ "root": {
+  "fields": {
+   "title": {
+    "type": "text",
+    "label": "Page Title"
+   },
+   "description": {
+    "type": "textarea",
+    "label": "Page Description"
+   },
+   "heroImage": {
+    "type": "custom",
+    "label": "Imagem"
+   }
+  },
+  "defaultProps": {
+   "title": "",
+   "description": "",
+   "heroImage": ""
+  },
+  "props": {
+   "title": "",
+   "description": "",
+   "heroImage": "",
+   "fields": {
+    "title": {
+     "type": "text",
+     "label": "Page Title"
+    },
+    "description": {
+     "type": "textarea",
+     "label": "Page Description"
+    },
+    "heroImage": {
+     "type": "custom",
+     "label": "Imagem"
+    }
+   },
+   "defaultProps": {
+    "title": "",
+    "description": "",
+    "heroImage": ""
+   }
+  }
+ },
+ "content": [
+  {
+   "type": "ImageCarousel",
+   "props": {
+    "images": [
+     {
+      "alt": "",
+      "image": {
+       "url": "TRICEF_PT_M2_01_01_Diapositivo1-7.png"
+      }
+     },
+     {
+      "alt": "",
+      "image": {
+       "url": "TRICEF_PT_M2_01_02_Diapositivo2-7.png"
+      }
+     },
+     {
+      "alt": "",
+      "image": {
+       "url": "TRICEF_PT_M2_01_03_Diapositivo3-7.png"
+      }
+     }
+    ],
+    "maxWidth": 800,
+    "justifyContent": "center",
+    "alignItems": "center",
+    "id": "ImageCarousel-e9438534-fdc1-4adb-baea-7551f1cc081e"
+   }
+  }
+ ],
+ "zones": {}
+}

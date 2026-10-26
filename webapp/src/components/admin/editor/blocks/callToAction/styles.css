@@ -1,0 +1,153 @@
+/* Chamada à ação. Valores por omissão com uma só classe (ou :where) para o
+   CSS gerado por instância ([data-style-id] .x) ganhar sempre. */
+
+.el-cta {
+	overflow: hidden;
+}
+
+.el-cta__inner {
+	display: flex;
+	gap: 32px;
+	width: 100%;
+}
+
+.el-cta__content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+}
+
+.el-cta__eyebrow {
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--brand-primary);
+}
+
+.el-cta--on-dark .el-cta__eyebrow {
+	color: inherit;
+	opacity: 0.85;
+}
+
+.el-cta__desc {
+	font-size: 17px;
+	line-height: 1.6;
+	opacity: 0.9;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+}
+
+.el-cta__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+}
+
+/* Faixa: texto à esquerda, botões à direita */
+:where(.el-cta--banner) .el-cta__inner {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.el-cta--banner .el-cta__content {
+	flex: 1 1 auto;
+}
+
+.el-cta--banner .el-cta__actions {
+	flex: 0 0 auto;
+	justify-content: flex-end;
+}
+
+/* Caixa centrada */
+:where(.el-cta--boxed) .el-cta__inner {
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	max-width: 760px;
+	margin: 0 auto;
+}
+
+:where(.el-cta--boxed) .el-cta__content {
+	align-items: inherit;
+	width: 100%;
+}
+
+:where(.el-cta--boxed) .el-cta__actions {
+	justify-content: center;
+	margin-top: 8px;
+}
+
+/* Com imagem */
+:where(.el-cta--image) .el-cta__inner {
+	flex-direction: row;
+	align-items: center;
+}
+
+.el-cta--img-left .el-cta__inner {
+	flex-direction: row-reverse;
+}
+
+.el-cta--image .el-cta__content,
+.el-cta--image .el-cta__media {
+	flex: 1 1 0;
+}
+
+.el-cta--image .el-cta__actions {
+	margin-top: 8px;
+}
+
+.el-cta__media img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	max-height: 420px;
+	object-fit: cover;
+	border-radius: 12px;
+}
+
+.el-cta__media--empty {
+	display: grid;
+	place-items: center;
+	min-height: 220px;
+	border: 1px dashed currentColor;
+	border-radius: 12px;
+	font-size: 13px;
+	opacity: 0.6;
+}
+
+/* Botões "Contorno"/"Só texto" em fundo escuro: brancos em vez da cor da
+   marca (que ficava invisível em cima do gradiente da marca). */
+.el-element .el-cta a.el-button--outline.el-cta__btn--on-dark,
+.el-element .el-cta span.el-button--outline.el-cta__btn--on-dark {
+	color: #ffffff !important;
+	border-color: rgba(255, 255, 255, 0.85);
+	background: transparent;
+}
+
+.el-element .el-cta a.el-button--outline.el-cta__btn--on-dark:hover {
+	background: #ffffff;
+	color: var(--brand-primary) !important;
+}
+
+.el-element .el-cta a.el-button--link.el-cta__btn--on-dark {
+	color: #ffffff !important;
+}
+
+@media (max-width: 767px) {
+	.el-cta__inner {
+		flex-direction: column !important;
+		align-items: stretch !important;
+	}
+
+	.el-cta--banner .el-cta__actions {
+		justify-content: flex-start;
+	}
+
+	.el-cta__actions .el-button {
+		white-space: normal;
+	}
+}

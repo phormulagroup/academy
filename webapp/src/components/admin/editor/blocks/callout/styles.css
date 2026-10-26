@@ -1,0 +1,71 @@
+/* Bloco Caixa de destaque. Regras base de propósito com especificidade
+   baixa (só a classe): o "Estilo" do bloco gera
+   [data-style-id] .el-callout {…}, que assim ganha sempre para padding,
+   borda, raio e sombra. As cores vêm de variáveis com a cor do tipo como
+   valor por omissão. */
+
+.el-callout {
+	--el-callout-type: #2563eb;
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	padding: 16px 20px;
+	border-radius: 10px;
+	color: var(--el-callout-text, #1f2937);
+}
+
+.el-callout--note { --el-callout-type: #64748b; }
+.el-callout--info { --el-callout-type: #2563eb; }
+.el-callout--tip { --el-callout-type: var(--brand-primary, #7c3aed); }
+.el-callout--warning { --el-callout-type: #d97706; }
+.el-callout--danger { --el-callout-type: #dc2626; }
+.el-callout--success { --el-callout-type: #16a34a; }
+
+/* ---- Variantes --------------------------------------------------------- */
+.el-callout--filled {
+	background: var(--el-callout-bg, color-mix(in srgb, var(--el-callout-accent, var(--el-callout-type)) 9%, #fff));
+	border: 1px solid color-mix(in srgb, var(--el-callout-accent, var(--el-callout-type)) 28%, #fff);
+}
+
+.el-callout--outline {
+	background: var(--el-callout-bg, #fff);
+	border: 1.5px solid var(--el-callout-accent, var(--el-callout-type));
+}
+
+.el-callout--sidebar {
+	background: var(--el-callout-bg, color-mix(in srgb, var(--el-callout-accent, var(--el-callout-type)) 7%, #fff));
+	border-left: 4px solid var(--el-callout-accent, var(--el-callout-type));
+	border-radius: 4px;
+}
+
+.el-callout__icon {
+	display: inline-flex;
+	flex: 0 0 auto;
+	margin-top: 1px;
+	color: var(--el-callout-icon, var(--el-callout-accent, var(--el-callout-type)));
+}
+
+.el-callout__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* `.main-layout p` da app forçava cor preta e 16px. */
+.el-element .el-callout p.el-callout__title {
+	margin: 0 0 4px;
+	font-size: 1.05em;
+	font-weight: 700;
+	line-height: 1.35;
+	color: var(--el-callout-title, color-mix(in srgb, var(--el-callout-accent, var(--el-callout-type)) 75%, #000));
+}
+
+.el-element .el-callout .el-callout__content {
+	color: inherit;
+}
+
+@media (max-width: 767px) {
+	.el-callout {
+		gap: 10px;
+		padding: 14px 16px;
+	}
+}

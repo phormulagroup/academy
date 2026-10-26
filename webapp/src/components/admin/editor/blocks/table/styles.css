@@ -1,0 +1,80 @@
+/* Bloco Tabela. */
+
+.el-element .el-table-wrap {
+	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border-radius: 8px;
+}
+
+.el-element .el-table-wrap:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
+}
+
+.el-element table.el-table {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	font-size: inherit;
+	color: inherit;
+}
+
+.el-element .el-table caption {
+	caption-side: bottom;
+	padding-top: 8px;
+	font-size: 0.85em;
+	opacity: 0.75;
+	text-align: var(--el-table-align, left);
+}
+
+.el-element .el-table :is(th, td) {
+	padding: 12px 16px;
+	text-align: var(--el-table-align, left);
+	vertical-align: top;
+	border-bottom: 1px solid var(--el-table-border, #e5e7eb);
+	/* Em telemóvel a tabela não esmaga as colunas até 1 letra por linha:
+	   cresce e passa a deslizar na horizontal. */
+	min-width: 7.5em;
+	line-height: 1.45;
+}
+
+.el-element .el-table thead th {
+	background: var(--el-table-head-bg, var(--brand-primary));
+	color: var(--el-table-head-color, #fff);
+	font-weight: 700;
+	border-bottom-color: transparent;
+}
+
+.el-element .el-table tbody th {
+	font-weight: 700;
+}
+
+.el-element .el-table tbody tr:last-child :is(th, td) {
+	border-bottom: 0;
+}
+
+.el-element .el-table--striped tbody tr:nth-child(even) :is(th, td) {
+	background: var(--el-table-stripe, #f6f7f9);
+}
+
+.el-element .el-table--bordered :is(th, td) {
+	border: 1px solid var(--el-table-border, #e5e7eb);
+}
+
+.el-element .el-table--bordered tbody tr:last-child :is(th, td) {
+	border-bottom: 1px solid var(--el-table-border, #e5e7eb);
+}
+
+.el-element .el-table--compact :is(th, td) {
+	padding: 6px 10px;
+}
+
+@media (max-width: 767px) {
+	.el-element .el-table :is(th, td) {
+		padding: 10px 12px;
+	}
+	.el-element .el-table--compact :is(th, td) {
+		padding: 6px 8px;
+	}
+}

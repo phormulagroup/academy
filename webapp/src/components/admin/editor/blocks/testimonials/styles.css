@@ -1,0 +1,132 @@
+/* Testemunhos. Valores por omissão com uma só classe (ou :where) para o
+   CSS gerado por instância ([data-style-id] .x) ganhar sempre. */
+
+.el-testimonials__grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 24px;
+}
+
+.el-testimonial {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	height: 100%;
+	margin: 0;
+	padding: 24px;
+	border-radius: 14px;
+	min-width: 0;
+}
+
+:where(.el-testimonials--card) .el-testimonial {
+	background-color: #ffffff;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+:where(.el-testimonials--bordered) .el-testimonial {
+	background-color: transparent;
+	border: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+:where(.el-testimonials--plain) .el-testimonial {
+	padding: 0;
+	background: transparent;
+}
+
+:where(.el-testimonials--center) .el-testimonial {
+	align-items: center;
+	text-align: center;
+}
+
+.el-testimonial__quote-icon {
+	display: inline-flex;
+	font-size: 32px;
+	color: var(--brand-primary);
+	opacity: 0.9;
+}
+
+.el-testimonial__quote-icon svg {
+	fill: currentColor;
+	stroke: none;
+}
+
+.el-element .el-testimonial blockquote.el-testimonial__quote {
+	margin: 0;
+	padding: 0;
+	border: none;
+	font-size: 16px;
+	line-height: 1.6;
+	font-style: normal;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+	flex: 1 1 auto;
+}
+
+.el-testimonial__author {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: auto;
+}
+
+.el-testimonial__avatar {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.el-testimonial__avatar--initials {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+	color: var(--brand-primary);
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.el-testimonial__who {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	text-align: left;
+}
+
+.el-testimonial__name {
+	font-weight: 700;
+}
+
+.el-testimonial__role {
+	font-size: 14px;
+	opacity: 0.7;
+}
+
+.el-testimonials__swiper {
+	padding-bottom: 40px !important;
+}
+
+/* Slides com a mesma altura (o cartão estica até ao mais alto). */
+.el-testimonials__swiper .swiper-slide.el-testimonials__slide {
+	height: auto;
+	padding: 4px 2px 12px;
+}
+
+.el-testimonials__swiper .swiper-pagination-bullet-active {
+	background: var(--brand-primary);
+}
+
+.el-testimonials-hint {
+	padding: 24px;
+	text-align: center;
+	color: #999;
+	border: 1px dashed #ccc;
+	border-radius: 8px;
+}
+
+@media (max-width: 767px) {
+	.el-testimonials__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

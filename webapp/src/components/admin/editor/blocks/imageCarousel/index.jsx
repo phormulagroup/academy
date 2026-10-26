@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next";
 import { RxChevronLeft, RxChevronRight } from "react-icons/rx";
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md";
 
-import { Section } from "../../components/section";
+import { Section } from "../../legacy/section";
 import FullscreenRotateNote from "../../../../fullscreenRotateNote";
 import useLandscapeLock from "../../../../../utils/useLandscapeLock";
-import ImagePickerField from "../image/ImagePickerField";
+import ImagePickerField from "../../legacy/ImagePickerField";
 
 // Import Swiper styles
 import "swiper/css";

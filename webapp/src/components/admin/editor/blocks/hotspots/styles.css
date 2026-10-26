@@ -1,0 +1,177 @@
+/* Bloco Pontos interativos. */
+
+.el-element .el-hs {
+	position: relative;
+	width: 100%;
+	line-height: 0;
+}
+
+.el-element .el-hs__image {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: inherit;
+}
+
+.el-element .el-hs__placeholder {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	border: 1px dashed #ccc;
+	border-radius: 8px;
+	background: #fafafa;
+	color: #999;
+	line-height: 1.4;
+}
+
+.el-element button.el-hs__pin {
+	position: absolute;
+	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--el-hs-pin, 28px);
+	height: var(--el-hs-pin, 28px);
+	padding: 0;
+	border: 2px solid #fff;
+	border-radius: 999px;
+	background: var(--el-hs-pin-color, var(--brand-primary));
+	color: var(--el-hs-pin-icon, #fff);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+	transform: translate(-50%, -50%);
+	cursor: pointer;
+	line-height: 1;
+	transition: transform 200ms ease;
+}
+
+.el-element button.el-hs__pin:hover,
+.el-element button.el-hs__pin--open {
+	transform: translate(-50%, -50%) scale(1.12);
+	z-index: 2;
+}
+
+.el-element button.el-hs__pin:focus-visible {
+	outline: 3px solid #fff;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 6px var(--el-hs-pin-color, var(--brand-primary));
+}
+
+.el-element .el-hs__num {
+	font-size: calc(var(--el-hs-pin, 28px) * 0.45);
+	font-weight: 700;
+}
+
+/* "+" desenhado em CSS; roda para "×" quando o ponto está aberto. */
+.el-element .el-hs__plus {
+	position: relative;
+	width: 40%;
+	height: 40%;
+	transition: transform 200ms ease;
+}
+
+.el-element .el-hs__plus::before,
+.el-element .el-hs__plus::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: calc(50% - 1px);
+	width: 100%;
+	height: 2px;
+	border-radius: 2px;
+	background: currentColor;
+}
+
+.el-element .el-hs__plus::after {
+	transform: rotate(90deg);
+}
+
+.el-element .el-hs__pin--open .el-hs__plus {
+	transform: rotate(45deg);
+}
+
+.el-element .el-hs--pulse button.el-hs__pin::before {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: inherit;
+	background: var(--el-hs-pin-color, var(--brand-primary));
+	opacity: 0.5;
+	z-index: -1;
+	animation: el-hs-pulse 1.8s ease-out infinite;
+}
+
+@keyframes el-hs-pulse {
+	from { transform: scale(1); opacity: 0.5; }
+	to { transform: scale(2.2); opacity: 0; }
+}
+
+.el-element .el-hs__tip {
+	position: absolute;
+	z-index: 3;
+	padding: 12px 32px 12px 14px;
+	border-radius: 10px;
+	background: var(--el-hs-tip-bg, #fff);
+	color: var(--el-hs-tip-color, #1f2937);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+	line-height: 1.45;
+	text-align: left;
+	animation: el-hs-tip-in 160ms ease-out;
+}
+
+@keyframes el-hs-tip-in {
+	from { opacity: 0; transform: translateY(4px); }
+	to { opacity: 1; transform: none; }
+}
+
+.el-element .el-hs p.el-hs__tip-title,
+.el-element .el-hs p.el-hs__tip-text {
+	margin: 0;
+	color: inherit;
+	line-height: 1.45;
+}
+
+.el-element .el-hs p.el-hs__tip-title {
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.el-element .el-hs p.el-hs__tip-text {
+	font-size: 14px;
+	white-space: pre-line;
+}
+
+.el-element .el-hs p.el-hs__tip-title + p.el-hs__tip-text {
+	margin-top: 4px;
+}
+
+.el-element button.el-hs__close {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: inherit;
+	opacity: 0.6;
+	cursor: pointer;
+}
+
+.el-element button.el-hs__close:hover,
+.el-element button.el-hs__close:focus-visible {
+	opacity: 1;
+	background: rgba(0, 0, 0, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.el-element .el-hs--pulse button.el-hs__pin::before,
+	.el-element .el-hs__tip {
+		animation: none;
+	}
+}

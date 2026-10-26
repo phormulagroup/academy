@@ -1,0 +1,578 @@
+/* ==========================================================================
+   CSS base dos blocos do editor — carregado tanto no editor como na página
+   do aluno (via config.jsx). Seletores com .el-element para ganharem ao CSS
+   global da app (index.css: `.main-layout p {color:#000;font-size:16px}`,
+   `h1/h2 {color:primary}`, `ul {margin…}`), que se sobrepunha à cor/tamanho
+   escolhidos no editor.
+   ========================================================================== */
+
+.el-element {
+	box-sizing: border-box;
+	min-width: 0;
+}
+
+.el-element *,
+.el-element *::before,
+.el-element *::after {
+	box-sizing: border-box;
+}
+
+.el-element img {
+	max-width: 100%;
+}
+
+/* Um bloco sem conteúdo para o aluno (ex.: Áudio/Imagem sem ficheiro) só
+   tem o seu <style> lá dentro — sem isto, o fundo/padding da tab "Estilo"
+   aparecia como uma faixa vazia na lição. */
+.el-element:not(:has(> :not(style))) {
+	display: none !important;
+}
+
+/* ---- Texto rico (TipTap) ------------------------------------------------ */
+
+.main-layout .el-element .el-prose,
+.el-element .el-prose {
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+
+.main-layout .el-element .el-prose :is(p, li, span, blockquote),
+.el-element .el-prose :is(p, li, span, blockquote) {
+	color: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	font-family: inherit;
+}
+
+.el-element .el-prose > * + * {
+	margin-top: 0.75em;
+}
+
+.el-element .el-prose p {
+	margin: 0;
+}
+
+.el-element .el-prose p + p {
+	margin-top: 0.75em;
+}
+
+.el-element .el-prose :is(h1, h2, h3, h4, h5, h6) {
+	color: inherit;
+	font-weight: 700;
+	line-height: 1.25;
+	margin: 1.1em 0 0.5em;
+}
+
+.el-element .el-prose :is(h1, h2, h3, h4, h5, h6):first-child {
+	margin-top: 0;
+}
+
+.el-element .el-prose h1 { font-size: 2em; }
+.el-element .el-prose h2 { font-size: 1.6em; }
+.el-element .el-prose h3 { font-size: 1.3em; }
+.el-element .el-prose h4 { font-size: 1.15em; }
+.el-element .el-prose h5,
+.el-element .el-prose h6 { font-size: 1em; }
+
+.el-element .el-prose :is(ul, ol) {
+	margin: 0.5em 0;
+	padding: 0 0 0 1.5em;
+}
+
+.el-element .el-prose ul { list-style: disc; }
+.el-element .el-prose ol { list-style: decimal; }
+.el-element .el-prose li + li { margin-top: 0.3em; }
+.el-element .el-prose li > p { margin: 0; }
+
+.el-element .el-prose blockquote {
+	border-left: 4px solid var(--brand-primary, #999);
+	margin: 0.75em 0;
+	padding: 0.25em 0 0.25em 1em;
+	font-style: italic;
+	opacity: 0.9;
+}
+
+.el-element .el-prose a {
+	color: var(--brand-primary) !important;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.el-element .el-prose code {
+	background: rgba(0, 0, 0, 0.06);
+	border-radius: 4px;
+	padding: 0.1em 0.35em;
+	font-size: 0.9em;
+}
+
+.el-element .el-prose hr {
+	border: none;
+	border-top: 1px solid rgba(0, 0, 0, 0.12);
+	margin: 1.25em 0;
+}
+
+.el-element .el-prose strong,
+.el-element .el-prose b {
+	font-weight: 700 !important;
+}
+
+/* Títulos (bloco Título) — anula o h1/h2 global da app */
+.el-element .el-heading {
+	margin: 0;
+	color: inherit;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.el-element a.el-heading-link {
+	color: inherit !important;
+	text-decoration: none;
+}
+
+/* ---- Animações de entrada ----------------------------------------------- */
+
+.el-anim {
+	opacity: 0;
+}
+
+.el-anim.el-anim--visible {
+	animation-duration: 800ms;
+	animation-fill-mode: both;
+	animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.el-anim--visible.el-anim--fadeIn { animation-name: el-fadeIn; }
+.el-anim--visible.el-anim--fadeInUp { animation-name: el-fadeInUp; }
+.el-anim--visible.el-anim--fadeInDown { animation-name: el-fadeInDown; }
+.el-anim--visible.el-anim--fadeInLeft { animation-name: el-fadeInLeft; }
+.el-anim--visible.el-anim--fadeInRight { animation-name: el-fadeInRight; }
+.el-anim--visible.el-anim--zoomIn { animation-name: el-zoomIn; }
+.el-anim--visible.el-anim--slideInUp { animation-name: el-slideInUp; }
+.el-anim--visible.el-anim--bounceIn { animation-name: el-bounceIn; }
+.el-anim--visible.el-anim--flipInX { animation-name: el-flipInX; }
+
+@keyframes el-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes el-fadeInUp { from { opacity: 0; transform: translate3d(0, 40px, 0); } to { opacity: 1; transform: none; } }
+@keyframes el-fadeInDown { from { opacity: 0; transform: translate3d(0, -40px, 0); } to { opacity: 1; transform: none; } }
+@keyframes el-fadeInLeft { from { opacity: 0; transform: translate3d(-40px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes el-fadeInRight { from { opacity: 0; transform: translate3d(40px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes el-zoomIn { from { opacity: 0; transform: scale3d(0.85, 0.85, 0.85); } to { opacity: 1; transform: none; } }
+@keyframes el-slideInUp { from { opacity: 1; transform: translate3d(0, 100%, 0); } to { opacity: 1; transform: none; } }
+@keyframes el-bounceIn {
+	0% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+	50% { opacity: 1; transform: scale3d(1.05, 1.05, 1.05); }
+	70% { transform: scale3d(0.95, 0.95, 0.95); }
+	100% { opacity: 1; transform: none; }
+}
+@keyframes el-flipInX {
+	from { opacity: 0; transform: perspective(400px) rotate3d(1, 0, 0, 80deg); }
+	to { opacity: 1; transform: perspective(400px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.el-anim,
+	.el-anim.el-anim--visible {
+		opacity: 1;
+		animation: none !important;
+	}
+}
+
+/* ---- Botões partilhados (bloco Botão, Hero, CTA, Preços…) -------------- */
+
+.el-element a.el-button,
+.el-element button.el-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	border: 1px solid transparent;
+	border-radius: var(--btn-radius, 10px);
+	cursor: pointer;
+	font-family: inherit;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	transition: all 200ms ease;
+	white-space: nowrap;
+}
+
+/* Altura a partir do tema dos botões da app (--btn-height, ver
+   theme/antdTheme.jsx): "Normal" (md) é igual ao tema; pequeno/grande são
+   proporcionais.
+   min-height (não height) para um texto longo poder ocupar 2 linhas. */
+.el-element .el-button--sm { min-height: calc(var(--btn-height, 40px) * 0.8); padding: 4px 16px; font-size: 13px; }
+.el-element .el-button--md { min-height: var(--btn-height, 40px); padding: 6px 20px; font-size: 14px; }
+.el-element .el-button--lg { min-height: calc(var(--btn-height, 40px) * 1.2); padding: 8px 28px; font-size: 16px; }
+.el-element .el-button--xl { min-height: calc(var(--btn-height, 40px) * 1.2); padding: 8px 28px; font-size: 16px; } /* antigo = grande */
+
+.el-element a.el-button--primary,
+.el-element button.el-button--primary {
+	background: var(--brand-primary);
+	color: #fff !important;
+	border-color: var(--brand-primary);
+}
+
+.el-element a.el-button--secondary,
+.el-element button.el-button--secondary {
+	background: var(--brand-secondary);
+	color: #fff !important;
+	border-color: var(--brand-secondary);
+}
+
+.el-element a.el-button--outline,
+.el-element button.el-button--outline {
+	background: transparent;
+	color: var(--brand-primary) !important;
+	border-color: var(--brand-primary);
+}
+
+.el-element a.el-button--light,
+.el-element button.el-button--light {
+	background: #fff;
+	color: var(--brand-primary) !important;
+	border-color: #fff;
+}
+
+.el-element a.el-button--link,
+.el-element button.el-button--link {
+	background: transparent;
+	color: var(--brand-primary) !important;
+	padding-left: 0;
+	padding-right: 0;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.el-element .el-button:hover {
+	filter: brightness(0.94);
+}
+
+.el-element .el-button--outline:hover {
+	background: var(--brand-primary);
+	color: #fff !important;
+}
+
+.el-element .el-button:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Painel do editor (só aparece no admin, mas é inofensivo no aluno)
+   ========================================================================== */
+
+.el-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.el-field--inline {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.el-field__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.el-field__label {
+	font-size: var(--puck-font-size-xxs, 12px);
+	font-weight: 600;
+	color: var(--puck-color-grey-04, #555);
+}
+
+.el-panel-field + .el-panel-field {
+	margin-top: 14px;
+}
+
+.el-subfields {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 8px;
+	padding: 10px;
+	border-radius: 6px;
+	background: var(--puck-color-grey-12, #f7f7f8);
+}
+
+.el-subheading {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--puck-color-grey-05, #888);
+	border-bottom: 1px solid var(--puck-color-grey-10, #eee);
+	padding-bottom: 4px;
+}
+
+.el-device-btn {
+	display: inline-flex;
+	align-items: center;
+	background: transparent;
+	border: none;
+	border-radius: 4px;
+	padding: 4px;
+	cursor: pointer;
+	color: var(--puck-color-grey-06, #999);
+}
+
+.el-device-btn:hover {
+	background: var(--puck-color-grey-11, #f0f0f0);
+}
+
+.el-device-btn--active {
+	background: var(--puck-color-grey-10, #eee);
+	color: var(--brand-primary, #6b7bff);
+}
+
+.el-section {
+	border-top: 1px solid var(--puck-color-grey-10, #eee);
+}
+
+.el-section:last-child {
+	border-bottom: 1px solid var(--puck-color-grey-10, #eee);
+}
+
+.el-section__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 10px 2px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--puck-color-grey-03, #333);
+}
+
+.el-section__head svg {
+	transition: transform 150ms ease;
+}
+
+.el-section--open .el-section__head svg {
+	transform: rotate(180deg);
+}
+
+.el-section__body {
+	padding: 2px 2px 14px;
+}
+
+.el-swatches {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+.el-swatch {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	cursor: pointer;
+	padding: 0;
+}
+
+.el-swatch--active {
+	outline: 2px solid var(--puck-color-grey-03, #333);
+	outline-offset: 1px;
+}
+
+/* Botões de escolha do painel (Legendas, Transição, Direção…): sempre à
+   largura do campo, repartidos por igual numa só linha. Antes era flex
+   com quebra — com textos mais longos ("Sobre a imagem") o grupo partia
+   em 2 linhas desalinhadas. Agora é o texto que quebra dentro do botão. */
+.el-radio-buttons {
+	display: grid !important;
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(0, 1fr);
+	width: 100%;
+}
+
+.el-radio-buttons .ant-radio-button-wrapper {
+	height: auto !important;
+	min-height: 30px;
+	padding: 4px 6px !important;
+	line-height: 1.2 !important;
+	font-size: 12px;
+	text-align: center;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.el-icon-preview {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 6px;
+	border: 1px dashed var(--puck-color-grey-08, #ccc);
+	background: #fff;
+	cursor: pointer;
+}
+
+.el-icon-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+	gap: 6px;
+	margin-top: 12px;
+	max-height: 55vh;
+	overflow-y: auto;
+}
+
+.el-icon-grid__item {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 52px;
+	border-radius: 6px;
+	border: 1px solid #eee;
+	background: #fff;
+	cursor: pointer;
+}
+
+.el-icon-grid__item:hover {
+	border-color: var(--brand-primary);
+	color: var(--brand-primary);
+}
+
+.el-icon-grid__item--active {
+	background: var(--brand-primary);
+	color: #fff;
+}
+
+.el-media-picker {
+	display: grid;
+	place-items: center;
+	min-height: 96px;
+	border: 1px dashed #ddd;
+	border-radius: 8px;
+	background: #fafafa;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.el-media-picker img {
+	max-width: 100%;
+	max-height: 160px;
+	object-fit: contain;
+}
+
+/* ---- Tamanhos predefinidos do bloco Título (escalam em ecrãs pequenos) -- */
+.el-element .el-heading--xxxl { font-size: clamp(40px, 6vw, 72px); }
+.el-element .el-heading--xxl { font-size: clamp(34px, 4.6vw, 56px); }
+.el-element .el-heading--xl { font-size: clamp(30px, 3.6vw, 44px); }
+.el-element .el-heading--l { font-size: clamp(26px, 2.8vw, 34px); }
+.el-element .el-heading--m { font-size: clamp(21px, 2.1vw, 26px); }
+.el-element .el-heading--s { font-size: 20px; }
+.el-element .el-heading--xs { font-size: 16px; }
+
+/* ---- Letra capitular (bloco Texto) -------------------------------------- */
+.el-element .el-prose--dropcap > p:first-child::first-letter {
+	float: left;
+	font-size: 3.4em;
+	line-height: 0.9;
+	font-weight: 700;
+	margin: 0.05em 0.12em 0 0;
+	color: var(--el-dropcap-color, var(--brand-primary));
+}
+
+/* ---- Vídeo -------------------------------------------------------------- */
+.el-element .el-video {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	background: #000;
+	border-radius: inherit;
+}
+
+.el-element .el-video__media {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	display: block;
+	object-fit: contain;
+	background: #000;
+}
+
+.el-element .el-video__edit-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: transparent;
+}
+
+.el-element .el-video__empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 16 / 9;
+	border: 1px dashed #c8c8c8;
+	border-radius: 8px;
+	color: #888;
+	font-size: 14px;
+	padding: 16px;
+	text-align: center;
+	background: #fafafa;
+}
+
+/* ---- Vagas (curso fechado) ---------------------------------------------- */
+.el-element .el-seats {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.el-element .el-seats__text {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-weight: 600;
+	color: inherit;
+}
+
+.el-element .el-seats--badge .el-seats__text {
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+	color: var(--brand-primary);
+}
+
+.el-element .el-seats--full.el-seats--badge .el-seats__text {
+	background: color-mix(in srgb, var(--brand-error, #e5484d) 12%, transparent);
+	color: var(--brand-error, #e5484d);
+}
+
+.el-element .el-seats__bar {
+	width: 100%;
+	max-width: 360px;
+	height: 8px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.08);
+	overflow: hidden;
+}
+
+.el-element .el-seats__bar > span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--brand-primary);
+	transition: width 600ms ease;
+}
+
+.el-element .el-seats__hint {
+	margin: 0;
+	font-size: 12px;
+	opacity: 0.6;
+}

@@ -1,0 +1,58 @@
+/* Ícone partilhado (blocos Ícone, Ícone + texto e Cartão). As cores,
+   tamanho e espaços de cada instância vêm do CSS gerado por iconViewCss(). */
+
+.el-element .el-iconview {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	line-height: 1;
+	font-size: 32px;
+	transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease, transform 200ms ease;
+}
+
+.el-element .el-iconview svg {
+	display: block;
+	width: 1em;
+	height: 1em;
+}
+
+.el-element .el-iconview--stacked,
+.el-element .el-iconview--framed {
+	padding: 0.5em;
+}
+
+.el-element .el-iconview--framed {
+	border-style: solid;
+	border-width: 2px;
+	border-color: currentColor;
+}
+
+.el-element .el-iconview--circle {
+	border-radius: 50%;
+}
+
+.el-element .el-iconview--rounded {
+	border-radius: 22%;
+}
+
+.el-element .el-iconview--square {
+	border-radius: 0;
+}
+
+.el-element .el-icon-block {
+	display: flex;
+	justify-content: center;
+}
+
+.el-element a.el-icon-block__link {
+	display: inline-flex;
+	color: inherit !important;
+	text-decoration: none;
+	border-radius: 4px;
+}
+
+.el-element a.el-icon-block__link:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 3px;
+}

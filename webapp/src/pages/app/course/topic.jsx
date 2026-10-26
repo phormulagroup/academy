@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { configRender } from "../../../components/admin/editor";
+import { config as configRender } from "../../../components/admin/editor/config";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import Player from "@vimeo/player";

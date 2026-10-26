@@ -1,0 +1,104 @@
+/* Bloco Citação. */
+
+.el-element figure.el-quote {
+	position: relative;
+	margin: 0;
+	text-align: var(--el-quote-align, left);
+}
+
+.el-element .el-quote__mark {
+	display: block;
+	height: 0.55em;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 5em;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--el-quote-mark, var(--brand-primary));
+}
+
+/* Anula o blockquote de .el-prose e o `.main-layout p` (preto, 16px). */
+.el-element .el-quote blockquote.el-quote__text {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.el-element .el-quote .el-quote__text p {
+	margin: 0;
+	color: inherit;
+	font-size: 1.3em;
+	font-style: italic;
+	line-height: 1.5;
+	white-space: pre-line;
+}
+
+.el-element .el-quote figcaption.el-quote__author {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 18px;
+	text-align: left;
+}
+
+.el-element .el-quote img.el-quote__avatar {
+	flex: 0 0 auto;
+	width: 52px;
+	height: 52px;
+	border-radius: 999px;
+	object-fit: cover;
+}
+
+.el-element .el-quote__who {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.3;
+}
+
+.el-element .el-quote__name {
+	font-weight: 700;
+	color: var(--el-quote-author, inherit);
+}
+
+.el-element .el-quote cite.el-quote__role {
+	font-size: 0.875em;
+	font-style: normal;
+	opacity: 0.7;
+}
+
+/* ---- Barra lateral ----------------------------------------------------- */
+.el-element .el-quote--sidebar {
+	padding: 6px 0 6px 24px;
+	border-left: 4px solid var(--el-quote-accent, var(--brand-primary));
+}
+
+/* ---- Cartão centrado --------------------------------------------------- */
+.el-element .el-quote--card {
+	padding: 40px 32px 32px;
+	border-radius: 16px;
+	background: var(--el-quote-card, #fff);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+	border-top: 4px solid var(--el-quote-accent, var(--brand-primary));
+	text-align: center;
+}
+
+.el-element .el-quote--card figcaption.el-quote__author {
+	flex-direction: column;
+	text-align: center;
+	gap: 8px;
+}
+
+.el-element .el-quote--card .el-quote__mark {
+	margin: 0 auto;
+}
+
+@media (max-width: 767px) {
+	.el-element .el-quote .el-quote__text p {
+		font-size: 1.15em;
+	}
+	.el-element .el-quote--card {
+		padding: 32px 20px 24px;
+	}
+	.el-element .el-quote__mark {
+		font-size: 4em;
+	}
+}

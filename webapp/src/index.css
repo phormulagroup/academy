@@ -3293,3 +3293,14 @@ deles invalida a regra inteira. */
     transform: none;
   }
 }
+
+/* Cores da marca Bial usadas pelo editor de tópicos (components/admin/editor): o editor e os blocos lêem var(--brand-*) */
+:root {
+  --brand-primary: #163986;
+  --brand-primary-dark: #0f2a63;
+  --brand-primary-lighter: #e6ecf7;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #00b9d6;
+  --brand-success: #2f8351;
+  --brand-error: #db0709;
+}

@@ -1,0 +1,91 @@
+/* Estatísticas. Seletores de uma só classe de propósito: o CSS gerado
+   por instância ([data-style-id] .x) tem de ganhar sempre a estes valores
+   por omissão (colunas, alinhamento, tamanho do número…). */
+
+.el-stats__clip {
+	overflow: hidden;
+}
+
+.el-stats__grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 32px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.el-stats__item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+}
+
+.el-stats__value {
+	font-size: clamp(36px, 5vw, 56px);
+	font-weight: 700;
+	line-height: 1.05;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+
+.el-stats__label {
+	font-size: 18px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+.el-stats__text {
+	font-size: 14px;
+	line-height: 1.5;
+	opacity: 0.75;
+	white-space: pre-line;
+}
+
+.el-stats__icon {
+	display: inline-flex;
+	font-size: 36px;
+	margin-bottom: 4px;
+}
+
+/* Divisórias: cada item tem borda à esquerda e em cima; a grelha é puxada
+   1px para fora e o invólucro corta-as — assim só aparecem *entre* itens,
+   em qualquer número de colunas/linhas, sem calcular a posição de cada um. */
+.el-stats--dividers .el-stats__grid {
+	gap: 0;
+	margin: -1px 0 0 -1px;
+}
+
+.el-stats--dividers .el-stats__item {
+	border-left: 1px solid rgba(127, 127, 127, 0.3);
+	border-top: 1px solid rgba(127, 127, 127, 0.3);
+	padding: var(--el-stats-pad, 20px);
+}
+
+@media (max-width: 767px) {
+	.el-stats__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* Aspeto do bloco antigo (sem nada definido no separador Estilo). */
+.el-stats--legacy {
+	background-image: linear-gradient(120deg, var(--brand-primary) 0%, var(--brand-primary-dark, var(--brand-primary)) 100%);
+	border-radius: 24px;
+	color: #ffffff;
+	padding: 64px 16px;
+}
+
+.el-stats--legacy .el-stats__grid {
+	gap: 56px;
+}
+
+@media (min-width: 1025px) {
+	.el-stats--legacy {
+		padding: 96px 24px;
+	}
+}

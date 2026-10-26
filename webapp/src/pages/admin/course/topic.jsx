@@ -6,7 +6,7 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Editor } from "../../../components/admin/editor";
 
 export default function Topic() {
@@ -15,7 +15,8 @@ export default function Topic() {
   const [data, setData] = useState([]);
 
   const { t } = useTranslation();
-  let { idTopic } = useParams();
+  let { id: idCourse, idTopic } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getData();
@@ -37,20 +38,21 @@ export default function Topic() {
       });
   }
 
+  // Devolve a promessa para o editor saber quando acabou de gravar (o botão Guardar volta a ficar desativado)
   function submit(obj) {
-    console.log(obj);
-    axios
+    return axios
       .post(endpoints.course.updateTopic, {
         data: { id: idTopic, content: JSON.stringify(obj) },
       })
-      .then((res) => {
-        console.log(res);
+      .then(() => {
         toastApi.open({ type: "success", content: t("Topic was successfully saved!") });
       })
       .catch((err) => {
         console.log(err);
+        toastApi.open({ type: "error", content: t("Something went wrong, please try again") });
+        throw err;
       });
   }
 
-  return <Editor data={data} submit={submit} />;
+  return <Editor data={data} submit={submit} title={data?.title || data?.name} onExit={() => navigate(`/admin/courses/${idCourse}`)} />;
 }

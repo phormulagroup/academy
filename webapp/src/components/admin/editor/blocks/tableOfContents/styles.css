@@ -1,0 +1,70 @@
+/* Bloco Índice. `ul/ol.el-toc__list` para ganhar ao `ul, ol {margin;
+   padding; list-style}` global da app. */
+
+.el-element .el-toc p.el-toc__title {
+	margin: 0 0 10px;
+	font-size: 1.05em;
+	font-weight: 700;
+	line-height: 1.3;
+	color: var(--el-toc-title, inherit);
+}
+
+.el-element .el-toc p.el-toc__empty {
+	margin: 0;
+	font-size: 14px;
+	color: #8a8d98;
+}
+
+.el-element .el-toc :is(ul, ol).el-toc__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.el-element .el-toc .el-toc__list .el-toc__list {
+	margin-top: 4px;
+	padding-left: 1.1em;
+}
+
+.el-element .el-toc .el-toc__item {
+	margin: 0;
+	padding: 0;
+	line-height: 1.4;
+}
+
+.el-element .el-toc .el-toc__item + .el-toc__item {
+	margin-top: 6px;
+}
+
+.el-element .el-toc a.el-toc__link {
+	color: var(--el-toc-link, inherit) !important;
+	text-decoration: none;
+	transition: color 150ms ease;
+}
+
+.el-element .el-toc a.el-toc__link:hover {
+	color: var(--el-toc-hover, var(--brand-primary)) !important;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.el-element .el-toc a.el-toc__link:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+/* Numeração hierárquica (1, 1.1, 1.2, 2…) com contadores CSS. */
+.el-element .el-toc--numbered ol.el-toc__list {
+	counter-reset: el-toc;
+}
+
+.el-element .el-toc--numbered .el-toc__item {
+	counter-increment: el-toc;
+}
+
+.el-element .el-toc--numbered a.el-toc__link::before {
+	content: counters(el-toc, ".") ". ";
+	font-variant-numeric: tabular-nums;
+	opacity: 0.7;
+}

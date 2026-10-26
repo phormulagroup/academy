@@ -1,0 +1,59 @@
+/* Contador. Uma só classe nos valores por omissão, para o CSS gerado por
+   instância ([data-style-id] .x) ganhar sempre. */
+
+.el-counter {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 10px;
+}
+
+.el-counter--icon-left {
+	flex-direction: row;
+	justify-content: center;
+	text-align: left;
+}
+
+.el-counter__body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.el-counter__number {
+	font-size: clamp(40px, 5vw, 60px);
+	font-weight: 700;
+	line-height: 1.05;
+	overflow-wrap: anywhere;
+}
+
+/* Algarismos de largura fixa: o número não "salta" durante a contagem. */
+.el-counter__digits {
+	font-variant-numeric: tabular-nums;
+}
+
+.el-counter__title {
+	font-size: 17px;
+	font-weight: 500;
+	opacity: 0.85;
+}
+
+.el-counter__icon {
+	display: inline-flex;
+	font-size: 40px;
+	color: var(--brand-primary);
+}
+
+.el-counter__sr {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}

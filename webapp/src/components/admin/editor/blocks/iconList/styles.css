@@ -1,0 +1,95 @@
+/* Bloco Lista com ícones. `ul.el-iconlist` para ganhar ao `ul {margin;
+   padding; list-style: disc}` global da app. */
+
+.el-element ul.el-iconlist {
+	display: flex;
+	flex-direction: column;
+	gap: var(--el-il-gap, 12px);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.el-element .el-iconlist__item {
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+}
+
+.el-element .el-iconlist__link {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 10px;
+	color: var(--el-il-text, inherit) !important;
+	text-decoration: none;
+	line-height: 1.45;
+}
+
+/* Na vertical o alinhamento move o conjunto ícone+texto de cada item. */
+.el-element .el-iconlist--vertical .el-iconlist__item {
+	display: flex;
+	justify-content: var(--el-il-justify, flex-start);
+}
+
+.el-element a.el-iconlist__link:hover .el-iconlist__text {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.el-element a.el-iconlist__link:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.el-element .el-iconlist__icon {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	/* Centra o ícone na primeira linha do texto. */
+	margin-top: calc((1.45em - 1em) / 2);
+	color: var(--el-il-icon, var(--brand-primary));
+}
+
+.el-element .el-iconlist__text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+/* ---- Em linha ---------------------------------------------------------- */
+.el-element ul.el-iconlist--inline {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: var(--el-il-justify, flex-start);
+	column-gap: calc(var(--el-il-gap, 12px) * 2);
+}
+
+/* ---- Separadores ------------------------------------------------------- */
+.el-element ul.el-iconlist--vertical.el-iconlist--dividers {
+	gap: 0;
+}
+.el-element .el-iconlist--vertical.el-iconlist--dividers .el-iconlist__item {
+	padding: calc(var(--el-il-gap, 12px) / 2) 0;
+}
+.el-element .el-iconlist--vertical.el-iconlist--dividers .el-iconlist__item + .el-iconlist__item {
+	border-top: 1px solid var(--el-il-divider, #e5e7eb);
+}
+
+.el-element .el-iconlist--inline.el-iconlist--dividers .el-iconlist__item + .el-iconlist__item {
+	border-left: 1px solid var(--el-il-divider, #e5e7eb);
+	padding-left: calc(var(--el-il-gap, 12px) * 2);
+}
+
+/* Em telemóvel, os itens em linha que quebram para baixo deixavam um
+   separador vertical solto no início da linha — passa a lista vertical. */
+@media (max-width: 767px) {
+	.el-element .el-iconlist--inline.el-iconlist--dividers {
+		flex-direction: column;
+		column-gap: 0;
+	}
+	.el-element .el-iconlist--inline.el-iconlist--dividers .el-iconlist__item + .el-iconlist__item {
+		border-left: 0;
+		padding-left: 0;
+	}
+}

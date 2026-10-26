@@ -1,17 +1,89 @@
-._ComponentList_1rrlt_1 > div > div {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* Interface do editor (só no admin). Os blocos em si têm o seu CSS em
+   core/elements.css (carregado também na página do aluno). */
+
+/* ---- Separadores de design (Layout / Estilo / Avançado) ---------------- */
+
+.editor-design-tabs__nav {
+	display: flex;
+	gap: 2px;
+	padding: 3px;
+	margin-bottom: 10px;
+	border-radius: 8px;
+	background: var(--puck-color-grey-11, #f3f3f4);
 }
 
-/* 2 colunas no Drawer */
-.puck-drawer-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px;
+.editor-design-tabs__tab {
+	flex: 1;
+	background: none;
+	border: none;
+	border-radius: 6px;
+	color: var(--puck-color-grey-05);
+	cursor: pointer;
+	font-size: 13px;
+	padding: 6px 8px;
 }
 
-.icon-puckeditor-item svg {
-  width: 20px;
-  height: 20px;
+.editor-design-tabs__tab--active {
+	background: #fff;
+	color: var(--puck-color-grey-02);
+	font-weight: 600;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Centrar ícones dentro dos botões de rádio do antd (direção, alinhamento…) */
+.ant-radio-button-wrapper {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+}
+
+.ant-radio-button-wrapper > span:last-child {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ---- Templates ---------------------------------------------------------- */
+
+.el-templates-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 12px;
+}
+
+.el-template-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px;
+	border: 1px solid #eceef1;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.el-template-card__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 10px;
+	background: var(--brand-primary-lighter, #eef0ff);
+	color: var(--brand-primary, #6b7bff);
+}
+
+.el-template-card__body {
+	flex: 1;
+}
+
+.el-template-card__title {
+	margin: 0 0 2px;
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.el-template-card__desc {
+	margin: 0;
+	font-size: 12px;
+	color: #8a8d98;
 }

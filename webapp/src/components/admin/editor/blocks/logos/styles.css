@@ -1,0 +1,115 @@
+/* Logótipos — grelha (flex com largura por coluna, para o alinhamento
+   da última linha funcionar) ou letreiro animado sem fim. */
+
+.el-logos .el-logos__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.el-logos .el-logos__img {
+  display: block;
+  height: 48px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.el-logos a.el-logos__link {
+  display: block;
+  max-width: 100%;
+}
+
+.el-logos a.el-logos__link:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 4px;
+}
+
+.el-logos--grayscale .el-logos__img {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.el-logos--grayscale .el-logos__item:hover .el-logos__img,
+.el-logos--grayscale .el-logos__item:focus-within .el-logos__img {
+  filter: none;
+  opacity: 1;
+}
+
+/* ---- Grelha ------------------------------------------------------------ */
+
+.el-logos .el-logos__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+}
+
+.el-logos .el-logos__grid > .el-logos__item {
+  flex: 0 0 auto;
+  width: calc((100% - 128px) / 5);
+}
+
+/* ---- Letreiro (marquee) -------------------------------------------------- */
+
+.el-logos .el-logos__viewport {
+  overflow: hidden;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.el-logos .el-logos__track {
+  display: flex;
+  width: max-content;
+  animation: el-logos-scroll 30s linear infinite;
+}
+
+.el-logos .el-logos__set {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.el-logos .el-logos__set > .el-logos__item {
+  flex: 0 0 auto;
+  margin-right: 32px;
+}
+
+.el-logos--pause .el-logos__viewport:hover .el-logos__track,
+.el-logos--pause .el-logos__viewport:focus-within .el-logos__track {
+  animation-play-state: paused;
+}
+
+@keyframes el-logos-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Menos movimento: sem animação, os logótipos ficam numa linha que quebra. */
+@media (prefers-reduced-motion: reduce) {
+  .el-logos .el-logos__viewport {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .el-logos .el-logos__track {
+    animation: none;
+    width: auto;
+  }
+  .el-logos .el-logos__set {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 16px;
+    width: 100%;
+  }
+  .el-logos .el-logos__set--clone,
+  .el-logos .el-logos__item--repeat {
+    display: none;
+  }
+  .el-logos .el-logos__img {
+    transition: none;
+  }
+}

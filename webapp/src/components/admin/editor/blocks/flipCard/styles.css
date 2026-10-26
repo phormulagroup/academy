@@ -1,0 +1,176 @@
+/* Bloco Cartão giratório — giro 3D com as duas faces sobrepostas. */
+
+.el-element .el-flip {
+	position: relative;
+	width: 100%;
+	height: 320px;
+	perspective: 1200px;
+	cursor: pointer;
+}
+
+.el-element .el-flip__inner {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	transform-style: preserve-3d;
+	transition: transform 650ms cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.el-element .el-flip__face {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden auto;
+	border-radius: var(--el-flip-radius, 16px);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+}
+
+.el-element .el-flip__front {
+	background: var(--el-flip-front-bg, var(--brand-primary));
+	color: var(--el-flip-front-color, #fff);
+}
+
+.el-element .el-flip__back {
+	background: var(--el-flip-back-bg, var(--brand-primary-dark));
+	color: var(--el-flip-back-color, #fff);
+}
+
+/* O verso começa já virado, para ficar direito no fim do giro. */
+.el-element .el-flip--left .el-flip__back,
+.el-element .el-flip--right .el-flip__back { transform: rotateY(180deg); }
+.el-element .el-flip--up .el-flip__back,
+.el-element .el-flip--down .el-flip__back { transform: rotateX(180deg); }
+
+.el-element .el-flip--right.el-flip--flipped .el-flip__inner { transform: rotateY(180deg); }
+.el-element .el-flip--left.el-flip--flipped .el-flip__inner { transform: rotateY(-180deg); }
+.el-element .el-flip--up.el-flip--flipped .el-flip__inner { transform: rotateX(180deg); }
+.el-element .el-flip--down.el-flip--flipped .el-flip__inner { transform: rotateX(-180deg); }
+
+/* Só em dispositivos com rato: em ecrãs táteis o :hover "colava" depois
+   do toque e o cartão nunca voltava atrás. :has() vira-o também quando o
+   teclado chega ao botão do verso. */
+@media (hover: hover) and (pointer: fine) {
+	.el-element .el-flip--hover.el-flip--right:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__inner { transform: rotateY(180deg); }
+	.el-element .el-flip--hover.el-flip--left:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__inner { transform: rotateY(-180deg); }
+	.el-element .el-flip--hover.el-flip--up:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__inner { transform: rotateX(180deg); }
+	.el-element .el-flip--hover.el-flip--down:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__inner { transform: rotateX(-180deg); }
+}
+
+.el-element .el-flip__image {
+	display: block;
+	width: 100%;
+	flex: 1 1 45%;
+	min-height: 0;
+	object-fit: cover;
+}
+
+.el-element .el-flip__content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	flex: 1 1 auto;
+	padding: 24px;
+	text-align: center;
+	justify-content: center;
+}
+
+.el-element .el-flip--align-start .el-flip__content { justify-content: flex-start; }
+.el-element .el-flip--align-end .el-flip__content { justify-content: flex-end; }
+
+.el-element .el-flip__icon {
+	display: inline-flex;
+	color: var(--el-flip-icon, currentColor);
+}
+
+/* `.main-layout p` da app forçava cor preta e 16px nos parágrafos. */
+.el-element .el-flip p.el-flip__title,
+.el-element .el-flip p.el-flip__text {
+	margin: 0;
+	color: inherit;
+}
+
+.el-element .el-flip p.el-flip__title {
+	font-size: 1.35em;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.el-element .el-flip p.el-flip__text {
+	font-size: 1em;
+	line-height: 1.5;
+	opacity: 0.92;
+	white-space: pre-line;
+}
+
+.el-element .el-flip__button {
+	margin-top: 6px;
+}
+
+/* Botão para teclado/leitores de ecrã: invisível até receber foco. */
+.el-element button.el-flip__toggle {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.9);
+	color: #111;
+	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.el-element button.el-flip__toggle:focus-visible {
+	opacity: 1;
+	pointer-events: auto;
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
+}
+
+/* Sem animações: troca as faces com um fade em vez do giro 3D. */
+@media (prefers-reduced-motion: reduce) {
+	.el-element .el-flip .el-flip__inner {
+		transform: none !important;
+		transition: none;
+	}
+	.el-element .el-flip .el-flip__face {
+		transform: none !important;
+		-webkit-backface-visibility: visible;
+		backface-visibility: visible;
+		transition: opacity 250ms ease;
+	}
+	/* Sem o giro, o verso fica por cima da frente — o lado invisível não
+	   pode apanhar cliques (o botão do verso era clicável às escondidas). */
+	.el-element .el-flip .el-flip__back {
+		opacity: 0;
+		pointer-events: none;
+	}
+	.el-element .el-flip--flipped .el-flip__back {
+		opacity: 1;
+		pointer-events: auto;
+	}
+	.el-element .el-flip--flipped .el-flip__front {
+		opacity: 0;
+		pointer-events: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) and (hover: hover) and (pointer: fine) {
+	.el-element .el-flip--hover:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__back {
+		opacity: 1;
+		pointer-events: auto;
+	}
+	.el-element .el-flip--hover:is(:hover, :has(.el-flip__back :focus-visible)) .el-flip__front {
+		opacity: 0;
+		pointer-events: none;
+	}
+}

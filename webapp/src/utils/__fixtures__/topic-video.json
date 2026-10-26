@@ -1,0 +1,59 @@
+{
+ "root": {
+  "fields": {
+   "title": {
+    "type": "text",
+    "label": "Page Title"
+   },
+   "description": {
+    "type": "textarea",
+    "label": "Page Description"
+   },
+   "heroImage": {
+    "type": "custom",
+    "label": "Imagem"
+   }
+  },
+  "defaultProps": {
+   "title": "",
+   "description": "",
+   "heroImage": ""
+  },
+  "props": {
+   "title": "",
+   "description": "",
+   "heroImage": "",
+   "fields": {
+    "title": {
+     "type": "text",
+     "label": "Page Title"
+    },
+    "description": {
+     "type": "textarea",
+     "label": "Page Description"
+    },
+    "heroImage": {
+     "type": "custom",
+     "label": "Imagem"
+    }
+   },
+   "defaultProps": {
+    "title": "",
+    "description": "",
+    "heroImage": ""
+   }
+  }
+ },
+ "content": [
+  {
+   "type": "Video",
+   "props": {
+    "link": "https://player.vimeo.com/video/547866172",
+    "maxWidth": 950,
+    "id": "Video-b09fc716-b1a5-4079-acb0-4c7f05bd6beb",
+    "title": ""
+   }
+  }
+ ],
+ "zones": {}
+}

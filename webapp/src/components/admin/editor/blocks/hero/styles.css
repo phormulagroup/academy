@@ -1,0 +1,208 @@
+/* Hero. Valores por omissão com uma só classe (ou :where) para o CSS gerado
+   por instância ([data-style-id] .x) — e o separador Estilo, aplicado à
+   própria <section> — ganharem sempre. */
+
+.el-hero {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 80px 24px;
+	overflow: hidden;
+}
+
+.el-hero--legacy {
+	background-image: linear-gradient(rgba(255, 255, 255, 0), rgb(247, 250, 255) 100%);
+}
+
+/* Imagem em modo "fundo": por baixo da sobreposição do separador Estilo
+   (que é um ::before com z-index -1 na própria secção). */
+.el-hero__bg {
+	position: absolute;
+	inset: 0;
+	z-index: -2;
+	pointer-events: none;
+}
+
+.el-hero__bg img {
+	width: 100%;
+	height: 100%;
+	max-width: none !important;
+	object-fit: cover;
+	display: block;
+}
+
+.el-hero__legacy-veil {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background: rgba(247, 250, 255, 0.7);
+}
+
+@media (min-width: 768px) {
+	.el-hero__legacy-veil--left {
+		background: linear-gradient(-90deg, rgba(255, 255, 255, 0) 0%, rgb(247, 250, 255) 70%);
+	}
+}
+
+.el-hero__inner {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 56px;
+	width: 100%;
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+.el-hero--media-left .el-hero__inner {
+	flex-direction: row-reverse;
+}
+
+.el-hero__content {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 18px;
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.el-hero--no-media .el-hero__content {
+	max-width: 780px;
+}
+
+.el-hero--center .el-hero__content {
+	align-items: center;
+	text-align: center;
+}
+
+.el-hero--center.el-hero--no-media .el-hero__content {
+	margin: 0 auto;
+}
+
+.el-hero--right .el-hero__content {
+	align-items: flex-end;
+	text-align: right;
+}
+
+.el-hero--right.el-hero--no-media .el-hero__content {
+	margin-left: auto;
+}
+
+.el-hero__eyebrow {
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--brand-primary);
+}
+
+.el-element .el-hero .el-hero__title {
+	line-height: 1.1;
+	overflow-wrap: anywhere;
+}
+
+.el-hero__desc {
+	font-size: 18px;
+	opacity: 0.85;
+	max-width: 68ch;
+}
+
+.el-hero__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 8px;
+}
+
+.el-hero--center .el-hero__actions {
+	justify-content: center;
+}
+
+.el-hero--right .el-hero__actions {
+	justify-content: flex-end;
+}
+
+.el-hero__media {
+	flex: 1 1 0;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.el-hero__media img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 20px;
+}
+
+.el-hero__media--empty {
+	display: grid;
+	place-items: center;
+	min-height: 280px;
+	border: 1px dashed #ccc;
+	border-radius: 20px;
+	color: #999;
+	font-size: 13px;
+}
+
+/* Fundo escuro: texto branco por omissão e botões "Contorno"/"Só texto"
+   brancos (o contorno da cor da marca desaparecia num fundo escuro). */
+.el-hero--on-dark {
+	color: #ffffff;
+}
+
+.el-hero--on-dark .el-hero__eyebrow {
+	color: inherit;
+	opacity: 0.85;
+}
+
+.el-element .el-hero a.el-button--outline.el-hero__btn--on-dark,
+.el-element .el-hero span.el-button--outline.el-hero__btn--on-dark {
+	color: #ffffff !important;
+	border-color: rgba(255, 255, 255, 0.85);
+	background: transparent;
+}
+
+.el-element .el-hero a.el-button--outline.el-hero__btn--on-dark:hover {
+	background: #ffffff;
+	color: var(--brand-primary) !important;
+}
+
+.el-element .el-hero a.el-button--link.el-hero__btn--on-dark {
+	color: #ffffff !important;
+}
+
+.el-hero--has-shape .el-hero__inner {
+	margin-bottom: 24px;
+}
+
+@media (max-width: 767px) {
+	.el-hero {
+		padding: 48px 16px;
+	}
+
+	.el-hero__inner,
+	.el-hero--media-left .el-hero__inner {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.el-hero__media {
+		flex: 0 0 auto;
+		width: 100%;
+	}
+
+	.el-hero__desc {
+		font-size: 16px;
+	}
+
+	.el-hero__actions .el-button {
+		white-space: normal;
+	}
+}

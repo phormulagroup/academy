@@ -1,0 +1,133 @@
+/* Bloco Acordeão. Valores por omissão = aspeto do bloco antigo (<details>
+   com borda #e5e5e5, raio 8 e 8px entre itens), para as lições já
+   guardadas não mudarem de aspeto. */
+
+.el-element .el-acc {
+	display: flex;
+	flex-direction: column;
+	gap: var(--el-acc-gap, 8px);
+	width: 100%;
+}
+
+.el-element .el-acc__item {
+	border: 1px solid var(--el-acc-border, #e5e5e5);
+	border-radius: var(--el-acc-radius, 8px);
+	overflow: hidden;
+}
+
+/* Anula os estilos globais de h2/h3/h4 da app (cor/tamanho) — o título
+   herda tudo do bloco; a etiqueta serve só a semântica. */
+.el-element .el-acc__heading {
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	line-height: inherit;
+}
+
+.el-element button.el-acc__header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 14px 16px;
+	border: 0;
+	background: var(--el-acc-title-bg, transparent);
+	color: var(--el-acc-title, inherit);
+	font: inherit;
+	font-weight: 600;
+	line-height: 1.35;
+	text-align: left;
+	cursor: pointer;
+	transition: color 200ms ease, background-color 200ms ease;
+}
+
+.el-element button.el-acc__header:hover {
+	color: var(--el-acc-active, var(--el-acc-title, inherit));
+}
+
+.el-element button.el-acc__header:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: -2px;
+}
+
+.el-element .el-acc__item--open > .el-acc__heading > button.el-acc__header {
+	color: var(--el-acc-active, var(--el-acc-title, inherit));
+	background: var(--el-acc-active-bg, var(--el-acc-title-bg, transparent));
+}
+
+.el-element .el-acc__title {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.el-element .el-acc__chevron {
+	flex: 0 0 auto;
+	transition: transform 250ms ease;
+}
+
+.el-element .el-acc__item--open .el-acc__chevron {
+	transform: rotate(180deg);
+}
+
+/* Mais/menos desenhado em CSS: a barra vertical roda até ficar deitada. */
+.el-element .el-acc__plus {
+	position: relative;
+	flex: 0 0 auto;
+	width: 14px;
+	height: 14px;
+}
+
+.el-element .el-acc__plus::before,
+.el-element .el-acc__plus::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 6px;
+	width: 14px;
+	height: 2px;
+	border-radius: 2px;
+	background: currentColor;
+	transition: transform 250ms ease;
+}
+
+.el-element .el-acc__plus::after {
+	transform: rotate(90deg);
+}
+
+.el-element .el-acc__item--open .el-acc__plus::after {
+	transform: rotate(0deg);
+}
+
+/* Abrir/fechar animado com grid-template-rows 0fr → 1fr (anima até à
+   altura real do conteúdo, sem medir em JS). O visibility tira o conteúdo
+   fechado da ordem do Tab e dos leitores de ecrã, mas só no fim da
+   transição, para a animação de fecho se ver. */
+.el-element .el-acc__panel {
+	display: grid;
+	grid-template-rows: 0fr;
+	visibility: hidden;
+	background: var(--el-acc-content-bg, transparent);
+	transition: grid-template-rows 300ms ease, visibility 300ms;
+}
+
+.el-element .el-acc__item--open > .el-acc__panel {
+	grid-template-rows: 1fr;
+	visibility: visible;
+}
+
+.el-element .el-acc__panel-inner {
+	min-height: 0;
+	overflow: hidden;
+}
+
+.el-element .el-acc__body {
+	padding: 4px 16px 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.el-element .el-acc__panel,
+	.el-element .el-acc__chevron,
+	.el-element .el-acc__plus::after {
+		transition: none;
+	}
+}

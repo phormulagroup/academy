@@ -1,0 +1,60 @@
+/* Ícone + texto ("Icon Box" do Elementor). */
+
+.el-element .el-icontext {
+	display: flex;
+	gap: 12px;
+	min-width: 0;
+}
+
+.el-element .el-icontext--top {
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.el-element .el-icontext--left {
+	flex-direction: row;
+}
+
+.el-element .el-icontext--right {
+	flex-direction: row-reverse;
+}
+
+.el-element .el-icontext__body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+/* :is() para ganhar ao h2/h3 global da app (cor da marca, margens). */
+.el-element .el-icontext :is(h2, h3, h4, h5, h6, div, span).el-icontext__title {
+	margin: 0;
+	color: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: 1.3;
+	overflow-wrap: anywhere;
+}
+
+.el-element .el-icontext :is(h2, h3, h4, h5, h6, div, span).el-icontext__title--strong {
+	font-size: 1.15em;
+	font-weight: 700;
+}
+
+.el-element .el-icontext__desc {
+	line-height: 1.55;
+	opacity: 0.85;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+}
+
+.el-element a.el-icontext__link {
+	color: inherit !important;
+	text-decoration: none;
+}
+
+.el-element a.el-icontext__link:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}

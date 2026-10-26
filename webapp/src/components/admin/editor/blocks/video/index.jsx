@@ -1,6 +1,6 @@
 import { useState } from "react";
 import BialSpin from "../../../../../components/bialSpin";
-import { Section } from "../../components/section";
+import { Section } from "../../legacy/section";
 
 const Video = {
   label: "Video",

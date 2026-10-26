@@ -1,0 +1,195 @@
+/* Tabela de preços. A cor de destaque é uma variável (--el-pricing-accent)
+   para o CSS por instância a trocar num só sítio. Valores por omissão com
+   :where()/uma só classe para o separador Estilo ganhar sempre. */
+
+.el-pricing {
+	--el-pricing-accent: var(--brand-primary);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	height: 100%;
+	overflow: hidden;
+	text-align: center;
+	align-items: center;
+}
+
+.el-pricing--left {
+	text-align: left;
+	align-items: flex-start;
+}
+
+.el-pricing--right {
+	text-align: right;
+	align-items: flex-end;
+}
+
+:where(.el-pricing--highlighted) {
+	border: 2px solid var(--el-pricing-accent);
+}
+
+.el-pricing__badge {
+	display: inline-block;
+	padding: 5px 12px;
+	border-radius: 999px;
+	background: var(--el-pricing-accent);
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.el-pricing__ribbon {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 150px;
+	height: 150px;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.el-pricing__ribbon span {
+	position: absolute;
+	top: 30px;
+	right: -42px;
+	width: 190px;
+	padding: 6px 0;
+	transform: rotate(45deg);
+	background: var(--el-pricing-accent);
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-align: center;
+	text-transform: uppercase;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Com fita, o título não pode ficar por baixo dela. */
+.el-pricing--has-ribbon .el-pricing__header {
+	padding-right: 48px;
+	padding-left: 48px;
+}
+
+.el-pricing--has-ribbon.el-pricing--left .el-pricing__header {
+	padding-left: 0;
+}
+
+.el-pricing__header {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-width: 100%;
+}
+
+.el-element .el-pricing h3.el-pricing__title {
+	margin: 0;
+	color: inherit;
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.3;
+}
+
+.el-pricing__subtitle {
+	font-size: 15px;
+	line-height: 1.5;
+	opacity: 0.75;
+	white-space: pre-line;
+}
+
+.el-pricing__prices {
+	display: flex;
+	flex-direction: column;
+	align-items: inherit;
+	gap: 2px;
+}
+
+.el-pricing__original {
+	font-size: 18px;
+	opacity: 0.55;
+}
+
+.el-pricing__price {
+	color: var(--el-pricing-accent);
+	font-size: clamp(40px, 5vw, 54px);
+	font-weight: 800;
+	line-height: 1.05;
+	font-variant-numeric: tabular-nums;
+}
+
+.el-pricing__price .el-pricing__currency {
+	font-size: 0.55em;
+	font-weight: 700;
+	vertical-align: 0.6em;
+	margin: 0 0.12em;
+}
+
+.el-pricing__original .el-pricing__currency {
+	margin: 0 0.15em;
+}
+
+.el-pricing__period {
+	font-size: 14px;
+	opacity: 0.7;
+}
+
+.el-element ul.el-pricing__features {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	text-align: left;
+}
+
+.el-pricing--center ul.el-pricing__features {
+	max-width: 320px;
+	margin: 0 auto;
+}
+
+.el-pricing__feature {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	line-height: 1.45;
+	margin: 0;
+}
+
+.el-pricing__feature--excluded {
+	opacity: 0.55;
+}
+
+.el-pricing__check,
+.el-pricing__cross {
+	display: inline-flex;
+	flex-shrink: 0;
+	margin-top: 0.1em;
+}
+
+.el-pricing__check {
+	color: var(--brand-success, #16a34a);
+}
+
+.el-pricing__cross {
+	color: var(--brand-error, #e5484d);
+}
+
+.el-pricing__action {
+	width: 100%;
+	margin-top: auto;
+}
+
+.el-element .el-pricing__action .el-button {
+	width: 100%;
+	white-space: normal;
+}
+
+.el-pricing__footnote {
+	font-size: 13px;
+	opacity: 0.65;
+	margin-top: -8px;
+}
