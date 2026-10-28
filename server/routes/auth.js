@@ -168,9 +168,10 @@ router.post("/verifyLoginCode", async (req, res, next) => {
     const ip = clientIp(req);
     const wait = await loginCodeThrottle.blocked(key, ip);
     if (wait) return res.status(429).send({ user: null, message: TOO_MANY_CODES, limit: "otp", retry_after: wait });
-    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved'", [data.email]);
+    // A validade compara-se na base de dados (o mesmo relógio que a gravou com NOW()): comparar com a hora do Node falha se os dois fusos forem diferentes
+    const user = await query("SELECT *, login_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved'", [data.email]);
     if (user.length === 0 || !user[0].login_code) return res.send({ user: null, restart: true, message: "Your verification session ended, log in again." });
-    if (new Date(user[0].login_code_expires) < new Date()) return res.send({ user: null, expired: true, message: "The verification code has expired, request a new one." });
+    if (user[0].code_expired) return res.send({ user: null, expired: true, message: "The verification code has expired, request a new one." });
     const valid = typeof data.code === "string" && /^\d{6}$/.test(data.code) && (await bcrypt.compare(data.code, user[0].login_code));
     if (!valid) {
       // À 5.ª falha fica bloqueado até ao fim da janela (15 min desde a 1.ª falha). Continua no passo do código, com a contagem; o código
@@ -363,11 +364,11 @@ async function checkRecoverCode(email, code, ip) {
   const key = emailKey(email);
   const wait = await codeThrottle.blocked(key, ip);
   if (wait) return { ok: false, message: TOO_MANY_CODES, retry_after: wait };
-  const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0", [email]);
+  const user = await query("SELECT *, recover_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0", [email]);
   if (user.length === 0) return { ok: false, message: "This user does not exist on our database!" };
   if (!user[0].recover_code) return { ok: false, message: "You will need to require a recover code first." };
   // Como no 2FA: código fora da validade não conta como tentativa errada, é preciso pedir outro (sem data = código de acesso, não expira)
-  if (user[0].recover_code_expires && new Date(user[0].recover_code_expires) < new Date())
+  if (user[0].recover_code_expires && user[0].code_expired)
     return { ok: false, expired: true, message: "The recover code has expired, request a new one." };
   if (typeof code === "string" && code !== "" && (await bcrypt.compare(code, user[0].recover_code))) return { ok: true, user: user[0] };
   if (await codeThrottle.fail(key, ip) >= 5) {

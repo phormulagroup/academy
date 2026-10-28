@@ -2,7 +2,7 @@ var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
-const nodemailer = require("nodemailer");
+const { createTransport } = require("../utils/mailTransport");
 const { logEmail } = require("../utils/monitor");
 const fileUpload = require("express-fileupload");
 
@@ -91,23 +91,11 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 
 	try {
 		const smtpSettings = req.body.data;
-		const transporter = nodemailer.createTransport({
-			host: smtpSettings.host,
-			port: smtpSettings.port,
-			// O formulário SMTP guarda o campo como is_secure (true para a porta 465)
-			secure: smtpSettings.secure ?? smtpSettings.is_secure,
-			auth: {
-				user: smtpSettings.email,
-				pass: smtpSettings.password,
-			},
-			// Um servidor errado ou bloqueado não deve deixar a página à espera minutos
-			connectionTimeout: 10000,
-			greetingTimeout: 10000,
-			socketTimeout: 20000,
-		});
+		// Um servidor errado ou bloqueado não deve deixar a página à espera minutos
+		const transporter = createTransport(smtpSettings, { connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000 });
 
 		const mailOptions = {
-			from: `${smtpSettings.name} <${smtpSettings.email}>`,
+			from: smtpSettings.name ? `${smtpSettings.name} <${smtpSettings.email}>` : smtpSettings.email,
 			// O teste vai para o endereço escolhido na página (por omissão, o próprio remetente)
 			to: smtpSettings.to || req.body.data.email,
 			subject: "Send test e-mail",

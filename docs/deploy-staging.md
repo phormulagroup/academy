@@ -238,6 +238,12 @@ Se o browser mostrar algo antigo depois de um problema destes: limpar a cache do
   ficheiro **novo**. Se mostrar o antigo, rever a Cache Rule (secção 6) e ver os cabeçalhos `cf-cache-status` e `cache-control`.
 - Sessão: apagar/estragar o `token` do `localStorage` e recarregar → aviso "sessão expirada" e vai para a homepage.
 
+## Envio de e-mails: SMTP ou Brevo API
+Em *Definições → Integração de e-mail* escolhe-se o fornecedor: **SMTP** (servidor de e-mail, como até aqui) ou **Brevo API** (chave de API da conta Brevo + remetente
+verificado na Brevo). Tudo o que a plataforma envia (e-mails de conta, templates, comunicações) usa o fornecedor escolhido; as definições antigas, sem fornecedor,
+continuam a ser SMTP. A chave fica na tabela `settings` (como a palavra-passe do SMTP). O envio pela API sai por HTTPS (`api.brevo.com`), por isso o alojamento tem de
+permitir ligações de saída. Não há migração: o fornecedor guarda-se no JSON da definição `smtp`.
+
 ## 8. Problemas conhecidos
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useContext, useEffect, useState } from "react";
-import { Alert, Button, Form, Input, Select, Spin, Switch, Tag } from "antd";
-import { LuCircleCheck, LuCircleX, LuInfo, LuMail, LuSend, LuServer, LuUserRound } from "react-icons/lu";
+import { Alert, Button, Form, Input, Segmented, Select, Spin, Switch, Tag } from "antd";
+import { LuCircleCheck, LuCircleX, LuInfo, LuKeyRound, LuMail, LuSend, LuServer, LuUserRound } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 import RefreshButton from "../../../components/admin/refreshButton";
@@ -40,7 +40,11 @@ export default function SMTP() {
   const [form] = Form.useForm();
   const host = Form.useWatch("host", form);
   const sender = Form.useWatch("email", form);
-  const configured = !!host && !!sender;
+  const brevoKey = Form.useWatch("brevo_api_key", form);
+  // Sem fornecedor guardado (definições antigas) é SMTP, como sempre foi
+  const provider = Form.useWatch("provider", form) || "smtp";
+  const isBrevo = provider === "brevo";
+  const configured = !!sender && (isBrevo ? !!brevoKey : !!host);
 
   useEffect(() => {
     getData();
@@ -65,7 +69,7 @@ export default function SMTP() {
         const smtpSettings = res.data?.find((s) => s.name_key === "smtp");
         if (smtpSettings) {
           const values = smtpSettings.meta_data ? JSON.parse(smtpSettings.meta_data) : {};
-          form.setFieldsValue(values);
+          form.setFieldsValue({ provider: "smtp", ...values });
           setData(smtpSettings);
           setTestTo((prev) => prev || values.email || user?.email || "");
           setIsDirty(false);
@@ -78,7 +82,9 @@ export default function SMTP() {
       .finally(() => setIsLoading(false));
   }
 
-  function submit(values) {
+  function submit() {
+    // getFieldsValue(true): inclui também os campos do outro fornecedor (escondidos), para não os perder ao alternar
+    const values = form.getFieldsValue(true);
     if (!data?.id) {
       toastApi.error(t("Could not load the SMTP settings"));
       return;
@@ -117,14 +123,14 @@ export default function SMTP() {
   // Testa os valores atuais do formulário (mesmo sem guardar) e mostra o resultado, com a razão se falhar
   async function sendTestEmail() {
     try {
-      await form.validateFields(["host", "port", "email", "password"]);
+      await form.validateFields(isBrevo ? ["brevo_api_key", "email"] : ["host", "port", "email", "password"]);
     } catch {
       return;
     }
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await axios.post(endpoints.email.test, { data: { ...form.getFieldsValue(), to: testTo.trim() } });
+      const res = await axios.post(endpoints.email.test, { data: { ...form.getFieldsValue(true), to: testTo.trim() } });
       setTestResult(res.data);
     } catch (err) {
       console.log(err);
@@ -141,12 +147,12 @@ export default function SMTP() {
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <div>
           <div className="flex items-center gap-3">
-            <p className="text-xl font-bold font-ryker mb-0!">{t("SMTP")}</p>
+            <p className="text-xl font-bold font-ryker mb-0!">{t("E-mail integration")}</p>
             <Tag variant="outlined" color={configured ? "green" : "orange"} className="m-0!">
               {configured ? t("Configured") : t("Not configured")}
             </Tag>
           </div>
-          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("The mail server the platform uses to send e-mails")}</p>
+          <p className="text-[#8A8D98] text-[14px] mb-0!">{t("How the platform sends e-mails: through an SMTP server or through the Brevo API")}</p>
         </div>
         <RefreshButton onClick={getData} />
       </div>
@@ -155,6 +161,25 @@ export default function SMTP() {
         <Form form={form} layout="vertical" onFinish={submit} onValuesChange={onValuesChange} disabled={!perm.canUpdate}>
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-x-6 items-start">
             <div className="xl:col-span-2">
+              <SettingsSection id="smtp-provider" icon={<LuMail />} title={t("Provider")} description={t("Choose how the e-mails are sent")}>
+                <Form.Item name="provider" className="mb-0!">
+                  <Segmented
+                    size="large"
+                    options={[
+                      { label: t("SMTP"), value: "smtp" },
+                      { label: t("Brevo API"), value: "brevo" },
+                    ]}
+                  />
+                </Form.Item>
+              </SettingsSection>
+
+              {isBrevo ? (
+                <SettingsSection id="brevo-api" icon={<LuKeyRound />} title={t("Brevo API")} description={t("The API key of your Brevo account. Create it in Brevo under SMTP & API > API Keys")}>
+                  <Form.Item name="brevo_api_key" label={t("API key")} rules={[requiredRule]} className="mb-0!" extra={t("Kept on the server and only visible to people who can edit the settings")}>
+                    <Input.Password size="large" placeholder="xkeysib-..." autoComplete="new-password" />
+                  </Form.Item>
+                </SettingsSection>
+              ) : (
               <SettingsSection id="smtp-server" icon={<LuServer />} title={t("Server")} description={t("Where the e-mails are sent from. Your hosting or e-mail service gives you these values")}>
                 {perm.canUpdate && (
                   <Form.Item label={t("Quick setup")} extra={t("Fills in the port and the secure connection. The server and the account are yours to fill in")}>
@@ -173,18 +198,21 @@ export default function SMTP() {
                   <Switch />
                 </Form.Item>
               </SettingsSection>
+              )}
 
-              <SettingsSection id="smtp-account" icon={<LuUserRound />} title={t("Account and sender")} description={t("The account used to log in and the name that appears as the sender")}>
+              <SettingsSection id="smtp-account" icon={<LuUserRound />} title={isBrevo ? t("Sender") : t("Account and sender")} description={isBrevo ? t("The address and the name the recipients see. The address must be a verified sender in Brevo") : t("The account used to log in and the name that appears as the sender")}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-                  <Form.Item name="email" label={t("E-mail")} rules={[requiredRule, { type: "email", message: t("Enter a valid e-mail address") }]} extra={t("Used to log in and as the sender address")}>
+                  <Form.Item name="email" label={t("E-mail")} rules={[requiredRule, { type: "email", message: t("Enter a valid e-mail address") }]} extra={isBrevo ? t("Must be a sender or domain verified in your Brevo account") : t("Used to log in and as the sender address")}>
                     <Input size="large" type="email" placeholder="academy@example.com" autoComplete="off" />
                   </Form.Item>
                   <Form.Item name="name" label={t("Sender name")} extra={t("What the person sees as the sender, for example Bial Academy")}>
                     <Input size="large" placeholder="Bial Academy" />
                   </Form.Item>
-                  <Form.Item name="password" label={t("Password")} rules={[requiredRule]} className="mb-0!">
-                    <Input.Password size="large" autoComplete="new-password" />
-                  </Form.Item>
+                  {!isBrevo && (
+                    <Form.Item name="password" label={t("Password")} rules={[requiredRule]} className="mb-0!">
+                      <Input.Password size="large" autoComplete="new-password" />
+                    </Form.Item>
+                  )}
                 </div>
               </SettingsSection>
             </div>
@@ -208,13 +236,15 @@ export default function SMTP() {
                 )}
               </SettingsSection>
 
-              <SettingsSection id="smtp-info" icon={<LuInfo />} title={t("Where it is used")} description={t("Everything the platform sends goes through this server")}>
+              <SettingsSection id="smtp-info" icon={<LuInfo />} title={t("Where it is used")} description={isBrevo ? t("Everything the platform sends goes through the Brevo API") : t("Everything the platform sends goes through this server")}>
                 <ul className="m-0! pl-5 text-[13px] flex flex-col gap-1.5">
                   <li>{t("Account e-mails (registration, status, password recovery)")}</li>
                   <li>{t("Templates and their test e-mails")}</li>
                   <li>{t("Communications, sent in batches")}</li>
                 </ul>
-                <p className="text-[12px] text-[#8A8D98] mt-3! mb-0!">{t("Hosting servers limit how many e-mails can be sent per hour. For many recipients, a dedicated e-mail service (for example Brevo) delivers better")}</p>
+                <p className="text-[12px] text-[#8A8D98] mt-3! mb-0!">
+                  {isBrevo ? t("Sending through the API does not depend on the hosting mail server or its hourly limits. Brevo's own plan limits apply") : t("Hosting servers limit how many e-mails can be sent per hour. For many recipients, a dedicated e-mail service (for example Brevo) delivers better")}
+                </p>
               </SettingsSection>
             </div>
           </div>

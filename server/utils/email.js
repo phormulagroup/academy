@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+const { createTransport, isBrevo } = require("./mailTransport");
 const Handlebars = require("handlebars");
 const util = require("util");
 const db = require("./database");
@@ -16,6 +16,11 @@ const getConnection = (callback) => db.getConnection(AsyncResource.bind(callback
 // Definições SMTP guardadas em `settings`: erro claro (e registado) quando ainda não foram configuradas
 function smtpFromRows(rows) {
   const smtp = rows?.[0]?.meta_data ? JSON.parse(rows[0].meta_data) : null;
+  // Definições em que o fornecedor é a API da Brevo: precisam da chave e do remetente (sem servidor SMTP)
+  if (isBrevo(smtp)) {
+    if (!smtp.brevo_api_key || !smtp.email) throw new Error("Brevo API settings are not configured (Settings > E-mail integration)");
+    return smtp;
+  }
   if (!smtp?.host) throw new Error("SMTP settings are not configured (Settings > SMTP)");
   return smtp;
 }
@@ -51,20 +56,11 @@ function trackTransporter(transporter) {
 
 
 function buildTransporter(smtpSettings) {
-  const transporter = nodemailer.createTransport({
-    host: smtpSettings.host,
-    port: smtpSettings.port,
-    // As definições SMTP guardam o campo como is_secure
-    secure: smtpSettings.secure ?? smtpSettings.is_secure,
-    auth: {
-      user: smtpSettings.email,
-      pass: smtpSettings.password,
-    },
-  });
+  const transporter = createTransport(smtpSettings);
 
   return {
     transporter: trackTransporter(transporter),
-    from: `${smtpSettings.name} <${smtpSettings.email}>`,
+    from: smtpSettings.name ? `${smtpSettings.name} <${smtpSettings.email}>` : smtpSettings.email,
   };
 }
 

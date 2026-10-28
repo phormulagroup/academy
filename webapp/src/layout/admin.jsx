@@ -266,7 +266,7 @@ const Main = () => {
             label: t("Templates"),
             icon: <LuLayoutTemplate />,
           },
-          { key: "/admin/smtp", label: t("SMTP"), icon: <LuServer /> },
+          { key: "/admin/smtp", label: t("E-mail integration"), icon: <LuServer /> },
         ],
       },
     ],
