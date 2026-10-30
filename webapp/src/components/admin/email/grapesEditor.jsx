@@ -21,7 +21,8 @@ import { toastRef } from "../../../utils/notify";
 import config from "../../../utils/config";
 import { VARIABLES } from "../../../utils/emailTemplates";
 import { FONT_CHOICES } from "../../../utils/emailFonts";
-import { starterMjml, emailBlocks, ensureBrandFonts } from "./grapesBlocks";
+import { starterMjml, emailBlocks, ensureBrandFonts, canvasBodyFont } from "./grapesBlocks";
+import { responsiveEditing, followSelection, syncResponsiveStyles } from "./grapesResponsive";
 
 const IMAGE_TYPES = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
 const MEDIA_KEY = "emailImage";
@@ -104,6 +105,7 @@ const GrapesEditor = forwardRef(function GrapesEditor({ design, variables = [], 
     if (import.meta.env.DEV) window.__gjs = editor; // só em desenvolvimento: facilita testar o editor
 
     emailBlocks(editor, t);
+    responsiveEditing(editor, t);
 
     // Blocos guardados pela equipa: aparecem no painel de blocos, no grupo "Blocos guardados"
     const loadSavedBlocks = () =>
@@ -163,12 +165,15 @@ const GrapesEditor = forwardRef(function GrapesEditor({ design, variables = [], 
     // Só alterações feitas pelo utilizador contam: o contador volta a zero depois de carregar
     editor.on("load", () => {
       ensureBrandFonts(editor);
+      canvasBodyFont(editor);
+      syncResponsiveStyles(editor);
       setFontChoices(editor);
       // Sem as linhas tracejadas em todos os componentes: só se destaca o que está sob o rato (o botão do quadrado volta a mostrá-las)
       editor.Panels.getButton("options", "sw-visibility")?.set("active", false);
       editor.Commands.get("sw-visibility")?.stop(editor);
       editor.Commands.stop("open-sm");
-      editor.runCommand("open-blocks");
+      editor.Panels.getButton("views", "open-blocks")?.set("active", true);
+      followSelection(editor);
       // Botões da barra de cima: galeria/biblioteca de modelos e guardar o e-mail como modelo
       editor.Panels.addButton("options", { id: "open-templates", label: ICON_TEMPLATES, command: "open-templates", togglable: false, attributes: { title: t("Templates and saved blocks") } });
       if (canEditRef.current) editor.Panels.addButton("options", { id: "save-template", label: ICON_SAVE_TEMPLATE, command: "save-template", togglable: false, attributes: { title: t("Save as template") } });
@@ -194,6 +199,7 @@ const GrapesEditor = forwardRef(function GrapesEditor({ design, variables = [], 
       try {
         await load(editor);
         ensureBrandFonts(editor);
+        syncResponsiveStyles(editor);
         editor.UndoManager.clear();
         changeRef.current?.();
         setLibrary({ open: false, start: false });

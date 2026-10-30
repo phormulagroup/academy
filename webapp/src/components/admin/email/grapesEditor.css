@@ -71,3 +71,61 @@
 .gjs-cv-canvas { width: 78%; }
 .gjs-pn-commands { width: 78%; }
 .gjs-pn-options { right: 22%; }
+
+/* Tipo de letra da plataforma em todo o editor: os input/select/textarea não herdam a fonte do contentor (ficavam em Arial) */
+.gjs-editor-cont, .gjs-editor-cont input, .gjs-editor-cont select, .gjs-editor-cont textarea, .gjs-editor-cont button, .gjs-mdl-container, .gjs-mdl-container input, .gjs-mdl-container select, .gjs-mdl-container textarea { font-family: Poppins, system-ui, sans-serif; }
+
+/* Painel de estilos e definições com campos uniformes: mesma altura, mesmo tamanho de letra e a mesma grelha de 2 colunas
+   (cor, ficheiro, grupos e botões de opção ocupam a linha toda). Os pares de tipografia ficam lado a lado pela ordem abaixo. */
+.gjs-sm-properties, .gjs-trt-traits { display: flex; flex-wrap: wrap; align-items: flex-start; padding: 10px 8px 4px; gap: 0; }
+.gjs-sm-property, .gjs-trt-trait { box-sizing: border-box; width: 50%; padding: 0 4px 10px; margin: 0; order: 10; }
+.gjs-sm-property--full, .gjs-sm-property.gjs-sm-color, .gjs-sm-property.gjs-sm-file, .gjs-sm-property.gjs-sm-radio, .gjs-sm-property.gjs-sm-composite, .gjs-trt-trait { width: 100%; }
+.gjs-sm-composite > .gjs-sm-properties { padding: 8px 4px 0; border: 1px solid #eef0f4; border-radius: 8px; background: #fafbfd; }
+.gjs-sm-property .gjs-sm-label, .gjs-trt-trait .gjs-label, .gjs-sm-composite > .gjs-sm-properties .gjs-sm-label { margin: 0 0 4px; min-height: 16px; font-size: 12px; color: #6b7390; }
+.gjs-field { box-sizing: border-box; width: 100%; height: 32px; display: flex; align-items: center; font-size: 12.5px; }
+.gjs-field input, .gjs-field select, .gjs-field textarea { height: 100%; padding: 0 8px; font-size: 12.5px; box-sizing: border-box; }
+.gjs-field-integer, .gjs-field-number, .gjs-field-select, .gjs-field-color, .gjs-field-text { height: 32px; }
+.gjs-field-select select { padding-right: 24px; }
+.gjs-field-units { height: 100%; display: flex; align-items: center; }
+.gjs-field-units select { width: auto; min-width: 34px; padding: 0 16px 0 6px; font-size: 12px; }
+.gjs-field-color .gjs-field-colorp { height: 100%; }
+.gjs-radio-items { width: 100%; height: 32px; border: 1px solid #e0e3ea; border-radius: 6px; overflow: hidden; background: #fff; }
+.gjs-radio-item { height: 100%; }
+.gjs-radio-item-label { height: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 4px; font-size: 12.5px; }
+.gjs-sm-sector-title { padding: 10px 12px; font-size: 12.5px; }
+.gjs-sm-property__font-family { width: 100%; order: 1; }
+.gjs-sm-property__font-size { order: 2; }
+.gjs-sm-property__font-weight { order: 3; }
+.gjs-sm-property__letter-spacing { order: 4; }
+.gjs-sm-property__line-height { order: 5; }
+.gjs-sm-property__color { order: 6; }
+.gjs-sm-property__container-background-color { width: 100%; }
+
+/* Blocos por dispositivo (desktop, tablet, telemóvel) no painel Definições */
+.rs-dev { margin: 0 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; width: calc(100% - 16px); box-sizing: border-box; }
+.rs-dev > summary { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none; color: #163986; font-size: 12.5px; }
+.rs-dev > summary::-webkit-details-marker { display: none; }
+.rs-dev > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid #8a8d98; border-bottom: 1.5px solid #8a8d98; transform: rotate(-45deg); transition: transform 0.15s; }
+.rs-dev[open] > summary::before { transform: rotate(45deg); }
+.rs-dev > summary small { color: #8a8d98; font-size: 11.5px; flex: 1; }
+.rs-dev .rs-dot { width: 8px; height: 8px; border-radius: 50%; background: #00b9d6; }
+.rs-dev .rs-grid { display: flex; flex-wrap: wrap; gap: 0 8px; padding: 4px 12px 8px; border-top: 1px solid #eef0f4; }
+.rs-dev .rs-row { box-sizing: border-box; width: calc(50% - 4px); display: flex; flex-direction: column; gap: 4px; margin: 6px 0; font-size: 12px; color: #6b7390; }
+.rs-dev .rs-row.rs-wide { width: 100%; }
+.rs-dev .rs-row.rs-check { flex-direction: row; align-items: center; gap: 8px; }
+.rs-dev .rs-row.rs-check input { width: 16px; height: 16px; margin: 0; accent-color: #163986; }
+.rs-dev input[type="number"], .rs-dev input[type="text"], .rs-dev select { box-sizing: border-box; width: 100%; height: 32px; padding: 0 8px; border: 1px solid #e0e3ea; border-radius: 6px; background: #fff; color: #3b4258; font: inherit; font-size: 12.5px; outline: 0; }
+.rs-dev input:focus, .rs-dev select:focus { border-color: #163986; }
+.rs-dev .rs-color { display: flex; gap: 6px; }
+.rs-dev .rs-color input[type="color"] { flex: 0 0 32px; width: 32px; height: 32px; padding: 2px; border: 1px solid #e0e3ea; border-radius: 6px; background: #fff; cursor: pointer; }
+.rs-dev .rs-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.rs-dev .rs-box input { padding: 0 4px; text-align: center; }
+.rs-dev .rs-box-labels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; font-size: 10.5px; color: #8a8d98; margin-top: -2px; }
+.rs-dev .rs-row.rs-check { flex-direction: row-reverse; justify-content: flex-end; }
+.rs-dev .rs-row.rs-check input[type="checkbox"] { -webkit-appearance: checkbox; appearance: auto; flex: 0 0 16px; width: 16px; height: 16px; min-width: 16px; padding: 0; margin: 0; opacity: 1; }
+.rs-dev .rs-color input[type="color"].rs-empty { opacity: 0.35; }
+
+/* Blocos por dispositivo no fim do painel Estilos */
+.rs-devices { text-align: left; border-top: 1px solid #e5e7eb; padding: 4px 0 16px; }
+.rs-devices-title { padding: 10px 12px; background: #f6f7fb; color: #163986; font-weight: 600; font-size: 12.5px; border-bottom: 1px solid #e5e7eb; margin-bottom: 10px; }
+.rs-dev.rs-plain .rs-grid { border-top: 0; padding-top: 0; }

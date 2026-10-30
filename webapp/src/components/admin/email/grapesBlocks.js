@@ -41,9 +41,12 @@ const ICONS = {
 const blocks = (t) => [
   // Layout
   { id: "col-1", category: "Layout", label: t("1 column"), media: ICONS.col1, content: `<mj-section><mj-column><mj-text>${t("Write your text here")}</mj-text></mj-column></mj-section>` },
-  { id: "col-2", category: "Layout", label: t("2 columns"), media: ICONS.col2, content: `<mj-section><mj-column><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column><mj-text>${t("Column")} 2</mj-text></mj-column></mj-section>` },
+  { id: "col-2", category: "Layout", label: t("2 columns"), media: ICONS.col2, content: `<mj-section><mj-column width="50%"><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column width="50%"><mj-text>${t("Column")} 2</mj-text></mj-column></mj-section>` },
   { id: "col-3", category: "Layout", label: t("3 columns"), media: ICONS.col3, content: `<mj-section><mj-column><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column><mj-text>${t("Column")} 2</mj-text></mj-column><mj-column><mj-text>${t("Column")} 3</mj-text></mj-column></mj-section>` },
   { id: "col-30-70", category: "Layout", label: t("Narrow + wide"), media: ICONS.split, content: `<mj-section><mj-column width="30%"><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column width="70%"><mj-text>${t("Column")} 2</mj-text></mj-column></mj-section>` },
+  { id: "col-70-30", category: "Layout", label: t("Wide + narrow"), media: ICONS.split, content: `<mj-section><mj-column width="70%"><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column width="30%"><mj-text>${t("Column")} 2</mj-text></mj-column></mj-section>` },
+  { id: "col-25-50-25", category: "Layout", label: t("25 / 50 / 25"), media: ICONS.col3, content: `<mj-section><mj-column width="25%"><mj-text>${t("Column")} 1</mj-text></mj-column><mj-column width="50%"><mj-text>${t("Column")} 2</mj-text></mj-column><mj-column width="25%"><mj-text>${t("Column")} 3</mj-text></mj-column></mj-section>` },
+  { id: "col-4", category: "Layout", label: t("4 columns"), media: ICONS.col3, content: `<mj-section>${[1, 2, 3, 4].map((n) => `<mj-column width="25%"><mj-text>${t("Column")} ${n}</mj-text></mj-column>`).join("")}</mj-section>` },
   // As colunas de um grupo ficam lado a lado também no telemóvel (as outras empilham-se)
   { id: "group", category: "Layout", label: t("Side by side on mobile"), media: ICONS.group, content: `<mj-section><mj-group><mj-column><mj-text align="center">${t("Column")} 1</mj-text></mj-column><mj-column><mj-text align="center">${t("Column")} 2</mj-text></mj-column></mj-group></mj-section>` },
   // Conteúdo
@@ -198,4 +201,26 @@ export function ensureBrandFonts(editor) {
   if (!head) return;
   const declared = head.findType("mj-font").map((f) => f.getAttributes().name);
   EMAIL_FONTS.filter((f) => !declared.includes(f.name)).forEach((f) => head.append(`<mj-font name="${f.name}" href="${f.href}"></mj-font>`));
+}
+
+// O canvas do editor ignora o `mj-all` do cabeçalho: o texto aparecia em Ubuntu (o tipo de letra por omissão do MJML) e o e-mail final sai em
+// Poppins. Só no canvas, os elementos que ficaram com o tipo de letra por omissão passam ao do mj-all (como acontece no e-mail exportado);
+// os que têm um tipo de letra escolhido (por exemplo o dos títulos) não mudam.
+const MJML_DEFAULT_FONT = "Ubuntu, Helvetica, Arial, sans-serif";
+export function canvasBodyFont(editor) {
+  const apply = () => {
+    const doc = editor.Canvas.getDocument();
+    const attributes = editor.getWrapper()?.findType("mj-head")[0]?.components().find((c) => c.get("tagName") === "mj-attributes");
+    const font = attributes?.components().find((c) => c.get("tagName") === "mj-all")?.getAttributes()["font-family"];
+    if (!doc || !font) return;
+    let style = doc.getElementById("rs-body-font");
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "rs-body-font";
+      doc.head.appendChild(style);
+    }
+    style.textContent = `[style*="font-family:${MJML_DEFAULT_FONT}"]{font-family:${font}!important}`;
+  };
+  apply();
+  editor.on("canvas:frame:load update", apply);
 }
