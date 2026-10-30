@@ -48,6 +48,11 @@ ErrorDocument 504 /maintenance.html
   RewriteRule ^ /index.html [L]
 </IfModule>
 
+# O motor do visualizador de PDFs (assets/pdfium-<hash>.wasm) tem de ir com o tipo certo para o browser o compilar em streaming
+<IfModule mod_mime.c>
+  AddType application/wasm .wasm
+</IfModule>
+
 # Cache: só o que está em /assets tem hash no nome (imutável). O resto (index.html, animation.json, imagens) revalida sempre.
 <IfModule mod_headers.c>
   Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE_ASSET
@@ -71,11 +76,11 @@ ErrorDocument 504 /maintenance.html
   #  - styles: 'unsafe-inline' (o antd e o editor injetam estilos) + Google Fonts e rsms.me (a fonte Inter do editor de páginas)
   #  - img/media: https: (imagens do conteúdo escrito no editor e bandeiras em flagcdn.com), data: e blob:
   #  - frame-src: vídeos do Vimeo; connect-src: a API do próprio domínio e o Vimeo
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
   # Editor de e-mails (GrapesJS): precisa de 'unsafe-eval' (os seus modelos usam new Function) e do Font Awesome da cdnjs. Fica só nestas páginas de administração;
   # o resto do site mantém a política acima, sem eval.
   <If "%{REQUEST_URI} =~ m#^/admin/(templates|communications)/[0-9]+/editor#">
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://player.vimeo.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://rsms.me; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com https://rsms.me; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: https://*.vimeo.com; frame-src 'self' blob: https://player.vimeo.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
   </If>
 </IfModule>
 

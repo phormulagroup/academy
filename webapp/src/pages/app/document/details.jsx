@@ -5,7 +5,7 @@ import { Button, Switch } from "antd";
 import { useContext, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AiOutlineArrowLeft } from "react-icons/ai";
-import { MdFileDownload, MdFullscreen, MdFullscreenExit } from "react-icons/md";
+import { MdErrorOutline, MdFileDownload, MdFullscreen, MdFullscreenExit } from "react-icons/md";
 import { RxChevronLeft, RxChevronRight } from "react-icons/rx";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
@@ -14,6 +14,10 @@ import {
   ScrollStrategy,
   ZoomMode,
 } from "@embedpdf/react-pdf-viewer";
+// O motor do viewer (PDFium, WebAssembly) vai por omissão buscar-se à CDN jsdelivr, que a política de segurança (CSP) do site bloqueia: o
+// documento ficava para sempre "a carregar". Serve-se do próprio domínio (o Vite copia-o para assets/ com hash) com o endereço ABSOLUTO,
+// porque o motor corre num worker criado a partir de um blob, onde um caminho relativo não se resolve.
+import pdfiumWasmUrl from "@embedpdf/pdfium/pdfium.wasm?url";
 import { Helmet } from "react-helmet";
 
 import { Context } from "../../../utils/context";
@@ -31,11 +35,20 @@ function pdfFileName(doc) {
   return `${name || "document"}.pdf`;
 }
 
+const PDFIUM_WASM_URL = new URL(pdfiumWasmUrl, window.location.origin).href;
+
 export default function DocumentDetails({ themePreference = "light" }) {
   const { user, languages } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
+  // Falha ao obter o documento (rede, servidor, ficheiro que não é um PDF) ou ao abri-lo no visualizador: mostra o aviso da plataforma com
+  // "Tentar de novo". `attempt` repete o pedido; `download` é o progresso do descarregamento (os PDFs chegam a vários MB)
+  const [loadError, setLoadError] = useState(false);
+  const [viewerError, setViewerError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [download, setDownload] = useState(null);
+  const pdfUrlRef = useRef(null);
 
   const viewerRef = useRef(null);
   // Ecrã inteiro do PDF (todos os tamanhos de ecrã), como nos sliders do eLearning
@@ -117,12 +130,26 @@ export default function DocumentDetails({ themePreference = "light" }) {
       if (doc?.pages?.length) setPages(doc.pages.map((p) => p.size));
     };
     loadPages();
+    const subs = [];
     if (scroll) {
-      viewerUnsubsRef.current = [
+      subs.push(
         scroll.onLayoutReady((e) => loadPages(e.documentId)),
         scroll.onPageChange((e) => (currentPageRef.current = e.pageNumber)),
-      ];
+      );
     }
+    // Quando um documento falha (ou é fechado) o viewer mostra um cartão com "Fechar" e depois um ecrã "Nenhum documento aberto" com um
+    // botão para abrir um PDF do computador. Isso nunca pode chegar ao aluno: ao primeiro sinal o viewer sai e fica o aviso da plataforma.
+    const documents = registry.getPlugin("document-manager")?.provides();
+    if (documents) {
+      subs.push(
+        documents.onDocumentError?.(() => setViewerError(true)),
+        documents.onDocumentClosed?.(() => setViewerError(true)),
+      );
+    }
+    // O erro pode ter acontecido antes de nos subscrevermos
+    const states = Object.values(registry.getStore().getState().core.documents ?? {});
+    if (states.some((d) => d.status === "error")) setViewerError(true);
+    viewerUnsubsRef.current = subs;
   }
 
   // Ao sair da página: largar os eventos do viewer e as imagens das páginas
@@ -196,13 +223,22 @@ export default function DocumentDetails({ themePreference = "light" }) {
     viewerRef.current?.container?.setTheme({ preference: themePreference });
   }, [themePreference]);
 
-  function getData() {
+  function getData(signal) {
+    setIsLoading(true);
+    setLoadError(false);
+    setViewerError(false);
+    setDownload(null);
+    setPdfUrl(null);
+    if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+    pdfUrlRef.current = null;
+
     axios
       .get(endpoints.document.readBySlug, {
         params: {
           slug,
           id_lang: (languages.find((l) => l.code === i18n.language)?.id ?? user?.id_lang),
         },
+        signal,
       })
       .then(async (res) => {
         if (res.data.length > 0) {
@@ -215,36 +251,88 @@ export default function DocumentDetails({ themePreference = "light" }) {
             setIsLoading(false);
             return;
           }
+          // O título e o botão de voltar já aparecem durante o descarregamento (e, se falhar, ao lado do aviso)
+          setData(item);
           const file = await axios.get(endpoints.document.readFile, {
-            params: { file: item.file },
+            // `r` só serve para não reaproveitar da cache uma resposta anterior que falhou
+            params: { file: item.file, ...(attempt > 0 ? { r: attempt } : {}) },
             responseType: "blob", // 👈 MUITO IMPORTANTE
+            signal,
+            onDownloadProgress: (e) => setDownload({ loaded: e.loaded, total: e.total || 0 }),
           });
+          // Uma resposta que não é um PDF (ex.: uma página de erro) nunca vai para o viewer
+          if ((await file.data.slice(0, 5).text()) !== "%PDF-") throw new Error("The file is not a PDF");
 
           const blobUrl = URL.createObjectURL(file.data);
-
-          setData(res.data[0] || null);
+          pdfUrlRef.current = blobUrl;
           setPdfUrl(blobUrl);
+        } else {
+          setData(null);
         }
         setIsLoading(false);
       })
       .catch((err) => {
+        if (axios.isCancel(err)) return;
         console.log(err);
+        setLoadError(true);
         setIsLoading(false);
       });
   }
 
-  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados)
+  // Espera pelos idiomas (ao abrir/recarregar a página diretamente ainda não estão carregados). "Tentar de novo" repete tudo (attempt).
   const hasLanguages = languages?.length > 0;
   useEffect(() => {
-    if (hasLanguages) getData();
-  }, [hasLanguages]);
+    if (!hasLanguages) return;
+    const controller = new AbortController();
+    getData(controller.signal);
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLanguages, attempt]);
+
+  // Largar o ficheiro em memória ao sair da página
+  useEffect(
+    () => () => {
+      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+    },
+    [],
+  );
+
+  const retry = () => setAttempt((n) => n + 1);
+
+  // Aviso da plataforma quando o documento não carrega (no lugar do viewer): nunca se mostra o ecrã de abrir ficheiros do viewer
+  const loadErrorCard = (
+    <div
+      role="alert"
+      className="flex w-full max-w-[1100px] mx-auto flex-col items-center justify-center gap-3 rounded-[5px] border border-[#C5CEE1] bg-[#F1F9FF] px-6 py-14 text-center">
+      <MdErrorOutline className="h-12 w-12 text-[#DB0709]" aria-hidden="true" />
+      <p className="font-ryker text-[18px] font-bold text-[#163986] sm:text-[20px]">{t("The document could not be loaded")}</p>
+      <p className="max-w-md text-[13px] text-[#5F6B7A] sm:text-[14px]">
+        {t("Check your connection and try again. Large documents can take a while to download.")}
+      </p>
+      <Button type="primary" size="large" onClick={retry}>
+        {t("Try again")}
+      </Button>
+    </div>
+  );
+
+  // Progresso do descarregamento: percentagem quando o servidor diz o tamanho, senão os MB já recebidos
+  const downloadLabel = download
+    ? download.total > 0
+      ? `${Math.min(100, Math.round((download.loaded / download.total) * 100))}%`
+      : `${(download.loaded / 1048576).toFixed(1)} MB`
+    : null;
 
   return (
     // Mais espaço entre o cabeçalho e o rodapé (em cima e em baixo), em desktop e telemóvel
     <div className="page-frame pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-14 lg:pb-20">
       {isLoading ? (
-        <div className="flex justify-center items-center w-full h-full col-span-3">
+        <div className="flex flex-col justify-center items-center gap-3 w-full h-full col-span-3 py-10" role="status" aria-live="polite">
           <BialSpin />
+          {downloadLabel && (
+            <p className="text-[13px] text-[#5F6B7A] tabular-nums">
+              {t("Loading the document")}... {downloadLabel}
+            </p>
+          )}
         </div>
       ) : data ? (
         <div>
@@ -285,6 +373,9 @@ export default function DocumentDetails({ themePreference = "light" }) {
           <div
             ref={fullscreenRef}
             className={`doc-viewer @container w-full max-w-[1100px] mx-auto ${isFullscreen ? "is-fullscreen" : ""}`}>
+            {loadError || viewerError || !pdfUrl ? (
+              loadErrorCard
+            ) : (
             <div
               className="doc-viewer-box w-full h-[calc(70cqw+72px)] sm:h-[calc(56.25cqw+72px)] min-h-[300px] sm:min-h-[260px] max-h-[82dvh] overflow-hidden rounded-[5px] border border-[#C5CEE1] bg-[#F4F6FB] shadow-[0px_3px_6px_#00000029]"
               ref={viewerRef}>
@@ -292,6 +383,9 @@ export default function DocumentDetails({ themePreference = "light" }) {
                 key={data.id}
                 config={{
                   src: pdfUrl,
+                  wasmUrl: PDFIUM_WASM_URL,
+                  // Os carimbos (anotações) estão desligados e o plugin ia buscar o seu manifesto à CDN, que a CSP bloqueia
+                  stamp: { manifests: [] },
                   zoom: {
                     // A página inteira cabe na área (largura e altura), centrada
                     defaultZoomLevel: ZoomMode.FitPage,
@@ -321,6 +415,7 @@ export default function DocumentDetails({ themePreference = "light" }) {
                 onReady={onViewerReady}
               />
             </div>
+            )}
             {/* Ecrã inteiro: uma página de cada vez, ajustada ao ecrã (FitPage) e centrada, com swipe/setas */}
             {isFullscreen && pages.length > 0 && (
               <div className="doc-viewer-slides">
@@ -387,19 +482,23 @@ export default function DocumentDetails({ themePreference = "light" }) {
                   {activePage + 1} / {pages.length}
                 </span>
               )}
-              <label className="doc-viewer-fullscreen">
-                {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
-                <span>{t("Fullscreen")}</span>
-                <Switch
-                  size="small"
-                  aria-label={t("Fullscreen")}
-                  checked={isFullscreen}
-                  onChange={toggleFullscreen}
-                />
-              </label>
+              {!loadError && !viewerError && pdfUrl && (
+                <label className="doc-viewer-fullscreen">
+                  {isFullscreen ? <MdFullscreenExit /> : <MdFullscreen />}
+                  <span>{t("Fullscreen")}</span>
+                  <Switch
+                    size="small"
+                    aria-label={t("Fullscreen")}
+                    checked={isFullscreen}
+                    onChange={toggleFullscreen}
+                  />
+                </label>
+              )}
             </div>
           </div>
         </div>
+      ) : loadError ? (
+        <div className="py-10">{loadErrorCard}</div>
       ) : (
         <div>
           <Helmet>
