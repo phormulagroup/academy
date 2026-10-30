@@ -35,12 +35,13 @@ async function errorMessage(err) {
  * @param {Object} item - O curso (id_course_certificate, id, name).
  * @param {Array} progress - O progresso do utilizador (para a data de conclusão).
  * @param {Object} user - O utilizador.
+ * @returns {Promise} Resolve quando o ficheiro foi guardado (ou o erro foi mostrado): permite mostrar o estado "a gerar" no botão.
  */
 export const downloadCertificate = (item, progress, user) => {
   const completed = progress.filter((p) => p.id_course === item.id && p.activity_type === "course");
   const fileName = `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`;
 
-  axios
+  return axios
     .post(
       endpoints.course_certificate.generate,
       {

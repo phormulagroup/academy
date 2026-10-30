@@ -91,6 +91,7 @@ const endpoints = {
 		update: "/course/update",
 		updateTopic: "/course/updateTopic",
 		updateProgress: "/course/updateProgress",
+		saveVideoProgress: "/course/saveVideoProgress",
 		completeProgress: "/course/completeProgress",
 		resetProgress: "/course/resetProgress",
 		module: "/course/module",

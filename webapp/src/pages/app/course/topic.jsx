@@ -10,6 +10,24 @@ import { Context } from "../../../utils/context";
 import { hasFullAccess } from "../../../utils/roles";
 import { lockedDescription, previousRequiredItem } from "../../../utils/courseStatus";
 
+// Segundos entre gravações da posição do vídeo durante a reprodução
+const VIDEO_SAVE_INTERVAL = 30000;
+
+// Retoma o vídeo onde o aluno ficou. Resolve true se retomou; false se não há posição guardada, se falhou, ou se ficou nos últimos 3 s do
+// vídeo (nesse caso recomeça do início em vez de abrir o vídeo já acabado)
+function resumeVideo(player, saved) {
+  if (!(saved > 0)) return Promise.resolve(false);
+  return player
+    .ready()
+    .then(() => player.getDuration())
+    .then((duration) => (saved < duration - 3 ? player.setCurrentTime(saved).then(() => true) : false))
+    .catch(() => false);
+}
+
+// Posição guardada de um vídeo do tópico
+const savedPosition = (videoProgress, topicId, videoId) => videoProgress?.find((v) => v.id_course_topic === topicId && v.video_id === videoId)?.time_watched || 0;
+const vimeoIdOf = (iframe) => iframe.src.match(/player\.vimeo\.com\/video\/(\d+)/)?.[1] || "";
+
 const Topic = ({
   course,
   selectedCourseItem,
@@ -19,6 +37,9 @@ const Topic = ({
   forceLocked,
   // Navegação livre: o que falta concluir ("topic", "test" ou "steps"), para o texto do bloqueio
   lockedBy,
+  // Retoma dos vídeos: posições guardadas do aluno e a função que grava a posição atual de um vídeo
+  videoProgress,
+  saveVideoProgress,
 }) => {
   const [isTopicLocked, setIsTopicLocked] = useState(false);
   const { t } = useTranslation();
@@ -27,6 +48,11 @@ const Topic = ({
   const isAdmin = hasFullAccess(user);
 
   const playerRef = useRef(null);
+  // Lidas por refs: o efeito dos vídeos só recomeça quando muda o tópico, nunca a cada render desta página
+  const videoProgressRef = useRef(videoProgress);
+  videoProgressRef.current = videoProgress;
+  const saveVideoProgressRef = useRef(saveVideoProgress);
+  saveVideoProgressRef.current = saveVideoProgress;
 
   useEffect(() => {
     setAllowNext(false);
@@ -42,10 +68,71 @@ const Topic = ({
         p.is_deleted !== 1,
     );
 
-    // Admin: navegação livre, não precisa de ver os vídeos. Tópico já concluído: pode avançar e rever à vontade
-    if (isAdmin || isCompleted) {
+    // Admin: navegação livre, não precisa de ver os vídeos (e a sua posição não se guarda)
+    if (isAdmin) {
       setAllowNext(true);
       return;
+    }
+
+    // Tópico já concluído: pode avançar e rever à vontade (sem a regra de ver até ao fim), mas os vídeos retomam onde o aluno ficou
+    if (isCompleted) {
+      setAllowNext(true);
+      if (!(selectedCourseItem.content || "").includes("player.vimeo.com")) return;
+      const reviewSavers = [];
+      let reviewPlayers = [];
+      let reviewRetry = null;
+      const attachReview = (tries = 0) => {
+        const iframes = [...document.querySelectorAll('iframe[src*="player.vimeo.com"]')];
+        if (iframes.length === 0) {
+          if (tries < 40) reviewRetry = setTimeout(() => attachReview(tries + 1), 250);
+          return;
+        }
+        reviewPlayers = iframes.map((iframe) => {
+          const player = new Player(iframe);
+          const videoId = vimeoIdOf(iframe);
+          const topicId = selectedCourseItem.id;
+          const saved = savedPosition(videoProgressRef.current, topicId, videoId);
+          let position = saved; // onde o aluno está agora (a rever pode recuar: o servidor substitui a posição guardada)
+          let lastSaved = saved;
+          let lastSaveAt = 0;
+          const save = () => {
+            const seconds = Math.floor(position);
+            if (seconds === lastSaved) return;
+            lastSaved = seconds;
+            lastSaveAt = Date.now();
+            saveVideoProgressRef.current?.(topicId, videoId, seconds, true);
+          };
+          resumeVideo(player, saved).then((resumed) => {
+            if (!resumed && saved > 0) position = lastSaved = 0;
+          });
+          player.on("timeupdate", (data) => {
+            position = data.seconds;
+            if (!lastSaveAt) lastSaveAt = Date.now();
+            else if (Date.now() - lastSaveAt >= VIDEO_SAVE_INTERVAL) save();
+          });
+          player.on("pause", save);
+          // Chegou ao fim: da próxima vez começa do início
+          player.on("ended", () => {
+            position = 0;
+            save();
+          });
+          reviewSavers.push(save);
+          return player;
+        });
+      };
+      attachReview();
+      const saveReview = () => document.visibilityState === "hidden" && reviewSavers.forEach((save) => save());
+      document.addEventListener("visibilitychange", saveReview);
+      return () => {
+        document.removeEventListener("visibilitychange", saveReview);
+        reviewSavers.forEach((save) => save());
+        clearTimeout(reviewRetry);
+        reviewPlayers.forEach((player) => {
+          player.off("timeupdate");
+          player.off("pause");
+          player.off("ended");
+        });
+      };
     }
 
     // Navegação livre: é o item a seguir a um ainda por concluir → só o ecrã de bloqueado (sem o conteúdo)
@@ -107,6 +194,8 @@ const Topic = ({
     // Vídeos (Vimeo): o aluno tem de ver todos até ao fim para avançar; se tentar avançar o tempo do
     // vídeo para a frente, o vídeo volta sempre ao início
     let players = [];
+    // Uma função de gravar por vídeo (a posição é gravada também ao esconder a página e ao mudar de item)
+    const savers = [];
     let retryTimer = null;
     const attachPlayers = (tries = 0) => {
       const iframes = [
@@ -120,13 +209,36 @@ const Topic = ({
       let endedCount = 0;
       players = iframes.map((iframe) => {
         const player = new Player(iframe);
-        let watched = 0; // até onde o aluno já viu, sem saltos
+        // O ID do Vimeo identifica o vídeo na posição guardada (estável mesmo que o conteúdo mude de ordem)
+        const videoId = vimeoIdOf(iframe);
+        const topicId = selectedCourseItem.id;
+        const saved = savedPosition(videoProgressRef.current, topicId, videoId);
+        // Retoma onde ficou: a posição guardada já conta como vista (senão o salto para lá seria tratado como avançar o vídeo)
+        let watched = saved; // até onde o aluno já viu, sem saltos
+        let lastSaved = saved;
+        let lastSaveAt = 0; // quando começou a contar os 30 s: na primeira reprodução, não ao ligar o player
         let ended = false;
+
+        // Grava até onde o aluno viu (nunca menos do que já está guardado)
+        const save = () => {
+          const seconds = Math.floor(watched);
+          if (seconds <= lastSaved) return;
+          lastSaved = seconds;
+          lastSaveAt = Date.now();
+          saveVideoProgressRef.current?.(topicId, videoId, seconds);
+        };
+        // Sem retomar (ficou no fim, ou falhou), o vídeo começa do início e nada conta como visto
+        resumeVideo(player, saved).then((resumed) => {
+          if (!resumed && saved > 0) watched = 0;
+        });
 
         player.on("timeupdate", (data) => {
           if (data.seconds > watched && data.seconds < watched + 1.5)
             watched = data.seconds;
+          if (!lastSaveAt) lastSaveAt = Date.now();
+          else if (Date.now() - lastSaveAt >= VIDEO_SAVE_INTERVAL) save();
         });
+        player.on("pause", save);
         player.on("seeked", (data) => {
           if (data.seconds > watched + 1.5) {
             watched = 0;
@@ -134,6 +246,7 @@ const Topic = ({
           }
         });
         player.on("ended", () => {
+          save();
           if (ended) return;
           ended = true;
           endedCount++;
@@ -142,19 +255,27 @@ const Topic = ({
             checkDone();
           }
         });
+        savers.push(save);
         return player;
       });
       playerRef.current = players[0];
     };
     attachPlayers();
 
-    // Ao mudar de item, remove os listeners dos vídeos anteriores
+    // Ao esconder a página (mudar de separador, fechar) grava já a posição, sem esperar pelos 30 s
+    const saveAll = () => document.visibilityState === "hidden" && savers.forEach((save) => save());
+    document.addEventListener("visibilitychange", saveAll);
+
+    // Ao mudar de item, grava a posição e remove os listeners dos vídeos anteriores
     return () => {
+      document.removeEventListener("visibilitychange", saveAll);
+      savers.forEach((save) => save());
       clearTimeout(retryTimer);
       clearTimeout(firstCheck);
       window.removeEventListener("bial-carousel-progress", checkDone);
       players.forEach((player) => {
         player.off("timeupdate");
+        player.off("pause");
         player.off("seeked");
         player.off("ended");
       });

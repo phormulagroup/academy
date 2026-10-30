@@ -12,6 +12,8 @@ const { notifyUser, emailLanguage } = require("../utils/notify");
 const { approvedResult, gradeAttempt } = require("../utils/testResult");
 const { courseSettings, visibleCourses, visibleTests } = require("../utils/courseAccess");
 const { testState } = require("../utils/testSchedule");
+const { defaultTestSettings, courseLanguageCode, settingsForLanguage } = require("../utils/testDefaults");
+const { hasCompletedTopic, parseVideoProgress, saveVideoProgress, readVideoProgress, clearVideoProgress } = require("../utils/videoProgress");
 const countryTimezones = require("../utils/countryTimezones.json");
 
 // "Curso concluído": à parte (nunca atrasa nem parte o registo do progresso). Só a pessoa aprovada e ativa recebe.
@@ -251,12 +253,16 @@ router.get("/readBySlug", async (req, res) => {
 		// Testes com limite de países: só os do país do utilizador
 		rows[3] = visibleTests(rows[3], req.user);
 
+		// Posição em que o aluno ficou em cada vídeo (para retomar): só dos cursos que este pedido devolve
+		const videoProgress = await readVideoProgress(query, req.user.id, courses.map((c) => c.id));
+
 		res.send({
 			course: rows[0],
 			modules: rows[1],
 			topics: rows[2],
 			tests: rows[3],
 			progress: rows[4],
+			videoProgress,
 		});
 	} catch (e) {
 		throw e;
@@ -702,6 +708,32 @@ router.post("/updateProgress", async (req, res, next) => {
 
 // O Admin marca como concluído, em nome de um aluno: um item (tópico/teste), um módulo ou o curso todo. Só acrescenta o que ainda
 // não está concluído; depois fecha os módulos e o curso se ficarem completos. Os itens saem sempre do curso na BD, nunca do cliente.
+// Guarda a posição atual de um vídeo de um tópico (a app chama-a a cada 30 s durante a reprodução). Só para quem tem acesso ao curso do
+// tópico; nunca recua o valor guardado. A posição é sempre de quem faz o pedido.
+router.post("/saveVideoProgress", async (req, res) => {
+	try {
+		const query = util.promisify(db.query).bind(db);
+		const parsed = parseVideoProgress(req.body?.data);
+		if (!parsed) return res.status(400).send({ message: "Invalid video progress" });
+
+		const [course] = await query(
+			"SELECT course.id, course.settings, course.status FROM course_topic " +
+				"JOIN course_module ON course_topic.id_course_module = course_module.id " +
+				"JOIN course ON course.id = course_module.id_course WHERE course_topic.id = ? AND course_topic.is_deleted = 0",
+			[parsed.topicId],
+		);
+		if (!course) return res.status(404).send({ message: "Not found" });
+		if ((await visibleCourses(query, [course], req.user)).length === 0) return res.status(403).send({ message: "You do not have access to this course." });
+
+		// Tópico já concluído (o aluno está a rever): a posição substitui a guardada; antes de concluir só pode avançar
+		const replace = await hasCompletedTopic(query, req.user.id, parsed.topicId);
+		await saveVideoProgress(query, req.user.id, parsed, { replace });
+		res.send({ success: true });
+	} catch (e) {
+		throw e;
+	}
+});
+
 router.post("/completeProgress", requirePermission("course", "update"), async (req, res) => {
 	const { id_user, id_course, scope, id_module, item } = req.body.data || {};
 	if (!id_user || !id_course || !["item", "module", "course"].includes(scope)) return res.status(400).send({ message: "Invalid request" });
@@ -807,6 +839,8 @@ router.post("/resetProgress", requirePermission("course", "update"), async (req,
 			const modulesHit = [...new Set(targets.map((t) => t.id_module))];
 			removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'module' AND id_course_module IN (?)", [id_user, id_course, modulesHit])).affectedRows;
 			removed += (await query("DELETE FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course'", [id_user, id_course])).affectedRows;
+			// Os vídeos dos tópicos desmarcados recomeçam do início (a posição guardada é a do aluno nesses tópicos)
+			await clearVideoProgress(query, id_user, topics);
 
 			await util.promisify(conn.commit).bind(conn)();
 			conn.release();
@@ -881,14 +915,9 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 							is_deleted: 0,
 						};
 						
-						// Adiciona configurações padrão para novos testes
+						// Definições por omissão dos testes novos: 45 minutos, 75% e as tentativas do idioma do curso (ver utils/testDefaults.js)
 						if (isNewTest && aux.items[z].type === "test") {
-							itemData.settings = JSON.stringify({
-								passing_score: 75,
-								randomize_answers: false,
-								randomize_questions: false,
-								show_correct_answers: false,
-							});
+							itemData.settings = JSON.stringify(defaultTestSettings(await courseLanguageCode(query, aux.id_course)));
 						}
 						
 						const insertedItem = await query(
@@ -1018,6 +1047,7 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 			course.settings = JSON.stringify(settings);
 
 			const insertedCourse = await query("INSERT INTO course SET ?", course);
+			const newLanguageCode = await courseLanguageCode(query, insertedCourse.insertId);
 
 			// Ids antigos → novos (para o progresso) e testes publicados de cada módulo novo
 			const topicMap = new Map();
@@ -1068,6 +1098,8 @@ router.post("/duplicate", requirePermission("course", "create"), async (req, res
 						const rowItemData = rowItem[0];
 						delete rowItemData.id;
 						rowItemData.id_course_module = insertedModule.insertId;
+						// Cópia noutro idioma: o teste passa a ter as tentativas desse idioma
+						if (item.type === "test" && Number(course.id_lang) !== Number(sourceLang)) rowItemData.settings = settingsForLanguage(rowItemData.settings, newLanguageCode);
 						const insertedItem = await query(
 							`INSERT INTO ${item.type === "test" ? "course_test" : "course_topic"} SET ?`,
 							rowItemData,

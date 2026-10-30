@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { courseAccessState } from "../../../utils/courseWindow";
 import { MenuOutlined } from "@ant-design/icons";
 import {
@@ -100,6 +100,8 @@ const Learning = () => {
   // Elemento no fundo do ecrã onde o Test coloca a navegação entre perguntas (fixa durante o teste)
   const [testFooterSlot, setTestFooterSlot] = useState(null);
   const [progress, setProgress] = useState(null);
+  // Posição em que o aluno ficou em cada vídeo dos tópicos ({ id_course_topic, video_id, time_watched }), para retomar
+  const [videoProgress, setVideoProgress] = useState([]);
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [allowNext, setAllowNext] = useState(false);
   // Navegação livre: item aberto que fica com o ecrã de bloqueado e o item a partir do qual se conta o "seguinte"
@@ -315,6 +317,7 @@ const Learning = () => {
             });
             setModules(newModules);
             setProgress(res.data.progress);
+            setVideoProgress(res.data.videoProgress || []);
             setAllItems(auxAllItems);
           }
         } else {
@@ -479,6 +482,18 @@ const Learning = () => {
     setSelectedCourseItem(nextItem);
     return true;
   }
+
+  // Grava a posição de um vídeo (o player chama-a a cada 30 s). Fica também no estado, para voltar ao tópico retomar do ponto certo
+  // sem recarregar; o servidor nunca recua o valor guardado. Falhar a gravar não incomoda o aluno.
+  // `replace`: o aluno está a rever um tópico concluído, a posição pode recuar (o servidor decide o mesmo pelo estado do tópico)
+  const saveVideoProgress = useCallback((topicId, videoId, seconds, replace = false) => {
+    setVideoProgress((prev) => {
+      const found = prev.find((v) => v.id_course_topic === topicId && v.video_id === videoId);
+      if (!found) return [...prev, { id_course_topic: topicId, video_id: videoId, time_watched: seconds }];
+      return prev.map((v) => (v === found ? { ...v, time_watched: replace ? seconds : Math.max(v.time_watched, seconds) } : v));
+    });
+    axios.post(endpoints.course.saveVideoProgress, { data: { id_course_topic: topicId, video_id: videoId, time_watched: seconds } }).catch(() => {});
+  }, []);
 
   function next(changeItem, itemMetaData) {
     // Um teste só fica concluído quando é aprovado (o Test chama next com o resultado); o botão
@@ -1361,6 +1376,8 @@ const Learning = () => {
                                   modules={modules}
                                   allItems={allItems}
                                   collapsed={collapsed}
+                                  videoProgress={videoProgress}
+                                  saveVideoProgress={saveVideoProgress}
                                 />
                               ) : (
                                 <Test
@@ -1413,6 +1430,8 @@ const Learning = () => {
                         setAllowNext={setAllowNext}
                         modules={modules}
                         allItems={allItems}
+                        videoProgress={videoProgress}
+                        saveVideoProgress={saveVideoProgress}
                       />
                     ) : selectedCourseItem?.type === "test" ? (
                       <Test

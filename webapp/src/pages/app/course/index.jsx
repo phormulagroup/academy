@@ -13,7 +13,6 @@ import dayjs from "dayjs";
 
 import config from "../../../utils/config";
 import { getMarginClasses } from "../../../utils/responsive";
-import useScrollToTop from "../../../utils/scrollToTop";
 
 // import { FaAward, FaRegClock } from "react-icons/fa";
 // import { FaListCheck } from "react-icons/fa6";
@@ -41,7 +40,6 @@ import {
 } from "../../../utils/courseStatus";
 import { GridIcon, ListIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { RxChevronUp } from "react-icons/rx";
 import { hasFullAccess } from "../../../utils/roles";
 import { itemsProgress, progressPercent } from "../../../utils/percent";
 
@@ -55,7 +53,6 @@ export default function CourseDetails() {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewType, setViewType] = useState("grid");
-  const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
   // Vista em lista (só em ecrãs > 640px; abaixo disso é sempre grelha)
   const isListView = viewType === "list" && windowDimension.width > 640;
   const isAdmin = hasFullAccess(user);
@@ -987,16 +984,6 @@ export default function CourseDetails() {
           </div>
         )}
       </div>
-      {/* Scroll to Top Button */}
-      {showScrollToTop && (
-        <button
-          onClick={scrollToTop}
-          style={{ backgroundColor: "#FFC600" }}
-          className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
-          title={t("Scroll to top")}>
-          <RxChevronUp className="w-6! h-6! text-black!" />
-        </button>
-      )}
     </div>
   );
 }

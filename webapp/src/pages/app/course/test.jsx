@@ -504,6 +504,34 @@ const Test = ({
       .finally(() => setPendingAttempt(null));
   }
 
+  // Resultado do teste acabado: percentagem, aprovação e se ainda há tentativas. A equipa (Admin) pode sempre repetir e rever.
+  // Mesma regra dos relatórios (utils/courseStatus): só há limite de tentativas quando retries_allowed está definido.
+  function resultOutcome() {
+    const correctAnswers = result.items?.filter((r) => r.is_correct).length || 0;
+    const totalQuestions = result.items?.length || 1;
+    const percentage = (correctAnswers * 100) / totalQuestions;
+    const passingScore = data.settings?.passing_score ?? 75;
+    const isApproved = percentage >= passingScore;
+    const attemptsProgress = pendingAttempt ? [...progress, pendingAttempt] : progress;
+    const canStillRetry = !isApproved && (isAdmin || !isTestFailed(attemptsProgress, selectedCourseItem));
+    const triesUsed = attemptsProgress.filter((p) => p.activity_type === "test" && p.is_deleted !== 1 && p.id_course === course.id && p.id_course_test === selectedCourseItem.id).length;
+    const triesLimit = Number(data.settings?.retries_allowed) > 0 ? Number(data.settings.retries_allowed) : null;
+    return {
+      correctAnswers,
+      totalQuestions,
+      percentage,
+      passingScore,
+      isApproved,
+      canStillRetry,
+      triesUsed,
+      triesLimit,
+      answeredCount: result.items?.filter((r) => !r.unanswered).length || 0,
+      // Rever as perguntas só depois de aprovado ou de esgotar as tentativas: antes disso mostraria as respostas certas a quem ainda vai repetir
+      canReview: isApproved || !canStillRetry || isAdmin,
+    };
+  }
+  const outcome = finished ? resultOutcome() : null;
+
   return (
     <div>
       <Helmet>
@@ -561,7 +589,7 @@ const Test = ({
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-200">
                       {[
                         { icon: <LuListChecks />, label: t("Questions"), value: data.question?.length ?? 0 },
-                        { icon: <LuTarget />, label: t("Approval percentage"), value: `${data.settings.passing_score ?? 75}%` },
+                        { icon: <LuTarget />, label: t("Minimum approval percentage"), value: `${data.settings.passing_score ?? 75}%` },
                         { icon: <LuClock />, label: t("Time limit"), value: Number(data.settings.time) > 0 ? `${data.settings.time} ${t("min")}` : t("No limit") },
                         { icon: <LuRepeat />, label: t("Attempts"), value: Number(data.settings.retries_allowed) > 0 ? data.settings.retries_allowed : t("Unlimited") },
                       ].map((card) => (
@@ -599,34 +627,18 @@ const Test = ({
                 ) : finished ? (
                   <div className="flex flex-col mt-4">
                     {(() => {
-                      const correctAnswers =
-                        result.items?.filter((r) => r.is_correct).length || 0;
-                      const totalQuestions = result.items?.length || 1;
-                      const percentage =
-                        (correctAnswers * 100) / totalQuestions;
-                      const passingScore = data.settings?.passing_score ?? 75;
-                      const isApproved = percentage >= passingScore;
-                      // Mesma regra dos relatórios (utils/courseStatus): só há limite de tentativas quando
-                      // retries_allowed está definido; sem limite pode repetir sempre
-                      const attemptsProgress = pendingAttempt
-                        ? [...progress, pendingAttempt]
-                        : progress;
-                      const canStillRetry =
-                        !isApproved &&
-                        // A equipa (Admin) pode sempre repetir o teste
-                        (isAdmin || !isTestFailed(attemptsProgress, selectedCourseItem));
+                      const { correctAnswers, totalQuestions, percentage, passingScore, isApproved, canStillRetry, triesUsed, triesLimit, answeredCount, canReview } = outcome;
                       const statusLabel = isApproved
                         ? t("Approved")
                         : canStillRetry
                           ? t("Failed test")
                           : t("Repproved Test");
-                      const answeredCount =
-                        result.items?.filter((r) => !r.unanswered).length || 0;
+                      const tone = isApproved ? "#2F8351" : "#DB0709";
 
                       return (
                         <>
                           {/* LAYOUT UNIFICADO DE RESULTADOS PARA APROVADO, REPROVADO E TEMPO ESGOTADO */}
-                          <div className="flex flex-col justify-center items-center p-4 sm:p-6 bg-white mt-4 rounded-[5px]">
+                          <div className="page-enter flex flex-col justify-center items-center p-4 sm:p-6 bg-white mt-4 rounded-[5px]">
                             {result.timeUp ? (
                               // Tempo limite esgotado: resultado com as respostas dadas durante o tempo
                               <>
@@ -652,44 +664,51 @@ const Test = ({
                               </>
                             ) : (
                               <>
-                                <p className="font-ryker mb-4 font-bold text-[24px]">
-                                  {t("Result")}
-                                </p>
-                                {isApproved ? (
-                                  <AiFillCheckCircle className="text-[80px] text-[#2F8351]" />
-                                ) : (
-                                  <AiFillCloseCircle className="text-[80px] text-[#DB0709]" />
-                                )}
-                                <p className="font-ryker mt-4 mb-4 text-[24px] font-bold">
+                                <div
+                                  className={`grid h-16 w-16 sm:h-20 sm:w-20 place-items-center rounded-full border-2 border-dashed ${isApproved ? "border-[#2F8351] bg-[#EEF7F1]" : "border-[#DB0709] bg-[#FFF1F1]"}`}>
+                                  {isApproved ? (
+                                    <AiFillCheckCircle className="text-[44px] sm:text-[54px] text-[#2F8351]" />
+                                  ) : (
+                                    <AiFillCloseCircle className="text-[44px] sm:text-[54px] text-[#DB0709]" />
+                                  )}
+                                </div>
+                                <p className="font-ryker mt-3 sm:mt-4 text-center text-[20px] sm:text-[24px] font-bold leading-tight text-[#163986]">
                                   {statusLabel}
                                 </p>
+                                {!isApproved && canStillRetry && (
+                                  <p className="mt-2 max-w-125 text-center text-[13px] sm:text-[14px] text-[#5F6B7A]">
+                                    {t("You did not reach the minimum approval percentage. Review the content and try again.")}
+                                  </p>
+                                )}
                               </>
                             )}
-                            <p
-                              className={`text-[14px] sm:text-[16px] ${result.timeUp ? "mt-1" : "mt-4"}`}>
-                              <b>{t("Your tries")}:</b>{" "}
-                              {
-                                attemptsProgress.filter(
-                                  (p) =>
-                                    p.activity_type === "test" &&
-                                    p.is_deleted !== 1 &&
-                                    p.id_course === course.id &&
-                                    p.id_course_test === selectedCourseItem.id,
-                                ).length
-                              }
-                              {Number(data.settings?.retries_allowed) > 0 ? (
-                                <> / {data.settings?.retries_allowed}</>
-                              ) : null}
-                            </p>
-                            <p className="mt-4">{t("Your percentage")}:</p>
-                            <p className="mb-4 text-[24px] font-bold">
-                              {floorPercent(percentage)}%
-                            </p>
-                            {!isApproved && (
-                              <p className="text-center text-[14px] text-[#666]">
-                                {t("You needed")} {passingScore}% {t("to pass")}
+
+                            {/* Percentagem, respostas certas e tentativas */}
+                            <div className="mt-5 grid w-full max-w-125 grid-cols-3 gap-2 sm:gap-3">
+                              {[
+                                { label: t("Your percentage"), value: `${floorPercent(percentage)}%`, color: tone },
+                                { label: t("Correct answers"), value: `${correctAnswers} / ${totalQuestions}`, color: "#163986" },
+                                { label: t("Your tries"), value: triesLimit ? `${triesUsed} / ${triesLimit}` : triesUsed, color: "#163986" },
+                              ].map((card) => (
+                                <div key={card.label} className="flex flex-col items-center justify-center rounded-[10px] bg-[#F1F9FF] px-1.5 py-3 text-center">
+                                  <span className="font-ryker text-[20px] sm:text-[24px] font-bold leading-tight" style={{ color: card.color }}>
+                                    {card.value}
+                                  </span>
+                                  <span className="mt-1 text-[11px] sm:text-[12px] leading-tight text-[#5F6B7A]">{card.label}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* A percentagem na barra, com o mínimo de aprovação marcado */}
+                            <div className="mt-5 w-full max-w-125">
+                              <div className="relative h-3 rounded-full bg-[#E9EDF3]" role="img" aria-label={`${floorPercent(percentage)}% / ${passingScore}%`}>
+                                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.min(100, floorPercent(percentage))}%`, backgroundColor: tone }} />
+                                <span className="absolute -top-1 -bottom-1 w-0.5 rounded bg-[#163986]" style={{ left: `${passingScore}%` }} aria-hidden="true" />
+                              </div>
+                              <p className="mt-2 text-center text-[12px] sm:text-[13px] text-[#5F6B7A]">
+                                {t("Minimum approval percentage")}: <b className="text-[#163986]">{passingScore}%</b>
                               </p>
-                            )}
+                            </div>
                           </div>
 
                           {/* BANNER DE AVISO - APENAS PARA TESTES REPROVADOS SEM TENTATIVAS RESTANTES */}
@@ -706,34 +725,30 @@ const Test = ({
                             </div>
                           )}
 
-                          {/* AÇÕES */}
-                          <div
-                            className={`flex mb-4 mt-4 w-full gap-2 ${isApproved ? "justify-center" : ""}`}>
-                            <Button
-                              size="large"
-                              className="blue flex-1"
-                              onClick={() => setReview(!review)}
-                              icon={<RxFileText />}>
-                              {review
-                                ? t("Hide questions")
-                                : t("Review questions")}
-                            </Button>
+                          {/* AÇÕES: repetir (se ainda pode) e rever as perguntas (só depois de aprovado ou sem mais tentativas) */}
+                          <div className="mt-4 mb-4 flex w-full flex-col gap-2 sm:flex-row">
                             {!isApproved && canStillRetry && !missedExpired && (
-                              <Button
-                                size="large"
-                                className="flex-1 main-secondary-cta-button"
-                                onClick={() => restartTest()}
-                                icon={<RxReload />}>
+                              <Button size="large" className="flex-1 main-cta-button" type="primary" onClick={() => restartTest()} icon={<RxReload />}>
                                 {t("Restart test")}
                               </Button>
                             )}
+                            {canReview && (
+                              <Button size="large" className="blue flex-1" onClick={() => setReview(!review)} icon={<RxFileText />}>
+                                {review ? t("Hide questions") : t("Review questions")}
+                              </Button>
+                            )}
                           </div>
+                          {!canReview && (
+                            <p className="mb-2 text-center text-[12px] sm:text-[13px] text-[#5F6B7A]">
+                              {t("You can review the questions after you pass or use all your attempts")}
+                            </p>
+                          )}
                         </>
                       );
                     })()}
 
                     {/* LISTA DE QUESTÕES */}
-                    {result.items?.map((q, i) => (
+                    {outcome?.canReview && result.items?.map((q, i) => (
                       <div
                         className={`p-4 sm:p-6 flex flex-col bg-white rounded-[5px] border-2 border-dashed border-[#00B9D6] ${review ? "flex mt-4 w-full" : "hidden"}`}>
                         <div className="flex justify-between gap-2">
@@ -839,9 +854,10 @@ const Test = ({
                   </div>
                 ) : (
                   <Form form={form} onFinish={submit}>
-                    {/* Tempo limite: só aparece quando o teste tem limite de tempo */}
+                    {/* Tempo limite: só aparece quando o teste tem limite de tempo. Fundo azul claro da Bial; o texto e a barra em azul escuro
+                    (4,2:1 de contraste, contra 2,4:1 do branco sobre este azul) */}
                     {Number(data.settings?.time) > 0 && (
-                      <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#C5CEE1] rounded-[5px] mt-3 sm:mt-4">
+                      <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#00B9D6] rounded-[5px] mt-3 sm:mt-4">
                         <div className="flex justify-between items-center gap-2">
                           <p className="text-[#163986] font-semibold text-[12px] sm:text-[13px] lg:text-[14px]">
                             {t("Limit time")}
@@ -854,8 +870,8 @@ const Test = ({
                           percent={timePercentage}
                           showInfo={false}
                           size="small"
-                          railColor={"#FFF"}
-                          strokeColor={"#00B9D6"}
+                          railColor={"rgba(255, 255, 255, 0.55)"}
+                          strokeColor={"#163986"}
                           className="mb-0!"
                         />
                       </div>

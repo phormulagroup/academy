@@ -2,6 +2,7 @@ import axios from "axios";
 import BialSpin from "../../../components/bialSpin";
 import { useEffect, useState, useCallback } from "react";
 import { Button, Empty, Progress, Tabs } from "antd";
+import { AiOutlineCloudDownload } from "react-icons/ai";
 import { useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -14,7 +15,6 @@ import { Context } from "../../../utils/context";
 
 import endpoints from "../../../utils/endpoints";
 import config from "../../../utils/config";
-import useScrollToTop from "../../../utils/scrollToTop";
 import { courseMaterials } from "../../../utils/materials";
 import {
   courseDateState,
@@ -33,23 +33,23 @@ import {
   PiHourglassMedium,
   PiShieldCheck,
 } from "react-icons/pi";
-import { RxChevronUp } from "react-icons/rx";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 import CourseObjection from "./objection/objection";
 import { Helmet } from "react-helmet";
 import { hasFullAccess } from "../../../utils/roles";
 
 import { itemsProgress } from "../../../utils/percent";
+import { downloadCertificate } from "../../../utils/certificate";
 
 export default function CourseDetails() {
   const { user, languages, toastApi, windowDimension } = useContext(Context);
-  const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState({});
   const [modules, setModules] = useState([]);
   const [progress, setProgress] = useState([]);
   const [activeKey, setActiveKey] = useState("1");
+  const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false);
 
   let { slug } = useParams();
   const { t } = useTranslation();
@@ -282,6 +282,19 @@ export default function CourseDetails() {
         ? "failed"
         : null;
 
+  // Certificado: só para quem foi aprovado e se o curso tem um modelo de certificado associado
+  const canDownloadCertificate = courseStatus === "approved" && !!data.course?.id_course_certificate;
+
+  async function handleDownloadCertificate() {
+    if (isDownloadingCertificate) return;
+    setIsDownloadingCertificate(true);
+    try {
+      await downloadCertificate(data.course, progress, user);
+    } finally {
+      setIsDownloadingCertificate(false);
+    }
+  }
+
   return (
     <div className="bg-[#FFFFFF] relative">
       {data.course && (
@@ -401,18 +414,30 @@ export default function CourseDetails() {
                           />
                         </div>
                         {courseProgress.percent === 100 ? (
-                          <Button
-                            className="min-w-50 main-cta-button w-1/2 lg:w-auto text-xs sm:text-sm md:text-base"
-                            color="#163986"
-                            variant="solid"
-                            size="large"
-                            onClick={() =>
-                              navigate(`/${i18n.language}/courses/${slug}/learning`, {
-                                state: { course: { name: data?.course?.name, thumbnail: data?.course?.thumbnail } },
-                              })
-                            }>
-                            {t("Review")}
-                          </Button>
+                          <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+                            {canDownloadCertificate && (
+                              <Button
+                                className="certificate-button min-w-50 w-full font-semibold! lg:w-auto text-xs sm:text-sm md:text-base"
+                                size="large"
+                                icon={<AiOutlineCloudDownload className="text-[20px]" />}
+                                loading={isDownloadingCertificate}
+                                onClick={handleDownloadCertificate}>
+                                {t("Download certificate")}
+                              </Button>
+                            )}
+                            <Button
+                              className="min-w-50 main-cta-button w-full lg:w-auto text-xs sm:text-sm md:text-base"
+                              color="#163986"
+                              variant="solid"
+                              size="large"
+                              onClick={() =>
+                                navigate(`/${i18n.language}/courses/${slug}/learning`, {
+                                  state: { course: { name: data?.course?.name, thumbnail: data?.course?.thumbnail } },
+                                })
+                              }>
+                              {t("Review")}
+                            </Button>
+                          </div>
                         ) : progress.filter((p) => p.activity_type === "enroll")
                             .length === 0 ? (
                           <Button
@@ -562,16 +587,6 @@ export default function CourseDetails() {
             style={{ color: "#163986", textAlign: "center", padding: "2rem" }}
           />
         </div>
-      )}
-      {/* Scroll to Top Button */}
-      {showScrollToTop && (
-        <button
-          onClick={scrollToTop}
-          style={{ backgroundColor: "#FFC600" }}
-          className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
-          title={t("Scroll to top")}>
-          <RxChevronUp className="w-6! h-6! text-black!" />
-        </button>
       )}
     </div>
   );

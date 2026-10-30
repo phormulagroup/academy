@@ -20,7 +20,7 @@ export default function CourseMaterial({ data }) {
           {materials.map((m, i) => (
             <div
               key={i}
-              className="group flex items-center border border-[#00B9D6]/80 bg-[#00B9D6]/10 hover:bg-[#FFFFFF] p-4 mb-4 cursor-pointer rounded-[5px] transition-colors"
+              className="group flex items-center border border-[#00B9D6]/80 bg-[#00B9D6]/10 hover:bg-[#FFFFFF] p-4 mb-4 cursor-pointer rounded-[12px] transition-colors"
               onClick={() => downloadFile(m)}>
               <div className="text-[#00B9D6] p-1 rounded mr-2 transition-colors">
                 <PiBookBookmark className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
