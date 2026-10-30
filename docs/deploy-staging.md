@@ -97,6 +97,13 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
      Cada função fica com nelas o que já tinha em Monitorização, por isso ninguém perde acesso. Repetível.
    - `2026-10-15-form-submission-read.sql`: acrescenta `is_read` e `read_at` a `form_submission` (Respostas lidas / por ler; o número no menu conta só as por ler) e marca como lidas as que já existiam.
      Já foi aplicada na BD de staging. Sem a coluna a API funciona na mesma, só sem estado nem contador.
+   - `2026-10-16-video-progress.sql`: cria `course_video_progress` (a posição de cada vídeo de um tópico, por aluno). A app grava-a a cada 30 s durante a reprodução, ao pausar e ao esconder a página,
+     e o aluno retoma o vídeo onde ficou. Aditiva: só cria uma tabela. Sem ela a app funciona na mesma (lê como "sem progresso" e não grava), só não retoma. Quando a equipa desmarca um tópico
+     concluído (Progresso do aluno), as posições dos vídeos desse tópico apagam-se e o aluno recomeça-os do início.
+   - `2026-10-17-test-defaults.sql`: todos os testes passam a ter 45 minutos, 75% de percentagem mínima de aprovação e as tentativas do idioma do curso (1 em português e francês, 2 em espanhol e inglês;
+     `retries_allowed` conta as tentativas no total). Os testes novos já nascem assim (`utils/testDefaults.js`) e a cópia de um curso para outro idioma ajusta as tentativas. **Altera dados**: antes de mexer
+     guarda os valores antigos em `course_test_settings_backup` (voltar atrás: `UPDATE course_test t JOIN course_test_settings_backup b ON b.id = t.id SET t.settings = b.settings`). Um teste que antes não tinha
+     limite e que um aluno já reprovou tantas vezes quanto o novo limite deixa de poder ser repetido. Repetível.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
@@ -109,6 +116,14 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
    - Variável de ambiente **`NODE_ENV=staging`** (sem ela carrega `.env.development`)
    - *Run NPM Install* (os avisos `npm warn deprecated … glob` são inofensivos) e *Restart*.
 5. Se o Passenger **tirar** o `/api` antes de chegar ao Node, pôr `API_PREFIX=` (vazio) e reiniciar.
+
+## Visualizador de PDFs (documentos)
+O visualizador (`@embedpdf`) corre o motor PDFium em WebAssembly. Por omissão vai buscá-lo, e a um manifesto de carimbos, à CDN `cdn.jsdelivr.net`, que a CSP do site
+(`connect-src 'self' blob: https://*.vimeo.com`) bloqueia: o documento ficava para sempre "a carregar" e depois dava erro. Por isso a webapp serve o motor do próprio domínio
+(`assets/pdfium-<hash>.wasm`, 4,6 MB, 2,1 MB comprimido, cache imutável como o resto de `assets/`) e desliga o manifesto, **sem abrir a CSP a nenhuma CDN**.
+O `.htaccess` declara `application/wasm` para `.wasm`. Depois de um deploy, abrir um documento: o primeiro carrega o motor (uma vez por browser), os seguintes já o têm em cache.
+Se o documento falhar, a página mostra um aviso com "Tentar de novo" (nunca o ecrã do viewer para abrir um PDF do computador).
+A rota `/api/document/readFile` serve o PDF em stream, com cache privada de 1 hora (ETag/304) e erro 404/502 em JSON quando o ficheiro não existe.
 
 ## Sessão, cookies e segurança
 - **Sessão em cookie `HttpOnly`** (`academy_session`, `SameSite=Lax`, `Secure` quando o pedido chega por HTTPS): o token nunca passa pelo JavaScript da página (nem fica no `localStorage`), por isso um XSS
