@@ -12,7 +12,7 @@ function isDialogOpen() {
 // Com uma gaveta ou janela aberta o toast vai para o canto, para não tapar o formulário
 const resolvePlacement = (explicit) => explicit ?? (isDialogOpen() ? "topLeft" : "top");
 
-const TYPE_COLOR = { success: "#1fb26a", error: "#ff4d4f" };
+const TYPE_COLOR = { success: "#1fb26a", error: "#e5484d", warning: "#f5a524", info: "#163986" };
 
 const GENERIC_TITLE = {
   success: "Done",

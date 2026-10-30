@@ -1,7 +1,6 @@
 import { useState, useContext } from "react";
 import { toastRef } from "../../../../utils/notify";
 import { Button, Spin, Result } from "antd";
-import { AiOutlineLoading } from "react-icons/ai";
 import axios from "axios";
 import { Context } from "../../../../utils/context";
 import endpoints from "../../../../utils/endpoints";
@@ -117,7 +116,6 @@ function ImportProcess({
   return (
     <Spin
       spinning={isLoading}
-      indicator={<AiOutlineLoading spin />}
       tip={t("Importing translations...")}
     >
       <div>

@@ -1233,18 +1233,34 @@ select {
   background: rgba(6, 24, 72, 0.2) !important;
 }
 
+/* Botão do certificado: o raio é o dos outros botões (o do antd para o tamanho), sem pílula. No hover o fundo fica transparente e o
+texto e o ícone passam a amarelo, com a borda amarela. O destaque é um anel (box-shadow), não uma borda mais grossa: a borda
+alargava o botão e empurrava o resto da linha. */
 .certificate-button {
   background-color: #ffc600 !important;
   border: 2px solid #ffc600;
   color: #000 !important;
-  border-radius: 20px !important;
   font-size: 12px !important;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease !important;
 }
-
-/* O destaque no hover é um anel (box-shadow), não uma borda mais grossa: a borda alargava o botão e empurrava o resto da linha */
-.certificate-button:hover {
-  box-shadow: 0 0 0 3px rgba(255, 198, 0, 0.45) !important;
+.certificate-button:hover:not(:disabled) {
+  background-color: transparent !important;
   border: 2px solid #ffc600 !important;
+  color: #ffc600 !important;
+  box-shadow: 0 0 0 3px rgba(255, 198, 0, 0.25) !important;
+  transform: translateY(-1px);
+}
+.certificate-button:hover:not(:disabled) svg,
+.certificate-button:hover:not(:disabled) span {
+  color: inherit !important;
+}
+.certificate-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px rgba(255, 198, 0, 0.35) !important;
 }
 
 /* Botões do cartão do utilizador (A minha conta e Resultados) */
@@ -2771,43 +2787,148 @@ body:has(.admin-layout) .ant-drawer-close:hover {
 }
 /* ===== fim: eLearning - estado do curso ===== */
 
-/* Toasts (toastApi, ver utils/notify.js): cartões de notificação mais pequenos, com título a negrito e a barra de
-progresso na cor do tipo. Os dois seletores da barra ficam em regras SEPARADAS porque um browser que não reconheça um
-deles invalida a regra inteira. */
+/* Toasts (toastApi, ver utils/notify.js): cartões da plataforma, com a barra lateral e a barra de progresso na cor do tipo
+(sucesso, erro, aviso; a informação usa o azul da marca), o título em Ryker azul-Bial e a sombra da marca. Cada cor vem da
+variável --toast-color do tipo. Os seletores da barra de progresso ficam em regras SEPARADAS porque um browser que não
+reconheça um deles invalida a regra inteira. */
 .ant-notification-notice {
-  width: 320px !important;
-  padding: 12px 16px !important;
+  --toast-color: #163986;
+  width: 340px !important;
+  padding: 14px 18px 14px 16px !important;
+  border-radius: 12px !important;
+  border-left: 4px solid var(--toast-color);
+  box-shadow: 0 10px 30px rgba(22, 57, 134, 0.16), 0 2px 6px rgba(22, 57, 134, 0.08) !important;
+  overflow: hidden;
 }
-.ant-notification-notice-title {
+.ant-notification-notice-success { --toast-color: #1fb26a; }
+.ant-notification-notice-error { --toast-color: #e5484d; }
+.ant-notification-notice-warning { --toast-color: #f5a524; }
+.ant-notification-notice-info { --toast-color: #163986; }
+.ant-notification-notice .ant-notification-notice-title {
+  color: #163986 !important;
+  font-family: "Ryker Text", Poppins, sans-serif !important;
   font-size: 14px !important;
-  font-weight: 700;
+  font-weight: 600 !important;
+  line-height: 1.35;
 }
-.ant-notification-notice-description {
+.ant-notification-notice .ant-notification-notice-description {
+  color: #4b5262 !important;
   font-size: 13px !important;
+  line-height: 1.5;
 }
 .ant-notification-notice-icon {
+  color: var(--toast-color) !important;
   font-size: 20px !important;
 }
 .ant-notification-notice-close {
-  top: 12px !important;
-  right: 16px !important;
-  inset-inline-end: 16px !important;
+  top: 14px !important;
+  right: 14px !important;
+  inset-inline-end: 14px !important;
+  color: #8a8d98;
+  border-radius: 6px;
 }
-.ant-notification-notice-success
-  .ant-notification-notice-progress::-webkit-progress-value {
-  background: #1fb26a !important;
+.ant-notification-notice-close:hover {
+  background: rgba(22, 57, 134, 0.08);
+  color: #163986;
 }
-.ant-notification-notice-success
-  .ant-notification-notice-progress::-moz-progress-bar {
-  background: #1fb26a !important;
+.ant-notification-notice-progress {
+  height: 3px !important;
 }
-.ant-notification-notice-error
-  .ant-notification-notice-progress::-webkit-progress-value {
-  background: #ff4d4f !important;
+.ant-notification-notice-progress::-webkit-progress-bar {
+  background: transparent !important;
 }
-.ant-notification-notice-error
-  .ant-notification-notice-progress::-moz-progress-bar {
-  background: #ff4d4f !important;
+.ant-notification-notice-progress::-webkit-progress-value {
+  background: var(--toast-color) !important;
+  border-radius: 0 3px 3px 0;
+}
+.ant-notification-notice-progress::-moz-progress-bar {
+  background: var(--toast-color) !important;
+}
+
+/* ===== Animações de entrada ===== */
+/* Toasts: o antd deslizava o cartão desde muito acima (top: -maxHeight), o que é brusco. Aqui entra com um deslize curto, um
+ligeiro aumento de escala e opacidade, a partir do lado de onde aparece. A saída mantém a do antd. */
+@keyframes toast-in-top {
+  from { opacity: 0; transform: translateY(-14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-in-bottom {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-in-left {
+  from { opacity: 0; transform: translateX(-18px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-in-right {
+  from { opacity: 0; transform: translateX(18px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.ant-notification .ant-notification-fade-enter.ant-notification-fade-enter-active,
+.ant-notification .ant-notification-fade-appear.ant-notification-fade-appear-active {
+  animation-name: toast-in-top !important;
+  animation-duration: 0.45s !important;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+.ant-notification-bottom .ant-notification-fade-enter-active,
+.ant-notification-bottomLeft .ant-notification-fade-enter-active,
+.ant-notification-bottomRight .ant-notification-fade-enter-active {
+  animation-name: toast-in-bottom !important;
+}
+.ant-notification-topLeft .ant-notification-fade-enter-active,
+.ant-notification-bottomLeft .ant-notification-fade-enter-active {
+  animation-name: toast-in-left !important;
+}
+.ant-notification-topRight .ant-notification-fade-enter-active,
+.ant-notification-bottomRight .ant-notification-fade-enter-active {
+  animation-name: toast-in-right !important;
+}
+
+/* Páginas: o conteúdo entra com um fade e um pequeno deslize cada vez que a rota muda (hook utils/usePageEnter.js) */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.page-enter {
+  animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Linhas das tabelas e cartões das listas: só animam as que aparecem de novo (nova página, filtro, dados que chegam) */
+@keyframes row-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.ant-table-tbody > tr.ant-table-row {
+  animation: row-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Spinner: só aparece ao fim de 200 ms (carregamentos rápidos não piscam) e entra com um fade */
+@keyframes bial-spin-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.bial-spin {
+  animation: bial-spin-in 0.3s ease 0.2s both;
+}
+/* No <Spin> do antd o indicador fica centrado e o conteúdo por baixo esbate-se com a mesma suavidade */
+.ant-spin-container {
+  transition: opacity 0.3s ease !important;
+}
+.ant-spin-blur {
+  opacity: 0.45 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .ant-table-tbody > tr.ant-table-row,
+  .bial-spin {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
+  .ant-notification .ant-notification-fade-enter-active,
+  .ant-notification .ant-notification-fade-appear-active {
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Progresso de um aluno por módulo (backoffice > utilizador): cada módulo é um cartão com borda */
@@ -3239,22 +3360,19 @@ deles invalida a regra inteira. */
 }
 
 /* ===== Escolha do idioma nos formulários de login e registo (components/auth/languageCarousel.jsx) ===== */
-/* Carrossel: 3 idiomas visíveis (2 nos ecrãs muito estreitos), cada um com a mesma largura; com menos idiomas ocupam o espaço todo */
+/* Todos os idiomas visíveis de uma vez, sem setas nem scroll: até 4 por linha com a mesma largura (2 + 2 nos ecrãs muito estreitos, onde
+4 não cabem); com mais idiomas do que isso, partem em linhas */
 .auth-lang-track {
-  --auth-lang-visible: min(var(--auth-lang-count, 3), 3);
-  scrollbar-width: none;
-  scroll-padding-inline: 0.25rem;
-}
-.auth-lang-track::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(min(var(--auth-lang-count, 4), 4), minmax(0, 1fr));
+  gap: 0.5rem;
 }
 .auth-lang-item {
-  flex: 0 0 calc((100% - (var(--auth-lang-visible) - 1) * 0.5rem) / var(--auth-lang-visible));
   min-width: 0;
 }
 @media (max-width: 359px) {
   .auth-lang-track {
-    --auth-lang-visible: min(var(--auth-lang-count, 2), 2);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3285,7 +3403,29 @@ deles invalida a regra inteira. */
     box-shadow: 0 14px 28px rgba(22, 57, 134, 0.22);
   }
 }
+/* Entrada dos cartões do catálogo (cursos, documentos, downloads): depois do loading entram um a um (escalonados), em vez de
+aparecerem de uma vez. "backwards" (e não "both") para o transform do hover continuar a funcionar depois da animação. */
+@keyframes catalog-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+.catalog-card {
+  animation: catalog-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.catalog-card:nth-child(2) { animation-delay: 0.05s; }
+.catalog-card:nth-child(3) { animation-delay: 0.1s; }
+.catalog-card:nth-child(4) { animation-delay: 0.15s; }
+.catalog-card:nth-child(5) { animation-delay: 0.2s; }
+.catalog-card:nth-child(6) { animation-delay: 0.25s; }
+.catalog-card:nth-child(7) { animation-delay: 0.3s; }
+.catalog-card:nth-child(8) { animation-delay: 0.35s; }
+.catalog-card:nth-child(n + 9) { animation-delay: 0.4s; }
 @media (prefers-reduced-motion: reduce) {
+  .catalog-card {
+    animation: none;
+  }
   .catalog-card {
     transition: none;
   }

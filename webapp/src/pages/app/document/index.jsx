@@ -11,15 +11,12 @@ import { Link } from "react-router-dom";
 import i18n from "../../../utils/i18n";
 import config from "../../../utils/config";
 import { getMarginClasses } from "../../../utils/responsive";
-import useScrollToTop from "../../../utils/scrollToTop";
 import { Helmet } from "react-helmet";
-import { RxChevronUp } from "react-icons/rx";
 
 export default function Document() {
   const { t, user, languages, windowDimension } = useContext(Context);
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
-  const { isVisible: showScrollToTop, scrollToTop } = useScrollToTop();
 
   function getData() {
     setIsLoading(true);
@@ -126,16 +123,6 @@ export default function Document() {
           </div>
         )}
       </div>
-      {/* Scroll to Top Button */}
-      {showScrollToTop && (
-        <button
-          onClick={scrollToTop}
-          style={{ backgroundColor: "#FFC600" }}
-          className="fixed! bottom-8 right-8 h-12! w-12! rounded-full! flex justify-center items-center shadow-lg! cursor-pointer hover:opacity-90 transition-opacity border-0"
-          title={t("Scroll to top")}>
-          <RxChevronUp className="w-6! h-6! text-black!" />
-        </button>
-      )}
     </div>
   );
 }

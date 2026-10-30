@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Drawer, Form, Input, Spin, Switch, Tooltip } from "antd";
-import { LoadingOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import {
@@ -308,7 +307,7 @@ export default function RoleForm({ data, open, close }) {
 
           {isLoading ? (
             <div className="flex justify-center items-center py-10">
-              <Spin indicator={<LoadingOutlined spin />} />
+              <Spin />
             </div>
           ) : (
             <div className="flex flex-col gap-4">

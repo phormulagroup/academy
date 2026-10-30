@@ -40,6 +40,8 @@ import dayjs from "dayjs";
 import useChangeLanguage from "../utils/useChangeLanguage";
 import LanguageSelector from "../utils/languageSelector";
 import UserAvatar from "../utils/userAvatar";
+import ScrollToTopButton from "../components/app/scrollToTopButton";
+import usePageEnter from "../utils/usePageEnter";
 
 const { Header, Content } = Layout;
 
@@ -115,6 +117,7 @@ const Main = () => {
   const [isOpenLogout, setIsOpenLogout] = useState(false);
 
   const location = useLocation();
+  const pageRef = usePageEnter(location.pathname);
   const navigate = useNavigate();
 
   // Paths are derived from the current language so they stay in sync after changeLanguage
@@ -523,12 +526,19 @@ const Main = () => {
           )}
         </Header>
         {/* Coluna flex: permite às páginas ocuparem a altura disponível (ex.: About centrada no eixo Y) */}
-        <Content className="bg-white min-h-[unset]! flex flex-col">
+        <Content ref={pageRef} className="page-enter bg-white min-h-[unset]! flex flex-col">
           <Outlet />
         </Content>
         <Footer
-          className="px-0! py-6! md:py-8!"
+          className="relative px-0! py-6! md:py-8!"
           style={{ backgroundColor: "#163986" }}>
+          {/* Voltar ao topo: à direita, a meio da linha entre o fim do conteúdo e o footer (alinhado com a margem do conteúdo).
+          A faixa não apanha cliques (pointer-events-none): só o botão, para não tapar o que está por baixo. */}
+          <div className="page-frame pointer-events-none absolute inset-x-0 top-0 flex -translate-y-1/2 justify-end">
+            <div className="pointer-events-auto">
+              <ScrollToTopButton />
+            </div>
+          </div>
           {/* Mesma moldura (.page-frame) do header e do conteúdo */}
           <div className="page-frame flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-8">
             <div className="w-full">

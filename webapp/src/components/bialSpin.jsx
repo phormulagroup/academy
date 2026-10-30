@@ -14,8 +14,9 @@ export default function BialSpin({ size = 96, className = "", label }) {
     <span
       className={`bial-spin ${className}`}
       style={{ width: size, height: size }}
-      role="status"
-      aria-label={label ?? "Loading"}>
+      role={label === "" ? undefined : "status"}
+      aria-label={label || undefined}
+      aria-hidden={label === "" ? true : undefined}>
       {DOTS.map((dot, i) => (
         <span
           key={i}

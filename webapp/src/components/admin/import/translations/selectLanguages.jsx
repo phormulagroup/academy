@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { toastRef } from "../../../../utils/notify";
 import { Button, Spin } from "antd";
-import { AiOutlineLoading } from "react-icons/ai";
 import { useTranslation } from "react-i18next";
 
 function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideButtons, headerSelectedLanguage }) {
@@ -69,7 +68,7 @@ function SelectLanguages({ step, uploadedData, allLanguages, next, prev, hideBut
   };
 
   return (
-    <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
+    <Spin spinning={isLoading}>
       <div>
         <p className="text-[26px] font-bold text-center mb-0 font-ryker">
           {t("Select Languages")}

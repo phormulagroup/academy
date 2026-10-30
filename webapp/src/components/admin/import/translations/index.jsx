@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Drawer, Spin, Steps, Button } from "antd";
-import { AiOutlineLoading } from "react-icons/ai";
 
 import UploadFile from "../upload";
 import SelectLanguages from "./selectLanguages";
@@ -127,7 +126,7 @@ function TranslationsImport({ open, close }) {
       title={t("Import Translations")}
       extra={[]}
     >
-      <Spin spinning={isLoading} indicator={<AiOutlineLoading spin />}>
+      <Spin spinning={isLoading}>
         <Steps
           current={currentStep}
           items={steps}

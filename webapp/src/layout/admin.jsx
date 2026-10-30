@@ -36,6 +36,7 @@ import LanguageSelector from "../utils/languageSelector";
 import UserAvatar from "../utils/userAvatar";
 import Logout from "../components/logout";
 import BialSpin from "../components/bialSpin";
+import usePageEnter from "../utils/usePageEnter";
 
 import logo from "../assets/Backoffice/BIAL-Regional-Academy.svg";
 import logoColor from "../assets/BIAL-Regional-Academy.png";
@@ -307,6 +308,7 @@ const Main = () => {
   // No backoffice o seletor escolhe só a região cujos dados se veem/editam (selectedLanguage): os textos ficam no idioma da conta
   const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false);
   const switchTimer = useRef(null);
+  const pageRef = usePageEnter(location.pathname);
   const selectLanguage = (lang) => {
     if (lang.id === selectedLanguage?.id) return;
     localStorage.setItem("id_lang", lang.id);
@@ -671,7 +673,7 @@ const Main = () => {
                   <p className="m-0 text-[13px] text-[#5F6B7A]">{t("Loading the selected language")}...</p>
                 </div>
               )}
-              <div className="p-6 flex-1 min-h-0 overflow-auto">
+              <div ref={pageRef} className="page-enter p-6 flex-1 min-h-0 overflow-auto">
                 {canAccess(location.pathname.replace(/\/$/, "") || "/admin") ? (
                   <Outlet />
                 ) : (

@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { Button, Spin, Upload } from "antd";
 import * as XLSX from "xlsx";
-import { InboxOutlined, LoadingOutlined } from "@ant-design/icons";
+import { InboxOutlined } from "@ant-design/icons";
 import { FaFileExcel } from "react-icons/fa";
 import { LuDownload } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
@@ -52,7 +52,7 @@ function UploadFile({ next, fields = [], table }) {
   }
 
   return (
-    <Spin spinning={isLoading} tip={t("Loading...")} indicator={<LoadingOutlined spin />}>
+    <Spin spinning={isLoading} tip={t("Loading...")}>
       <div className="mb-6 flex flex-col items-center text-center">
         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E6F9FC]">
           <FaFileExcel className="text-[22px] text-[#163986]" />

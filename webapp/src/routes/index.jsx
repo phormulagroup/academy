@@ -11,6 +11,7 @@ import { useContext } from "react";
 
 import Loading from "../layout/loading";
 import LoadingLanguage from "../layout/loadingLanguage";
+import BialSpin from "../components/bialSpin";
 
 import { adminRoutes } from "./routesAdmin";
 import { userRoutes } from "./routesUser";
@@ -106,6 +107,8 @@ export default function AppRoutes() {
 
 	return (
 		<ConfigProvider
+			// Todos os <Spin> da app (e o loading das tabelas, botões de cartão...) usam o spinner da Bial; a escala vem do tamanho do Spin (em)
+			spin={{ indicator: <BialSpin size="1.6em" label="" /> }}
 			theme={{
 				token: {
 					colorPrimary: "#163986",
@@ -116,6 +119,10 @@ export default function AppRoutes() {
 					fontFamily: "Poppins",
 					blue: "#00b9d6",
 					controlInteractiveSize: 20,
+				},
+				components: {
+					// Os skeletons brilham nas cores da marca em vez do cinzento do antd
+					Skeleton: { gradientFromColor: "rgba(22, 57, 134, 0.06)", gradientToColor: "rgba(22, 57, 134, 0.16)" },
 				},
 			}}
 		>
