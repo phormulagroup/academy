@@ -721,20 +721,28 @@ const Learning = () => {
     typeof window !== "undefined" &&
     window.matchMedia?.("(pointer: coarse)").matches;
   const compactTabs = windowDimension.width < 768 || isLandscapeTouch;
+  // Teste a decorrer: as tabs Materiais e Objection books ficam bloqueadas e, se uma estiver aberta, volta-se à do teste
+  const otherTabsLocked = isTestInProgress && selectedCourseItem?.type === "test";
+  useEffect(() => {
+    if (otherTabsLocked && activeKey !== "1") setActiveKey("1");
+  }, [otherTabsLocked, activeKey]);
 
   const capitalize = (text) =>
     text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 
   // Label das tabs (Topic, Materials, Objection books): em ecrãs compactos só o ícone
-  function tabLabel(key, Icon, text) {
+  // `locked`: tab indisponível (ex.: Materiais com um teste a decorrer), esbatida e com a explicação num tooltip
+  function tabLabel(key, Icon, text, locked = false) {
     const active = activeKey === key;
-    const color = active
-      ? "text-[#163986]"
-      : "text-[#8B9CC3] group-hover:text-[#163986]";
-    return (
+    const color = locked
+      ? "text-[#8B9CC3]"
+      : active
+        ? "text-[#163986]"
+        : "text-[#8B9CC3] group-hover:text-[#163986]";
+    const label = (
       <div
-        className="group flex items-center justify-center p-1 sm:p-2"
-        title={text}
+        className={`group flex items-center justify-center p-1 sm:p-2 ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
+        title={locked ? undefined : text}
         aria-label={text}>
         <Icon
           className={`transition w-5 h-5 md:w-6 md:h-6 shrink-0 ${compactTabs ? "" : "mr-2"} ${color}`}
@@ -746,6 +754,12 @@ const Learning = () => {
           </p>
         )}
       </div>
+    );
+    // Bloqueada: o motivo num tooltip (nos ecrãs compactos, só com ícone, leva também o nome da tab)
+    return locked ? (
+      <Tooltip title={compactTabs ? `${text}: ${t("Not available during the test")}` : t("Not available during the test")}>{label}</Tooltip>
+    ) : (
+      label
     );
   }
 
@@ -1401,20 +1415,25 @@ const Learning = () => {
                           data.course.material &&
                             data.course.material.length > 0 && {
                               key: "2",
+                              // Com um teste a decorrer não se sai do teste para os materiais
+                              disabled: otherTabsLocked,
                               label: tabLabel(
                                 "2",
                                 PiBookBookmark,
                                 t("Materials"),
+                                otherTabsLocked,
                               ),
                               children: <CourseMaterial data={data.course} />,
                             },
                           data.course.objection?.tabs &&
                             data.course.objection?.tabs.length > 0 && {
                               key: "3",
+                              disabled: otherTabsLocked,
                               label: tabLabel(
                                 "3",
                                 PiBookOpenLight,
                                 t("Objection books"),
+                                otherTabsLocked,
                               ),
                               children: <CourseObjection data={data.course} />,
                             },
