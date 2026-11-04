@@ -7,7 +7,8 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { toId, setClause, columnList } = require("../utils/sql");
-const { requirePermission } = require("../utils/permissions");
+const { requirePermission, hasPermission, hasFullAccess, denied } = require("../utils/permissions");
+const { visibleCourses } = require("../utils/courseAccess");
 const { generateCertificatePdf } = require("../utils/certificatePdf");
 
 const { MEDIA_DIR } = require("../utils/paths");
@@ -95,17 +96,39 @@ router.post("/preview", requirePermission("certificate", "read"), (req, res) => 
   }
 });
 
-// Certificado para descarregar: o modelo vem da BD (id) e o nome, curso e data do pedido (como já acontecia quando o
-// PDF era gerado no browser).
+// Certificado para descarregar. Calcula-se aqui, a partir da BD: o nome, o curso, a data e o modelo NUNCA vêm do pedido (antes, qualquer aluno
+// gerava um certificado de qualquer curso, com o nome e a data que quisesse, sem o ter concluído). Só se emite a quem concluiu o curso.
+// `id_user` é o aluno (por omissão, quem pede); o de outra pessoa exige poder ver utilizadores (a equipa, nos resultados de um aluno).
 router.post("/generate", async (req, res) => {
   try {
-    const { id, name, course, date, fileName } = req.body.data || {};
+    const { id_course, id_user } = req.body.data || {};
+    const courseId = toId(id_course);
+    const userId = id_user === undefined || id_user === null ? req.user.id : toId(id_user);
+    if (userId !== req.user.id && !(await hasPermission(req.user, "user", "read"))) return denied(res);
+
     const query = util.promisify(db.query).bind(db);
-    const rows = await query("SELECT * FROM course_certificate WHERE id = ?", [id]);
-    if (rows.length === 0) return res.status(404).send({ message: "Certificate template not found" });
-    const doc = buildCertificate(res, rows[0], { name, course, date });
-    if (doc) sendPdf(res, doc, fileName || "certificate.pdf", "attachment");
+    const [course] = await query("SELECT id, name, id_course_certificate, settings, status FROM course WHERE id = ? AND is_deleted = 0", [courseId]);
+    if (!course?.id_course_certificate) return res.status(404).send({ message: "This course has no certificate" });
+    // Quem pede o seu: tem de ter acesso ao curso (publicado, do seu país e, se restrito, a que pertence), como no catálogo
+    if (userId === req.user.id && !hasFullAccess(req.user) && (course.status === "draft" || (await visibleCourses(query, [course], req.user)).length === 0)) {
+      return res.status(404).send({ message: "This course has no certificate" });
+    }
+    const [person] = await query("SELECT id, name FROM user WHERE id = ? AND is_deleted = 0", [userId]);
+    if (!person) return res.status(404).send({ message: "User not found" });
+    // Só quem concluiu o curso; a data é a da última conclusão
+    const [done] = await query(
+      "SELECT DATE_FORMAT(created_at, '%Y-%m-%d %H:%i') AS completed_at FROM course_user_activity WHERE id_user = ? AND id_course = ? AND activity_type = 'course' " +
+        "AND is_completed = 1 AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY created_at DESC, id DESC LIMIT 1",
+      [userId, courseId],
+    );
+    if (!done) return res.status(403).send({ message: "The course was not completed" });
+    const [template] = await query("SELECT * FROM course_certificate WHERE id = ?", [course.id_course_certificate]);
+    if (!template) return res.status(404).send({ message: "Certificate template not found" });
+
+    const doc = buildCertificate(res, template, { name: person.name, course: course.name, date: done.completed_at });
+    if (doc) sendPdf(res, doc, `${course.name}-${String(person.name).replace(/\s+/g, "-")}.pdf`, "attachment");
   } catch (err) {
+    if (err.status && err.status < 500) return res.status(err.status).send({ message: err.message });
     console.error(err);
     res.status(500).send({ message: "Could not generate the certificate" });
   }

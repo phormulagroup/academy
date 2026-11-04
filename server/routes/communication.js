@@ -11,7 +11,7 @@ const query = util.promisify(db.query).bind(db);
 
 const fail = (res, e) => {
   console.error(e);
-  res.status(500).send({ message: "Some error on server.", error: e.message });
+  res.status(500).send({ message: "Some error on server." });
 };
 
 // A comunicação só se edita enquanto é rascunho; agendada, a enviar ou enviada ficam fixas (cancela-se/duplica-se)

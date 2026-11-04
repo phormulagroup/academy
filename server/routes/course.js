@@ -40,34 +40,6 @@ const TEST_COLUMNS = "course_test.id, course_test.id_course_module, course_test.
 const courseSlug = (name) => slugify(name.replace(/[®™©|]/g, ""), { lower: true, strict: true });
 
 
-router.get("/read", async (req, res) => {
-	const query = util.promisify(db.query).bind(db);
-	try {
-		const rows = await multi(query, 
-			`SELECT ${COURSE_COLUMNS} FROM course; ` +
-				"SELECT course_module. * FROM course_module WHERE is_deleted = 0; " +
-				`SELECT ${TOPIC_COLUMNS} FROM course_topic LEFT JOIN course_module ON course_topic.id_course_module = course_module.id ` +
-				"WHERE course_topic.is_deleted = 0 AND course_module.is_deleted = 0; " +
-				`SELECT ${TEST_COLUMNS} FROM course_test LEFT JOIN course_module ON course_test.id_course_module = course_module.id ` +
-				"WHERE course_test.is_deleted = 0 AND course_module.is_deleted = 0; " +
-				"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
-				"WHERE course_user_activity.id_user = ?; SELECT * FROM product",
-			[req.query.id_user],
-		);
-
-		res.send({
-			courses: rows[0],
-			modules: rows[1],
-			topics: rows[2],
-			tests: rows[3],
-			progress: rows[4],
-			products: rows[5],
-		});
-	} catch (e) {
-		throw e;
-	}
-});
-
 // Lista paginada para o backoffice (a pesquisa, o filtro e a ordenação são feitos na base de dados: a lista cresce, a página não):
 // ?page=1&limit=15&search=&status=active|inactive&id_lang=&sort=internal_name|moduleCount|topicCount|testCount|start|end|status&order=asc|desc
 const startExpr = "IF(JSON_VALID(course.settings), JSON_UNQUOTE(JSON_EXTRACT(course.settings, '$.course_access_expiration_dates.start_date')), NULL)";
@@ -113,27 +85,6 @@ router.get("/options", requirePermission("course", "read"), async (req, res) => 
 	const query = util.promisify(db.query).bind(db);
 	const rows = await query("SELECT id, id_lang, name, internal_name, slug, is_deleted, id_course_certificate FROM course");
 	res.send(rows);
-});
-
-router.get("/readProgress", async (req, res) => {
-	const query = util.promisify(db.query).bind(db);
-	try {
-		const rows = await query(
-			"SELECT course_user_activity.* FROM course_user_activity LEFT JOIN course ON course.id = course_user_activity.id_course " +
-				"WHERE course_user_activity.id_user = ? AND course.id_lang = ?; ",
-			[req.query.id_user, req.query.id_lang],
-		);
-
-		let courses = rows[0];
-		let modules = rows[1];
-		let topics = rows[2];
-		let tests = rows[3];
-		let progress = rows[4];
-
-		res.send({ courses, modules, topics, tests, progress });
-	} catch (e) {
-		throw e;
-	}
 });
 
 router.get("/readByLang", async (req, res) => {
@@ -185,7 +136,9 @@ router.get("/readByLang", async (req, res) => {
 	}
 });
 
-router.get("/readById", async (req, res) => {
+// Só a administração (editor de cursos) lê o conteúdo completo de um curso, tópico ou teste (com as respostas certas) por id: o aluno recebe-o pela
+// rota do seu curso (readBySlug), que verifica o acesso
+router.get("/readById", requirePermission("course", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await multi(query, 
@@ -269,7 +222,7 @@ router.get("/readBySlug", async (req, res) => {
 	}
 });
 
-router.get("/readByTopicId", async (req, res) => {
+router.get("/readByTopicId", requirePermission("course", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -284,7 +237,7 @@ router.get("/readByTopicId", async (req, res) => {
 	}
 });
 
-router.get("/readByTestId", async (req, res) => {
+router.get("/readByTestId", requirePermission("course", "read"), async (req, res) => {
 	const query = util.promisify(db.query).bind(db);
 	try {
 		const rows = await query(
@@ -667,11 +620,30 @@ async function blockedExpiredOrIncomplete(query, user, rows) {
 	return blocked;
 }
 
+// Colunas do progresso que o cliente pode enviar (nunca o id, nem is_deleted ou outras escolhidas por ele)
+const PROGRESS_FIELDS = ["id_course", "id_user", "activity_type", "id_course_topic", "id_course_test", "id_course_module", "is_completed", "meta_data", "created_at", "modified_at"];
+
+// Alunos só gravam progresso em cursos a que têm acesso (publicados, do seu país e, se restritos a pessoas ou grupos, a que pertencem): o resto
+// ignora-se. Antes bastava indicar o id de um curso restrito, em rascunho ou de outro país para o fazer e até o concluir.
+async function onlyAccessibleCourses(query, user, rows) {
+	if (hasFullAccess(user)) return rows;
+	const ids = [...new Set(rows.map((r) => Number(r.id_course)).filter(Boolean))];
+	if (!ids.length) return [];
+	const courses = await query("SELECT id, settings, status, is_deleted FROM course WHERE id IN (?)", [ids]);
+	const open = courses.filter((c) => !Number(c.is_deleted) && c.status !== "draft");
+	const visible = new Set((await visibleCourses(query, open, user)).map((c) => c.id));
+	return rows.filter((r) => visible.has(Number(r.id_course)));
+}
+
 router.post("/updateProgress", async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
+		if (!Array.isArray(req.body.data)) return res.status(400).send({ message: "Invalid request" });
 		// O progresso é sempre de quem faz o pedido (a app só grava o próprio; o Admin usa /completeProgress para os alunos)
-		const sent = await gradeTestRows(query, (req.body.data || []).map((row) => ({ ...row, id_user: req.user.id })));
+		const incoming = req.body.data
+			.filter((row) => row && typeof row === "object")
+			.map((row) => ({ ...Object.fromEntries(PROGRESS_FIELDS.filter((field) => row[field] !== undefined).map((field) => [field, row[field]])), id_user: req.user.id }));
+		const sent = await gradeTestRows(query, await onlyAccessibleCourses(query, req.user, incoming));
 		const blocked = await blockedAfterFailing(query, req.user, sent);
 		(await blockedExpiredOrIncomplete(query, req.user, sent)).forEach((i) => blocked.add(i));
 		let data = sent.filter((_, i) => !blocked.has(i));
@@ -856,7 +828,7 @@ router.post("/resetProgress", requirePermission("course", "update"), async (req,
 
 router.post("/module", requirePermission("course", "update"), async (req, res, next) => {
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		const query = util.promisify(conn.query).bind(conn);
 		const transaction = util.promisify(conn.beginTransaction).bind(conn);
 		const commit = util.promisify(conn.commit).bind(conn);
@@ -1017,7 +989,7 @@ router.post("/module", requirePermission("course", "update"), async (req, res, n
 
 router.post("/duplicate", requirePermission("course", "create"), async (req, res, next) => {
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		const query = util.promisify(conn.query).bind(conn);
 		const transaction = util.promisify(conn.beginTransaction).bind(conn);
 		const commit = util.promisify(conn.commit).bind(conn);

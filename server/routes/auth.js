@@ -12,6 +12,9 @@ const { createThrottle } = require("../utils/throttle");
 const email = require("../utils/email");
 const { notifyUser, notifyTeam, appUrl, emailLanguage } = require("../utils/notify");
 const { mergeName } = require("../utils/userName");
+const { ipKey } = require("../utils/clientIp");
+const revokedSessions = require("../utils/revokedSessions");
+const { isStrongPassword, PASSWORD_MESSAGE } = require("../utils/passwordPolicy");
 
 const saltRounds = 10;
 
@@ -26,13 +29,17 @@ const codeThrottle = createThrottle({ scope: "code", windowMs: 15 * 60 * 1000, m
 const LOGIN_CODE_MINUTES = 10;
 // Validade do código pedido em "Recuperar password"
 const RECOVER_CODE_MINUTES = 15;
-// IP de quem faz o pedido (atrás da Cloudflare vem em CF-Connecting-IP); serve para mostrar e, com TRUST_PROXY, para bloquear
-const clientIp = (req) => String(req.headers["cf-connecting-ip"] || req.ip || "").slice(0, 64);
-const emailKey = (value) => String(value || "").trim().toLowerCase();
+// Chave do IP de quem faz o pedido (utils/clientIp.js: nunca de um cabeçalho forjável; em IPv6 o bloco /64); serve para mostrar e, com TRUST_PROXY, para bloquear
+const clientIp = (req) => ipKey(req).slice(0, 64);
+// O e-mail vem sempre como texto (um objeto no lugar dele faria a consulta devolver todas as contas)
+const asText = (value) => (typeof value === "string" ? value : "");
+const emailKey = (value) => asText(value).trim().toLowerCase();
 // Mensagens de bloqueio, uma por tipo de limite (o front mostra também quanto falta)
 const TOO_MANY_PASSWORDS = "Too many wrong passwords. Wait before trying again.";
 const TOO_MANY_CODES = "Too many wrong codes. Wait before verifying again.";
 const TOO_MANY_REQUESTS = "Too many code requests. Wait before requesting a new code.";
+// E-mail inexistente e password errada recebem a mesma resposta: quem testa e-mails não descobre quais têm conta
+const INVALID_CREDENTIALS = "The e-mail or password is not correct, try again.";
 // Hash de uma password qualquer: o login gasta o mesmo tempo quer o e-mail exista ou não
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", saltRounds);
 
@@ -97,8 +104,17 @@ router.post("/ping", async (req, res, next) => {
   }
 });
 
-// Terminar sessão: apaga o cookie (o token não se consegue apagar a partir da página, porque é HttpOnly)
-router.post("/logout", (req, res) => {
+// Terminar sessão: apaga o cookie e termina a sessão na API (o token deixa de valer de imediato, mesmo que alguém tenha uma cópia dele)
+router.post("/logout", async (req, res) => {
+  try {
+    const stored = readSession(req);
+    if (stored && csrfOk(req, stored.source)) {
+      const result = await verifyToken(stored.token);
+      if (result.token_valid) await revokedSessions.revoke(result.token_decoded, stored.token, result.token_exp);
+    }
+  } catch (err) {
+    console.error(err);
+  }
   clearSessionCookie(req, res);
   res.send({ ok: true });
 });
@@ -115,21 +131,21 @@ router.post("/login", async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     let data = req.body.data || {};
-    const key = emailKey(data.email);
+    const email = asText(data.email);
+    const password = asText(data.password);
+    const key = emailKey(email);
+    const ip = clientIp(req);
     // retry_after: segundos até poder tentar outra vez (o front mostra a contagem e desativa o botão); limit: qual dos limites
-    const wait = await loginThrottle.blocked(key, clientIp(req));
+    const wait = await loginThrottle.blocked(key, ip);
     if (wait) return res.status(429).send({ user: null, message: TOO_MANY_PASSWORDS, limit: "login", retry_after: wait });
     // Pendentes/não aprovados estão inativos (is_deleted = 1) mas continuam a ser encontrados para receberem a mensagem do estado
-    const user = await query(
-      "SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved') ORDER BY is_deleted ASC, id DESC",
-      [data.email],
-    );
-    // 1.º o e-mail: sem conta, nem chega a verificar a password (o limite de tentativas é só para a password)
-    if (user.length === 0) return res.send({ user: null, message: "This user does not exist on our database!" });
-    // 2.º a password
-    const comparePassword = await bcrypt.compare(String(data.password ?? ""), user[0].password || DUMMY_HASH);
-    if (comparePassword) {
-      await loginThrottle.reset(key);
+    const user = email
+      ? await query("SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved') ORDER BY is_deleted ASC, id DESC", [email])
+      : [];
+    // A password confere-se SEMPRE (com um hash de mentira se a conta não existe): o tempo de resposta não revela se o e-mail tem conta
+    const comparePassword = await bcrypt.compare(password, user[0]?.password || DUMMY_HASH);
+    if (user.length > 0 && comparePassword) {
+      await loginThrottle.reset(key, ip);
       // Contas aprovadas e ativas: 2FA, a sessão só é entregue depois de confirmar o código enviado por e-mail (/verifyLoginCode)
       if (user[0].status === "approved" && user[0].is_deleted === 0) {
         // Dispositivo de confiança (código confirmado neste browser há menos de 30 dias): entra sem novo código
@@ -137,22 +153,23 @@ router.post("/login", async (req, res, next) => {
           return startSession(req, res, user[0], { message: "Welcome " + user[0].name + "!" });
         }
         // Cada login com sucesso envia um código: conta para o mesmo limite de pedidos do Reenviar
-        const sendWait = await loginCodeRequests.blocked(key, clientIp(req));
+        const sendWait = await loginCodeRequests.blocked(key, ip);
         if (sendWait) return res.status(429).send({ user: null, message: TOO_MANY_REQUESTS, limit: "otp_send", retry_after: sendWait });
-        await loginCodeRequests.fail(key, clientIp(req));
+        await loginCodeRequests.fail(key, ip);
         await sendLoginCode(query, user[0], data.lang);
         // retry_after: se este foi o último pedido permitido, o Reenviar do passo do código já aparece bloqueado
-        return res.send({ user: null, otp_required: true, email: user[0].email, name: user[0].name, retry_after: await loginCodeRequests.blocked(key, clientIp(req)) });
+        return res.send({ user: null, otp_required: true, email: user[0].email, name: user[0].name, retry_after: await loginCodeRequests.blocked(key, ip) });
       }
       // Pendentes/não aprovadas: não entram (sem sessão nem código); só o estado, para o front mostrar a mensagem certa
-      res.send({ user: null, status: user[0].status });
-    } else {
-      await loginThrottle.fail(key, clientIp(req));
-      // Esta falha esgotou as tentativas: avisa já com o tempo de espera
-      const waitAfter = await loginThrottle.blocked(key, clientIp(req));
-      if (waitAfter) return res.status(429).send({ user: null, message: TOO_MANY_PASSWORDS, limit: "login", retry_after: waitAfter });
-      res.send({ user: null, message: "The password is not correct, try again." });
+      return res.send({ user: null, status: user[0].status });
     }
+    // E-mail inexistente ou password errada: a mesma falha, contada da mesma maneira (também as contas que não existem, senão testar e-mails
+    // não tinha limite)
+    await loginThrottle.fail(key, ip);
+    // Esta falha esgotou as tentativas: avisa já com o tempo de espera
+    const waitAfter = await loginThrottle.blocked(key, ip);
+    if (waitAfter) return res.status(429).send({ user: null, message: TOO_MANY_PASSWORDS, limit: "login", retry_after: waitAfter });
+    res.send({ user: null, message: INVALID_CREDENTIALS });
   } catch (err) {
     console.error(err);
     throw err;
@@ -169,7 +186,7 @@ router.post("/verifyLoginCode", async (req, res, next) => {
     const wait = await loginCodeThrottle.blocked(key, ip);
     if (wait) return res.status(429).send({ user: null, message: TOO_MANY_CODES, limit: "otp", retry_after: wait });
     // A validade compara-se na base de dados (o mesmo relógio que a gravou com NOW()): comparar com a hora do Node falha se os dois fusos forem diferentes
-    const user = await query("SELECT *, login_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved'", [data.email]);
+    const user = await query("SELECT *, login_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved'", [asText(data.email)]);
     if (user.length === 0 || !user[0].login_code) return res.send({ user: null, restart: true, message: "Your verification session ended, log in again." });
     if (user[0].code_expired) return res.send({ user: null, expired: true, message: "The verification code has expired, request a new one." });
     const valid = typeof data.code === "string" && /^\d{6}$/.test(data.code) && (await bcrypt.compare(data.code, user[0].login_code));
@@ -182,7 +199,7 @@ router.post("/verifyLoginCode", async (req, res, next) => {
       return res.send({ user: null, message: "The verification code is not correct, try again." });
     }
     await query("UPDATE user SET login_code = NULL, login_code_expires = NULL WHERE id = ?", [user[0].id]);
-    await loginCodeThrottle.reset(key);
+    await loginCodeThrottle.reset(key, ip);
     // device_token: o browser guarda-o e só volta a ser pedido código no login daqui a 30 dias
     return startSession(req, res, user[0], { device_token: await createDeviceToken(user[0]), message: "Welcome " + user[0].name + "!" });
   } catch (err) {
@@ -202,7 +219,7 @@ router.post("/resendLoginCode", async (req, res, next) => {
     const wait = await loginCodeRequests.blocked(key, ip);
     if (wait) return res.status(429).send({ status: false, message: TOO_MANY_REQUESTS, limit: "otp_send", retry_after: wait });
     await loginCodeRequests.fail(key, ip);
-    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved' AND login_code IS NOT NULL", [data.email]);
+    const user = await query("SELECT * FROM user WHERE email = ? AND is_deleted = 0 AND status = 'approved' AND login_code IS NOT NULL", [asText(data.email)]);
     if (user.length === 0) return res.send({ status: false, restart: true, message: "Your verification session ended, log in again." });
     await sendLoginCode(query, user[0], data.lang);
     // Se este foi o último pedido permitido, o front já mostra quando pode pedir outro
@@ -225,7 +242,7 @@ async function invalidRegisterFields(query, raw, data) {
   if (!filled(raw.first_name)) invalid.push("first_name");
   if (!filled(raw.last_name)) invalid.push("last_name");
   if (!filled(data.email) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) invalid.push("email");
-  if (typeof data.password !== "string" || data.password.length < 8) invalid.push("password");
+  if (!isStrongPassword(data.password)) invalid.push("password");
   if (!GENDERS.includes(data.gender)) invalid.push("gender");
   if (!ACADEMIC_BACKGROUNDS.includes(data.academic_background)) invalid.push("academic_background");
   if (!pastDate(data.birth_date)) invalid.push("birth_date");
@@ -245,7 +262,7 @@ async function invalidRegisterFields(query, raw, data) {
 router.post("/register", async (req, res, next) => {
 
   db.getConnection(async (error, conn) => {
-    if (error) return res.status(500).send({ message: "Some error on server.", error });
+    if (error) return res.status(500).send({ message: "Some error on server." });
     const query = util.promisify(conn.query).bind(conn);
     const transaction = util.promisify(conn.beginTransaction).bind(conn);
     const commit = util.promisify(conn.commit).bind(conn);
@@ -296,7 +313,7 @@ router.post("/register", async (req, res, next) => {
 router.post("/recover", async (req, res, next) => {
 
   db.getConnection(async (error, conn) => {
-    if (error) return res.status(500).send({ message: "Some error on server.", error });
+    if (error) return res.status(500).send({ message: "Some error on server." });
     const query = util.promisify(conn.query).bind(conn);
     const transaction = util.promisify(conn.beginTransaction).bind(conn);
     const commit = util.promisify(conn.commit).bind(conn);
@@ -316,7 +333,7 @@ router.post("/recover", async (req, res, next) => {
       // Pendentes/não aprovados (inativos) recebem a mensagem do estado em vez de "e-mail inexistente"
       const user = await query(
         "SELECT * FROM user WHERE email = ? AND (is_deleted = 0 OR status != 'approved') ORDER BY is_deleted ASC, id DESC",
-        [data.email],
+        [asText(data.email)],
       );
       if (user.length > 0) {
         if (user[0].status !== "approved") {
@@ -345,9 +362,11 @@ router.post("/recover", async (req, res, next) => {
           res.send({ status: true, retry_after: await recoverRequests.blocked(emailKey(data.email), clientIp(req)) });
         }
       } else {
+        // E-mail sem conta: a mesma resposta de quem recebeu o código (nada é enviado). Quem testa e-mails não descobre quais têm conta; o
+        // pedido já contou para o limite acima.
         await commit();
         conn.release();
-        res.send({ status: false, message: "This e-mail does not exists in our database!" });
+        res.send({ status: true, retry_after: await recoverRequests.blocked(emailKey(data.email), clientIp(req)) });
       }
     } catch (err) {
       await rollback();
@@ -364,9 +383,12 @@ async function checkRecoverCode(email, code, ip) {
   const key = emailKey(email);
   const wait = await codeThrottle.blocked(key, ip);
   if (wait) return { ok: false, message: TOO_MANY_CODES, retry_after: wait };
-  const user = await query("SELECT *, recover_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0", [email]);
-  if (user.length === 0) return { ok: false, message: "This user does not exist on our database!" };
-  if (!user[0].recover_code) return { ok: false, message: "You will need to require a recover code first." };
+  const user = await query("SELECT *, recover_code_expires < NOW() AS code_expired FROM user WHERE email = ? AND is_deleted = 0", [asText(email)]);
+  // Conta inexistente, ou sem código pedido: a mesma resposta e a mesma contagem de um código errado (não revela quais e-mails têm conta)
+  if (user.length === 0 || !user[0].recover_code) {
+    if ((await codeThrottle.fail(key, ip)) >= 5) return { ok: false, message: TOO_MANY_CODES, retry_after: await codeThrottle.blocked(key, ip) };
+    return { ok: false, message: "The recover code is not correct, try again." };
+  }
   // Como no 2FA: código fora da validade não conta como tentativa errada, é preciso pedir outro (sem data = código de acesso, não expira)
   if (user[0].recover_code_expires && user[0].code_expired)
     return { ok: false, expired: true, message: "The recover code has expired, request a new one." };
@@ -393,7 +415,7 @@ router.post("/verifyRecoverCode", async (req, res, next) => {
 router.post("/password", async (req, res, next) => {
   try {
     const data = req.body.data || {};
-    if (typeof data.password !== "string" || data.password.length < 8) return res.status(400).send({ status: false, message: "The password must have at least 8 characters" });
+    if (!isStrongPassword(data.password)) return res.status(400).send({ status: false, message: PASSWORD_MESSAGE });
     const query = util.promisify(db.query).bind(db);
     const result = await checkRecoverCode(data.email, data.code, clientIp(req));
     if (!result.ok) return res.status(result.retry_after ? 429 : 200).send({ status: false, message: result.message, expired: result.expired, limit: result.retry_after ? "code" : undefined, retry_after: result.retry_after });

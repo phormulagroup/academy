@@ -13,6 +13,8 @@ const http = require("http"); // <--- ADICIONADO
 
 /* Utils import */
 const middleware = require("./utils/middleware");
+const { ipKey } = require("./utils/clientIp");
+const { inputGuard } = require("./utils/inputGuard");
 const db = require("./utils/database");
 
 // Erros de handlers async, respostas 5xx e erros do processo ficam registados em server_log (ver utils/asyncErrors.js)
@@ -30,7 +32,7 @@ const prefix = (process.env.API_PREFIX || "").replace(/\/$/, "");
 /* Criar servidor HTTP */
 const server = http.createServer(app); // <--- MUDANÇA IMPORTANTE
 
-// Atrás de proxy (Cloudflare/Apache): TRUST_PROXY = nº de proxies, para o limite de pedidos usar o IP real de cada pessoa
+// Atrás de proxy (Apache/Passenger, ou outro à frente): TRUST_PROXY = nº de proxies, para o limite de pedidos usar o IP real de cada pessoa
 if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
 
 app.use(
@@ -45,8 +47,8 @@ app.use(compression());
 const limiter = rateLimit({
 	windowMs: 1 * 60 * 1000,
 	max: 600,
-	// Atrás da Cloudflare o IP de cada pessoa vem em CF-Connecting-IP (sem isto todos partilhavam o IP do proxy e o mesmo limite)
-	keyGenerator: (req) => String(req.headers["cf-connecting-ip"] || req.ip),
+	// O IP de cada pessoa (utils/clientIp.js): nunca de um cabeçalho que o cliente possa forjar, e em IPv6 pelo bloco /64
+	keyGenerator: (req) => ipKey(req),
 	validate: { xForwardedForHeader: false },
 });
 
@@ -54,8 +56,11 @@ app.use(limiter);
 
 // 5 MB: os projetos do editor de e-mails (e o HTML que compilam) passam facilmente os 100 KB por omissão
 app.use(express.json({ limit: "5mb" }));
+// Objetos onde só podem existir valores simples (ids, e-mail...): ver utils/inputGuard.js
+app.use(inputGuard);
 // CORS: só os endereços da webapp (CORS_ORIGINS, separados por vírgulas; por omissão APP_PUBLIC_URL). Em desenvolvimento aceita também localhost.
-// Pedidos sem Origin (mesmo domínio, ferramentas, servidor a servidor) passam sempre. Sem nada configurado mantém o comportamento aberto.
+// Pedidos sem Origin (mesmo domínio, ferramentas, servidor a servidor) passam sempre. Sem nada configurado, só o desenvolvimento aceita outras
+// origens (com cookies de sessão, aceitar qualquer origem seria perigoso): em staging e produção é preciso definir CORS_ORIGINS.
 const corsOrigins = (process.env.CORS_ORIGINS || process.env.APP_PUBLIC_URL || "")
 	.split(",")
 	.map((o) => o.trim().replace(/\/$/, ""))
@@ -64,7 +69,8 @@ const isDev = (process.env.NODE_ENV || "development") === "development";
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			if (!origin || corsOrigins.length === 0) return callback(null, true);
+			if (!origin) return callback(null, true);
+			if (corsOrigins.length === 0) return callback(null, isDev);
 			if (corsOrigins.includes(origin.replace(/\/$/, ""))) return callback(null, true);
 			if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
 			return callback(null, false);
@@ -98,6 +104,7 @@ db.getConnection((error, conn) => {
 	// Sem BD no arranque o servidor não cai: o /health devolve 503 e o heartbeat recupera quando a BD voltar
 	if (error) logError({ source: "database", message: `Database connection failed: ${error.message}`, stack: error.stack });
 	else conn.release();
+	require("./utils/revokedSessions").load(); // sessões terminadas que ainda não expiraram
 	startCommunications(); // envio das comunicações agendadas, em lotes
 	startMonitoring(); // sinal de vida, tempo em baixo e limpeza de logs antigos (recupera sozinho quando a BD voltar)
 });

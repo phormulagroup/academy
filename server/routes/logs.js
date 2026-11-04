@@ -12,7 +12,7 @@ router.get("/read", requireStaff(), async (req, res) => {
     res.send(rows);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -35,18 +35,31 @@ router.get("/readByParams", requireStaff(), async (req, res) => {
     res.send(rows);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
+// Registo de uma ação feita na app. Só se aceita o que a webapp envia, com o tamanho limitado, e o utilizador é SEMPRE quem faz o pedido (antes
+// o corpo ia tal e qual para a tabela: qualquer pessoa registava ações em nome de outra, ou escolhia colunas como a data)
+const text = (value, max) => (typeof value === "string" || typeof value === "number" ? String(value).slice(0, max) : null);
 router.post("/create", async (req, res) => {
   const query = util.promisify(db.query).bind(db);
   try {
-    const rows = await query("INSERT INTO logs SET ?", req.body.data);
+    const body = req.body.data || {};
+    const action = text(body.action, 255);
+    if (!action) return res.status(400).send({ message: "Invalid request" });
+    const idLang = Number(body.id_lang);
+    const rows = await query("INSERT INTO logs SET ?", {
+      id_user: req.user.id,
+      action,
+      table_name: text(body.table_name, 255),
+      meta_data: typeof body.meta_data === "string" ? body.meta_data.slice(0, 500000) : null,
+      id_lang: Number.isInteger(idLang) && idLang > 0 ? idLang : null,
+    });
     res.send(rows);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 

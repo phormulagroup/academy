@@ -37,12 +37,13 @@ export const requiredRule = {
   },
 };
 
-// Password nova: pelo menos 8 caracteres (a API aplica a mesma regra)
+// Password nova: pelo menos 8 caracteres, com um número e um caráter especial (símbolo ou pontuação; letras e espaços não contam). A API aplica a
+// mesma regra (server/utils/passwordPolicy.js). As passwords que já existem não são afetadas: só vale ao escolher uma nova.
 export const MIN_PASSWORD = 8;
+export const isStrongPassword = (value) => typeof value === "string" && value.length >= MIN_PASSWORD && /\p{N}/u.test(value) && /[^\p{L}\p{N}\s]/u.test(value);
 export const passwordRule = {
-  min: MIN_PASSWORD,
-  get message() {
-    return i18n.t("The password must have at least {{count}} characters", { count: MIN_PASSWORD });
+  validator: async (_, value) => {
+    if (value && !isStrongPassword(value)) throw new Error(i18n.t("The password must have at least 8 characters, a number and a special character"));
   },
 };
 

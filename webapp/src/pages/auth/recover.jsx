@@ -174,15 +174,6 @@ export default function Recover() {
           sendLock.lock(res.data.retry_after, values.email);
           setStep("sending");
           setTimeout(() => setStep("code"), 900);
-        } else if (
-          res.data.message === "This e-mail does not exists in our database!"
-        ) {
-          // E-mail sem conta: mensagem traduzida no próprio campo
-          setFieldError(
-            form,
-            "email",
-            t("There is no account with this e-mail"),
-          );
         } else if (res.data.message) {
           toastApi.open({ type: "error", content: t(res.data.message) });
         } else genericError();
@@ -447,6 +438,7 @@ export default function Recover() {
             <Form.Item
               label={t("Password")}
               name="password"
+              tooltip={t("At least 8 characters, with a number and a special character")}
               rules={[requiredRule, passwordRule]}
               className="mb-4!">
               <Input.Password

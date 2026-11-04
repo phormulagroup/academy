@@ -19,7 +19,7 @@ const { requirePermission, hasPermission, denied } = require("../utils/permissio
 
 router.get("/read", middleware, requirePermission("media", "read"), (req, res) => {
   db.getConnection(async (error, conn) => {
-    if (error) return res.status(500).send({ message: "Some error on server.", error });
+    if (error) return res.status(500).send({ message: "Some error on server." });
     try {
       const query = util.promisify(conn.query).bind(conn);
       const rows = await query("SELECT * FROM media WHERE type = 'multimedia' ORDER BY created_at DESC");
@@ -126,7 +126,7 @@ router.post("/upload", middleware, requirePermission("media", "create"), async (
 
 router.post("/delete", middleware, requirePermission("media", "delete"), (req, res) => {
   db.getConnection(async (error, conn) => {
-    if (error) return res.status(500).send({ message: "Some error on server.", error });
+    if (error) return res.status(500).send({ message: "Some error on server." });
     let data = req.body.data;
     try {
       fs.unlink(path.join(MEDIA_DIR, data.name), async (err) => {

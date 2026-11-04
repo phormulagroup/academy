@@ -10,8 +10,9 @@ var router = express.Router();
 
 var db = require("../utils/database");
 const { toId, setClause, columnList, multi } = require("../utils/sql");
-const { requirePermission, hasPermission, denied, isStaff, hasFullAccess, ADMIN_ROLE_ID, USER_ROLE_ID } = require("../utils/permissions");
+const { requirePermission, hasPermission, denied, isStaff, hasFullAccess, canManageRole, ADMIN_ROLE_ID, USER_ROLE_ID } = require("../utils/permissions");
 const { mergeName } = require("../utils/userName");
+const { isStrongPassword, PASSWORD_MESSAGE } = require("../utils/passwordPolicy");
 const { createSession } = require("../utils/token");
 const { setSessionCookie } = require("../utils/session");
 const crypto = require("crypto");
@@ -177,16 +178,14 @@ router.get("/readById", async (req, res) => {
 
 router.get("/readByEmail", async (req, res) => {
 	try {
+		// Usada pelos formulários para saber se um e-mail já tem conta (também pelos alunos, na sua conta): só o necessário para isso. O nome, o
+		// estado e a função de uma conta não saem daqui (qualquer pessoa com sessão podia descobrir quem é Admin).
+		if (typeof req.query.email !== "string") return res.status(400).send({ message: "Invalid request" });
 		const query = util.promisify(db.query).bind(db);
-		const rows = await query(
-			// Rota pública usada para verificar e-mails nos formulários: sem password nem recover_code
-			"SELECT user.id, user.name, user.email, user.status, user.id_role, user.is_deleted, role.name AS role_name FROM user LEFT JOIN role ON user.id_role = role.id WHERE email = ?",
-			req.query.email,
-		);
-		res.send(rows);
+		res.send(await query("SELECT user.id, user.is_deleted FROM user WHERE email = ?", [req.query.email]));
 	} catch (e) {
 		console.error(e);
-		res.status(500).send({ message: "Some error on server.", error: e });
+		res.status(500).send({ message: "Some error on server." });
 	}
 });
 
@@ -195,6 +194,8 @@ router.post("/createPassword", async (req, res, next) => {
 		let data = req.body.data;
 		// A palavra-passe só se define na própria conta, nunca na de outro utilizador (nem por um admin)
 		if (Number(data.id) !== req.user.id) return denied(res);
+		// A primeira palavra-passe da conta segue a mesma regra das outras (antes não se validava nada: nem o tamanho)
+		if (!isStrongPassword(data.password)) return res.status(400).send({ message: PASSWORD_MESSAGE });
 		data.password = await bcrypt.hash(data.password, saltRounds);
 		const query = util.promisify(db.query).bind(db);
 		const updatedRow = await query(
@@ -207,10 +208,21 @@ router.post("/createPassword", async (req, res, next) => {
 	}
 });
 
+// Campos que o formulário de criação de utilizadores pode definir
+const USER_CREATE_FIELDS = ["name", "email", "country", "gender", "birth_date", "bial_starting_date", "academic_background", "id_role", "id_lang", "img"];
+
 router.post("/create", requirePermission("user", "create"), async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
-		const data = req.body.data;
+		// Só os campos do formulário (nunca a password, os códigos, o estado ou outros escolhidos pelo cliente)
+		const data = {};
+		for (const field of USER_CREATE_FIELDS) if (req.body.data?.[field] !== undefined) data[field] = req.body.data[field];
+		if (data.id_role !== undefined) {
+			data.id_role = Number(data.id_role);
+			if (!Number.isInteger(data.id_role) || data.id_role <= 0) return res.status(400).send({ message: "Invalid role" });
+			// Só o Admin cria contas de Admin e de Gestor
+			if (!canManageRole(req.user, data.id_role)) return denied(res);
+		}
 		// Novo utilizador: estado pendente e atividade inativa (is_deleted = 1) até ser aprovado
 		data.status = "pending";
 		data.is_deleted = 1;
@@ -245,6 +257,18 @@ router.post("/update", async (req, res, next) => {
 		// Editar outro utilizador exige permissão; o próprio nunca altera o seu papel, estado nem se apaga a si mesmo
 		const canManage = await hasPermission(req.user, "user", "update");
 		if (whereId !== req.user.id && !canManage) return denied(res);
+		// Só o Admin mexe nas contas de Admin e de Gestor (de outras pessoas) e só ele atribui essas funções: quem pode editar utilizadores
+		// não se sobe a Admin nem fica com a conta de um (mudando-lhe o e-mail para recuperar a password)
+		const [existing] = await util.promisify(db.query).bind(db)("SELECT id_role FROM user WHERE id = ?", [whereId]);
+		if (!existing) return res.status(404).send({ message: "User not found" });
+		if (whereId !== req.user.id && !canManageRole(req.user, existing.id_role)) return denied(res);
+		if (canManage && data.id_role !== undefined) {
+			data.id_role = Number(data.id_role);
+			if (!Number.isInteger(data.id_role) || data.id_role <= 0) return res.status(400).send({ message: "Invalid role" });
+			// Um formulário que reenvia a função atual não altera nada; mudar para Admin ou Gestor é só do Admin
+			if (data.id_role === Number(existing.id_role)) delete data.id_role;
+			else if (!canManageRole(req.user, data.id_role)) return denied(res);
+		}
 		// Ninguém altera a palavra-passe de outro utilizador, nem um admin (segurança): só a própria conta o pode fazer
 		if (whereId !== req.user.id) {
 			delete data.new_password;
@@ -256,6 +280,9 @@ router.post("/update", async (req, res, next) => {
 		delete data.recover_code;
 		delete data.recover_code_expires;
 		delete data.generate_password;
+		delete data.login_code;
+		delete data.login_code_expires;
+		delete data.created_at;
 		if (!canManage) {
 			delete data.id_role;
 			delete data.status;
@@ -269,7 +296,7 @@ router.post("/update", async (req, res, next) => {
 			if (Number(target?.id_role) !== USER_ROLE_ID) delete data.img;
 		}
 
-		if (data.new_password && (typeof data.new_password !== "string" || data.new_password.length < 8)) return res.status(400).send({ message: "The password must have at least 8 characters" });
+		if (data.new_password && !isStrongPassword(data.new_password)) return res.status(400).send({ message: PASSWORD_MESSAGE });
 		const passwordChanged = !!data.new_password;
 		const currentPassword = data.current_password;
 		delete data.current_password;
@@ -323,17 +350,29 @@ router.post("/update", async (req, res, next) => {
 	}
 });
 
+// Mexer na conta de outra pessoa (aprovar, apagar...): as de Admin e de Gestor só o Admin. Responde e devolve false se não pode.
+async function canActOnUser(req, res, id) {
+	const [target] = await util.promisify(db.query).bind(db)("SELECT id_role FROM user WHERE id = ?", [id]);
+	if (!target) return res.status(404).send({ message: "User not found" }) && false;
+	if (!canManageRole(req.user, target.id_role)) return denied(res) && false;
+	return true;
+}
+
+const USER_STATUSES = ["approved", "not_approved", "pending"];
+
 router.post("/changeStatus", requirePermission("user", "update"), async (req, res, next) => {
 	try {
 		let data = req.body.data;
-		let whereId = data.id;
+		let whereId = toId(data.id);
 		delete data.id;
+		if (!USER_STATUSES.includes(data.status)) return res.status(400).send({ message: "Invalid status" });
+		if (!(await canActOnUser(req, res, whereId))) return;
 
 		const query = util.promisify(db.query).bind(db);
 		// Atividade acompanha o estado: aprovado → ativo (is_deleted = 0); pendente/não aprovado → inativo (is_deleted = 1)
 		const updatedRow = await query(
 			"UPDATE user SET status = ?, is_deleted = ? WHERE id = ?",
-			[data.status, data.status === "approved" ? 0 : 1, toId(whereId)],
+			[data.status, data.status === "approved" ? 0 : 1, whereId],
 		);
 		res.send(updatedRow);
 
@@ -359,7 +398,9 @@ router.post("/changeStatus", requirePermission("user", "update"), async (req, re
 router.post("/delete", requirePermission("user", "delete"), async (req, res, next) => {
 	try {
 		const query = util.promisify(db.query).bind(db);
-		let id_user = req.body.data.id;
+		const id_user = toId(req.body.data?.id);
+		if (id_user === req.user.id) return res.status(400).send({ message: "You cannot delete your own account" });
+		if (!(await canActOnUser(req, res, id_user))) return;
 		const deletedRow = await query("UPDATE user SET is_deleted = 1 WHERE id = ?", [id_user]);
 		res.send(deletedRow);
 	} catch (err) {

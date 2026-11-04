@@ -653,6 +653,7 @@ export default function UserDetails() {
                   <Form.Item
                     label={t("New password")}
                     name="password"
+                    tooltip={t("At least 8 characters, with a number and a special character")}
                     dependencies={["current_password"]}
                     rules={[
                       passwordRule,

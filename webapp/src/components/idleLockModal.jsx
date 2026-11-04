@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Button, Form, Input, Modal } from "antd";
 import axios from "axios";
-import { LuLock, LuLogOut } from "react-icons/lu";
+import { LuArrowLeftRight, LuLock } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 
 import { Context } from "../utils/context";
@@ -36,7 +36,7 @@ export default function IdleLockModal() {
         await resumeSession(res.data);
         return;
       }
-      if (res.data.message === "The password is not correct, try again.") {
+      if (res.data.message === "The e-mail or password is not correct, try again.") {
         setFieldError(form, "password", t("The password is not correct, try again."));
         return;
       }
@@ -93,7 +93,7 @@ export default function IdleLockModal() {
           type="button"
           onClick={logout}
           className="mt-4 inline-flex cursor-pointer items-center gap-2 border-0 bg-transparent text-[13px] text-[#163986] underline hover:text-[#00B9D6]">
-          <LuLogOut aria-hidden="true" /> {t("Log out instead")}
+          <LuArrowLeftRight aria-hidden="true" /> {t("Change account")}
         </button>
       </div>
     </Modal>

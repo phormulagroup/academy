@@ -2,6 +2,7 @@ const util = require("util");
 const db = require("./database");
 const { verifyToken } = require("./token");
 const { readSession } = require("./session");
+const { clientIp } = require("./clientIp");
 
 const query = util.promisify(db.query).bind(db);
 
@@ -190,7 +191,7 @@ function auditMiddleware(prefix = "") {
           label: labelOf({ ...row, ...data }) || labelOf(row),
           changes: JSON.stringify(buildChanges(info.verb, state.before, data)).slice(0, 15000),
           route: `${req.originalUrl.split("?")[0]}`.slice(0, 120),
-          ip: String(req.headers["cf-connecting-ip"] || req.ip || "").slice(0, 64) || null,
+          ip: clientIp(req).slice(0, 64) || null,
         });
       } catch (err) {
         console.error("[audit]", err.message);

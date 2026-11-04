@@ -42,6 +42,11 @@ async function roleRows(idRole) {
 }
 // Admin ou Gestor: o papel de Admin na plataforma (fora das permissões do backoffice)
 const hasFullAccess = (user) => [ADMIN_ROLE_ID, GESTOR_ROLE_ID].includes(Number(user?.id_role));
+// Só o Admin cria, edita, aprova ou apaga contas de Admin e de Gestor, e só ele atribui essas funções. Sem isto, quem pode editar utilizadores
+// (o Gestor, por omissão) subia-se a Admin, ou ficava com a conta de um Admin (mudando-lhe o e-mail para recuperar a password).
+const PRIVILEGED_ROLES = [ADMIN_ROLE_ID, GESTOR_ROLE_ID];
+const canManageRole = (actor, roleId) => Number(actor?.id_role) === ADMIN_ROLE_ID || !PRIVILEGED_ROLES.includes(Number(roleId));
+
 // A função "Utilizador" é a que o registo atribui: não se apaga nem se renomeia, só se editam as suas permissões
 const USER_ROLE_ID = 2;
 
@@ -96,4 +101,4 @@ function requireAdmin(req, res, next) {
   return Number(req.user?.id_role) === ADMIN_ROLE_ID ? next() : denied(res);
 }
 
-module.exports = { RESOURCES, ADMIN_ROLE_ID, GESTOR_ROLE_ID, USER_ROLE_ID, MONITORING_RESOURCES, hasFullAccess, roleRows, hasPermission, isStaff, requirePermission, requireStaff, requireAdmin, denied };
+module.exports = { RESOURCES, PRIVILEGED_ROLES, canManageRole, ADMIN_ROLE_ID, GESTOR_ROLE_ID, USER_ROLE_ID, MONITORING_RESOURCES, hasFullAccess, roleRows, hasPermission, isStaff, requirePermission, requireStaff, requireAdmin, denied };

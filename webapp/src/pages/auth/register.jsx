@@ -272,6 +272,7 @@ export default function Register() {
               <Form.Item
                 label={t("Password")}
                 name="password"
+                tooltip={t("At least 8 characters, with a number and a special character")}
                 rules={[requiredRule, passwordRule]}
                 className="mb-0!">
                 <Input.Password size="large" placeholder={t("Enter your password")} />

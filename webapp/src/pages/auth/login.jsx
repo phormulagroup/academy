@@ -117,21 +117,13 @@ export default function Login() {
           setStep("checking");
           setTimeout(() => setStep("status"), 1200);
         } else if (
-          res.data.message === "This user does not exist on our database!"
+          res.data.message === "The e-mail or password is not correct, try again."
         ) {
-          // E-mail sem conta: mensagem traduzida no próprio campo
-          setFieldError(
-            form,
-            "email",
-            t("There is no account with this e-mail"),
-          );
-        } else if (
-          res.data.message === "The password is not correct, try again."
-        ) {
+          // E-mail sem conta e password errada têm a mesma resposta (a API não revela quais e-mails existem): o aviso fica no campo da password
           setFieldError(
             form,
             "password",
-            t("The password is not correct, try again."),
+            t("The e-mail or password is not correct, try again."),
           );
         } else {
           toastApi.open({

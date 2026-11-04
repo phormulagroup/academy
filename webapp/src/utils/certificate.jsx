@@ -1,6 +1,5 @@
 import axios from "axios";
 import { toastRef } from "./notify";
-import dayjs from "dayjs";
 
 import endpoints from "./endpoints";
 import i18n from "./i18n";
@@ -33,28 +32,17 @@ async function errorMessage(err) {
  * @description Descarrega o certificado de um curso para um utilizador. O PDF é gerado no servidor (o mesmo código da
  * pré-visualização do backoffice), a partir do modelo do curso: fundo, texto, alinhamento e posição.
  * @param {Object} item - O curso (id_course_certificate, id, name).
- * @param {Array} progress - O progresso do utilizador (para a data de conclusão).
+ * @param {Array} progress - (já não é usado: a data de conclusão vem do servidor).
  * @param {Object} user - O utilizador.
  * @returns {Promise} Resolve quando o ficheiro foi guardado (ou o erro foi mostrado): permite mostrar o estado "a gerar" no botão.
  */
 export const downloadCertificate = (item, progress, user) => {
-  const completed = progress.filter((p) => p.id_course === item.id && p.activity_type === "course");
   const fileName = `${item.name}-${user.name.replace(/\s+/g, "-")}.pdf`;
 
+  // O servidor monta o certificado a partir da BD (aluno, curso, data de conclusão e modelo) e só o emite a quem concluiu o curso:
+  // o pedido leva apenas o curso e o aluno
   return axios
-    .post(
-      endpoints.course_certificate.generate,
-      {
-        data: {
-          id: item.id_course_certificate,
-          name: user.name,
-          course: item.name,
-          date: completed.length > 0 ? dayjs(completed[0]?.created_at).format("YYYY-MM-DD HH:mm") : null,
-          fileName,
-        },
-      },
-      { responseType: "blob" },
-    )
+    .post(endpoints.course_certificate.generate, { data: { id_course: item.id, id_user: user.id } }, { responseType: "blob" })
     .then((res) => saveBlob(res.data, fileName))
     .catch(async (err) => {
       console.log(err);

@@ -18,7 +18,7 @@ router.use(fileUpload({ limits: { fileSize: 10 * 1024 * 1024 }, abortOnLimit: tr
 router.get("/read", requirePermission("email_template", "read"), (req, res, next) => {
 
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query("SELECT * FROM email_template");
@@ -33,7 +33,7 @@ router.get("/read", requirePermission("email_template", "read"), (req, res, next
 router.get("/readByLang", requirePermission("email_template", "read"), (req, res, next) => {
 
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query(
@@ -51,7 +51,7 @@ router.get("/readByLang", requirePermission("email_template", "read"), (req, res
 router.get("/readById", requirePermission("email_template", "read"), (req, res, next) => {
 
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const rows = await query(
@@ -118,7 +118,7 @@ router.post("/test", requirePermission("settings", "update"), (req, res, next) =
 // Atualização parcial: só muda o que vem no pedido (as definições e o conteúdo gravam-se em páginas diferentes)
 router.post("/update", requirePermission("email_template", "update"), (req, res, next) => {
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 
 		try {
 			const data = req.body.data || {};
@@ -160,7 +160,7 @@ router.post("/update", requirePermission("email_template", "update"), (req, res,
 			conn.release();
 		} catch (err) {
 			conn.release();
-			res.status(500).send({ message: "Some error on server.", error: err.message });
+			res.status(500).send({ message: "Some error on server." });
 		}
 	});
 });
@@ -169,7 +169,7 @@ router.post("/delete", requirePermission("email_template", "delete"), (req, res,
 	let data = req.body.data;
 
 	db.getConnection(async (error, conn) => {
-		if (error) return res.status(500).send({ message: "Some error on server.", error });
+		if (error) return res.status(500).send({ message: "Some error on server." });
 		try {
 			const query = util.promisify(conn.query).bind(conn);
 			const deletedRow = await query(

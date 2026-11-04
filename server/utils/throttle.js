@@ -7,7 +7,9 @@ const query = util.promisify(db.query).bind(db);
 // Os bloqueios ficam na tabela security_block (migração 2026-10-10), por isso o Admin vê e desbloqueia em Monitorização > Bloqueios e valem
 // para todos os processos. Sem a tabela usa a memória (o limite funciona, só não se vê nem se desbloqueia).
 //
-// Bloqueia por e-mail e, com TRUST_PROXY definido (só aí o IP é o da pessoa e não o do proxy), também por IP (3x o limite do e-mail).
+// Com TRUST_PROXY definido (só aí o IP é o da pessoa e não o do proxy) há três limites: por par e-mail + IP (`max`: quem erra, bloqueia-se a si),
+// por IP (3x, quem testa muitas contas) e por e-mail no total (3x, vários IPs contra a mesma conta). Assim ninguém bloqueia a conta de outra
+// pessoa sozinho, falhando de propósito, e um ataque distribuído continua limitado. Sem IP fiável só existe o limite por e-mail (`max`).
 
 let tableOk = false;
 let checkedAt = 0;
@@ -36,9 +38,14 @@ const memory = new Map(); // fallback: "scope|kind|identifier" → { count, rese
 function createThrottle({ scope, windowMs, max }) {
   const seconds = Math.round(windowMs / 1000);
   const targets = (identifier, ip) => {
-    const list = [{ kind: "email", identifier: String(identifier || ""), limit: max }];
-    if (ip && ipBlocking()) list.push({ kind: "ip", identifier: ip, limit: max * 3 });
-    return list;
+    const id = String(identifier || "");
+    if (!(ip && ipBlocking())) return [{ kind: "email", identifier: id, limit: max, main: true }];
+    return [
+      { kind: "email", identifier: id, limit: max * 3 },
+      // O par vai na tabela como "ip" com o identificador "e-mail|IP" (a coluna `kind` só tem email e ip): é único por par
+      { kind: "ip", identifier: `${id}|${ip}`, limit: max, main: true },
+      { kind: "ip", identifier: ip, limit: max * 3 },
+    ];
   };
 
   // Segundos que faltam até o bloqueio acabar (0 = não está bloqueado)
@@ -87,20 +94,29 @@ function createThrottle({ scope, windowMs, max }) {
       for (const t of targets(identifier, ip)) seconds = Math.max(seconds, await blockedOne(t));
       return seconds;
     },
-    // Regista uma tentativa falhada; devolve as falhas do e-mail na janela
+    // Regista uma tentativa falhada; devolve as falhas de quem a fez na janela (o par e-mail + IP, ou só o e-mail sem IP fiável)
     async fail(identifier, ip) {
       let count = 0;
       for (const t of targets(identifier, ip)) {
         const n = await failOne(t, ip);
-        if (t.kind === "email") count = n;
+        if (t.main) count = n;
       }
       return count;
     },
-    // Sucesso: limpa o contador do e-mail (o do IP corre até a janela acabar)
-    async reset(identifier) {
+    // Sucesso: limpa o contador do e-mail e o par e-mail + IP de quem entrou (os pares de outros IPs, que podem estar a atacar a conta, e o
+    // contador do IP seguem até a janela acabar). Sem `ip` (mudança de password) limpa os pares todos.
+    async reset(identifier, ip) {
       const id = String(identifier || "");
-      if (await tableReady()) await query("DELETE FROM security_block WHERE scope = ? AND kind = 'email' AND identifier = ?", [scope, id]);
-      else memory.delete(`${scope}|email|${id}`);
+      const pair = ip ? `${id}|${ip}` : null;
+      if (await tableReady()) {
+        await query("DELETE FROM security_block WHERE scope = ? AND kind = 'email' AND identifier = ?", [scope, id]);
+        if (pair) await query("DELETE FROM security_block WHERE scope = ? AND kind = 'ip' AND identifier = ?", [scope, pair]);
+        else await query("DELETE FROM security_block WHERE scope = ? AND kind = 'ip' AND identifier LIKE ?", [scope, `${id.replace(/[\\%_]/g, "\\$&")}|%`]);
+      } else {
+        memory.delete(`${scope}|email|${id}`);
+        if (pair) memory.delete(`${scope}|ip|${pair}`);
+        else for (const key of [...memory.keys()]) if (key.startsWith(`${scope}|ip|${id}|`)) memory.delete(key);
+      }
     },
   };
 }

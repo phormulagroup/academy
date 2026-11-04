@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const revokedSessions = require("./revokedSessions");
 
 // O segredo vem do ambiente (.env.*), nunca do código
 const privateKey = process.env.JWT_SECRET;
@@ -27,6 +28,9 @@ module.exports = {
       jwt.verify(token, privateKey, { algorithms: ["HS256"] }, function (err, decoded) {
         if (err) {
           resolve({ token_valid: false, error: err });
+        } else if (revokedSessions.isRevoked(decoded, token)) {
+          // Sessão terminada pela pessoa (logout): o token deixa de valer, mesmo ainda dentro do prazo
+          resolve({ token_valid: false, error: new Error("Session ended") });
         } else {
           // exp: fim absoluto da sessão; la: última atividade registada (sem ele, o momento em que o token foi emitido)
           const meta = { token_exp: decoded.exp, token_iat: decoded.iat, token_la: Number.isFinite(decoded.la) ? decoded.la : decoded.iat };
@@ -68,7 +72,7 @@ module.exports = {
   refreshActivity: async function (token) {
     const result = await module.exports.verifyToken(token);
     if (!result.token_valid) return null;
-    const payload = { ...result.token_decoded, la: Math.floor(Date.now() / 1000), exp: result.token_exp };
+    const payload = { ...result.token_decoded, jti: result.token_decoded.jti || crypto.randomUUID(), la: Math.floor(Date.now() / 1000), exp: result.token_exp };
     return new Promise((resolve, reject) => {
       jwt.sign(payload, privateKey, { algorithm: "HS256" }, (err, signed) => {
         if (err) return reject(err);
@@ -79,7 +83,8 @@ module.exports = {
 
   // O token leva só o necessário (a API lê o papel e o estado à base de dados em cada pedido)
   createToken: function (user) {
-    const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password), la: Math.floor(Date.now() / 1000) };
+    // jti: identifica a sessão, para a poder terminar (logout) sem afetar as outras
+    const payload = { id: user.id, name: user.name, email: user.email, id_role: user.id_role, id_lang: user.id_lang, pv: passwordFingerprint(user.password), la: Math.floor(Date.now() / 1000), jti: crypto.randomUUID() };
     return new Promise((resolve, reject) => {
       jwt.sign(payload, privateKey, { expiresIn: `${SESSION_HOURS}h`, algorithm: "HS256" }, (err, token) => {
         if (err) return reject(err);

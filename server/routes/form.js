@@ -1,4 +1,6 @@
 var express = require("express");
+const rateLimit = require("express-rate-limit");
+const { ipKey } = require("../utils/clientIp");
 var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
@@ -91,16 +93,35 @@ router.get("/readById", middleware, requirePermission("form_submission", "read")
     res.send({ ...row, language: language || null, user: user || null, repliesAvailable, replies });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
-router.post("/create", async (req, res, next) => {
+// O formulário é público: além do limite por e-mail abaixo (que quem escreve escolhe), há um limite por IP, e cada campo tem um tamanho máximo
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => ipKey(req),
+  validate: { xForwardedForHeader: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many messages, try again later" },
+});
+const CONTACT_LIMITS = { subject: 255, name: 200, email: 254, message: 5000 };
+
+router.post("/create", contactLimiter, async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
-    // Só os campos do formulário de contacto (nunca id, is_deleted ou outros escolhidos pelo cliente)
+    // Só os campos do formulário de contacto (nunca id, is_deleted ou outros escolhidos pelo cliente), como texto e com tamanho máximo
+    const raw = req.body.data || {};
     const data = {};
-    for (const field of ["subject", "name", "email", "message", "acceptance", "id_lang"]) if ((req.body.data || {})[field] !== undefined) data[field] = req.body.data[field];
+    for (const [field, max] of Object.entries(CONTACT_LIMITS)) {
+      if (raw[field] === undefined) continue;
+      if (typeof raw[field] !== "string" || raw[field].length > max) return res.status(400).send({ message: "Invalid form data" });
+      data[field] = raw[field];
+    }
+    if (raw.acceptance !== undefined) data.acceptance = raw.acceptance ? 1 : 0;
+    if (raw.id_lang !== undefined && Number.isInteger(Number(raw.id_lang)) && Number(raw.id_lang) > 0) data.id_lang = Number(raw.id_lang);
     if (typeof data.email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) || typeof data.message !== "string" || !data.message.trim()) {
       return res.status(400).send({ message: "Invalid form data" });
     }
@@ -170,7 +191,7 @@ router.post("/reply", middleware, requirePermission("form_submission", "update")
     res.send({ id: inserted.insertId, sent: result.sent, message: result.message || null });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -190,7 +211,7 @@ router.post("/retryReply", middleware, requirePermission("form_submission", "upd
     res.send({ sent: result.sent, message: result.message || null });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -204,7 +225,7 @@ router.post("/setRead", middleware, requirePermission("form_submission", "read")
   } catch (err) {
     if (err.code === "ER_BAD_FIELD_ERROR") return res.send({ affectedRows: 0 });
     console.error(err);
-    res.status(500).send({ message: "Some error on server.", error: err.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 

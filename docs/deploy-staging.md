@@ -51,7 +51,8 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
    | `MEDIA_DIR` | **recomendado no cPanel:** pasta dos ficheiros carregados fora da app (ex.: `/home/<utilizador-cpanel>/academy-media`). Assim os deploys (que substituem a pasta da API) não tocam nos media. Por omissão `server/media` |
    | `SESSION_HOURS` | opcional: duração da sessão em horas (por omissão 12). Passado esse tempo é preciso entrar de novo, por isso uma sessão deixada aberta de um dia para o outro termina |
    | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
-   | `TRUST_PROXY` | opcional: nº de proxies à frente da API (Cloudflare = 1; Cloudflare + Apache = 2), para o limite de pedidos usar o IP real |
+   | `TRUST_PROXY` | nº de proxies à frente da API (o servidor web Apache/Passenger = 1), para o limite de pedidos e o bloqueio de logins usarem o IP real de cada pessoa. O Express só lê `X-Forwarded-For` dos últimos N saltos, por isso o cliente não forja o IP |
+   | `CLIENT_IP_HEADER` | opcional: cabeçalho onde um proxy de confiança põe o IP real (na staging, `cf-connecting-ip`, da Cloudflare). **Só** quando a API não se alcança sem passar por esse proxy; sem proxy (produção) fica **vazio**, senão qualquer cliente forja o cabeçalho e foge aos limites |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
 3. **Base de dados**: as migrações (`server/database/migrations/*.sql`) aplicam-se com o executor `scripts/migrate.js`, que regista o que já correu em cada ambiente
    (tabela `schema_migrations`). No cPanel: *Setup Node.js App → Run NPM Script* (ou, no Terminal da app, `npm run <script>`):
@@ -131,7 +132,9 @@ A rota `/api/document/readFile` serve o PDF em stream, com cache privada de 1 ho
   (defesa extra contra CSRF). Sessões antigas (token no `localStorage`) são trocadas por cookie no primeiro carregamento.
 - **Tem de ser o mesmo "site":** a webapp e a API no mesmo domínio (`academy.phormuladev.com` e `/api`), como já está. Em desenvolvimento o cookie só segue se a página e a API usarem o **mesmo nome**:
   `VITE_API_URL=http://localhost:4000` (não `127.0.0.1`) no `webapp/.env.development` e abrir `http://localhost:5174`.
-- **`TRUST_PROXY`** (já configurado, 1 com Cloudflare): sem ele a API não percebe que o pedido veio por HTTPS e o cookie sai sem `Secure`.
+- **`TRUST_PROXY`** (já configurado): sem ele a API não percebe que o pedido veio por HTTPS e o cookie sai sem `Secure`.
+- **IP de quem liga** (`server/utils/clientIp.js`): é o `req.ip` do Express, nunca um cabeçalho que o cliente possa enviar. Serve para o limite geral de pedidos, o
+  bloqueio de logins por IP (e por par e-mail + IP, para ninguém bloquear a conta de outra pessoa) e o registo de atividade; em IPv6 conta-se por bloco `/64`.
 - **Inatividade:** a webapp envia um sinal de atividade (no máximo 1 por minuto, enquanto a pessoa mexe ou vê um vídeo) a `POST /auth/ping`. Passado `IDLE_MINUTES` (30) mais 2 min de margem sem sinais, a API responde
   `401 session_idle` a qualquer pedido e a webapp mostra o modal para voltar a entrar com a palavra-passe. As consultas automáticas (notificações, sinais do menu) não contam como atividade.
 - **Cabeçalhos de segurança e CSP** (`webapp/public/.htaccess`): HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` e uma *Content-Security-Policy* que só deixa correr scripts do próprio
@@ -284,4 +287,11 @@ Os mesmos passos, com estas diferenças:
 - IECs: `IEC_PUBLIC_URL=https://academy.bial.com/regional/wp-content/uploads/iec` (é o URL dos QRCodes já impressos).
   Quando o WordPress em `/regional` sair, **mover os ficheiros para uma pasta neutra** e manter este URL a servi-los
   (symlink ou rewrite), com a regra a ficar antes do fallback do React. Os QRCodes impressos não podem deixar de funcionar.
-- A Cache Rule da Cloudflare (secção 6) também tem de existir no domínio de produção.
+- **A produção não passa pela Cloudflare** (o domínio e o alojamento são do cliente): a secção 6 não se aplica. Não há WAF, rate limit por regra nem proteção anti-DDoS à frente da
+  API, por isso as proteções vivem na aplicação (limites por IP e por conta nos logins, filtro de entradas, permissões por rota). `CLIENT_IP_HEADER` fica **vazio** e o
+  `TRUST_PROXY` conta os proxies reais (Apache/Passenger = 1). Os PDFs e imagens (`/api/media`) já vão com `ETag` e `no-cache`, mas a cache passa a ser só a do browser.
+- **Verificar o IP depois do deploy** (2 minutos): a partir de duas redes diferentes (escritório e telemóvel em 4G) fazer uns pedidos a `https://academy.bial.com/api/health` e ver
+  `x-ratelimit-remaining`: cada rede tem o seu contador (começa em 599). Se o contador for partilhado, o `req.ip` é o do proxy e os 600 pedidos por minuto e as 30 falhas de login
+  contam para toda a gente: ajustar o `TRUST_PROXY`.
+- **`JWT_SECRET` de produção diferente do da staging**: o `.env.production` tem hoje o mesmo valor, por isso um token da staging seria válido em produção. Gerar um valor novo e
+  aleatório antes de arrancar (termina as sessões existentes).

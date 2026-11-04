@@ -54,7 +54,7 @@ router.get("/read", require_("read"), async (req, res) => {
     res.send({ available: true, rows });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -66,7 +66,7 @@ router.get("/readById", require_("read"), async (req, res) => {
     res.send(row);
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -81,7 +81,7 @@ router.post("/create", require_("update"), async (req, res) => {
     res.send({ id: result.insertId });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -93,7 +93,7 @@ router.post("/update", require_("update"), async (req, res) => {
     res.send({ updated: true });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
@@ -103,7 +103,7 @@ router.post("/delete", require_("update"), async (req, res) => {
     res.send({ deleted: true });
   } catch (e) {
     console.error(e);
-    res.status(500).send({ message: "Some error on server.", error: e.message });
+    res.status(500).send({ message: "Some error on server." });
   }
 });
 
