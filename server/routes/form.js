@@ -3,6 +3,7 @@ const rateLimit = require("express-rate-limit");
 const { ipKey } = require("../utils/clientIp");
 var dayjs = require("dayjs");
 var util = require("util");
+const { honeypot } = require("../utils/honeypot");
 var router = express.Router();
 var slugify = require("slugify");
 
@@ -109,7 +110,7 @@ const contactLimiter = rateLimit({
 });
 const CONTACT_LIMITS = { subject: 255, name: 200, email: 254, message: 5000 };
 
-router.post("/create", contactLimiter, async (req, res, next) => {
+router.post("/create", contactLimiter, honeypot({ insertId: 1 }), async (req, res, next) => {
   try {
     const query = util.promisify(db.query).bind(db);
     // Só os campos do formulário de contacto (nunca id, is_deleted ou outros escolhidos pelo cliente), como texto e com tamanho máximo

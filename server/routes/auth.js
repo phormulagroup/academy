@@ -1,5 +1,6 @@
 var express = require("express");
 var dayjs = require("dayjs");
+const { honeypot } = require("../utils/honeypot");
 var router = express.Router();
 const util = require("util");
 const bcrypt = require("bcryptjs");
@@ -259,7 +260,7 @@ async function invalidRegisterFields(query, raw, data) {
   return invalid;
 }
 
-router.post("/register", async (req, res, next) => {
+router.post("/register", honeypot({ insertId: 1, affectedRows: 1 }), async (req, res, next) => {
 
   db.getConnection(async (error, conn) => {
     if (error) return res.status(500).send({ message: "Some error on server." });
@@ -310,7 +311,7 @@ router.post("/register", async (req, res, next) => {
   });
 });
 
-router.post("/recover", async (req, res, next) => {
+router.post("/recover", honeypot({ status: true, retry_after: 60 }), async (req, res, next) => {
 
   db.getConnection(async (error, conn) => {
     if (error) return res.status(500).send({ message: "Some error on server." });

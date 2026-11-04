@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
 import { AuthStepSuccess } from "../../components/auth/authStep";
+import Honeypot from "../../components/auth/honeypot";
 import {
   emailFieldProps,
   emailRule,
@@ -156,6 +157,7 @@ export default function Register() {
           onFinishFailed={() =>
             toastApi.error(t("Some fields are missing"))
           }>
+          <Honeypot />
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="col-span-2 md:col-span-1">
               <Form.Item

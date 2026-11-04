@@ -24,6 +24,7 @@ import {
 } from "../../components/auth/authStep";
 import maskEmail from "../../utils/maskEmail";
 import { RetryNotice, RetryTooltip } from "../../components/auth/retryLock";
+import Honeypot from "../../components/auth/honeypot";
 import useRetryLock, { clearRetryLocks } from "../../utils/useRetryLock";
 import {
   emailFieldProps,
@@ -307,6 +308,7 @@ export default function Recover() {
               "email" in changed && setEmail(changed.email)
             }
             className="auth-form">
+            <Honeypot />
             <p className={labelClass}>{t("E-mail")}</p>
             {/* Formato do e-mail; se não houver conta, o erro do servidor aparece no campo ao submeter */}
             <Form.Item

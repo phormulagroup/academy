@@ -1,4 +1,5 @@
 import axios from "axios";
+import Honeypot from "../../components/auth/honeypot";
 import { useContext } from "react";
 import { useState } from "react";
 import { Button, Checkbox, Form, Input, Select } from "antd";
@@ -92,6 +93,7 @@ export default function Contact() {
           onFinish={submit}
           className="w-full grid grid-cols-1 md:grid-cols-3 gap-x-6 max-w-300"
           layout="vertical">
+          <Honeypot />
           <Form.Item
             name="subject"
             label={t("Subject")}
