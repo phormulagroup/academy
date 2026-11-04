@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { Link } from "react-router";
-import { Button, Checkbox, Form, Input } from "antd";
+import { Button, Form, Input } from "antd";
 
 import { Context } from "../../utils/context";
 
@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 import AuthLayout from "../../layout/auth";
 import LoginCode from "../../components/auth/loginCode";
-import { getDeviceToken, setRememberDevice } from "../../utils/trustedDevice";
+import { getDeviceToken } from "../../utils/trustedDevice";
 import { LuArrowLeft, LuHourglass, LuUserX } from "react-icons/lu";
 import { AuthStepHeader, AuthStepLoading, authLinkClass } from "../../components/auth/authStep";
 import { RetryNotice, RetryTooltip } from "../../components/auth/retryLock";
@@ -94,11 +94,10 @@ export default function Login() {
 
   async function submit(values) {
     setIsButtonLoading(true);
-    setRememberDevice(values.remember !== false);
     axios
       // lang: idioma dos e-mails para a equipa (o aluno recebe sempre no idioma da sua conta)
       // device_token: código já confirmado neste browser há menos de 30 dias → a API entra sem pedir novo código
-      .post(endpoints.auth.login, { data: { ...values, lang: i18n.language, device_token: values.remember === false ? undefined : await getDeviceToken(values.email) } })
+      .post(endpoints.auth.login, { data: { ...values, lang: i18n.language, device_token: await getDeviceToken(values.email) } })
       .then((res) => {
         if (res.data.user && res.data.session) {
           startSession({ user: res.data.user, session: res.data.session });
@@ -201,7 +200,6 @@ export default function Login() {
             form={form}
             layout="vertical"
             onFinish={submit}
-            initialValues={{ remember: true }}
             onValuesChange={(changed) =>
               "email" in changed && setEmail(changed.email)
             }
@@ -221,17 +219,7 @@ export default function Login() {
                 placeholder={t("Enter your password")}
               />
             </Form.Item>
-            <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
-              <Form.Item
-                name="remember"
-                valuePropName="checked"
-                className="mb-0!">
-                <Checkbox size="large">
-                  <p className="text-[#707070] text-[12px]">
-                    {t("Remember me")}
-                  </p>
-                </Checkbox>
-              </Form.Item>
+            <div className="flex flex-wrap justify-end items-center gap-2 mb-4">
               <Link
                 to={`/${i18n.language}/recover`}
                 className="text-[#163986]! hover:text-[#FFC600]! underline!">

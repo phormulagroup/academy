@@ -58,23 +58,3 @@ export async function saveDeviceToken(email, deviceToken) {
   if (!key || !deviceToken) return;
   write({ ...read(), [key]: deviceToken });
 }
-
-// Escolha "Remember me" do formulário de login: sem ela, este browser não é guardado como de confiança e o código é pedido sempre.
-// Guardada na sessão do separador (sobrevive ao recarregar o passo do código); sem a escolha, assume-se que sim.
-const REMEMBER_KEY = "remember_device";
-
-export function setRememberDevice(remember) {
-  try {
-    sessionStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
-  } catch {
-    // Sem armazenamento: fica o valor por omissão
-  }
-}
-
-export function shouldRememberDevice() {
-  try {
-    return sessionStorage.getItem(REMEMBER_KEY) !== "0";
-  } catch {
-    return true;
-  }
-}
