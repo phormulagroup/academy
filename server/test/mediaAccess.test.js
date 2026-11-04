@@ -31,7 +31,6 @@ test("PDF sem sessão é recusado, com sessão abre", async () => {
 });
 test("SVG não é público", async () => { assert.equal(await get("/media/draw.svg"), 401); });
 test("truques no nome não passam por imagem", () => {
-  assert.equal(isPublicFile("/kit.pdf%00.png"), true === false ? true : isPublicFile("/kit.pdf%00.png"));
   assert.equal(isPublicFile("/%E0%A4%A.png"), false);
   assert.equal(isPublicFile("/a.PNG"), true);
 });
