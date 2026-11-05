@@ -53,6 +53,7 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
    | `CORS_ORIGINS` | opcional: endereços da webapp autorizados a chamar a API, separados por vírgulas (por omissão `APP_PUBLIC_URL`) |
    | `TRUST_PROXY` | nº de proxies à frente da API (o servidor web Apache/Passenger = 1), para o limite de pedidos e o bloqueio de logins usarem o IP real de cada pessoa. O Express só lê `X-Forwarded-For` dos últimos N saltos, por isso o cliente não forja o IP |
    | `CLIENT_IP_HEADER` | opcional: cabeçalho onde um proxy de confiança põe o IP real (na staging, `cf-connecting-ip`, da Cloudflare). **Só** quando a API não se alcança sem passar por esse proxy; sem proxy (produção) fica **vazio**, senão qualquer cliente forja o cabeçalho e foge aos limites |
+   | `MEDIA_PRIVATE_FILES` | opcional: por omissão `/api/media` só serve imagens sem sessão; PDFs, apresentações e vídeos exigem sessão. `false` desliga (só para diagnóstico) |
    | `COMMUNICATION_BATCH_SIZE` / `COMMUNICATION_TICK_SECONDS` | opcionais: e-mails por lote e segundos entre lotes (por omissão 10 e 5). Ajustar ao limite de envio do cPanel (ver «Comunicações no cPanel») |
 3. **Base de dados**: as migrações (`server/database/migrations/*.sql`) aplicam-se com o executor `scripts/migrate.js`, que regista o que já correu em cada ambiente
    (tabela `schema_migrations`). No cPanel: *Setup Node.js App → Run NPM Script* (ou, no Terminal da app, `npm run <script>`):
@@ -105,6 +106,8 @@ O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
      `retries_allowed` conta as tentativas no total). Os testes novos já nascem assim (`utils/testDefaults.js`) e a cópia de um curso para outro idioma ajusta as tentativas. **Altera dados**: antes de mexer
      guarda os valores antigos em `course_test_settings_backup` (voltar atrás: `UPDATE course_test t JOIN course_test_settings_backup b ON b.id = t.id SET t.settings = b.settings`). Um teste que antes não tinha
      limite e que um aluno já reprovou tantas vezes quanto o novo limite deixa de poder ser repetido. Repetível.
+   - `2026-11-04-revoked-sessions.sql`: cria `revoked_session` (sessões terminadas no logout; a API recusa o token de imediato, mesmo dentro do prazo). Aditiva. Sem ela o logout só vale até ao próximo reinício da API.
+     Já foi aplicada na BD de staging.
    As fontes da marca para os e-mails (Ryker) estão em `server/public/fonts/` e a API serve-as em `/fonts/` (por isso essa pasta tem de ir no `server-staging.zip`).
    Os e-mails apontam para este endereço: se a URL da API mudar, os e-mails já enviados deixam de carregar a Ryker (mostram a alternativa).
    Os anexos dos tickets ficam em `media-private/ticket/` (dentro da pasta da API, nunca pública; muda-se com `TICKET_ATTACHMENTS_DIR`).
