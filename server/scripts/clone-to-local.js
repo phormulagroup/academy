@@ -11,7 +11,7 @@ const LOCAL = { host: "127.0.0.1", port: 3307, user: "root", database: "academy_
 
 (async () => {
   if (!process.env.DB_HOST || /^(127\.0\.0\.1|localhost)$/.test(process.env.DB_HOST)) throw new Error("O .env.staging tem de apontar para a staging (a origem da cópia).");
-  const src = await mysql.createConnection({ host: process.env.DB_HOST, port: process.env.DB_PORT, user: process.env.DB_USER, password: process.env.DB_PASSWORD, database: process.env.DB_NAME });
+  const src = await mysql.createConnection({ host: process.env.DB_HOST, port: process.env.DB_PORT, user: process.env.DB_USER, password: process.env.DB_PASSWORD, database: process.env.DB_NAME, jsonStrings: true });
   const dst = await mysql.createConnection(LOCAL);
   await dst.query("DROP DATABASE IF EXISTS academy_local; CREATE DATABASE academy_local CHARACTER SET utf8mb4; USE academy_local; SET FOREIGN_KEY_CHECKS=0; SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO'");
   const [tables] = await src.query("SELECT TABLE_NAME n, TABLE_TYPE t FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()");

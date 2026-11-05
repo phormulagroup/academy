@@ -24,7 +24,7 @@ function parseList(text) {
 
 // Lê o Excel: { pt: [{key, value}], es: [...], fr: [...] } (linhas sem chave ou sem texto são ignoradas)
 function readWorkbook(file) {
-  const XLSX = require("xlsx");
+  const XLSX = require("../vendor/xlsx");
   const sheet = XLSX.readFile(file).Sheets;
   const rows = XLSX.utils.sheet_to_json(sheet[Object.keys(sheet)[0]], { defval: "" });
   const out = { pt: [], es: [], fr: [] };

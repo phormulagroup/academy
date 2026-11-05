@@ -22,6 +22,7 @@ async function connect({ multipleStatements = false } = {}) {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     multipleStatements,
+    jsonStrings: true, // mysql2 3.x devolve colunas JSON já convertidas em objetos; os scripts trabalham com o texto, como antes
     connectTimeout: 10000,
   });
 }

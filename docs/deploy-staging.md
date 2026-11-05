@@ -21,7 +21,7 @@ scripts/build-release.sh staging        # ou: production. Com --skip-checks salt
 ```
 Resultado em `deploy/` (não vai para o git): `webapp-staging.zip` (usa `webapp/.env.staging` → `VITE_API_URL=https://academy.phormuladev.com/api`) e
 `server-staging.zip` (a API com o `.env.staging`, sem `node_modules`, sem `media`, sem testes, com o Excel das traduções em `database/translations.xlsx`).
-Os dois levam um `version.json` com o mesmo valor (`<commit>[-dirty]`): depois do deploy, `https://<dominio>/api/health` e `https://<dominio>/version.json`
+Os dois levam um `version.json` com o mesmo valor (`<commit>`): depois do deploy, `https://<dominio>/api/health` e `https://<dominio>/version.json`
 têm de mostrar a **mesma versão** (uma webapp e uma API de versões diferentes foi a causa de um login que deixou de funcionar).
 O zip da API inclui o `.env.staging` (credenciais da BD): tratar como sensível.
 

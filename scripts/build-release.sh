@@ -23,11 +23,11 @@ COMMIT="$(git rev-parse --short HEAD)"
 DIRTY=""
 [[ -n "$(git status --porcelain -- server webapp)" ]] && DIRTY="-dirty"
 BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VERSION="${COMMIT}${DIRTY}"
+VERSION="${COMMIT}" # sem sufixo "-dirty" (a pedido); o aviso abaixo continua a dizer se há alterações por commitar
 VERSION_JSON="{\"version\":\"${VERSION}\",\"environment\":\"${ENVIRONMENT}\",\"builtAt\":\"${BUILT_AT}\"}"
 
 if [[ -n "$DIRTY" ]]; then
-  echo "Aviso: há alterações por commitar (a versão fica ${VERSION})."
+  echo "Aviso: há alterações por commitar (a versão fica ${COMMIT}, mas o pacote tem código que ainda não está nesse commit)."
 fi
 
 if [[ $SKIP_CHECKS -eq 0 ]]; then
