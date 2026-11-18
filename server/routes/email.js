@@ -2,7 +2,7 @@ var express = require("express");
 var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
-const { createTransport } = require("../utils/mailTransport");
+const { createTransport, isBrevo } = require("../utils/mailTransport");
 const { logEmail } = require("../utils/monitor");
 const fileUpload = require("express-fileupload");
 
@@ -106,7 +106,7 @@ router.post("/test", requirePermission("settings", "update"), async (req, res, n
 			// O teste vai para o endereço escolhido na página (por omissão, o próprio remetente)
 			to: smtpSettings.to || req.body.data.email,
 			subject: "Send test e-mail",
-			text: "Este é um e-mail de teste das definições de SMTP da plataforma. Se o recebeu, o envio está a funcionar.",
+			text: "Este é um e-mail de teste das definições de e-mail da plataforma. Se o recebeu, o envio está a funcionar.\n\nEnviado por: " + (isBrevo(smtpSettings) ? "API da Brevo" : `SMTP (${smtpSettings.host}:${smtpSettings.port})`),
 		};
 
 		// Um throw dentro do callback não chegava ao cliente (pedido ficava pendurado): devolve o resultado do envio
