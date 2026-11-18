@@ -41,9 +41,9 @@ export default function SMTP() {
   const host = Form.useWatch("host", form);
   const sender = Form.useWatch("email", form);
   const brevoKey = Form.useWatch("brevo_api_key", form);
-  // Os segredos guardados não chegam à página: só os `has_*` (vazio ao escrever = manter o guardado)
-  const hasBrevoKey = Form.useWatch("has_brevo_api_key", form);
-  const hasPassword = Form.useWatch("has_password", form);
+  // Os segredos guardados não chegam à página: só os `has_*` (vazio ao escrever = manter o guardado). `preserve`: não são campos do formulário, e sem isto o watch ignora-os
+  const hasBrevoKey = Form.useWatch("has_brevo_api_key", { form, preserve: true });
+  const hasPassword = Form.useWatch("has_password", { form, preserve: true });
   const keepHint = t("Saved. Leave empty to keep it");
   // Sem fornecedor guardado (definições antigas) é SMTP, como sempre foi
   const provider = Form.useWatch("provider", form) || "smtp";
@@ -214,7 +214,7 @@ export default function SMTP() {
                   </Form.Item>
                   {!isBrevo && (
                     <Form.Item name="password" label={t("Password")} rules={hasPassword ? [] : [requiredRule]} className="mb-0!">
-                      <Input.Password size="large" placeholder={hasPassword ? keepHint : undefined} autoComplete="new-password" />
+                      <Input.Password size="large" placeholder={hasPassword ? keepHint : t("Enter the password")} autoComplete="new-password" />
                     </Form.Item>
                   )}
                 </div>
