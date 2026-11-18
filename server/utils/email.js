@@ -4,6 +4,7 @@ const util = require("util");
 const db = require("./database");
 const { AsyncLocalStorage, AsyncResource } = require("async_hooks");
 const { logEmail } = require("./monitor");
+const { decrypt } = require("./secretBox");
 const defaultTemplates = require("./defaultEmailTemplates.json");
 
 // Cada função de envio corre dentro deste contexto (nome do modelo): o transportador regista aí o resultado do envio e, se a função
@@ -16,6 +17,8 @@ const getConnection = (callback) => db.getConnection(AsyncResource.bind(callback
 // Definições SMTP guardadas em `settings`: erro claro (e registado) quando ainda não foram configuradas
 function smtpFromRows(rows) {
   const smtp = rows?.[0]?.meta_data ? JSON.parse(rows[0].meta_data) : null;
+  // Os segredos guardam-se cifrados (utils/secretBox.js); quem envia usa-os em claro
+  if (smtp) for (const key of ["password", "brevo_api_key"]) if (smtp[key]) smtp[key] = decrypt(smtp[key]);
   // Definições em que o fornecedor é a API da Brevo: precisam da chave e do remetente (sem servidor SMTP)
   if (isBrevo(smtp)) {
     if (!smtp.brevo_api_key || !smtp.email) throw new Error("Brevo API settings are not configured (Settings > E-mail integration)");

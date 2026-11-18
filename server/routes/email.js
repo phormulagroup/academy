@@ -3,6 +3,7 @@ var dayjs = require("dayjs");
 var util = require("util");
 var router = express.Router();
 const { createTransport, isBrevo } = require("../utils/mailTransport");
+const { decrypt } = require("../utils/secretBox");
 const { logEmail } = require("../utils/monitor");
 const fileUpload = require("express-fileupload");
 
@@ -97,7 +98,7 @@ router.post("/test", requirePermission("settings", "update"), async (req, res, n
 		try {
 			saved = JSON.parse(stored?.meta_data || "{}");
 		} catch {}
-		for (const key of ["password", "brevo_api_key"]) if (!smtpSettings[key] && saved[key]) smtpSettings[key] = saved[key];
+		for (const key of ["password", "brevo_api_key"]) if (!smtpSettings[key] && saved[key]) smtpSettings[key] = decrypt(saved[key]);
 		// Um servidor errado ou bloqueado não deve deixar a página à espera minutos
 		const transporter = createTransport(smtpSettings, { connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000 });
 

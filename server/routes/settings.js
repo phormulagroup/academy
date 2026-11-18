@@ -7,6 +7,7 @@ var db = require("../utils/database");
 const { toId, setClause, columnList } = require("../utils/sql");
 const { requirePermission } = require("../utils/permissions");
 const middleware = require("../utils/middleware");
+const { encrypt, isEncrypted } = require("../utils/secretBox");
 
 // Segredos das definições SMTP: nunca saem da API (nem para quem tem permissão em Definições). Vai só `has_<campo>`, para a página saber se existem.
 const SECRETS = ["password", "brevo_api_key"];
@@ -63,7 +64,9 @@ router.post("/update", middleware, requirePermission("settings", "update"), asyn
         const old = parseMeta(row.meta_data);
         const next = parseMeta(data.meta_data);
         for (const key of SECRETS) {
-          if (!next[key] && old[key]) next[key] = old[key];
+          // O que a página envia é texto simples novo: cifra. Vazio = mantém o guardado (cifrando-o, se ainda estava em texto simples)
+          if (next[key]) next[key] = encrypt(next[key]);
+          else if (old[key]) next[key] = isEncrypted(old[key]) ? old[key] : encrypt(old[key]);
           delete next[`has_${key}`];
         }
         data.meta_data = JSON.stringify(next);

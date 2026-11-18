@@ -105,6 +105,10 @@ db.getConnection((error, conn) => {
 	if (error) logError({ source: "database", message: `Database connection failed: ${error.message}`, stack: error.stack });
 	else conn.release();
 	require("./utils/revokedSessions").load(); // sessões terminadas que ainda não expiraram
+	// Cifra a password SMTP e a chave da Brevo que ainda estejam em texto simples (utils/settingsSecrets.js)
+	require("./utils/settingsSecrets")
+		.encryptStoredSecrets()
+		.catch((err) => logError({ source: "settings", message: `Could not encrypt the stored e-mail secrets: ${err.message}`, stack: err.stack }));
 	startCommunications(); // envio das comunicações agendadas, em lotes
 	startMonitoring(); // sinal de vida, tempo em baixo e limpeza de logs antigos (recupera sozinho quando a BD voltar)
 });
