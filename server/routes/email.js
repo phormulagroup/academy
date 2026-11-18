@@ -87,10 +87,17 @@ router.post("/sendTest", requirePermission("email_template", "update"), async (r
 	}
 });
 
-router.post("/test", requirePermission("settings", "update"), (req, res, next) => {
+router.post("/test", requirePermission("settings", "update"), async (req, res, next) => {
 
 	try {
 		const smtpSettings = req.body.data;
+		// A página não recebe os segredos guardados: se vierem vazios, usa os da base de dados
+		const [stored] = await util.promisify(db.query).bind(db)("SELECT meta_data FROM settings WHERE name_key = 'smtp'");
+		let saved = {};
+		try {
+			saved = JSON.parse(stored?.meta_data || "{}");
+		} catch {}
+		for (const key of ["password", "brevo_api_key"]) if (!smtpSettings[key] && saved[key]) smtpSettings[key] = saved[key];
 		// Um servidor errado ou bloqueado não deve deixar a página à espera minutos
 		const transporter = createTransport(smtpSettings, { connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000 });
 

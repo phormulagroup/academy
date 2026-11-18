@@ -41,10 +41,14 @@ export default function SMTP() {
   const host = Form.useWatch("host", form);
   const sender = Form.useWatch("email", form);
   const brevoKey = Form.useWatch("brevo_api_key", form);
+  // Os segredos guardados não chegam à página: só os `has_*` (vazio ao escrever = manter o guardado)
+  const hasBrevoKey = Form.useWatch("has_brevo_api_key", form);
+  const hasPassword = Form.useWatch("has_password", form);
+  const keepHint = t("Saved. Leave empty to keep it");
   // Sem fornecedor guardado (definições antigas) é SMTP, como sempre foi
   const provider = Form.useWatch("provider", form) || "smtp";
   const isBrevo = provider === "brevo";
-  const configured = !!sender && (isBrevo ? !!brevoKey : !!host);
+  const configured = !!sender && (isBrevo ? !!brevoKey || !!hasBrevoKey : !!host);
 
   useEffect(() => {
     getData();
@@ -123,7 +127,7 @@ export default function SMTP() {
   // Testa os valores atuais do formulário (mesmo sem guardar) e mostra o resultado, com a razão se falhar
   async function sendTestEmail() {
     try {
-      await form.validateFields(isBrevo ? ["brevo_api_key", "email"] : ["host", "port", "email", "password"]);
+      await form.validateFields(isBrevo ? ["email"] : ["host", "port", "email"]);
     } catch {
       return;
     }
@@ -175,8 +179,8 @@ export default function SMTP() {
 
               {isBrevo ? (
                 <SettingsSection id="brevo-api" icon={<LuKeyRound />} title={t("Brevo API")} description={t("The API key of your Brevo account. Create it in Brevo under SMTP & API > API Keys")}>
-                  <Form.Item name="brevo_api_key" label={t("API key")} rules={[requiredRule]} className="mb-0!" extra={t("Kept on the server and only visible to people who can edit the settings")}>
-                    <Input.Password size="large" placeholder="xkeysib-..." autoComplete="new-password" />
+                  <Form.Item name="brevo_api_key" label={t("API key")} rules={hasBrevoKey ? [] : [requiredRule]} className="mb-0!" extra={t("Kept on the server and only visible to people who can edit the settings")}>
+                    <Input.Password size="large" placeholder={hasBrevoKey ? keepHint : "xkeysib-..."} autoComplete="new-password" />
                   </Form.Item>
                 </SettingsSection>
               ) : (
@@ -209,8 +213,8 @@ export default function SMTP() {
                     <Input size="large" placeholder="Bial Academy" />
                   </Form.Item>
                   {!isBrevo && (
-                    <Form.Item name="password" label={t("Password")} rules={[requiredRule]} className="mb-0!">
-                      <Input.Password size="large" autoComplete="new-password" />
+                    <Form.Item name="password" label={t("Password")} rules={hasPassword ? [] : [requiredRule]} className="mb-0!">
+                      <Input.Password size="large" placeholder={hasPassword ? keepHint : undefined} autoComplete="new-password" />
                     </Form.Item>
                   )}
                 </div>
